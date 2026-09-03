@@ -41,23 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
-    <div class="auth-shell">
+    <div class="auth-shell auth-shell-login">
         <div class="auth-visual">
             <div class="auth-brand">
+                <div class="brand-pill">
+                    <i class="fa-solid fa-sparkles"></i>
+                    Platform Karier Modern
+                </div>
                 <div>
-                    <h1 style="background: linear-gradient(135deg, #30aed8, #1e97c4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Karirhub</h1>
-                    <p style="margin-top: 8px;">Demo login multi-role untuk Pasker ID</p>
+                    <h1 class="auth-gradient-title">Karirhub</h1>
+                    <p class="auth-subtitle">Temukan peluang terbaik dan kelola proses rekrutmen dalam satu dashboard yang elegan.</p>
                 </div>
             </div>
-            <div class="auth-copy">
+            <div class="auth-copy auth-copy-highlight">
                 <p><strong>Alur demo:</strong> pemberi kerja individu wajib melengkapi profil dulu sebelum masuk dashboard, pencari kerja akan diarahkan ke form biodata, dan admin langsung masuk ke daftar pemberi kerja individu.</p>
-                <p style="margin-top:12px;">Akun seed tersedia untuk demo, dan semua role sudah dipisah di database <strong>paskerid</strong>.</p>
+                <p>Akun seed tersedia untuk demo, dan semua role sudah dipisah di database <strong>paskerid</strong>.</p>
             </div>
-            <div class="auth-copy">
-                <p><strong>Demo account</strong></p>
-                <p>Admin: admin@paskerid.test / admin123</p>
-                <p>Perorangan: perorangan@paskerid.test / demo123</p>
-                <p>Pencari kerja: seeker@paskerid.test / seeker123</p>
+            <div class="demo-card">
+                <p><strong>Demo Account</strong></p>
+                <div class="demo-row"><span>Admin</span><code>admin@paskerid.test / admin123</code></div>
+                <div class="demo-row"><span>Perorangan</span><code>perorangan@paskerid.test / demo123</code></div>
+                <div class="demo-row"><span>Pencari kerja</span><code>seeker@paskerid.test / seeker123</code></div>
             </div>
         </div>
         <div class="auth-panel">
@@ -76,14 +80,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <form method="post">
                     <div class="field">
                         <label>Email</label>
-                        <input type="email" name="email" placeholder="nama@email.com" required>
+                        <div class="input-wrap">
+                            <i class="fa-regular fa-envelope"></i>
+                            <input type="email" name="email" placeholder="nama@email.com" required>
+                        </div>
                     </div>
                     <div class="field">
                         <label>Password</label>
-                        <input type="password" name="password" placeholder="Masukkan password" required>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" name="password" placeholder="Masukkan password" required>
+                        </div>
                     </div>
                     <div class="auth-actions">
-                        <button class="primary-btn" type="submit">Masuk</button>
+                        <button class="primary-btn" type="submit">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                            Masuk
+                        </button>
                         <a class="ghost-btn" href="register.php">Daftar</a>
                     </div>
                 </form>
