@@ -77,11 +77,11 @@ $replacements = [
     'PT. Pandu Jaya'                       => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'Kota Bekasi'                          => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
     '<strong>Sisa 87 hari</strong>'        => '<strong>Sisa ' . max(0, $daysRemaining) . ' hari</strong>',
-    'Akun Anda telah aktif dan berlaku selama 3 bulan. Anda kini dapat mempublikasikan lowongan kerja atau proyek.<br>' . "\r\n" . '                        <strong>Catatan penting: Anda hanya dapat memiliki 1 lowongan aktif dalam satu waktu dan wajib menetapkan kandidat terpilih sebelum dapat membuat postingan lowongan baru.</strong>' => 'Akun Anda telah aktif dan berlaku selama 3 bulan. Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan/posisi yang berbeda.<br>' . "\r\n" . '                        <strong>Catatan penting: Anda tidak dapat membuat lowongan baru untuk jabatan/posisi yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.</strong>',
 ];
 
+$alertKey = 'Akun Anda telah aktif dan berlaku selama 3 bulan. Anda kini dapat mempublikasikan lowongan kerja.<br>' . "\r\n" . '                        <strong>Catatan penting: Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan/posisi yang berbeda. Namun, Anda tidak dapat membuat lowongan baru untuk jabatan/posisi yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.</strong>';
+
 if (empty($profile['verified'])) {
-    $alertKey = 'Akun Anda telah aktif dan berlaku selama 3 bulan. Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan/posisi yang berbeda.<br>' . "\r\n" . '                        <strong>Catatan penting: Anda tidak dapat membuat lowongan baru untuk jabatan/posisi yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.</strong>';
     $replacements[$alertKey] = '<strong style="color:orange"><i class="fa-solid fa-clock"></i> Menunggu Verifikasi Admin:</strong> Profil Anda sedang dalam tahap peninjauan. Fitur posting lowongan belum dapat diakses sebelum akun disetujui.';
     // Disable Add Button
     $html = str_replace('<button class="action-chip"><i class="fa-solid fa-plus"></i> Tambah</button>', '<button class="action-chip" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
@@ -90,7 +90,6 @@ if (empty($profile['verified'])) {
     if ($profile['extension_requested'] == 0) {
         $btnPerpanjangan = '<form method="post" action="dashboard.php" style="margin-top:10px;"><input type="hidden" name="request_extension" value="1"><button type="submit" class="ghost-btn" style="border:1px solid red; color:red; padding:4px 12px; font-size:12px;"><i class="fa-solid fa-clock-rotate-left"></i> Ajukan Perpanjangan Waktu (1x)</button></form>';
     }
-    $alertKey = 'Akun Anda telah aktif dan berlaku selama 3 bulan. Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan/posisi yang berbeda.<br>' . "\r\n" . '                        <strong>Catatan penting: Anda tidak dapat membuat lowongan baru untuk jabatan/posisi yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.</strong>';
     $replacements[$alertKey] = '<strong style="color:red">Masa Transisi (Akses Dibatasi):</strong> Masa aktif Anda telah habis. Akses saat ini difokuskan untuk menyelesaikan rekrutmen. Tombol posting lowongan telah dinonaktifkan.<br>Sisa masa transisi: ' . (7 + $daysRemaining) . ' hari.' . $btnPerpanjangan;
     // Disable Add Button
     $html = str_replace('<button class="action-chip"><i class="fa-solid fa-plus"></i> Tambah</button>', '<button class="action-chip" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
@@ -99,7 +98,6 @@ if (empty($profile['verified'])) {
     if ($profile['extension_requested'] == 0) {
         $btnPerpanjangan = '<form method="post" action="dashboard.php" style="margin-top:10px;"><input type="hidden" name="request_extension" value="1"><button type="submit" class="ghost-btn" style="border:1px solid orange; color:orange; padding:4px 12px; font-size:12px;"><i class="fa-solid fa-clock-rotate-left"></i> Ajukan Perpanjangan Waktu (1x)</button></form>';
     }
-    $alertKey = 'Akun Anda telah aktif dan berlaku selama 3 bulan. Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan/posisi yang berbeda.<br>' . "\r\n" . '                        <strong>Catatan penting: Anda tidak dapat membuat lowongan baru untuk jabatan/posisi yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.</strong>';
     $replacements[$alertKey] = '<strong style="color:orange">Pengingat:</strong> Masa aktif akun Anda akan berakhir dalam ' . $daysRemaining . ' hari. Segera selesaikan rekrutmen Anda sebelum masa transisi dimulai.' . $btnPerpanjangan;
 }
 
