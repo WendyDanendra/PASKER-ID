@@ -18,6 +18,52 @@ if (isset($_GET['read_notif'])) {
     exit;
 }
 
+if (isset($_GET['applicant_json'])) {
+    $applicationId = (int) $_GET['applicant_json'];
+    $detail = db()->prepare('SELECT a.*, j.title AS job_title, j.user_id AS employer_id, u.name AS seeker_name, u.email AS seeker_email,
+            sp.nik, sp.phone, sp.gender, sp.marital_status, sp.birth_place, sp.birth_date, sp.ktp_address, sp.domicile_address
+        FROM job_applications a
+        JOIN job_posts j ON j.id = a.job_id
+        JOIN users u ON u.id = a.seeker_id
+        LEFT JOIN seeker_profiles sp ON sp.user_id = a.seeker_id
+        WHERE a.id = ? AND j.user_id = ?
+        LIMIT 1');
+    $detail->execute([$applicationId, $user['id']]);
+    $row = $detail->fetch();
+    header('Content-Type: application/json');
+    if (!$row) {
+        http_response_code(404);
+        echo json_encode(['ok' => false]);
+        exit;
+    }
+    $row['status'] = normalize_application_status($row['status'] ?? '');
+    $row['profile'] = seeker_profile_bundle((int) $row['seeker_id']);
+    echo json_encode(['ok' => true, 'data' => $row], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_application_status'])) {
+    $applicationId = (int) ($_POST['application_id'] ?? 0);
+    $nextStatus = normalize_application_status($_POST['status'] ?? '');
+    if (!in_array($nextStatus, application_statuses(), true)) {
+        flash('error', 'Status pelamar tidak valid.');
+        redirect('dashboard.php#lowongan');
+    }
+
+    $owned = db()->prepare('SELECT a.id, a.seeker_id, j.title FROM job_applications a JOIN job_posts j ON j.id = a.job_id WHERE a.id = ? AND j.user_id = ?');
+    $owned->execute([$applicationId, $user['id']]);
+    $application = $owned->fetch();
+    if (!$application) {
+        flash('error', 'Pelamar tidak ditemukan.');
+        redirect('dashboard.php#lowongan');
+    }
+
+    db()->prepare('UPDATE job_applications SET status = ?, updated_at = NOW() WHERE id = ?')->execute([$nextStatus, $applicationId]);
+    notify_user((int) $application['seeker_id'], 'Status lamaran diperbarui', 'Status lamaran Anda untuk "' . $application['title'] . '" sekarang: ' . $nextStatus . '.', 'info', $applicationId);
+    flash('success', 'Status pelamar diperbarui menjadi ' . $nextStatus . '.');
+    redirect('dashboard.php#lowongan');
+}
+
 $ownerName = $profile['owner_name'] ?? $user['name'];
 $profession = $profile['profession'] ?? 'Kuliner';
 $city = $profile['city'] ?? 'Kota Bekasi';
@@ -532,6 +578,44 @@ $modalStyles = <<<'CSS'
             font-size: 12px;
             cursor: help;
         }
+        .applicant-profile-panel {
+            width: min(640px, 100%);
+        }
+        .applicant-profile-grid {
+            display: grid;
+            gap: 10px;
+        }
+        .applicant-profile-grid .summary-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 13px;
+            border-bottom: 1px solid #eef2f7;
+            padding-bottom: 8px;
+        }
+        .profile-block {
+            margin-top: 14px;
+        }
+        .profile-block h4 {
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .status-select {
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: inherit;
+        }
+        .record-item {
+            border: 1px solid #edf1f6;
+            background: #fafcff;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+        .record-item strong { display: block; font-size: 13px; }
+        .record-item span { font-size: 11px; color: #64748b; }
         @media (max-width: 760px) {
             .modal-backdrop {
                 justify-content: center;
@@ -1073,6 +1157,39 @@ $modal = <<<HTML
             </form>
         </div>
     </div>
+    <div class="modal-backdrop" data-modal="applicant-profile">
+        <div class="modal-panel applicant-profile-panel" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <button type="button" class="modal-close" data-close-modal="applicant-profile" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+                <div class="modal-title" id="applicantName">Profil Pelamar</div>
+                <div class="modal-subtitle" id="applicantJob">Lowongan</div>
+            </div>
+            <form method="post" action="dashboard.php#lowongan">
+                <input type="hidden" name="update_application_status" value="1">
+                <input type="hidden" name="application_id" id="applicantId" value="">
+                <div class="modal-body">
+                    <div class="field">
+                        <label>Status pelamar</label>
+                        <select class="status-select" name="status" id="applicantStatus">
+                            <option>Lamaran Masuk</option>
+                            <option>Sedang Dipelajari</option>
+                            <option>Wawancara</option>
+                            <option>Diterima</option>
+                            <option>Ditolak</option>
+                        </select>
+                    </div>
+                    <div class="applicant-profile-grid" id="applicantBiodata"></div>
+                    <div class="profile-block"><h4>Pendidikan</h4><div id="applicantEducation"></div></div>
+                    <div class="profile-block"><h4>Pengalaman</h4><div id="applicantExperience"></div></div>
+                    <div class="profile-block"><h4>Keahlian</h4><div id="applicantSkills"></div></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="ghost-btn" data-close-modal="applicant-profile">Tutup</button>
+                    <button type="submit" class="primary-btn">Simpan Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
 HTML;
 
 $html = str_replace('</body>', $modal . "\n</body>", $html);
@@ -1285,35 +1402,68 @@ if (!$employerJobs) {
     }
 }
 
-$applicantHtml = '';
-$appStmt = db()->prepare('SELECT a.*, j.title AS job_title, u.name AS seeker_name, u.email AS seeker_email, sp.nik, sp.phone, sp.gender, sp.domicile_address
-    FROM job_applications a
-    JOIN job_posts j ON j.id = a.job_id
-    JOIN users u ON u.id = a.seeker_id
-    LEFT JOIN seeker_profiles sp ON sp.user_id = a.seeker_id
-    WHERE j.user_id = ?
-    ORDER BY a.created_at DESC');
-$appStmt->execute([$user['id']]);
-$applicants = $appStmt->fetchAll();
-if (!$applicants) {
-    $applicantHtml = '<div class="record-item"><strong>Belum ada pelamar</strong><span>Lamaran dari pencari kerja akan tampil di sini.</span></div>';
-} else {
-    foreach ($applicants as $applicant) {
-        $edu = db()->prepare('SELECT * FROM seeker_educations WHERE user_id = ?');
-        $edu->execute([$applicant['seeker_id']]);
-        $skills = db()->prepare('SELECT skill_name FROM seeker_skills WHERE user_id = ?');
-        $skills->execute([$applicant['seeker_id']]);
-        $exp = db()->prepare('SELECT * FROM seeker_experiences WHERE user_id = ? LIMIT 2');
-        $exp->execute([$applicant['seeker_id']]);
-        $skillList = implode(', ', array_column($skills->fetchAll(), 'skill_name')) ?: '-';
-        $eduList = array_map(static fn($item) => $item['level'] . ' ' . $item['school_name'], $edu->fetchAll());
-        $expList = array_map(static fn($item) => $item['position'] . ' di ' . $item['company_name'], $exp->fetchAll());
-        $applicantHtml .= '<div class="applicant-card"><strong>' . e($applicant['seeker_name']) . '</strong> · ' . e($applicant['job_title'])
-            . '<div class="tiny">' . e($applicant['seeker_email']) . ' · ' . e($applicant['phone'] ?? '-') . ' · NIK ' . e($applicant['nik'] ?? '-') . '</div>'
-            . '<div class="tiny">Pendidikan: ' . e(implode('; ', $eduList) ?: '-') . '</div>'
-            . '<div class="tiny">Pengalaman: ' . e(implode('; ', $expList) ?: '-') . '</div>'
-            . '<div class="tiny">Keahlian: ' . e($skillList) . '</div></div>';
+$applicants = employer_applicants((int) $user['id']);
+$stageCounts = [
+    'Lamaran Masuk' => 0,
+    'Sedang Dipelajari' => 0,
+    'Wawancara' => 0,
+    'Diterima' => 0,
+    'Ditolak' => 0,
+];
+foreach ($applicants as $applicant) {
+    $stage = normalize_application_status($applicant['status'] ?? '');
+    if (isset($stageCounts[$stage])) {
+        $stageCounts[$stage]++;
     }
+}
+$totalApplicants = count($applicants);
+$funnelTotal = max(1, $totalApplicants);
+$hiredRate = $totalApplicants ? (int) round(($stageCounts['Diterima'] / $totalApplicants) * 100) : 0;
+$funnelRow = static function (string $label, int $count, int $total, string $extraClass = '') {
+    $width = $total > 0 ? max(8, (int) round(($count / $total) * 100)) : 8;
+    return '<div class="funnel-row"><div class="funnel-label">' . e($label) . '</div><div class="funnel-track"><div class="funnel-fill ' . $extraClass . '" style="width:' . $width . '%">' . $count . '</div></div><div class="funnel-percent">' . $width . '%</div></div>';
+};
+$funnelHtml = '<div class="funnel-layout"><div class="funnel-bars">'
+    . $funnelRow('Pelamar Masuk', $totalApplicants, $funnelTotal)
+    . $funnelRow('Dipelajari', $stageCounts['Sedang Dipelajari'], $funnelTotal, 'soft')
+    . $funnelRow('Wawancara', $stageCounts['Wawancara'], $funnelTotal, 'softest')
+    . $funnelRow('Diterima', $stageCounts['Diterima'], $funnelTotal, 'pale')
+    . '</div><div class="funnel-stats"><h4>Konversi keseluruhan</h4><h2>' . $hiredRate . '%</h2><p>dari pelamar masuk sampai diterima</p><div class="stat-block"><div style="color:var(--muted);font-size:12px;margin-bottom:8px;">Tidak berlanjut</div><div class="stat-block-row"><span>Ditolak</span><strong>' . $stageCounts['Ditolak'] . '</strong></div></div></div></div>';
+
+if (!$applicants) {
+    $readyHtml = '<div class="empty-state"><i class="fa-solid fa-user-group" style="color:#c9dff7"></i><h4>Belum ada pelamar</h4><p>Pelamar yang masuk akan<br>muncul di sini.</p></div>';
+    $applicantHtml = '<div class="record-item"><strong>Belum ada pelamar</strong><span>Lamaran dari pencari kerja akan tampil di sini.</span></div>';
+    $activityHtml = '<div class="list"><div class="activity-item"><div class="activity-title">Belum ada aktivitas lamaran.</div><div class="activity-subtitle">Riwayat perubahan status akan muncul di sini.</div></div></div>';
+} else {
+    $readyHtml = '<div class="applicant-ready-list">';
+    foreach ($applicants as $index => $applicant) {
+        $meta = application_status_meta($applicant['status']);
+        $hidden = $index >= 4 ? ' hidden' : '';
+        $avatar = 'https://ui-avatars.com/api/?name=' . rawurlencode($applicant['seeker_name']) . '&background=e8f7fc&color=1e97c4';
+        $readyHtml .= '<button type="button" class="applicant-item" data-open-applicant="' . (int) $applicant['id'] . '"' . $hidden . '>'
+            . '<img class="avatar" src="' . e($avatar) . '" alt="">'
+            . '<div class="meta"><div class="title">' . e($applicant['seeker_name']) . '</div><div class="subtitle">' . e($applicant['job_title']) . '</div></div>'
+            . '<span class="tag ' . e($meta['class']) . '">' . e($meta['label']) . '</span></button>';
+    }
+    $readyHtml .= '</div>';
+    if ($totalApplicants > 4) {
+        $readyHtml .= '<button type="button" class="show-more-btn" data-expand-applicants>Tampilkan lebih banyak</button>';
+    }
+
+    $applicantHtml = '<table class="applicant-table"><thead><tr><th>Pelamar</th><th>Lowongan</th><th>Status</th><th></th></tr></thead><tbody>';
+    foreach ($applicants as $applicant) {
+        $meta = application_status_meta($applicant['status']);
+        $applicantHtml .= '<tr data-open-applicant="' . (int) $applicant['id'] . '"><td><strong>' . e($applicant['seeker_name']) . '</strong><div class="tiny">' . e($applicant['seeker_email']) . '</div></td><td>' . e($applicant['job_title']) . '</td><td><span class="tag ' . e($meta['class']) . '">' . e($meta['label']) . '</span></td><td>Lihat profil</td></tr>';
+    }
+    $applicantHtml .= '</tbody></table>';
+
+    $activityHtml = '<div class="list">';
+    foreach (array_slice($applicants, 0, 5) as $applicant) {
+        $meta = application_status_meta($applicant['status']);
+        $when = $applicant['updated_at'] ?: $applicant['created_at'];
+        $activityHtml .= '<div class="activity-item"><div class="activity-title">' . e($applicant['seeker_name']) . ' · ' . e($meta['label']) . '</div><div class="activity-subtitle">' . e($applicant['job_title']) . '</div><div class="activity-meta">' . e(date('d M Y H:i', strtotime((string) $when))) . '</div></div>';
+    }
+    $activityHtml .= '</div>';
 }
 
 $notifications = user_notifications((int) $user['id']);
@@ -1325,5 +1475,12 @@ $html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/
 $html = preg_replace('/<h3>Lowongan Aktif<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Lowongan Aktif</h3><div class="value">' . $jobCounts['Tayang'] . '</div>', $html, 1);
 $html = str_replace('<!--JOB_TABLE_ROWS-->', $jobRowsHtml, $html);
 $html = str_replace('<!--JOB_APPLICANTS-->', $applicantHtml, $html);
+$html = str_replace('<!--READY_APPLICANTS-->', $readyHtml, $html);
+$html = str_replace('<!--FUNNEL_METRICS-->', $funnelHtml, $html);
+$html = str_replace('<!--APPLICATION_ACTIVITY-->', $activityHtml, $html);
+$html = preg_replace('/<h3>Lowongan<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Lowongan</h3><div class="value">' . count($employerJobs) . '</div>', $html, 1);
+$html = preg_replace('/<h3>Pelamar<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Pelamar</h3><div class="value">' . $totalApplicants . '</div>', $html, 1);
+$html = preg_replace('/<h3>Wawancara<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Wawancara</h3><div class="value">' . $stageCounts['Wawancara'] . '</div>', $html, 1);
+$html = preg_replace('/<h3>Diterima<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Diterima</h3><div class="value">' . $stageCounts['Diterima'] . '</div>', $html, 1);
 
 echo $html;

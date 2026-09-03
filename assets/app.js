@@ -409,6 +409,95 @@ document.addEventListener('DOMContentLoaded', () => {
     initJobCreateWizard();
     initSidebarToggle();
     initNotifications();
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    }[char]));
+
+    function fillList(target, items, mapper) {
+        if (!target) {
+            return;
+        }
+        if (!items || !items.length) {
+            target.innerHTML = '<div class="tiny">Belum ada data.</div>';
+            return;
+        }
+        target.innerHTML = items.map(mapper).join('');
+    }
+
+    function openApplicantProfile(applicationId) {
+        const modal = document.querySelector('[data-modal="applicant-profile"]');
+        if (!modal) {
+            return;
+        }
+        fetch('dashboard.php?applicant_json=' + encodeURIComponent(applicationId))
+            .then((response) => response.json())
+            .then((payload) => {
+                if (!payload.ok) {
+                    return;
+                }
+                const data = payload.data;
+                document.getElementById('applicantId').value = data.id;
+                document.getElementById('applicantName').textContent = data.seeker_name || 'Profil Pelamar';
+                document.getElementById('applicantJob').textContent = data.job_title || '';
+                document.getElementById('applicantStatus').value = data.status || 'Lamaran Masuk';
+                const rows = [
+                    ['Email', data.seeker_email],
+                    ['Telepon', data.phone],
+                    ['NIK', data.nik],
+                    ['Jenis kelamin', data.gender],
+                    ['Status pernikahan', data.marital_status],
+                    ['Tempat, tanggal lahir', [data.birth_place, data.birth_date].filter(Boolean).join(', ')],
+                    ['Alamat KTP', data.ktp_address],
+                    ['Alamat domisili', data.domicile_address],
+                ];
+                document.getElementById('applicantBiodata').innerHTML = rows.map(([label, value]) => (
+                    `<div class="summary-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '-')}</strong></div>`
+                )).join('');
+                fillList(document.getElementById('applicantEducation'), data.profile.education, (item) => (
+                    `<div class="record-item"><strong>${escapeHtml(item.level || '')} ${escapeHtml(item.school_name || '')}</strong><span>${escapeHtml(item.major || '')} ${escapeHtml(item.graduation_year || '')}</span></div>`
+                ));
+                fillList(document.getElementById('applicantExperience'), data.profile.experience, (item) => (
+                    `<div class="record-item"><strong>${escapeHtml(item.company_name || '')} - ${escapeHtml(item.position || '')}</strong><span>${escapeHtml(item.duration || '')} ${escapeHtml(item.notes || '')}</span></div>`
+                ));
+                fillList(document.getElementById('applicantSkills'), data.profile.skills, (item) => (
+                    `<div class="record-item"><strong>${escapeHtml(item.skill_name || '')}</strong><span>${escapeHtml(item.level || '')}</span></div>`
+                ));
+                modal.classList.add('open');
+                modal.onclick = (event) => {
+                    if (event.target === modal) {
+                        modal.classList.remove('open');
+                    }
+                };
+            })
+            .catch(() => {});
+    }
+
+    document.querySelectorAll('[data-open-applicant]').forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+            openApplicantProfile(trigger.dataset.openApplicant);
+        });
+    });
+
+    document.querySelectorAll('[data-close-modal="applicant-profile"]').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.querySelector('[data-modal="applicant-profile"]')?.classList.remove('open');
+        });
+    });
+
+    const expandApplicants = document.querySelector('[data-expand-applicants]');
+    if (expandApplicants) {
+        expandApplicants.addEventListener('click', () => {
+            document.querySelectorAll('.applicant-ready-list [hidden]').forEach((item) => {
+                item.hidden = false;
+            });
+            expandApplicants.remove();
+        });
+    }
+
     document.querySelectorAll('[data-revise-job]').forEach((button) => {
         button.addEventListener('click', () => {
             const hidden = document.getElementById('reviseJobId');

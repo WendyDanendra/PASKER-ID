@@ -67,10 +67,17 @@ function ensure_platform_schema(): void
         id INT AUTO_INCREMENT PRIMARY KEY,
         job_id INT NOT NULL,
         seeker_id INT NOT NULL,
-        status VARCHAR(40) NOT NULL DEFAULT "Dilamar",
+        status VARCHAR(40) NOT NULL DEFAULT "Lamaran Masuk",
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY uniq_job_seeker (job_id, seeker_id)
     )');
+
+    $appColumns = array_column($pdo->query('SHOW COLUMNS FROM job_applications')->fetchAll(), 'Field');
+    if (!in_array('updated_at', $appColumns, true)) {
+        $pdo->exec('ALTER TABLE job_applications ADD COLUMN updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP');
+    }
+    $pdo->exec("UPDATE job_applications SET status = 'Lamaran Masuk' WHERE status IN ('Dilamar', 'Applied', '')");
 }
 
 function notify_user(int $userId, string $title, string $message, string $type = 'info', ?int $jobId = null): void
@@ -163,6 +170,76 @@ function render_notif_dropdown(array $notifications, int $unread): string
         . '<button type="button" class="notif' . $dot . '" data-notif-toggle aria-label="Notifikasi"><i class="fa-regular fa-bell"></i></button>'
         . '<div class="notif-panel" hidden><div class="notif-head">Notifikasi</div>' . $items . '</div>'
         . '</div>';
+}
+
+function application_statuses(): array
+{
+    return [
+        'Lamaran Masuk',
+        'Sedang Dipelajari',
+        'Wawancara',
+        'Diterima',
+        'Ditolak',
+    ];
+}
+
+function normalize_application_status(?string $status): string
+{
+    $status = trim((string) $status);
+    return match ($status) {
+        'Dilamar', 'Applied', '' => 'Lamaran Masuk',
+        'Dipelajari' => 'Sedang Dipelajari',
+        default => in_array($status, application_statuses(), true) ? $status : 'Lamaran Masuk',
+    };
+}
+
+function application_status_meta(string $status): array
+{
+    $status = normalize_application_status($status);
+    return match ($status) {
+        'Lamaran Masuk' => ['label' => $status, 'class' => 'in'],
+        'Sedang Dipelajari' => ['label' => $status, 'class' => 'review'],
+        'Wawancara' => ['label' => $status, 'class' => 'interview'],
+        'Diterima' => ['label' => $status, 'class' => 'hired'],
+        'Ditolak' => ['label' => $status, 'class' => 'rejected'],
+        default => ['label' => $status, 'class' => 'in'],
+    };
+}
+
+function employer_applicants(int $employerId): array
+{
+    $statement = db()->prepare('SELECT a.*, j.title AS job_title, u.name AS seeker_name, u.email AS seeker_email,
+            sp.nik, sp.phone, sp.gender, sp.marital_status, sp.birth_place, sp.birth_date, sp.ktp_address, sp.domicile_address
+        FROM job_applications a
+        JOIN job_posts j ON j.id = a.job_id
+        JOIN users u ON u.id = a.seeker_id
+        LEFT JOIN seeker_profiles sp ON sp.user_id = a.seeker_id
+        WHERE j.user_id = ?
+        ORDER BY a.created_at DESC');
+    $statement->execute([$employerId]);
+    $rows = $statement->fetchAll() ?: [];
+    foreach ($rows as &$row) {
+        $row['status'] = normalize_application_status($row['status'] ?? '');
+    }
+    return $rows;
+}
+
+function seeker_profile_bundle(int $seekerId): array
+{
+    $tables = [
+        'education' => 'seeker_educations',
+        'experience' => 'seeker_experiences',
+        'skills' => 'seeker_skills',
+        'languages' => 'seeker_languages',
+        'trainings' => 'seeker_trainings',
+    ];
+    $bundle = [];
+    foreach ($tables as $key => $table) {
+        $statement = db()->prepare('SELECT * FROM ' . $table . ' WHERE user_id = ? ORDER BY id DESC');
+        $statement->execute([$seekerId]);
+        $bundle[$key] = $statement->fetchAll() ?: [];
+    }
+    return $bundle;
 }
 
 function profession_options(): array

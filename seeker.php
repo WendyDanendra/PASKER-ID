@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply_job_id'])) {
     }
 
     try {
-        db()->prepare('INSERT INTO job_applications (job_id, seeker_id, status) VALUES (?, ?, "Dilamar")')
+        db()->prepare('INSERT INTO job_applications (job_id, seeker_id, status) VALUES (?, ?, "Lamaran Masuk")')
             ->execute([$jobId, $user['id']]);
         notify_user((int) $job['user_id'], 'Pelamar baru', $user['name'] . ' melamar lowongan "' . $job['title'] . '". Profil pelamar sudah tersinkron ke menu lowongan Anda.', 'info', $jobId);
         flash('success', 'Lamaran berhasil dikirim. Data profil Anda dikirim ke pemberi kerja.');
