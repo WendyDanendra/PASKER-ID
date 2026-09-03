@@ -128,8 +128,18 @@ $modalStyles = <<<'CSS'
         }
         .job-create-panel {
             width: min(860px, 100%);
+            height: calc(100vh - 32px);
+            max-height: calc(100vh - 32px);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .job-create-panel form {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
             overflow: hidden;
         }
         .modal-header,
@@ -235,8 +245,12 @@ $modalStyles = <<<'CSS'
             padding: 8px 24px 20px;
         }
         .job-create-panel .modal-body {
-            overflow: auto;
-            flex: 1;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
         }
         .job-create-panel [hidden] {
             display: none !important;
@@ -519,6 +533,7 @@ $modalStyles = <<<'CSS'
             .modal-panel,
             .job-create-panel {
                 width: 100%;
+                height: calc(100vh - 16px);
                 max-height: calc(100vh - 16px);
             }
             .field-grid,
