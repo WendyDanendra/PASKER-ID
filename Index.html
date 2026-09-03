@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karirhub - Pemberi Kerja Individu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --surface: #ffffff;
+            --surface-soft: #fbfcff;
+            --surface-tint: #f3fbfe;
+            --border: #e8ebf2;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --muted-2: #94a3b8;
+            --primary: #30aed8;
+            --primary-soft: #e8f8fc;
+            --primary-strong: #1e97c4;
+            --success: #21b36b;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+            --shadow-soft: 0 4px 16px rgba(15, 23, 42, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            background: radial-gradient(circle at top left, #ffffff 0, #f8fbff 35%, var(--bg) 100%);
+            color: var(--text);
+            display: flex;
+            overflow: hidden;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        /* Transisi & Animasi Sidebar */
+        .sidebar {
+            width: 260px;
+            background: rgba(255, 255, 255, 0.96);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 14px 12px 12px;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            transition: width 0.3s ease, padding 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .sidebar.collapsed {
+            width: 76px;
+            padding: 14px 8px;
+        }
+
+        .sidebar.collapsed .brand-text,
+        .sidebar.collapsed .menu-label,
+        .sidebar.collapsed #sidebarName,
+        .sidebar.collapsed #sidebarProfession {
+            display: none;
+        }
+
+        .sidebar.collapsed .brand {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .sidebar.collapsed .menu-item {
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .sidebar.collapsed .profile-card {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar.collapsed .profile-card .fa-chevron-right {
+            display: none;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 2px 8px 12px;
+        }
+
+        .brand-mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #d8f3fb, #eefcff);
+            color: var(--primary);
+            display: grid;
+            place-items: center;
+            font-size: 28px;
+            flex: none;
+        }
+
+        .brand-text h1 {
+            font-size: 18px;
+            line-height: 1.1;
+            font-weight: 800;
+        }
+
+        .brand-text p {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .menu-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .menu-item {
+            border: none;
+            background: transparent;
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #374151;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s ease;
+        }
+
+        .menu-item:hover,
+        .menu-item.active {
+            background: #eef8fc;
+            color: var(--primary-strong);
+        }
+
+        .menu-item:focus-visible,
+        .btn-link:focus-visible,
+        .ghost-btn:focus-visible,
+        .primary-btn:focus-visible,
+        .action-chip:focus-visible {
+            outline: 2px solid rgba(48, 174, 216, 0.35);
+            outline-offset: 2px;
+        }
+
+        .menu-item i {
+            width: 22px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .menu-label {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            white-space: nowrap;
+        }
+
+        .menu-label strong {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .menu-label span {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .sidebar-spacer {
+            flex: 1;
+        }
+
+        .profile-card {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
+            box-shadow: var(--shadow-soft);
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .profile-card:hover {
+            background: linear-gradient(180deg, #f0faff 0%, #e8f7fd 100%);
+            border-color: #b8e3f5;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(48, 174, 216, 0.12);
+        }
+
+        .profile-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #d8eff8, #f1f8fb);
+            display: grid;
+            place-items: center;
+            color: var(--primary);
+            font-weight: 800;
+            flex: none;
+            font-size: 14px;
+        }
+
+        .sidebar-logout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1.5px solid #fecaca;
+            background: #fff5f5;
+            color: #dc2626;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+
+        .sidebar-logout:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            transform: translateY(-1px);
+        }
+
+        .profile-card strong {
+            display: block;
+            font-size: 12px;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .profile-card span {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+
+        .main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            height: 68px;
+            background: rgba(255, 255, 255, 0.92);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(14px);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 22px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            flex: none;
+        }
+
+        .crumbs {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 210px;
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .crumbs strong {
+            color: var(--text);
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 450px;
+            margin: 0 auto;
+            height: 40px;
+            border-radius: 999px;
+            border: 1px solid #dde3ec;
+            background: #fff;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted-2);
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            width: 100%;
+            background: transparent;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .notif {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            color: #475569;
+            position: relative;
+        }
+
+        .notif::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 11px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            box-shadow: 0 0 0 2px #fff;
+        }
+
+        .company-chip,
+        .action-chip {
+            height: 40px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #fff;
+            box-shadow: var(--shadow-soft);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 12px;
+            color: var(--text);
+        }
+
+        .company-chip img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+        }
+
+        .company-chip strong {
+            font-size: 12px;
+            display: block;
+        }
+
+        .company-chip span {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .action-chip {
+            font-weight: 600;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 18px 28px;
+        }
+
+        .page {
+            display: none;
+            width: min(1520px, 100%);
+            margin: 0 auto;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .hero h2 {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 6px;
+        }
+
+        .hero-subrow {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-strong);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .cycle-info {
+            padding-left: 14px;
+            border-left: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text);
+        }
+
+        .cycle-info strong {
+            display: block;
+            font-size: 14px;
+        }
+
+        .cycle-info span {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .alert {
+            margin-bottom: 14px;
+            background: linear-gradient(180deg, #fff9e9 0%, #fffaf0 100%);
+            border: 1px solid #f5c45d;
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            color: #4b5563;
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.08);
+        }
+
+        .alert i {
+            color: #f59e0b;
+            margin-top: 2px;
+        }
+
+        .cards4,
+        .cards3 {
+            display: grid;
+            gap: 12px;
+        }
+
+        .cards4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin: 16px 0 14px;
+        }
+
+        .cards3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card,
+        .section-card {
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .card {
+            min-height: 92px;
+            padding: 14px 16px 16px;
+            position: relative;
+        }
+
+        .card .mini-icon {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 13px;
+        }
+
+        .card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .card .value {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .card .desc {
+            font-size: 12px;
+            color: var(--success);
+        }
+
+        .card .desc.neutral {
+            color: var(--muted);
+        }
+
+        .section-card {
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .section-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .section-header h3 i,
+        .chip-icon {
+            color: var(--primary);
+        }
+
+        .btn-link,
+        .ghost-btn,
+        .primary-btn {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .btn-link {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .primary-btn {
+            border: none;
+            background: linear-gradient(180deg, #2bb0db 0%, #21a3cf 100%);
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(33, 163, 207, 0.2);
+        }
+
+        .section-caption {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .chart-layout,
+        .funnel-layout {
+            display: grid;
+            gap: 12px;
+        }
+
+        .chart-layout {
+            grid-template-columns: minmax(0, 1fr) 220px;
+        }
+
+        .chart-area {
+            position: relative;
+            min-height: 280px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            background:
+                linear-gradient(to top, rgba(239, 68, 68, 0.06), transparent 38%),
+                linear-gradient(to right, transparent 0, transparent calc(20% - 1px), #eef2f7 calc(20% - 1px), #eef2f7 20%, transparent 20%),
+                linear-gradient(to right, transparent 0, transparent calc(40% - 1px), #eef2f7 calc(40% - 1px), #eef2f7 40%, transparent 40%),
+                linear-gradient(to right, transparent 0, transparent calc(60% - 1px), #eef2f7 calc(60% - 1px), #eef2f7 60%, transparent 60%),
+                linear-gradient(to right, transparent 0, transparent calc(80% - 1px), #eef2f7 calc(80% - 1px), #eef2f7 80%, transparent 80%),
+                linear-gradient(180deg, #ffffff, #fdfefe);
+        }
+
+        .chart-grid-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .chart-grid-line:nth-child(1) {
+            top: 20%;
+        }
+
+        .chart-grid-line:nth-child(2) {
+            top: 40%;
+        }
+
+        .chart-grid-line:nth-child(3) {
+            top: 60%;
+        }
+
+        .chart-grid-line:nth-child(4) {
+            top: 80%;
+        }
+
+        .chart-axis-y {
+            position: absolute;
+            left: 10px;
+            top: 8px;
+            bottom: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: var(--muted-2);
+            font-size: 11px;
+        }
+
+        .chart-axis-x {
+            position: absolute;
+            left: 36px;
+            right: 16px;
+            bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted-2);
+            font-size: 11px;
+        }
+
+        .chart-line {
+            position: absolute;
+            left: 36px;
+            right: 16px;
+            top: 18px;
+            bottom: 34px;
+        }
+
+        .chart-line svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-legend,
+        .funnel-stats {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .chart-legend {
+            padding: 12px 12px 10px;
+            font-size: 12px;
+        }
+
+        .legend-title {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .legend-total {
+            font-size: 26px;
+            font-weight: 800;
+            margin: 4px 0 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: #374151;
+            padding: 3px 0;
+        }
+
+        .legend-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex: none;
+        }
+
+        .notice-row {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #fff8e1;
+            border: 1px solid #f2cc77;
+            color: #7c5a14;
+            font-size: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .notice-row i {
+            color: #e6a700;
+            margin-top: 2px;
+        }
+
+        .funnel-layout {
+            grid-template-columns: minmax(0, 1fr) 230px;
+        }
+
+        .funnel-bars {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: linear-gradient(180deg, #fff, #fcfdff);
+            padding: 16px 18px 18px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .funnel-row {
+            display: grid;
+            grid-template-columns: 140px minmax(0, 1fr) 80px;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .funnel-label,
+        .funnel-percent {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .funnel-track {
+            height: 38px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #eef6fb;
+        }
+
+        .funnel-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #168ab8, #2ab8eb);
+        }
+
+        .funnel-fill.soft {
+            background: linear-gradient(90deg, #4fc6f1, #91def8);
+            color: #083344;
+        }
+
+        .funnel-fill.softest {
+            background: linear-gradient(90deg, #9ae4fb, #c9f1fc);
+            color: #0f172a;
+        }
+
+        .funnel-fill.pale {
+            background: linear-gradient(90deg, #cceef7, #dff8fd);
+            color: #0f172a;
+        }
+
+        .funnel-stats {
+            padding: 16px;
+        }
+
+        .funnel-stats h4 {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .funnel-stats h2 {
+            font-size: 30px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .funnel-stats p {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-block {
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        .stat-block-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #374151;
+            padding: 4px 0;
+        }
+
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .widget-card {
+            min-height: 230px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: var(--shadow-soft);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--muted);
+            gap: 8px;
+            padding: 10px 0;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: #d7dde7;
+        }
+
+        .empty-state h4 {
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .empty-state p {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .list-item,
+        .activity-item,
+        .row-item {
+            border: 1px solid #edf1f6;
+            background: #fafcff;
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .applicant-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 54px;
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex: none;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+        }
+
+        .meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .subtitle,
+        .tiny {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .tag {
+            font-size: 11px;
+            color: #4b5563;
+            background: #eef3fb;
+            border-radius: 999px;
+            padding: 4px 8px;
+            white-space: nowrap;
+        }
+
+        .activity-item {
+            display: grid;
+            gap: 3px;
+        }
+
+        .activity-title {
+            font-size: 12px;
+            color: #111827;
+            font-weight: 700;
+        }
+
+        .activity-subtitle,
+        .activity-meta {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .table-toolbar,
+        .schedule-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .search-small {
+            min-width: 280px;
+            max-width: 380px;
+            flex: 1;
+            height: 38px;
+            border: 1px solid #dde3ec;
+            border-radius: 999px;
+            background: #fff;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted-2);
+        }
+
+        .search-small input {
+            border: none;
+            outline: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ghost-btn {
+            height: 36px;
+            padding: 0 12px;
+            font-size: 12px;
+        }
+
+        .primary-btn {
+            height: 40px;
+            padding: 0 16px;
+            font-size: 13px;
+        }
+
+        .table-shell {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        thead th {
+            background: #fbfcfe;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            letter-spacing: 0.04em;
+        }
+
+        tbody td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eef2f7;
+            font-size: 12px;
+            color: #374151;
+            vertical-align: top;
+        }
+
+        tbody tr:hover {
+            background: #fcfdff;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 5px 9px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status.draft {
+            background: #eef6fb;
+            color: #2563eb;
+        }
+
+        .status.closed {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .status.rejected {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .status.full {
+            background: #e8f8fc;
+            color: #0f766e;
+        }
+
+        .table-footer {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .page-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .page-title-row h2 {
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        .calendar-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 12px;
+        }
+
+        .calendar-shell {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            min-height: 500px;
+        }
+
+        .day-head,
+        .day-cell {
+            border-right: 1px solid #eef2f7;
+            border-bottom: 1px solid #eef2f7;
+            padding: 12px;
+        }
+
+        .day-head {
+            min-height: 68px;
+            background: #fbfcfe;
+            color: #6b7280;
+        }
+
+        .day-name {
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .day-number {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .day-number.active {
+            width: 32px;
+            height: 32px;
+            margin: 10px auto 0;
+            border-radius: 50%;
+            background: #27b0dd;
+            color: #fff;
+            display: grid;
+            place-items: center;
+        }
+
+        .day-cell {
+            min-height: 430px;
+            background: #fff;
+        }
+
+        .agenda-card {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: #fff;
+            padding: 16px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .agenda-card h4 {
+            font-size: 15px;
+            margin-bottom: 14px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: #475569;
+            margin-top: 10px;
+        }
+
+        .legend-pill {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+        }
+
+        .profile-banner {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: linear-gradient(90deg, #e8fbef 0%, #ecfbfb 100%);
+            padding: 18px;
+            box-shadow: var(--shadow-soft);
+            display: grid;
+            grid-template-columns: 120px minmax(0, 1fr);
+            gap: 18px;
+            margin-bottom: 14px;
+        }
+
+        .profile-big-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.85);
+            display: grid;
+            place-items: center;
+            color: var(--primary);
+            font-size: 54px;
+        }
+
+        .profile-banner h3 {
+            font-size: 32px;
+            margin: 10px 0 8px;
+        }
+
+        .profile-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .pill {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #dbe7e8;
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 12px;
+        }
+
+        .info-card {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: #fff;
+            box-shadow: var(--shadow-soft);
+            padding: 16px;
+        }
+
+        .info-card h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .info-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .kv-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px 22px;
+        }
+
+        .kv dt {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .kv dd {
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .chip-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            background: #fff;
+            color: #374151;
+        }
+
+        .section-note {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 1280px) {
+            .sidebar {
+                width: 230px;
+            }
+
+            .cards4,
+            .widget-grid,
+            .info-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .chart-layout,
+            .funnel-layout,
+            .calendar-layout,
+            .profile-banner {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 920px) {
+            body {
+                overflow: auto;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .topbar {
+                gap: 10px;
+                padding: 0 12px;
+            }
+
+            .search-bar {
+                display: none;
+            }
+
+            .content {
+                padding: 12px;
+            }
+
+            .page-header,
+            .page-title-row,
+            .table-toolbar,
+            .schedule-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .cards4,
+            .widget-grid,
+            .cards3,
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .funnel-row {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .calendar-grid {
+                min-height: 360px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="brand-text">
+                <h1>Karirhub</h1>
+                <p>Pemberi Kerja</p>
+            </div>
+        </div>
+
+        <div class="menu-list" id="menuList">
+            <button type="button" class="menu-item active" data-page="dashboard">
+                <i class="fa-regular fa-chart-bar"></i>
+                <span class="menu-label"><strong>Dasbor</strong><span>Ringkasan akun</span></span>
+            </button>
+            <button type="button" class="menu-item" data-page="lowongan">
+                <i class="fa-solid fa-briefcase"></i>
+                <span class="menu-label"><strong>Lowongan</strong><span>Kelola posting</span></span>
+            </button>
+            <button type="button" class="menu-item" data-page="jadwal">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span class="menu-label"><strong>Jadwal Wawancara</strong><span>Agenda kandidat</span></span>
+            </button>
+            <button type="button" class="menu-item" data-page="transfer">
+                <i class="fa-solid fa-right-left"></i>
+                <span class="menu-label"><strong>Transfer Pengelola</strong><span>Pemindahan hak</span></span>
+            </button>
+            <button type="button" class="menu-item" data-page="profil">
+                <i class="fa-regular fa-building"></i>
+                <span class="menu-label"><strong>Profil Pemberi Kerja</strong><span>Data perusahaan</span></span>
+            </button>
+        </div>
+
+        <div class="sidebar-spacer"></div>
+
+        <div style="padding: 0 4px;">
+            <a href="dashboard.php" onclick="event.preventDefault(); showPage('profil');" class="profile-card"
+                id="sidebarProfileCard" title="Klik untuk lihat profil">
+                <div class="profile-avatar" id="sidebarAvatar">PI</div>
+                <div style="flex:1; min-width:0;">
+                    <strong id="sidebarName">Pemberi Kerja Individu</strong>
+                    <span id="sidebarProfession">Profesi: Kuliner</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#cbd5e1; font-size:11px; flex-shrink:0;"></i>
+            </a>
+            <a href="logout.php" class="sidebar-logout">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Keluar
+            </a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <!-- Tombol Toggle Sidebar -->
+            <button id="sidebarToggle"
+                style="background:none; border:none; font-size:18px; color:#475569; cursor:pointer; margin-right:16px;">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="crumbs" id="crumbs">
+                <span><i class="fa-solid fa-chevron-left"></i></span>
+                <span><i class="fa-solid fa-chevron-right" style="opacity:0.5"></i></span>
+                <span>Beranda</span>
+                <span>&gt;</span>
+                <strong id="crumbCurrent">Dasbor</strong>
+            </div>
+
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Cari lowongan pekerjaan dan pelamar...">
+            </div>
+
+            <div class="top-actions">
+                <div class="notif"><i class="fa-regular fa-bell"></i></div>
+                <div class="company-chip">
+                    <img src="https://ui-avatars.com/api/?name=PT+Pandu+Jaya&background=eff6ff&color=2563eb"
+                        alt="Perusahaan">
+                    <div>
+                        <strong>Pemberi Kerja Individu</strong>
+                        <span>Profesi: Kuliner</span>
+                    </div>
+                </div>
+                <button class="action-chip"><i class="fa-solid fa-plus"></i> Tambah</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <section class="page active" id="page-dashboard">
+                <div class="page-header hero">
+                    <div>
+                        <h2>Halo nama Pemberi Kerja Individu</h2>
+                        <div class="hero-subrow">
+                            <div class="status-pill"><i class="fa-regular fa-clock"></i> HARI KE-4 DARI 90</div>
+                            <div class="cycle-info">
+                                <i class="fa-regular fa-calendar-days" style="color:var(--muted)"></i>
+                                <div>
+                                    <strong>Sisa 87 hari</strong>
+                                    <span>Siklus 3 Bulan</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>
+                        Akun Anda telah aktif dan berlaku selama 3 bulan. Anda kini dapat mempublikasikan lowongan kerja
+                        atau proyek.<br>
+                        <strong>Catatan penting: Anda hanya dapat memiliki 1 lowongan aktif dalam satu waktu dan wajib
+                            menetapkan kandidat terpilih sebelum dapat membuat postingan lowongan baru.</strong>
+                    </div>
+                </div>
+
+                <div class="cards4">
+                    <div class="card">
+                        <div class="mini-icon" style="background:#eefafc;color:#2aa9d7"><i
+                                class="fa-solid fa-briefcase"></i></div>
+                        <h3>Lowongan</h3>
+                        <div class="value">0</div>
+                        <div class="desc">+0 dari bulan lalu</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#eefaf3;color:#22a15c"><i
+                                class="fa-regular fa-user"></i></div>
+                        <h3>Pelamar</h3>
+                        <div class="value">0</div>
+                        <div class="desc neutral">-0 dari bulan lalu</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#f4edff;color:#8b5cf6"><i
+                                class="fa-regular fa-calendar-check"></i></div>
+                        <h3>Wawancara</h3>
+                        <div class="value">0</div>
+                        <div class="desc neutral">Tidak ada perubahan dari bulan lalu</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#eef7ff;color:#3b82f6"><i
+                                class="fa-regular fa-circle-check"></i></div>
+                        <h3>Diterima</h3>
+                        <div class="value">0</div>
+                        <div class="desc neutral">Tidak ada perubahan dari bulan lalu</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3><i class="fa-regular fa-file-lines"></i> Pengajuan & Verifikasi Lowongan</h3>
+                        <button class="btn-link" data-nav="lowongan">Kelola Lowongan <i
+                                class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                    <div class="section-caption">Pengajuan 6 bulan terakhir - berdasarkan status saat ini</div>
+
+                    <div class="chart-layout">
+                        <div class="chart-area">
+                            <div class="chart-grid-line"></div>
+                            <div class="chart-grid-line"></div>
+                            <div class="chart-grid-line"></div>
+                            <div class="chart-grid-line"></div>
+                            <div class="chart-axis-y">
+                                <span>4</span><span>3</span><span>2</span><span>1</span><span>0</span></div>
+                            <div class="chart-line">
+                                <svg viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden="true">
+                                    <path
+                                        d="M 0 220 C 110 220, 170 220, 230 220 C 290 220, 320 340, 360 350 C 420 370, 470 280, 520 280 C 590 280, 670 280, 720 280 C 780 280, 840 110, 900 40 C 940 5, 975 5, 1000 5"
+                                        fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"
+                                        stroke-linejoin="round"></path>
+                                    <path
+                                        d="M 0 400 L 0 220 C 110 220, 170 220, 230 220 C 290 220, 320 340, 360 350 C 420 370, 470 280, 520 280 C 590 280, 670 280, 720 280 C 780 280, 840 110, 900 40 C 940 5, 975 5, 1000 5 L 1000 400 Z"
+                                        fill="rgba(239,68,68,0.06)"></path>
+                                    <path
+                                        d="M 0 372 C 120 372, 200 372, 260 372 C 320 372, 390 372, 470 372 C 550 372, 630 372, 700 372 C 780 372, 840 360, 900 320 C 940 290, 970 250, 1000 220"
+                                        fill="none" stroke="#fb923c" stroke-width="4" stroke-linecap="round"
+                                        stroke-linejoin="round"></path>
+                                </svg>
+                            </div>
+                            <div class="chart-axis-x">
+                                <span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span><span>Jul</span><span>Agu</span>
+                            </div>
+                        </div>
+
+                        <div class="chart-legend">
+                            <div class="legend-title">Total lowongan</div>
+                            <div class="legend-total">0</div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#ef4444"></span> Menunggu Verifikasi</span><span>0</span>
+                            </div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#f97316"></span> Perlu Direvisi</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#f59e0b"></span> Ditolak</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#3b82f6"></span> Ditangguhkan</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#8b5cf6"></span> Diblokir</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#06b6d4"></span> Terjadwal Tayang</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#10b981"></span> Tayang</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#94a3b8"></span> Draft</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#cbd5e1"></span> Kedaluwarsa</span><span>0</span></div>
+                            <div class="legend-item"><span class="legend-left"><span class="dot"
+                                        style="background:#475569"></span> Ditutup</span><span>0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="notice-row">
+                        <i class="fa-regular fa-clock"></i>
+                        <div>Belum ada lowongan yang ditampilkan. Gunakan tombol <strong>Kelola Lowongan</strong> untuk
+                            membuat lowongan pertama Anda.</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-filter"></i> Corong Rekrutmen</h3>
+                    </div>
+                    <div class="funnel-layout">
+                        <div class="funnel-bars">
+                            <div class="funnel-row">
+                                <div class="funnel-label">Pelamar Masuk</div>
+                                <div class="funnel-track">
+                                    <div class="funnel-fill" style="width:100%">0</div>
+                                </div>
+                                <div class="funnel-percent">100%</div>
+                            </div>
+                            <div class="funnel-row">
+                                <div class="funnel-label">Dipelajari</div>
+                                <div class="funnel-track">
+                                    <div class="funnel-fill soft" style="width:100%">0</div>
+                                </div>
+                                <div class="funnel-percent">0% lanjut</div>
+                            </div>
+                            <div class="funnel-row">
+                                <div class="funnel-label">Wawancara</div>
+                                <div class="funnel-track">
+                                    <div class="funnel-fill softest" style="width:100%">0</div>
+                                </div>
+                                <div class="funnel-percent">0% lanjut</div>
+                            </div>
+                            <div class="funnel-row">
+                                <div class="funnel-label">Diterima</div>
+                                <div class="funnel-track">
+                                    <div class="funnel-fill pale" style="width:100%">0</div>
+                                </div>
+                                <div class="funnel-percent">0% lanjut</div>
+                            </div>
+                        </div>
+
+                        <div class="funnel-stats">
+                            <h4>Konversi keseluruhan</h4>
+                            <h2>0%</h2>
+                            <p>dari pelamar masuk sampai diterima</p>
+                            <div class="stat-block">
+                                <div style="color:var(--muted); font-size:12px; margin-bottom:8px;">Tidak berlanjut
+                                </div>
+                                <div class="stat-block-row"><span>Ditolak</span><strong>0</strong></div>
+                                <div class="stat-block-row"><span>Dibatalkan pelamar</span><strong>0</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="widget-grid">
+                    <div class="widget-card">
+                        <div class="widget-header"><span>Pelamar siap diseleksi</span></div>
+                        <div class="empty-state">
+                            <i class="fa-solid fa-user-group" style="color:#c9dff7"></i>
+                            <h4>Belum ada pelamar</h4>
+                            <p>Pelamar yang masuk akan<br>muncul di sini.</p>
+                        </div>
+                    </div>
+
+                    <div class="widget-card">
+                        <div class="widget-header">
+                            <span><i class="fa-regular fa-clock chip-icon"></i> Aktivitas Lamaran</span>
+                            <i class="fa-regular fa-calendar chip-icon"></i>
+                        </div>
+                        <div class="list">
+                            <div class="activity-item">
+                                <div class="activity-title">Belum ada aktivitas lamaran.</div>
+                                <div class="activity-subtitle">Riwayat perubahan status akan muncul di sini.</div>
+                            </div>
+                            <div class="activity-item" style="opacity:0.75">
+                                <div class="activity-title">Menunggu data masuk</div>
+                                <div class="activity-meta">Aktivitas terbaru akan tampil otomatis.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="widget-card">
+                        <div class="widget-header">
+                            <span><i class="fa-regular fa-calendar-check chip-icon"></i> Wawancara Terdekat</span>
+                            <button class="btn-link" data-nav="jadwal">Kalender <i
+                                    class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                        <div class="empty-state">
+                            <i class="fa-regular fa-calendar-xmark"></i>
+                            <p>Tidak ada jadwal wawancara dalam<br>14 hari ke depan.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page" id="page-lowongan">
+                <div class="page-title-row">
+                    <div>
+                        <h2>Lowongan</h2>
+                        <div class="section-note">Kelola status lowongan, kandidat, dan publikasi.</div>
+                    </div>
+                    <button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah
+                        Lowongan</button>
+                </div>
+
+                <div class="cards4">
+                    <div class="card">
+                        <div class="mini-icon" style="background:#eefafc;color:#2aa9d7"><i
+                                class="fa-solid fa-pencil"></i></div>
+                        <h3>Draft</h3>
+                        <div class="value">1</div>
+                        <div class="desc neutral">Belum diajukan</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#fff7ed;color:#f59e0b"><i
+                                class="fa-regular fa-clock"></i></div>
+                        <h3>Dikirim</h3>
+                        <div class="value">0</div>
+                        <div class="desc neutral">Menunggu verifikasi</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#fef2f2;color:#ef4444"><i
+                                class="fa-solid fa-triangle-exclamation"></i></div>
+                        <h3>Perlu Direvisi</h3>
+                        <div class="value">0</div>
+                        <div class="desc neutral">Perlu perbaikan</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#ecfdf5;color:#21b36b"><i
+                                class="fa-regular fa-circle-check"></i></div>
+                        <h3>Lowongan Aktif</h3>
+                        <div class="value">0</div>
+                        <div class="desc neutral">Sedang tayang</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="table-toolbar">
+                        <div class="search-small"><i class="fa-solid fa-magnifying-glass"></i><input type="text"
+                                placeholder="Cari berdasarkan judul"></div>
+                        <div class="controls">
+                            <button class="ghost-btn">Semua Status <i class="fa-solid fa-chevron-down"></i></button>
+                            <button class="ghost-btn">Terbaru <i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                    </div>
+                    <div class="table-shell">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Lowongan</th>
+                                    <th>Penempatan</th>
+                                    <th>Kuota Tersedia</th>
+                                    <th>Pelamar</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Analisis</strong>
+                                        <div class="tiny">Dibuat 02 Sep 2026</div>
+                                    </td>
+                                    <td>Tangerang Barat, Marpoyan Damai...</td>
+                                    <td>1/1 tersedia</td>
+                                    <td>0 pelamar</td>
+                                    <td><span class="status draft">Draft</span></td>
+                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Akuntan</strong>
+                                        <div class="tiny">Dibuat 27 Aug 2026</div>
+                                    </td>
+                                    <td>Tebet Timur, Tebet, Kota Adm. Jakarta...</td>
+                                    <td>1/1 tersedia</td>
+                                    <td>0 pelamar</td>
+                                    <td><span class="status closed">Ditutup</span></td>
+                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Testing Dummy</strong>
+                                        <div class="tiny">Dibuat 19 Aug 2026</div>
+                                    </td>
+                                    <td>Lengkong, Ganting, Kab. Belitung Timur...</td>
+                                    <td>1/1 tersedia</td>
+                                    <td>3 pelamar</td>
+                                    <td><span class="status closed">Ditutup</span></td>
+                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Marketing</strong>
+                                        <div class="tiny">Dibuat 11 Aug 2026</div>
+                                    </td>
+                                    <td>Palembang, Sumsel...</td>
+                                    <td>0/1 tersedia</td>
+                                    <td>1 pelamar</td>
+                                    <td><span class="status full">Penuh</span></td>
+                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Test Migrasi</strong>
+                                        <div class="tiny">Dibuat 18 Jul 2026</div>
+                                    </td>
+                                    <td>Pekalongan...</td>
+                                    <td>1/1 tersedia</td>
+                                    <td>0 pelamar</td>
+                                    <td><span class="status rejected">Ditolak</span></td>
+                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="table-footer">&lsaquo; 1 2 3 ... 8 &rsaquo;</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page" id="page-jadwal">
+                <div class="page-title-row">
+                    <div>
+                        <h2>Jadwal Wawancara</h2>
+                        <div class="section-note">Pilih mode tampilan harian, mingguan, atau bulanan.</div>
+                    </div>
+                    <div class="controls">
+                        <button class="ghost-btn">Hari Ini</button>
+                        <button class="ghost-btn active">Mingguan</button>
+                        <button class="ghost-btn">Bulanan</button>
+                    </div>
+                </div>
+
+                <div class="schedule-toolbar">
+                    <div class="controls">
+                        <button class="ghost-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="ghost-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                        <span class="chip-inline">31 Agt - 06 Sep 2026</span>
+                    </div>
+                    <div class="controls">
+                        <button class="ghost-btn"><i class="fa-solid fa-filter"></i> Filter</button>
+                        <button class="ghost-btn">Semua Lowongan <i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                </div>
+
+                <div class="calendar-layout">
+                    <div class="calendar-shell">
+                        <div class="calendar-grid">
+                            <div class="day-head">
+                                <div class="day-name">Sen</div>
+                                <div class="day-number">31</div>
+                            </div>
+                            <div class="day-head">
+                                <div class="day-name">Sel</div>
+                                <div class="day-number">1</div>
+                            </div>
+                            <div class="day-head">
+                                <div class="day-name">Rab</div>
+                                <div class="day-number">2</div>
+                            </div>
+                            <div class="day-head">
+                                <div class="day-name">Kam</div>
+                                <div class="day-number active">3</div>
+                            </div>
+                            <div class="day-head">
+                                <div class="day-name">Jum</div>
+                                <div class="day-number">4</div>
+                            </div>
+                            <div class="day-head">
+                                <div class="day-name">Sab</div>
+                                <div class="day-number">5</div>
+                            </div>
+                            <div class="day-head">
+                                <div class="day-name">Min</div>
+                                <div class="day-number">6</div>
+                            </div>
+                            <div class="day-cell"></div>
+                            <div class="day-cell"></div>
+                            <div class="day-cell"></div>
+                            <div class="day-cell"></div>
+                            <div class="day-cell"></div>
+                            <div class="day-cell"></div>
+                            <div class="day-cell"></div>
+                        </div>
+                    </div>
+
+                    <div class="agenda-card">
+                        <h4>Agenda Mendatang</h4>
+                        <div class="empty-state">
+                            <i class="fa-regular fa-calendar"></i>
+                            <p>Tidak ada wawancara hari ini & besok.</p>
+                        </div>
+                        <div style="border-top:1px solid var(--border); padding-top:12px; margin-top:8px;">
+                            <div class="tiny" style="font-weight:700; margin-bottom:8px; color:#94a3b8;">KETERANGAN
+                            </div>
+                            <div class="legend-row"><span class="legend-pill" style="background:#8b5cf6"></span>
+                                Wawancara online</div>
+                            <div class="legend-row"><span class="legend-pill" style="background:#ec4899"></span>
+                                Wawancara offline</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page" id="page-transfer">
+                <div class="page-title-row">
+                    <div>
+                        <h2>Transfer Pengelola</h2>
+                        <div class="section-note">Kelola pemindahan hak pengelolaan pemberi kerja ini ke akun pengguna
+                            lain.</div>
+                    </div>
+                    <button class="primary-btn"><i class="fa-solid fa-plus"></i> Ajukan Transfer</button>
+                </div>
+
+                <div class="section-card">
+                    <div class="table-shell">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pengguna Baru</th>
+                                    <th>Alasan Pengajuan</th>
+                                    <th>Status</th>
+                                    <th>Kedaluwarsa</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding:56px 16px; color:#6b7280;">
+                                        <strong
+                                            style="display:block; font-size:18px; color:#111827; margin-bottom:6px;">Belum
+                                            ada riwayat transfer pengelola</strong>
+                                        Riwayat pengajuan pemindahan akun pengelola pemberi kerja akan ditampilkan di
+                                        sini.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page" id="page-profil">
+                <div class="page-title-row">
+                    <div>
+                        <h2>Profil Pemberi Kerja</h2>
+                        <div class="section-note">Informasi akun dan lokasi pemberi kerja.</div>
+                    </div>
+                </div>
+
+                <div class="profile-banner">
+                    <div class="profile-big-avatar"><i class="fa-solid fa-building"></i></div>
+                    <div>
+                        <span class="chip-inline" style="background:#eefaf3; border-color:#d8f0e4; color:#0f766e;"><i
+                                class="fa-solid fa-badge-check"></i> Pemberi Kerja Terverifikasi</span>
+                        <h3>PT. Pandu Jaya</h3>
+                        <div class="profile-pills">
+                            <span class="pill"><i class="fa-regular fa-envelope"></i> pandu@gmail.com</span>
+                            <span class="pill"><i class="fa-solid fa-phone"></i> 0216645828</span>
+                            <span class="pill"><i class="fa-solid fa-user-tie"></i> Pemberi kerja individu</span>
+                        </div>
+                        <div class="section-note">Selamat! Pemberi kerja Anda telah berhasil diverifikasi dan kini dapat
+                            menggunakan seluruh fitur yang tersedia.</div>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h4><i class="fa-solid fa-circle-info chip-icon"></i> Tentang Pemberi Kerja</h4>
+                        <p class="section-note" style="margin-top:0">Belum ada deskripsi. Deskripsi pemberi kerja
+                            membantu calon pekerja mengenal organisasi Anda.</p>
+                        <div class="info-line">
+                            <span>Terdaftar sebagai pemberi kerja sejak</span>
+                            <strong style="color:#111827">16 Juni 2021</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h4><i class="fa-solid fa-location-dot chip-icon"></i> Lokasi Pemberi Kerja</h4>
+                        <div class="kv-grid">
+                            <dl class="kv">
+                                <dt>Provinsi</dt>
+                                <dd>Jawa Barat</dd>
+                            </dl>
+                            <dl class="kv">
+                                <dt>Kota/Kabupaten</dt>
+                                <dd>Kota Bekasi</dd>
+                            </dl>
+                            <dl class="kv">
+                                <dt>Kecamatan</dt>
+                                <dd>Rawalumbu</dd>
+                            </dl>
+                            <dl class="kv">
+                                <dt>Kelurahan</dt>
+                                <dd>Pengasinan</dd>
+                            </dl>
+                            <dl class="kv">
+                                <dt>Alamat</dt>
+                                <dd>Bekasi</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // Logika Toggle Sidebar Buka/Tutup
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', function () {
+                sidebar.classList.toggle('collapsed');
+            });
+        }
+
+        const menuItems = Array.from(document.querySelectorAll('.menu-item'));
+        const pages = Array.from(document.querySelectorAll('.page'));
+        const crumbCurrent = document.getElementById('crumbCurrent');
+        const pageTitles = {
+            dashboard: 'Dasbor',
+            lowongan: 'Lowongan',
+            jadwal: 'Jadwal Wawancara',
+            transfer: 'Transfer Pengelola',
+            profil: 'Profil Pemberi Kerja'
+        };
+
+        function showPage(pageName) {
+            pages.forEach((page) => page.classList.toggle('active', page.id === `page-${pageName}`));
+            menuItems.forEach((item) => {
+                // Periksa apakah item di-disable. Jika ya, jangan set active
+                if (!item.hasAttribute('disabled')) {
+                    item.classList.toggle('active', item.dataset.page === pageName);
+                }
+            });
+            crumbCurrent.textContent = pageTitles[pageName] || 'Dasbor';
+            if (window.location.hash !== `#${pageName}`) {
+                window.location.hash = pageName;
+            }
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+
+        menuItems.forEach((item) => {
+            item.addEventListener('click', () => {
+                // Mencegah klik jika menu di-disable
+                if (!item.hasAttribute('disabled')) {
+                    showPage(item.dataset.page);
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-nav]').forEach((button) => {
+            button.addEventListener('click', () => showPage(button.dataset.nav));
+        });
+
+        const initialPage = (window.location.hash || '#dashboard').slice(1);
+        showPage(pageTitles[initialPage] ? initialPage : 'dashboard');
+
+        window.addEventListener('hashchange', () => {
+            const nextPage = (window.location.hash || '#dashboard').slice(1);
+            if (pageTitles[nextPage]) {
+                showPage(nextPage);
+            }
+        });
+    </script>
+</body>
+
+</html>
