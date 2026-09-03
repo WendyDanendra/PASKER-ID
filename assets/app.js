@@ -364,6 +364,41 @@ function initHashRouting(defaultPage) {
     });
 }
 
+function initSidebarToggle() {
+    const sidebar = document.querySelector('.sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    if (!sidebar || !toggle || toggle.dataset.bound === 'true') {
+        return;
+    }
+    toggle.dataset.bound = 'true';
+    toggle.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+    });
+}
+
+function initNotifications() {
+    const wrap = document.querySelector('.notif-wrap');
+    if (!wrap) {
+        return;
+    }
+    const button = wrap.querySelector('[data-notif-toggle]');
+    const panel = wrap.querySelector('.notif-panel');
+    if (!button || !panel) {
+        return;
+    }
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        panel.hidden = !panel.hidden;
+        if (!panel.hidden) {
+            fetch('notif-read.php').catch(() => {});
+            button.classList.remove('has-unread');
+        }
+    });
+    document.addEventListener('click', () => {
+        panel.hidden = true;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (document.body.dataset.useAppJs === 'true') {
         bindPageSwitchers();
@@ -372,6 +407,21 @@ document.addEventListener('DOMContentLoaded', () => {
     bindModal('[data-open-modal="job-create"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     bindModal('[data-open-modal="job-create-mobile"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     initJobCreateWizard();
+    initSidebarToggle();
+    initNotifications();
+    document.querySelectorAll('[data-revise-job]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const hidden = document.getElementById('reviseJobId');
+            if (hidden) {
+                hidden.value = button.dataset.reviseJob;
+            }
+            const modal = document.querySelector('[data-modal="job-create"]');
+            if (modal) {
+                modal.classList.add('open');
+                modal.dispatchEvent(new CustomEvent('modal:open'));
+            }
+        });
+    });
 
     if (document.body.dataset.useAppJs === 'true' && document.body.dataset.defaultPage) {
         initHashRouting(document.body.dataset.defaultPage);

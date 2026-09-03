@@ -11,6 +11,13 @@ if (!is_profile_complete($user)) {
     redirect('profile-employer.php');
 }
 
+if (isset($_GET['read_notif'])) {
+    mark_notifications_read((int) $user['id']);
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
 $ownerName = $profile['owner_name'] ?? $user['name'];
 $profession = $profile['profession'] ?? 'Kuliner';
 $city = $profile['city'] ?? 'Kota Bekasi';
@@ -605,7 +612,8 @@ $modal = <<<HTML
             </div>
             <form method="post" action="dashboard.php" novalidate data-job-create-form>
                 <input type="hidden" name="create_job" value="1">
-                <input type="hidden" name="status" value="Draft">
+                <input type="hidden" name="revise_job_id" id="reviseJobId" value="">
+                <input type="hidden" name="status" value="Menunggu Verifikasi">
                 <div class="modal-body">
                     <div class="job-step" data-job-step="1">
                         <div class="modal-section">
@@ -1098,7 +1106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
     $industry = trim($_POST['industry'] ?? '');
     $kbjiCode = trim($_POST['kbji_code'] ?? '');
     $quota = max(1, (int) ($_POST['quota'] ?? 1));
-    $status = $_POST['status'] ?? 'Draft';
+    $status = 'Menunggu Verifikasi';
+    $reviseJobId = (int) ($_POST['revise_job_id'] ?? 0);
     $salaryMin = ($_POST['salary_min'] ?? '') !== '' ? (int) $_POST['salary_min'] : null;
     $salaryMax = ($_POST['salary_max'] ?? '') !== '' ? (int) $_POST['salary_max'] : null;
     $details = json_encode([
@@ -1134,18 +1143,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
             }
         }
 
-        // Cek duplicate job untuk KBJI yang sama
-        $cekDuplicate = db()->prepare('SELECT id FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Menunggu Verifikasi", "Tayang") LIMIT 1');
-        $cekDuplicate->execute([$user['id'], $kbjiCode]);
+        $cekDuplicate = db()->prepare('SELECT id FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Menunggu Verifikasi", "Tayang") AND id != ? LIMIT 1');
+        $cekDuplicate->execute([$user['id'], $kbjiCode, $reviseJobId]);
         if ($cekDuplicate->fetch()) {
             flash('error', 'Anda tidak dapat membuat lowongan baru untuk jabatan yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.');
             redirect('dashboard.php#lowongan');
             exit;
         }
 
-        $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, status, salary_min, salary_max, quota, kbji_code, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details]);
-        flash('success', 'Lowongan baru berhasil disimpan sebagai ' . $status . '.');
+        if ($reviseJobId > 0) {
+            $statement = db()->prepare('UPDATE job_posts SET title=?, description=?, location=?, job_type=?, industry=?, status=?, salary_min=?, salary_max=?, quota=?, kbji_code=?, details=?, updated_at=NOW() WHERE id=? AND user_id=?');
+            $statement->execute([$title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details, $reviseJobId, $user['id']]);
+            flash('success', 'Revisi lowongan berhasil dikirim ulang ke Admin.');
+        } else {
+            $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, status, salary_min, salary_max, quota, kbji_code, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details]);
+            flash('success', 'Lowongan baru berhasil dikirim dan menunggu tinjauan Admin.');
+        }
         redirect('dashboard.php#lowongan');
     } else {
         flash('error', 'Lengkapi judul, deskripsi, lokasi, jenis pekerjaan, dan KBJI.');
@@ -1239,5 +1253,77 @@ if (!str_contains($html, 'window.testCloseJob')) {
 </body>
 JS, $html);
 }
+
+$employerJobs = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER BY created_at DESC');
+$employerJobs->execute([$user['id']]);
+$employerJobs = $employerJobs->fetchAll();
+$jobCounts = ['Draft' => 0, 'Menunggu Verifikasi' => 0, 'Perlu Revisi' => 0, 'Tayang' => 0];
+foreach ($employerJobs as $row) {
+    if (isset($jobCounts[$row['status']])) {
+        $jobCounts[$row['status']]++;
+    }
+}
+
+$jobRowsHtml = '';
+if (!$employerJobs) {
+    $jobRowsHtml = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:28px">Belum ada lowongan. Klik Tambah Lowongan untuk mengirim ke Admin.</td></tr>';
+} else {
+    foreach ($employerJobs as $row) {
+        $meta = job_status_meta($row['status']);
+        $countStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
+        $countStmt->execute([$row['id']]);
+        $appCount = (int) $countStmt->fetchColumn();
+        $reviseBtn = $row['status'] === 'Perlu Revisi'
+            ? '<button type="button" class="ghost-btn" data-revise-job="' . (int) $row['id'] . '">Revisi</button>'
+            : '-';
+        $jobRowsHtml .= '<tr><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div></td>'
+            . '<td>' . e($row['location']) . '</td>'
+            . '<td>' . (int) $row['quota'] . ' orang</td>'
+            . '<td>' . $appCount . ' pelamar</td>'
+            . '<td><span class="status ' . e($meta['class']) . '">' . e($meta['label']) . '</span></td>'
+            . '<td>' . $reviseBtn . '</td></tr>';
+    }
+}
+
+$applicantHtml = '';
+$appStmt = db()->prepare('SELECT a.*, j.title AS job_title, u.name AS seeker_name, u.email AS seeker_email, sp.nik, sp.phone, sp.gender, sp.domicile_address
+    FROM job_applications a
+    JOIN job_posts j ON j.id = a.job_id
+    JOIN users u ON u.id = a.seeker_id
+    LEFT JOIN seeker_profiles sp ON sp.user_id = a.seeker_id
+    WHERE j.user_id = ?
+    ORDER BY a.created_at DESC');
+$appStmt->execute([$user['id']]);
+$applicants = $appStmt->fetchAll();
+if (!$applicants) {
+    $applicantHtml = '<div class="record-item"><strong>Belum ada pelamar</strong><span>Lamaran dari pencari kerja akan tampil di sini.</span></div>';
+} else {
+    foreach ($applicants as $applicant) {
+        $edu = db()->prepare('SELECT * FROM seeker_educations WHERE user_id = ?');
+        $edu->execute([$applicant['seeker_id']]);
+        $skills = db()->prepare('SELECT skill_name FROM seeker_skills WHERE user_id = ?');
+        $skills->execute([$applicant['seeker_id']]);
+        $exp = db()->prepare('SELECT * FROM seeker_experiences WHERE user_id = ? LIMIT 2');
+        $exp->execute([$applicant['seeker_id']]);
+        $skillList = implode(', ', array_column($skills->fetchAll(), 'skill_name')) ?: '-';
+        $eduList = array_map(static fn($item) => $item['level'] . ' ' . $item['school_name'], $edu->fetchAll());
+        $expList = array_map(static fn($item) => $item['position'] . ' di ' . $item['company_name'], $exp->fetchAll());
+        $applicantHtml .= '<div class="applicant-card"><strong>' . e($applicant['seeker_name']) . '</strong> · ' . e($applicant['job_title'])
+            . '<div class="tiny">' . e($applicant['seeker_email']) . ' · ' . e($applicant['phone'] ?? '-') . ' · NIK ' . e($applicant['nik'] ?? '-') . '</div>'
+            . '<div class="tiny">Pendidikan: ' . e(implode('; ', $eduList) ?: '-') . '</div>'
+            . '<div class="tiny">Pengalaman: ' . e(implode('; ', $expList) ?: '-') . '</div>'
+            . '<div class="tiny">Keahlian: ' . e($skillList) . '</div></div>';
+    }
+}
+
+$notifications = user_notifications((int) $user['id']);
+$unread = unread_notification_count((int) $user['id']);
+$html = str_replace('<div class="notif"><i class="fa-regular fa-bell"></i></div>', render_notif_dropdown($notifications, $unread), $html);
+$html = preg_replace('/<h3>Draft<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Draft</h3><div class="value">' . $jobCounts['Draft'] . '</div>', $html, 1);
+$html = preg_replace('/<h3>Dikirim<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Dikirim</h3><div class="value">' . $jobCounts['Menunggu Verifikasi'] . '</div>', $html, 1);
+$html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Perlu Direvisi</h3><div class="value">' . $jobCounts['Perlu Revisi'] . '</div>', $html, 1);
+$html = preg_replace('/<h3>Lowongan Aktif<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Lowongan Aktif</h3><div class="value">' . $jobCounts['Tayang'] . '</div>', $html, 1);
+$html = str_replace('<!--JOB_TABLE_ROWS-->', $jobRowsHtml, $html);
+$html = str_replace('<!--JOB_APPLICANTS-->', $applicantHtml, $html);
 
 echo $html;

@@ -35,6 +35,17 @@ CREATE TABLE employer_profiles (
     owner_name VARCHAR(120) NOT NULL,
     profession VARCHAR(120) NOT NULL,
     phone VARCHAR(30) NOT NULL,
+    nik VARCHAR(30) NULL,
+    whatsapp VARCHAR(30) NULL,
+    linkedin VARCHAR(255) NULL,
+    facebook VARCHAR(255) NULL,
+    instagram VARCHAR(255) NULL,
+    npwp VARCHAR(40) NULL,
+    latitude VARCHAR(40) NULL,
+    longitude VARCHAR(40) NULL,
+    permit_document VARCHAR(255) NULL,
+    workplace_photo VARCHAR(255) NULL,
+    consent_accepted TINYINT(1) NOT NULL DEFAULT 0,
     address TEXT NOT NULL,
     city VARCHAR(120) NOT NULL,
     province VARCHAR(120) NOT NULL,
@@ -122,12 +133,13 @@ CREATE TABLE job_posts (
     location VARCHAR(150) NOT NULL,
     job_type VARCHAR(80) NOT NULL,
     industry VARCHAR(120) NULL,
-    status ENUM('Draft', 'Menunggu Verifikasi', 'Tayang', 'Ditutup', 'Ditolak', 'Penuh') NOT NULL DEFAULT 'Draft',
+    status ENUM('Draft', 'Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditutup', 'Ditolak', 'Penuh') NOT NULL DEFAULT 'Draft',
     salary_min INT NULL,
     salary_max INT NULL,
     quota INT NOT NULL DEFAULT 1,
     kbji_code VARCHAR(20) NULL,
     details TEXT NULL,
+    admin_notes TEXT NULL,
     parent_job_id INT NULL,
     unfulfilled_reason TEXT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -166,3 +178,23 @@ INSERT INTO kbji_data (kode_kbji, nama_jabatan) VALUES
 ('3333.01', 'Agen Penyalur Tenaga Kerja'),
 ('2211.01', 'Dokter Umum'),
 ('2221.01', 'Perawat Profesional');
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(180) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(40) NOT NULL,
+    job_id INT NULL,
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS job_applications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    job_id INT NOT NULL,
+    seeker_id INT NOT NULL,
+    status VARCHAR(40) NOT NULL DEFAULT 'Dilamar',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_job_seeker (job_id, seeker_id)
+);

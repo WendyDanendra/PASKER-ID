@@ -345,7 +345,7 @@
             position: relative;
         }
 
-        .notif::after {
+        .notif.has-unread::after {
             content: '';
             position: absolute;
             top: 10px;
@@ -356,6 +356,23 @@
             background: var(--danger);
             box-shadow: 0 0 0 2px #fff;
         }
+        .notif-wrap { position: relative; }
+        .notif { border: none; background: #fff; cursor: pointer; }
+        .notif-panel {
+            position: absolute; right: 0; top: 48px; width: 360px; max-height: 420px;
+            overflow: auto; background: #fff; border: 1px solid #e8ebf2; border-radius: 16px;
+            box-shadow: 0 16px 40px rgba(15,23,42,0.12); z-index: 40;
+        }
+        .notif-head { padding: 12px 14px; font-weight: 800; border-bottom: 1px solid #eef2f7; }
+        .notif-item { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; }
+        .notif-item.unread { background: #f0faff; }
+        .notif-item strong { display: block; font-size: 13px; }
+        .notif-item p, .notif-item span, .notif-empty { font-size: 12px; color: #64748b; margin-top: 4px; }
+        .notif-empty { padding: 18px; }
+        .status.pending { background: #fff7ed; color: #b45309; }
+        .status.revision { background: #fef3c7; color: #92400e; }
+        .status.live { background: #ecfdf5; color: #047857; }
+        .applicant-card { border: 1px solid #eef2f7; border-radius: 12px; padding: 12px; background: #fafcff; margin-bottom: 10px; }
 
         .company-chip,
         .action-chip {
@@ -1755,59 +1772,18 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td><strong>Analisis</strong>
-                                        <div class="tiny">Dibuat 02 Sep 2026</div>
-                                    </td>
-                                    <td>Tangerang Barat, Marpoyan Damai...</td>
-                                    <td>1/1 tersedia</td>
-                                    <td>0 pelamar</td>
-                                    <td><span class="status draft">Draft</span></td>
-                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Akuntan</strong>
-                                        <div class="tiny">Dibuat 27 Aug 2026</div>
-                                    </td>
-                                    <td>Tebet Timur, Tebet, Kota Adm. Jakarta...</td>
-                                    <td>1/1 tersedia</td>
-                                    <td>0 pelamar</td>
-                                    <td><span class="status closed">Ditutup</span></td>
-                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Testing Dummy</strong>
-                                        <div class="tiny">Dibuat 19 Aug 2026</div>
-                                    </td>
-                                    <td>Lengkong, Ganting, Kab. Belitung Timur...</td>
-                                    <td>1/1 tersedia</td>
-                                    <td>3 pelamar</td>
-                                    <td><span class="status closed">Ditutup</span></td>
-                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Marketing</strong>
-                                        <div class="tiny">Dibuat 11 Aug 2026</div>
-                                    </td>
-                                    <td>Palembang, Sumsel...</td>
-                                    <td>0/1 tersedia</td>
-                                    <td>1 pelamar</td>
-                                    <td><span class="status full">Penuh</span></td>
-                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Test Migrasi</strong>
-                                        <div class="tiny">Dibuat 18 Jul 2026</div>
-                                    </td>
-                                    <td>Pekalongan...</td>
-                                    <td>1/1 tersedia</td>
-                                    <td>0 pelamar</td>
-                                    <td><span class="status rejected">Ditolak</span></td>
-                                    <td><i class="fa-regular fa-pen-to-square"></i></td>
-                                </tr>
+                                <!--JOB_TABLE_ROWS-->
                             </tbody>
                         </table>
-                        <div class="table-footer">&lsaquo; 1 2 3 ... 8 &rsaquo;</div>
+                        <div class="table-footer">Daftar lowongan Anda</div>
+                    </div>
+                </div>
+                <div class="section-card" style="margin-top:16px">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-user-check"></i> Pelamar Tersinkron</h3>
+                    </div>
+                    <div style="padding:16px">
+                        <!--JOB_APPLICANTS-->
                     </div>
                 </div>
             </section>
@@ -2004,7 +1980,8 @@
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebar = document.querySelector('.sidebar');
 
-        if (sidebarToggle && sidebar) {
+        if (sidebarToggle && sidebar && sidebarToggle.dataset.bound !== 'true') {
+            sidebarToggle.dataset.bound = 'true';
             sidebarToggle.addEventListener('click', function () {
                 sidebar.classList.toggle('collapsed');
             });

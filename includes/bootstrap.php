@@ -19,6 +19,7 @@ function db(): PDO
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
+        ensure_platform_schema();
     }
 
     return $pdo;
@@ -158,3 +159,5 @@ function seeker_profile_exists(int $userId): bool
 
     return (int) $statement->fetchColumn() > 0;
 }
+
+require_once __DIR__ . '/platform.php';
