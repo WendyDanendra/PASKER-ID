@@ -1,5 +1,6 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/bootstrap.php';
+
 
 $user = require_role('seeker');
 
@@ -167,6 +168,9 @@ $languageRows = db()->query('SELECT * FROM seeker_languages WHERE user_id = ' . 
                 <input type="text" placeholder="Cari lowongan, perusahaan, atau lokasi...">
             </div>
             <div class="top-actions">
+                <a class="action-chip" href="dashboard.php" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;" title="Beralih ke Pemberi Kerja Individu">
+                    <i class="fa-solid fa-briefcase"></i> Beralih ke Pemberi Kerja
+                </a>
                 <div class="notif"><i class="fa-regular fa-bell"></i></div>
                 <div class="company-chip">
                     <div>
@@ -184,7 +188,12 @@ $languageRows = db()->query('SELECT * FROM seeker_languages WHERE user_id = ' . 
                     <h1>Halo, <?php echo e($user['name']); ?></h1>
                     <p>Profil kamu sudah lengkap. Sekarang dashboard ini bisa dipakai untuk lihat status dan riwayat data diri.</p>
                 </div>
-                <a class="primary-btn" href="profile-seeker.php"><i class="fa-solid fa-pen-to-square"></i> Edit Profil</a>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <a class="action-chip" href="dashboard.php" style="background:#0284c7; color:#fff; border:none; height:42px; padding:0 18px;">
+                        <i class="fa-solid fa-user-gear"></i> Beralih ke Pemberi Kerja Individu
+                    </a>
+                    <a class="primary-btn" href="profile-seeker.php"><i class="fa-solid fa-pen-to-square"></i> Edit Profil</a>
+                </div>
             </div>
 
             <div class="metric-grid">

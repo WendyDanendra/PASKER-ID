@@ -1,43 +1,8 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
-
 $user = require_role('employer');
+redirect('dashboard.php?open_profile=1');
 
-$statement = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
-$statement->execute([$user['id']]);
-$profile = $statement->fetch() ?: [];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $ownerName   = trim($_POST['owner_name']   ?? '');
-    $profession  = trim($_POST['profession']   ?? '');
-    $phone       = trim($_POST['phone']        ?? '');
-    $province    = trim($_POST['province']     ?? '');
-    $city        = trim($_POST['city']         ?? '');
-    $address     = trim($_POST['address']      ?? '');
-    $description = trim($_POST['description']  ?? '');
-
-    if ($ownerName === '' || $profession === '' || $phone === '' || $province === '' || $city === '' || $address === '') {
-        flash('error', 'Lengkapi semua field wajib untuk melanjutkan.');
-        redirect('profile-employer.php');
-    }
-
-    if ($profile) {
-        // Update: reset verified ke 0 agar admin verifikasi ulang jika ada perubahan data
-        $update = db()->prepare('UPDATE employer_profiles SET owner_name = ?, profession = ?, phone = ?, province = ?, city = ?, address = ?, description = ?, verified = 0, updated_at = NOW() WHERE user_id = ?');
-        $update->execute([$ownerName, $profession, $phone, $province, $city, $address, $description, $user['id']]);
-    } else {
-        // Insert baru: active_until di-set 3 bulan ke depan agar tidak NULL dan tidak crash di dashboard
-        $insert = db()->prepare('INSERT INTO employer_profiles (user_id, owner_name, profession, phone, province, city, address, description, verified, active_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL 3 MONTH))');
-        $insert->execute([$user['id'], $ownerName, $profession, $phone, $province, $city, $address, $description]);
-    }
-
-    $updateUser = db()->prepare('UPDATE users SET name = ?, profile_complete = 1 WHERE id = ?');
-    $updateUser->execute([$ownerName, $user['id']]);
-
-    flash('success', 'Profil berhasil disimpan! Silakan tunggu verifikasi dari Admin sebelum dapat memposting lowongan.');
-    redirect('dashboard.php');
-}
-?>
 <!DOCTYPE html>
 <html lang="id">
 <head>

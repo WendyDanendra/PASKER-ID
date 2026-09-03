@@ -33,15 +33,38 @@ CREATE TABLE employer_profiles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     owner_name VARCHAR(120) NOT NULL,
+    nik VARCHAR(30) NULL,
     profession VARCHAR(120) NOT NULL,
     phone VARCHAR(30) NOT NULL,
-    address TEXT NOT NULL,
-    city VARCHAR(120) NOT NULL,
+    whatsapp VARCHAR(30) NULL,
+    npwp VARCHAR(30) NULL,
+    linkedin VARCHAR(255) NULL,
+    facebook VARCHAR(255) NULL,
+    instagram VARCHAR(255) NULL,
+    same_location_siapkerja TINYINT(1) DEFAULT 1,
     province VARCHAR(120) NOT NULL,
+    city VARCHAR(120) NOT NULL,
+    district VARCHAR(120) NULL,
+    village VARCHAR(120) NULL,
+    postal_code VARCHAR(20) NULL,
+    same_address_siapkerja TINYINT(1) DEFAULT 1,
+    address TEXT NOT NULL,
+    address_detail TEXT NULL,
+    latitude VARCHAR(50) NULL,
+    longitude VARCHAR(50) NULL,
+    doc_permission VARCHAR(255) NULL,
+    doc_location_photo VARCHAR(255) NULL,
     description TEXT NULL,
+    user_consent TINYINT(1) DEFAULT 0,
     verified TINYINT(1) NOT NULL DEFAULT 0,
+    verification_status ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED',
+    rejection_count INT DEFAULT 0,
+    verifier_notes TEXT NULL,
+    verification_checklist TEXT NULL,
+    suspension_reason TEXT NULL,
     active_until DATETIME NULL DEFAULT NULL,
     extension_requested TINYINT(1) NOT NULL DEFAULT 0,
+    extension_status ENUM('NONE', 'REQUESTED', 'APPROVED', 'REJECTED') DEFAULT 'NONE',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_employer_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -122,13 +145,18 @@ CREATE TABLE job_posts (
     location VARCHAR(150) NOT NULL,
     job_type VARCHAR(80) NOT NULL,
     industry VARCHAR(120) NULL,
-    status ENUM('Draft', 'Menunggu Verifikasi', 'Tayang', 'Ditutup', 'Ditolak', 'Penuh') NOT NULL DEFAULT 'Draft',
+    entity_type ENUM('Perusahaan', 'Individu') DEFAULT 'Individu',
+    status ENUM('Draft', 'Dikirim/Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft',
     salary_min INT NULL,
     salary_max INT NULL,
     quota INT NOT NULL DEFAULT 1,
+    accepted_count INT NOT NULL DEFAULT 0,
     kbji_code VARCHAR(20) NULL,
     parent_job_id INT NULL,
     unfulfilled_reason TEXT NULL,
+    verifier_notes TEXT NULL,
+    verification_checklist TEXT NULL,
+    is_blacklisted TINYINT(1) DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_job_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -136,13 +164,24 @@ CREATE TABLE job_posts (
 
 INSERT INTO users (name, email, password_hash, role, profile_complete) VALUES
 ('Admin Pusat', 'admin@pasker-id.test', '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', 1),
-('Perorangan Demo', 'perorangan@pasker-id.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', 0),
-('Pencari Kerja Demo', 'seeker@pasker-id.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', 0);
+('Perorangan Demo', 'perorangan@pasker-id.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', 1),
+('Pencari Kerja Demo', 'seeker@pasker-id.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', 1);
 
-INSERT INTO employer_profiles (user_id, owner_name, profession, phone, address, city, province, description, verified, active_until) VALUES
-(2, 'Perorangan Demo', 'Kuliner', '08123456789', 'Bekasi', 'Kota Bekasi', 'Jawa Barat', 'Demo pemberi kerja individu untuk kebutuhan showcase aplikasi.', 1, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 3 MONTH));
+INSERT INTO employer_profiles (
+    user_id, owner_name, nik, profession, phone, whatsapp, npwp, linkedin, facebook, instagram,
+    province, city, district, village, postal_code, address, address_detail, latitude, longitude,
+    description, user_consent, verified, verification_status, active_until
+) VALUES (
+    2, 'Perorangan Demo', '3275012304890001', 'Kuliner & Katering', '08123456789', '08123456789', '12.345.678.9-012.000',
+    'https://linkedin.com/in/perorangan-demo', 'https://facebook.com/perorangan.demo', 'https://instagram.com/perorangandemo',
+    'Jawa Barat', 'Kota Bekasi', 'Bekasi Selatan', 'Pekayon Jaya', '17148', 'Jl. Ahmad Yani No. 12', 'Samping Indomaret Pekayon',
+    '-6.241586', '106.992416', 'Usaha katering rumahan dan jasa konsultasi menu kuliner keluarga.', 1, 1, 'APPROVED', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 3 MONTH)
+);
 
-UPDATE users SET profile_complete = 1 WHERE id = 2;
+INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code) VALUES
+(2, 'Koki Masakan Tradisional', 'Membutuhkan koki berpengalaman untuk katering harian rumahan.', 'Kota Bekasi', 'Full Time', 'Kuliner', 'Individu', 'Tayang', 2, 1, '5120.01'),
+(2, 'Asisten Rumah Tangga', 'Membantu kebersihan dan kerapian rumah tinggal.', 'Kota Bekasi', 'Full Time', 'Jasa Perorangan', 'Individu', 'Draft', 1, 0, '9111.01'),
+(2, 'Staf Entri Data Katering', 'Mengelola data pesanan dan bahan makanan.', 'Kota Bekasi', 'Part Time', 'Administrasi', 'Individu', 'Dikirim/Menunggu Verifikasi', 1, 0, '4312.01');
 
 INSERT INTO kbji_data (kode_kbji, nama_jabatan) VALUES
 ('2512.01', 'Pengembang Perangkat Lunak'),
