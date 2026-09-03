@@ -536,12 +536,39 @@ $html = str_replace('</style>', $modalStyles . "\n    </style>", $html);
 
 $kbjiOptionsHtml = '<option value="">Pilih jabatan sesuai KBJI</option>';
 try {
-    $kbjiStmt = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY nama_jabatan ASC');
-    foreach ($kbjiStmt as $kbjiRow) {
-        $kbjiOptionsHtml .= '<option value="' . e($kbjiRow['kode_kbji']) . '">' . e($kbjiRow['nama_jabatan']) . ' (' . e($kbjiRow['kode_kbji']) . ')</option>';
-    }
-} catch (Throwable $kbjiError) {
-    // KBJI lookup is optional if the table is missing on a fresh setup.
+    db()->query('SELECT 1 FROM kbji_data LIMIT 1');
+} catch (Throwable $kbjiMissing) {
+    db()->exec('CREATE TABLE IF NOT EXISTS kbji_data (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        kode_kbji VARCHAR(20) NOT NULL UNIQUE,
+        nama_jabatan VARCHAR(255) NOT NULL
+    )');
+    db()->exec("INSERT IGNORE INTO kbji_data (kode_kbji, nama_jabatan) VALUES
+        ('2512.01', 'Pengembang Perangkat Lunak'),
+        ('2512.02', 'Programmer (Programmer Komputer)'),
+        ('2511.01', 'Analis Sistem Komputer'),
+        ('5120.01', 'Koki'),
+        ('5230.01', 'Kasir'),
+        ('3322.01', 'Tenaga Penjualan (Sales)'),
+        ('4111.01', 'Staf Administrasi Umum'),
+        ('4312.01', 'Staf Entri Data'),
+        ('2141.01', 'Insinyur Industri dan Produksi'),
+        ('2421.01', 'Analis Manajemen'),
+        ('3411.01', 'Petugas Bantuan Hukum'),
+        ('5131.01', 'Pramusaji'),
+        ('2411.01', 'Akuntan'),
+        ('4311.01', 'Staf Akuntansi'),
+        ('5411.01', 'Petugas Keamanan (Satpam)'),
+        ('9111.01', 'Asisten Rumah Tangga'),
+        ('8322.01', 'Pengemudi Mobil Barang (Sopir)'),
+        ('3333.01', 'Agen Penyalur Tenaga Kerja'),
+        ('2211.01', 'Dokter Umum'),
+        ('2221.01', 'Perawat Profesional')");
+}
+
+$kbjiStmt = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY nama_jabatan ASC');
+foreach ($kbjiStmt as $kbjiRow) {
+    $kbjiOptionsHtml .= '<option value="' . e($kbjiRow['kode_kbji']) . '">' . e($kbjiRow['nama_jabatan']) . ' (' . e($kbjiRow['kode_kbji']) . ')</option>';
 }
 
 $employerEmail = e($user['email'] ?? '');
@@ -1079,6 +1106,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
     ], JSON_UNESCAPED_UNICODE);
 
     if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
+        $jobColumns = array_column(db()->query('SHOW COLUMNS FROM job_posts')->fetchAll(), 'Field');
+        $neededColumns = [
+            'kbji_code' => 'VARCHAR(20) NULL',
+            'details' => 'TEXT NULL',
+            'parent_job_id' => 'INT NULL',
+            'unfulfilled_reason' => 'TEXT NULL',
+        ];
+        foreach ($neededColumns as $columnName => $columnDef) {
+            if (!in_array($columnName, $jobColumns, true)) {
+                db()->exec('ALTER TABLE job_posts ADD COLUMN ' . $columnName . ' ' . $columnDef);
+            }
+        }
+
         // Cek duplicate job untuk KBJI yang sama
         $cekDuplicate = db()->prepare('SELECT id FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Menunggu Verifikasi", "Tayang") LIMIT 1');
         $cekDuplicate->execute([$user['id'], $kbjiCode]);
@@ -1086,11 +1126,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
             flash('error', 'Anda tidak dapat membuat lowongan baru untuk jabatan yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.');
             redirect('dashboard.php#lowongan');
             exit;
-        }
-
-        $hasDetails = (bool) db()->query("SHOW COLUMNS FROM job_posts LIKE 'details'")->fetch();
-        if (!$hasDetails) {
-            db()->exec('ALTER TABLE job_posts ADD COLUMN details TEXT NULL');
         }
 
         $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, status, salary_min, salary_max, quota, kbji_code, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -1172,22 +1207,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_extension']))
     redirect('dashboard.php');
 }
 
-// Dummy JS injection to trigger the modal for testing
-$html = str_replace('<script src="assets/app.js"></script>', '<script src="assets/app.js"></script>
+if (!str_contains($html, 'src="assets/app.js"')) {
+    $html = str_replace('</body>', '<script src="assets/app.js"></script>' . "\n</body>", $html);
+}
+
+if (!str_contains($html, 'window.testCloseJob')) {
+    $html = str_replace('</body>', <<<'JS'
     <script>
-    // Test helper to open close-job modal
     window.testCloseJob = function(jobId, sisaKuota) {
         document.getElementById("close_job_id").value = jobId;
         document.getElementById("close_sisa_kuota").value = sisaKuota;
-        const modal = document.querySelector("[data-modal=\'job-close\']");
-        if(modal) modal.classList.add("open");
+        const modal = document.querySelector("[data-modal='job-close']");
+        if (modal) modal.classList.add("open");
     };
-    </script>', $html);
-
-
-$html = str_replace('<script>
-        const menuItems = Array.from(document.querySelectorAll(\'.menu-item\'));', '<script src="assets/app.js"></script>\n    <script>\n        const menuItems = Array.from(document.querySelectorAll(\'.menu-item\'));', $html);
-
-// Keep the original page script in control, but allow the modal helper from assets/app.js to bind after DOM load.
+    </script>
+</body>
+JS, $html);
+}
 
 echo $html;
