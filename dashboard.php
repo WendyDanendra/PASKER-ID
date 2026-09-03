@@ -108,29 +108,39 @@ $modalStyles = <<<'CSS'
         .modal-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.55);
             display: none;
             align-items: center;
             justify-content: flex-end;
             z-index: 1000;
-            padding: 12px;
+            padding: 16px;
         }
         .modal-backdrop.open {
             display: flex;
         }
         .modal-panel {
             width: min(720px, 100%);
-            max-height: calc(100vh - 24px);
+            max-height: calc(100vh - 32px);
             overflow: auto;
             background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+        }
+        .job-create-panel {
+            width: min(860px, 100%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         .modal-header,
         .modal-footer {
-            padding: 16px 20px;
+            padding: 20px 24px 16px;
             border-bottom: 1px solid #eef2f7;
+            flex-shrink: 0;
+        }
+        .job-create-panel .modal-header {
+            position: relative;
+            padding-right: 56px;
         }
         .modal-footer {
             border-bottom: none;
@@ -138,40 +148,64 @@ $modalStyles = <<<'CSS'
             display: flex;
             justify-content: flex-end;
             gap: 10px;
+            padding: 14px 24px;
         }
         .modal-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 800;
-            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+            color: #111827;
         }
         .modal-subtitle {
-            color: #64748b;
+            color: #6b7280;
             font-size: 13px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+        }
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #111827;
         }
         .stepper {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 14px;
-            flex-wrap: wrap;
+            gap: 0;
+            margin-top: 20px;
         }
         .step {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: #64748b;
-            font-size: 12px;
+            color: #9ca3af;
+            font-size: 13px;
             font-weight: 700;
+            white-space: nowrap;
         }
         .step .bubble {
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             background: #e5e7eb;
             display: grid;
             place-items: center;
-            color: #64748b;
-            font-size: 11px;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
         }
         .step.active {
             color: #1e97c4;
@@ -181,199 +215,768 @@ $modalStyles = <<<'CSS'
             color: #fff;
         }
         .step.done {
-            color: #0f9d63;
+            color: #16a34a;
         }
         .step.done .bubble {
             background: #16a34a;
             color: #fff;
         }
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: #e5e7eb;
+            margin: 0 14px;
+            min-width: 24px;
+        }
+        .step-line.done {
+            background: #16a34a;
+        }
         .modal-body {
-            padding: 18px 20px 6px;
+            padding: 8px 24px 20px;
+        }
+        .job-create-panel .modal-body {
+            overflow: auto;
+            flex: 1;
+        }
+        .job-create-panel [hidden] {
+            display: none !important;
         }
         .modal-section {
-            margin-bottom: 18px;
-            padding-bottom: 18px;
-            border-bottom: 1px solid #eef2f7;
+            margin-bottom: 8px;
+            padding: 18px 0 8px;
         }
-        .modal-section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
+        .section-heading {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #e8f7fc;
+            color: #1e97c4;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            font-size: 15px;
         }
         .section-title {
             font-size: 15px;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 2px;
+            color: #111827;
         }
         .section-text {
             font-size: 12px;
-            color: #64748b;
-            margin-bottom: 14px;
+            color: #6b7280;
+            line-height: 1.45;
+        }
+        .job-create-panel .field {
+            margin-bottom: 16px;
+        }
+        .job-create-panel .field label,
+        .job-create-panel .field-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+        .req {
+            color: #ef4444;
+            font-weight: 800;
+        }
+        .field-hint {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+        .job-create-panel .field input[type="text"],
+        .job-create-panel .field input[type="number"],
+        .job-create-panel .field input[type="email"],
+        .job-create-panel .field select,
+        .job-create-panel .field textarea {
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 11px 14px;
+            background: #fff;
+            color: #111827;
+            font-size: 13px;
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+            appearance: none;
+        }
+        .job-create-panel .field select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1.4.8 6 5.4 10.6.8 12 2.2 6 8.2 0 2.2z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+        .job-create-panel .field input:focus,
+        .job-create-panel .field select:focus,
+        .job-create-panel .field textarea:focus {
+            border-color: #30aed8;
+            box-shadow: 0 0 0 3px rgba(48, 174, 216, 0.12);
         }
         .field-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
+            gap: 12px 16px;
         }
         .field-grid .field {
             margin-bottom: 0;
         }
-        .option-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+        .span-2 {
+            grid-column: span 2;
         }
-        .option-chip {
-            border: 1px solid #dbe7f0;
-            border-radius: 999px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #334155;
+        .affix-input {
+            display: flex;
+            align-items: stretch;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
             background: #fff;
         }
-        .option-chip input {
-            margin-right: 6px;
+        .affix-input:focus-within {
+            border-color: #30aed8;
+            box-shadow: 0 0 0 3px rgba(48, 174, 216, 0.12);
+        }
+        .affix-input .affix {
+            display: grid;
+            place-items: center;
+            min-width: 48px;
+            padding: 0 12px;
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 13px;
+            font-weight: 700;
+            border-right: 1px solid #e5e7eb;
+        }
+        .affix-input.suffix .affix {
+            border-right: none;
+            border-left: 1px solid #e5e7eb;
+        }
+        .affix-input input {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            min-width: 0;
+        }
+        .check-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px 28px;
+        }
+        .check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            max-width: 100%;
+        }
+        .check-item input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .check-box {
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 4px;
+            display: grid;
+            place-items: center;
+            margin-top: 1px;
+            flex-shrink: 0;
+            background: #fff;
+            color: transparent;
+            font-size: 11px;
+        }
+        .check-item input:checked + .check-box {
+            background: #1e97c4;
+            border-color: #1e97c4;
+            color: #fff;
+        }
+        .check-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .check-copy strong {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .check-copy span {
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        .rich-editor {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .rich-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 8px 10px;
+            border-bottom: 1px solid #eef2f7;
+            background: #fafafa;
+        }
+        .rich-toolbar button,
+        .rich-toolbar select {
+            height: 28px;
+            min-width: 28px;
+            border: none;
+            background: transparent;
+            color: #4b5563;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .rich-toolbar select {
+            font-size: 12px;
+            padding: 0 6px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+        }
+        .rich-toolbar button:hover {
+            background: #eef2f7;
+            color: #111827;
+        }
+        .rich-area {
+            min-height: 160px;
+            padding: 12px 14px;
+            font-size: 13px;
+            line-height: 1.6;
+            outline: none;
+        }
+        .rich-area:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+        }
+        .chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .choice-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f7fc;
+            color: #0f6f93;
+            border-radius: 999px;
+            padding: 6px 10px 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .choice-chip button {
+            border: none;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
         }
         .modal-footer .ghost-btn,
         .modal-footer .primary-btn {
             height: 42px;
-            padding: 0 16px;
-            border-radius: 14px;
+            padding: 0 18px;
+            border-radius: 10px;
+            min-width: 120px;
         }
-        .title-topline {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
+        .modal-footer .ghost-btn {
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #111827;
         }
-        .title-topline .chip-inline {
-            font-size: 11px;
+        .info-tip {
+            color: #9ca3af;
+            font-size: 12px;
+            cursor: help;
         }
         @media (max-width: 760px) {
             .modal-backdrop {
                 justify-content: center;
+                padding: 8px;
             }
-            .modal-panel {
+            .modal-panel,
+            .job-create-panel {
                 width: 100%;
+                max-height: calc(100vh - 16px);
             }
-            .field-grid {
+            .field-grid,
+            .field-grid .span-2 {
                 grid-template-columns: 1fr;
+                grid-column: auto;
+            }
+            .step {
+                font-size: 11px;
             }
         }
 CSS;
 
 $html = str_replace('</style>', $modalStyles . "\n    </style>", $html);
 
-$modal = <<<'HTML'
+$kbjiOptionsHtml = '<option value="">Pilih jabatan sesuai KBJI</option>';
+try {
+    $kbjiStmt = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY nama_jabatan ASC');
+    foreach ($kbjiStmt as $kbjiRow) {
+        $kbjiOptionsHtml .= '<option value="' . e($kbjiRow['kode_kbji']) . '">' . e($kbjiRow['nama_jabatan']) . ' (' . e($kbjiRow['kode_kbji']) . ')</option>';
+    }
+} catch (Throwable $kbjiError) {
+    // KBJI lookup is optional if the table is missing on a fresh setup.
+}
+
+$employerEmail = e($user['email'] ?? '');
+
+$modal = <<<HTML
     <div class="modal-backdrop" data-modal="job-create">
-        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="jobCreateTitle">
+        <div class="modal-panel job-create-panel" role="dialog" aria-modal="true" aria-labelledby="jobCreateTitle">
             <div class="modal-header">
-                <div class="title-topline">
-                    <div>
-                        <div class="modal-title" id="jobCreateTitle">Tambah Lowongan</div>
-                        <div class="modal-subtitle">Lengkapi form berikut untuk mengisi lowongan</div>
-                    </div>
-                </div>
-                <div class="stepper">
-                    <span class="step done"><span class="bubble">✓</span> Informasi Loker</span>
-                    <span class="step active"><span class="bubble">2</span> Persyaratan</span>
-                    <span class="step"><span class="bubble">3</span> Tambahan</span>
+                <button type="button" class="modal-close" data-close-modal="job-create" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+                <div class="modal-title" id="jobCreateTitle">Tambah Lowongan</div>
+                <div class="modal-subtitle">Lengkapi form berikut untuk mengisi lowongan</div>
+                <div class="stepper" data-job-stepper>
+                    <span class="step active" data-step-label="1"><span class="bubble">1</span> Informasi Loker</span>
+                    <span class="step-line" data-step-line="1"></span>
+                    <span class="step" data-step-label="2"><span class="bubble">2</span> Persyaratan</span>
+                    <span class="step-line" data-step-line="2"></span>
+                    <span class="step" data-step-label="3"><span class="bubble">3</span> Tambahan</span>
                 </div>
             </div>
-            <form method="post" action="dashboard.php">
+            <form method="post" action="dashboard.php" novalidate data-job-create-form>
                 <input type="hidden" name="create_job" value="1">
+                <input type="hidden" name="status" value="Draft">
                 <div class="modal-body">
-                    <div class="modal-section">
-                        <div class="section-title">Informasi Loker</div>
-                        <div class="section-text">Judul, lokasi, dan tipe pekerjaan.</div>
-                        <div class="field-grid">
+                    <div class="job-step" data-job-step="1">
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-briefcase"></i></div>
+                                <div>
+                                    <div class="section-title">Informasi Loker</div>
+                                    <div class="section-text">Judul, lokasi, hingga jenis disabilitas loker</div>
+                                </div>
+                            </div>
                             <div class="field">
-                                <label>Judul loker</label>
+                                <label>Judul loker <span class="req">*</span></label>
                                 <input type="text" name="job_title" placeholder="Masukkan judul loker" required>
                             </div>
                             <div class="field">
-                                <label>Lokasi loker</label>
-                                <input type="text" name="job_location" placeholder="Pilih lokasi loker" required>
+                                <label>Deskripsi loker <span class="req">*</span></label>
+                                <div class="rich-editor" data-rich-editor>
+                                    <div class="rich-toolbar">
+                                        <button type="button" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                                        <button type="button" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                                        <select data-block>
+                                            <option value="p">Paragraph</option>
+                                            <option value="h3">Heading</option>
+                                        </select>
+                                        <button type="button" data-cmd="bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                                        <button type="button" data-cmd="italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                                        <button type="button" data-cmd="underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
+                                        <button type="button" data-cmd="strikeThrough" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
+                                        <button type="button" data-cmd="justifyLeft" title="Rata kiri"><i class="fa-solid fa-align-left"></i></button>
+                                        <button type="button" data-cmd="justifyCenter" title="Rata tengah"><i class="fa-solid fa-align-center"></i></button>
+                                        <button type="button" data-cmd="justifyRight" title="Rata kanan"><i class="fa-solid fa-align-right"></i></button>
+                                        <button type="button" data-cmd="insertUnorderedList" title="Bullet"><i class="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" data-cmd="insertOrderedList" title="Number"><i class="fa-solid fa-list-ol"></i></button>
+                                        <button type="button" data-cmd="indent" title="Indent"><i class="fa-solid fa-indent"></i></button>
+                                        <button type="button" data-cmd="outdent" title="Outdent"><i class="fa-solid fa-outdent"></i></button>
+                                        <button type="button" data-cmd="createLink" title="Tautan"><i class="fa-solid fa-link"></i></button>
+                                    </div>
+                                    <div class="rich-area" contenteditable="true" data-placeholder="Masukkan deskripsi loker"></div>
+                                    <textarea name="job_description" required hidden></textarea>
+                                </div>
                             </div>
                             <div class="field">
-                                <label>Jenis pekerjaan</label>
-                                <select name="job_type" required>
-                                    <option value="">Pilih jenis pekerjaan</option>
-                                    <option>Full Time</option>
-                                    <option>Part Time</option>
-                                    <option>Freelance</option>
-                                    <option>Remote</option>
+                                <label>Jabatan sesuai KBJI <span class="req">*</span></label>
+                                <select name="kbji_code" required>{$kbjiOptionsHtml}</select>
+                            </div>
+                            <div class="field">
+                                <label>Lokasi loker <span class="req">*</span></label>
+                                <select name="job_location" required>
+                                    <option value="">Pilih lokasi loker</option>
+                                    <option>Kota Bekasi</option>
+                                    <option>Kabupaten Bekasi</option>
+                                    <option>Kota Jakarta Pusat</option>
+                                    <option>Kota Jakarta Selatan</option>
+                                    <option>Kota Jakarta Timur</option>
+                                    <option>Kota Jakarta Barat</option>
+                                    <option>Kota Jakarta Utara</option>
+                                    <option>Kota Bandung</option>
+                                    <option>Kota Surabaya</option>
+                                    <option>Kota Semarang</option>
+                                    <option>Kota Yogyakarta</option>
+                                    <option>Kota Depok</option>
+                                    <option>Kota Tangerang</option>
+                                    <option>Kota Tangerang Selatan</option>
+                                    <option>Kota Medan</option>
+                                    <option>Kota Makassar</option>
+                                    <option>Kota Denpasar</option>
+                                </select>
+                            </div>
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label>Jenis pekerjaan <span class="req">*</span></label>
+                                    <select name="job_type" required>
+                                        <option value="">Pilih jenis pekerjaan</option>
+                                        <option>Penuh Waktu</option>
+                                        <option>Paruh Waktu</option>
+                                        <option>Kontrak</option>
+                                        <option>Magang</option>
+                                        <option>Freelance</option>
+                                        <option>Harian</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Bidang pekerjaan <span class="req">*</span></label>
+                                    <select name="job_field" required>
+                                        <option value="">Pilih bidang pekerjaan</option>
+                                        <option>Teknologi Informasi</option>
+                                        <option>Administrasi</option>
+                                        <option>Keuangan &amp; Akuntansi</option>
+                                        <option>Penjualan &amp; Marketing</option>
+                                        <option>Kuliner &amp; Hospitality</option>
+                                        <option>Kesehatan</option>
+                                        <option>Pendidikan</option>
+                                        <option>Teknik &amp; Manufaktur</option>
+                                        <option>Logistik</option>
+                                        <option>Keamanan</option>
+                                        <option>Lainnya</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Industri / Sektor <span class="req">*</span></label>
+                                <select name="industry" required>
+                                    <option value="">Pilih industri / sektor</option>
+                                    <option>Informasi dan Komunikasi</option>
+                                    <option>Penyediaan Akomodasi dan Makan Minum</option>
+                                    <option>Jasa Keuangan dan Asuransi</option>
+                                    <option>Industri Pengolahan</option>
+                                    <option>Perdagangan Besar dan Eceran</option>
+                                    <option>Jasa Kesehatan dan Kegiatan Sosial</option>
+                                    <option>Pendidikan</option>
+                                    <option>Konstruksi</option>
+                                    <option>Transportasi dan Pergudangan</option>
+                                    <option>Aktivitas Jasa Lainnya</option>
                                 </select>
                             </div>
                             <div class="field">
-                                <label>Bidang pekerjaan</label>
-                                <input type="text" name="industry" placeholder="Pilih bidang pekerjaan">
+                                <div class="field-label">Kondisi fisik <span class="req">*</span></div>
+                                <div class="check-row" data-required-group="Pilih minimal satu kondisi fisik">
+                                    <label class="check-item">
+                                        <input type="checkbox" name="physical_condition[]" value="Disabilitas" checked>
+                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                        <span class="check-copy"><strong>Disabilitas</strong></span>
+                                    </label>
+                                    <label class="check-item">
+                                        <input type="checkbox" name="physical_condition[]" value="Non Disabilitas" checked>
+                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                        <span class="check-copy"><strong>Non Disabilitas</strong></span>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="field" style="grid-column: span 2;">
-                                <label>Jabatan (KBJI)</label>
-                                <select name="kbji_code" required>
-                                    <option value="">Pilih Jabatan Standar KBJI</option>
-                                    <?php
-                                    $kbjiStmt = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY nama_jabatan ASC');
-                                    while ($kbji = $kbjiStmt->fetch()) {
-                                        echo \'<option value="\' . $kbji[\'kode_kbji\'] . \'">\' . htmlspecialchars($kbji[\'nama_jabatan\']) . \' (\' . $kbji[\'kode_kbji\'] . \')</option>\';
-                                    }
-                                    ?>
+                            <div class="field">
+                                <div class="field-label">Jenis kelamin <span class="req">*</span></div>
+                                <div class="check-row" data-required-group="Pilih minimal satu jenis kelamin">
+                                    <label class="check-item">
+                                        <input type="checkbox" name="gender[]" value="Laki-laki" checked>
+                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                        <span class="check-copy"><strong>Laki-laki</strong></span>
+                                    </label>
+                                    <label class="check-item">
+                                        <input type="checkbox" name="gender[]" value="Perempuan" checked>
+                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                        <span class="check-copy"><strong>Perempuan</strong></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Jenis disabilitas tidak diperbolehkan <i class="fa-solid fa-circle-info info-tip" title="Kosongkan jika seluruh jenis disabilitas diperbolehkan"></i></label>
+                                <select name="disability_excluded">
+                                    <option value="">Pilih jenis disabilitas</option>
+                                    <option>Tuna Netra</option>
+                                    <option>Tuna Rungu</option>
+                                    <option>Tuna Wicara</option>
+                                    <option>Tuna Daksa</option>
+                                    <option>Tuna Grahita</option>
+                                    <option>Autisme</option>
+                                    <option>Disabilitas Ganda</option>
                                 </select>
+                                <span class="field-hint">Pilih jenis disabilitas yang tidak diperbolehkan untuk melamar.</span>
                             </div>
                         </div>
-                        <div class="field" style="margin-top:12px;">
-                            <label>Deskripsi loker</label>
-                            <textarea name="job_description" placeholder="Masukkan deskripsi loker" required></textarea>
+
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div>
+                                    <div class="section-title">Preferensi Gaji</div>
+                                    <div class="section-text">Besaran dan pengaturan gaji pada loker</div>
+                                </div>
+                            </div>
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label>Gaji minimal <span class="req">*</span></label>
+                                    <div class="affix-input">
+                                        <span class="affix">Rp</span>
+                                        <input type="number" name="salary_min" min="0" step="1000" placeholder="Isi minimal gaji..." required>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label>Gaji maksimal <span class="req">*</span></label>
+                                    <div class="affix-input">
+                                        <span class="affix">Rp</span>
+                                        <input type="number" name="salary_max" min="0" step="1000" placeholder="Isi maksimal gaji..." required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="check-item">
+                                    <input type="checkbox" name="show_salary" value="1">
+                                    <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                    <span class="check-copy">
+                                        <strong>Tampilkan gaji</strong>
+                                        <span>Fun facts: Berbagi rentang gaji meningkatkan klik posting pekerjaan kamu.</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div>
+                                    <div class="section-title">Preferensi Lainnya</div>
+                                    <div class="section-text">Tentukan preferensi lainnya untuk lowongan pekerjaan</div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="check-item">
+                                    <input type="checkbox" name="is_remote" value="1">
+                                    <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                    <span class="check-copy">
+                                        <strong>Remote working</strong>
+                                        <span>Dapat bekerja secara remote (jarak jauh)</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="field">
+                                <label class="check-item">
+                                    <input type="checkbox" name="is_limited" value="1">
+                                    <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                    <span class="check-copy">
+                                        <strong>Terbatas</strong>
+                                        <span>Loker tidak dipublikasikan secara umum</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                                <div>
+                                    <div class="section-title">Durasi Tayang &amp; Kuota Loker</div>
+                                    <div class="section-text">Tentukan berapa lama loker tayang setelah diverifikasi dan jumlah kuota yang diperlukan</div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Lama expired loker <span class="req">*</span></label>
+                                <select name="expiry_days" required>
+                                    <option value="">Pilih lama expired loker</option>
+                                    <option value="7">7 hari</option>
+                                    <option value="14">14 hari</option>
+                                    <option value="30">30 hari</option>
+                                    <option value="60">60 hari</option>
+                                    <option value="90">90 hari</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Jumlah lowongan <span class="req">*</span></label>
+                                <div class="affix-input suffix">
+                                    <input type="number" name="quota" min="1" value="1" placeholder="Isi jumlah lowongan" required>
+                                    <span class="affix">Orang</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="modal-section">
-                        <div class="section-title">Persyaratan</div>
-                        <div class="section-text">Isi persyaratan umum agar proses publish lebih rapi.</div>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Pendidikan minimal</label>
-                                <select name="education_required">
-                                    <option>SMK / SMA</option>
-                                    <option>D3</option>
-                                    <option>S1</option>
-                                    <option>Lainnya</option>
-                                </select>
+                    <div class="job-step" data-job-step="2" hidden>
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                                <div>
+                                    <div class="section-title">Persyaratan Umum</div>
+                                    <div class="section-text">Informasi pendidikan, pengalaman, status pernikahan, dan usia.</div>
+                                </div>
+                            </div>
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label>Pendidikan minimal <span class="req">*</span></label>
+                                    <select name="education_required" required>
+                                        <option value="">Pilih pendidikan minimal</option>
+                                        <option>SD</option>
+                                        <option>SMP</option>
+                                        <option>SMA / SMK</option>
+                                        <option>D1</option>
+                                        <option>D2</option>
+                                        <option>D3</option>
+                                        <option>D4 / S1</option>
+                                        <option>S2</option>
+                                        <option>S3</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Pengalaman dibutuhkan <span class="req">*</span></label>
+                                    <select name="experience_required" required>
+                                        <option value="">Pilih pengalaman</option>
+                                        <option>Tanpa pengalaman</option>
+                                        <option>Kurang dari 1 tahun</option>
+                                        <option>1 - 2 tahun</option>
+                                        <option>3 - 5 tahun</option>
+                                        <option>Lebih dari 5 tahun</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="field">
-                                <label>Pengalaman dibutuhkan</label>
-                                <select name="experience_required">
-                                    <option>Tanpa pengalaman</option>
-                                    <option>1 - 2 tahun</option>
-                                    <option>3 - 5 tahun</option>
-                                    <option>Lebih dari 5 tahun</option>
-                                </select>
+                                <div class="field-label">Status pernikahan <span class="req">*</span></div>
+                                <div class="check-row" data-required-group="Pilih minimal satu status pernikahan">
+                                    <label class="check-item">
+                                        <input type="checkbox" name="marital_status[]" value="Telah Menikah" checked>
+                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                        <span class="check-copy"><strong>Telah Menikah</strong></span>
+                                    </label>
+                                    <label class="check-item">
+                                        <input type="checkbox" name="marital_status[]" value="Lajang / Belum Menikah" checked>
+                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
+                                        <span class="check-copy"><strong>Lajang / Belum Menikah</strong></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label>Usia minimal <span class="req">*</span></label>
+                                    <div class="affix-input suffix">
+                                        <input type="number" name="age_min" min="15" max="70" placeholder="Isi usia minimal" required>
+                                        <span class="affix">Tahun</span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label>Usia maksimal <span class="req">*</span></label>
+                                    <div class="affix-input suffix">
+                                        <input type="number" name="age_max" min="15" max="70" placeholder="Isi usia maksimal" required>
+                                        <span class="affix">Tahun</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                                <div>
+                                    <div class="section-title">Persyaratan Khusus</div>
+                                    <div class="section-text">Masukkan persyaratan khusus untuk loker ini.</div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="rich-editor" data-rich-editor>
+                                    <div class="rich-toolbar">
+                                        <button type="button" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                                        <button type="button" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                                        <select data-block>
+                                            <option value="p">Paragraph</option>
+                                            <option value="h3">Heading</option>
+                                        </select>
+                                        <button type="button" data-cmd="bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                                        <button type="button" data-cmd="italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                                        <button type="button" data-cmd="underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
+                                        <button type="button" data-cmd="strikeThrough" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
+                                        <button type="button" data-cmd="justifyLeft" title="Rata kiri"><i class="fa-solid fa-align-left"></i></button>
+                                        <button type="button" data-cmd="justifyCenter" title="Rata tengah"><i class="fa-solid fa-align-center"></i></button>
+                                        <button type="button" data-cmd="justifyRight" title="Rata kanan"><i class="fa-solid fa-align-right"></i></button>
+                                        <button type="button" data-cmd="insertUnorderedList" title="Bullet"><i class="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" data-cmd="insertOrderedList" title="Number"><i class="fa-solid fa-list-ol"></i></button>
+                                        <button type="button" data-cmd="createLink" title="Tautan"><i class="fa-solid fa-link"></i></button>
+                                    </div>
+                                    <div class="rich-area" contenteditable="true" data-placeholder="Masukkan persyaratan khusus"></div>
+                                    <textarea name="special_requirements" hidden></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="modal-section">
-                        <div class="section-title">Tambahan</div>
-                        <div class="section-text">Atur kuota dan status awal lowongan.</div>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Kuota</label>
-                                <input type="number" name="quota" min="1" value="1">
+                    <div class="job-step" data-job-step="3" hidden>
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                                <div>
+                                    <div class="section-title">Skill / Keahlian</div>
+                                    <div class="section-text">Keahlian sangat berpengaruh untuk sistem pencocokan dengan pencari kerja.</div>
+                                </div>
                             </div>
                             <div class="field">
-                                <label>Status awal</label>
-                                <select name="status">
-                                    <option value="Draft">Draft</option>
-                                    <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                                <select data-chip-select="skills">
+                                    <option value="">Pilih keahlian</option>
+                                    <option>Microsoft Office</option>
+                                    <option>Komunikasi</option>
+                                    <option>Pelayanan Pelanggan</option>
+                                    <option>Administrasi</option>
+                                    <option>Memasak</option>
+                                    <option>Mengemudi</option>
+                                    <option>Bahasa Inggris</option>
+                                    <option>Komputer</option>
+                                    <option>Penjualan</option>
+                                    <option>Akuntansi</option>
+                                    <option>Desain Grafis</option>
+                                    <option>Pemrograman</option>
+                                    <option>Manajemen Waktu</option>
+                                    <option>Kerja Tim</option>
                                 </select>
+                                <div class="chip-list" data-chip-list="skills"></div>
+                                <input type="hidden" name="skills" data-chip-value="skills" required>
+                            </div>
+                        </div>
+                        <div class="modal-section">
+                            <div class="section-heading">
+                                <div class="section-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                                <div>
+                                    <div class="section-title">Kontak</div>
+                                    <div class="section-text">Kami akan mengirimkan email ke daftar email di bawah ini untuk setiap lamaran yang masuk.</div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <input type="email" data-chip-input="contacts" placeholder="Klik untuk menambahkan kontak">
+                                <div class="chip-list" data-chip-list="contacts"></div>
+                                <input type="hidden" name="contacts" data-chip-value="contacts" value="{$employerEmail}" required>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="ghost-btn" data-close-modal="job-create">Batal</button>
-                    <button type="submit" class="primary-btn">Simpan Lowongan</button>
+                    <button type="button" class="ghost-btn" data-job-cancel data-close-modal="job-create">Batal</button>
+                    <button type="button" class="ghost-btn" data-job-back hidden><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+                    <button type="button" class="primary-btn" data-job-next>Selanjutnya</button>
+                    <button type="submit" class="primary-btn" data-job-submit hidden>Tambah Loker</button>
                 </div>
             </form>
         </div>
@@ -447,13 +1050,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
     }
 
     $title = trim($_POST['job_title'] ?? '');
-    $description = trim($_POST['job_description'] ?? '');
+    $description = trim(strip_tags($_POST['job_description'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>'));
     $location = trim($_POST['job_location'] ?? '');
     $jobType = trim($_POST['job_type'] ?? '');
     $industry = trim($_POST['industry'] ?? '');
     $kbjiCode = trim($_POST['kbji_code'] ?? '');
     $quota = max(1, (int) ($_POST['quota'] ?? 1));
     $status = $_POST['status'] ?? 'Draft';
+    $salaryMin = ($_POST['salary_min'] ?? '') !== '' ? (int) $_POST['salary_min'] : null;
+    $salaryMax = ($_POST['salary_max'] ?? '') !== '' ? (int) $_POST['salary_max'] : null;
+    $details = json_encode([
+        'job_field' => trim($_POST['job_field'] ?? ''),
+        'physical_conditions' => array_values(array_filter((array) ($_POST['physical_condition'] ?? []))),
+        'genders' => array_values(array_filter((array) ($_POST['gender'] ?? []))),
+        'disability_excluded' => trim($_POST['disability_excluded'] ?? ''),
+        'show_salary' => !empty($_POST['show_salary']),
+        'is_remote' => !empty($_POST['is_remote']),
+        'is_limited' => !empty($_POST['is_limited']),
+        'expiry_days' => (int) ($_POST['expiry_days'] ?? 0),
+        'education_required' => trim($_POST['education_required'] ?? ''),
+        'experience_required' => trim($_POST['experience_required'] ?? ''),
+        'marital_statuses' => array_values(array_filter((array) ($_POST['marital_status'] ?? []))),
+        'age_min' => ($_POST['age_min'] ?? '') !== '' ? (int) $_POST['age_min'] : null,
+        'age_max' => ($_POST['age_max'] ?? '') !== '' ? (int) $_POST['age_max'] : null,
+        'special_requirements' => trim(strip_tags($_POST['special_requirements'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>')),
+        'skills' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['skills'] ?? ''))))),
+        'contacts' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['contacts'] ?? ''))))),
+    ], JSON_UNESCAPED_UNICODE);
 
     if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
         // Cek duplicate job untuk KBJI yang sama
@@ -465,8 +1088,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
             exit;
         }
 
-        $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, status, quota, kbji_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $status, $quota, $kbjiCode]);
+        $hasDetails = (bool) db()->query("SHOW COLUMNS FROM job_posts LIKE 'details'")->fetch();
+        if (!$hasDetails) {
+            db()->exec('ALTER TABLE job_posts ADD COLUMN details TEXT NULL');
+        }
+
+        $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, status, salary_min, salary_max, quota, kbji_code, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details]);
         flash('success', 'Lowongan baru berhasil disimpan sebagai ' . $status . '.');
         redirect('dashboard.php#lowongan');
     } else {

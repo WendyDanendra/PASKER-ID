@@ -127,6 +127,7 @@ CREATE TABLE job_posts (
     salary_max INT NULL,
     quota INT NOT NULL DEFAULT 1,
     kbji_code VARCHAR(20) NULL,
+    details TEXT NULL,
     parent_job_id INT NULL,
     unfulfilled_reason TEXT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
