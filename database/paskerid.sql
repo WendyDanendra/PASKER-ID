@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS paskerid CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE paskerid;
+CREATE DATABASE IF NOT EXISTS `pasker-id` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `pasker-id`;
 
 DROP TABLE IF EXISTS kbji_data;
 DROP TABLE IF EXISTS job_posts;
@@ -135,9 +135,9 @@ CREATE TABLE job_posts (
 );
 
 INSERT INTO users (name, email, password_hash, role, profile_complete) VALUES
-('Admin Pusat', 'admin@paskerid.test', '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', 1),
-('Perorangan Demo', 'perorangan@paskerid.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', 0),
-('Pencari Kerja Demo', 'seeker@paskerid.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', 0);
+('Admin Pusat', 'admin@pasker-id.test', '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', 1),
+('Perorangan Demo', 'perorangan@pasker-id.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', 0),
+('Pencari Kerja Demo', 'seeker@pasker-id.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', 0);
 
 INSERT INTO employer_profiles (user_id, owner_name, profession, phone, address, city, province, description, verified, active_until) VALUES
 (2, 'Perorangan Demo', 'Kuliner', '08123456789', 'Bekasi', 'Kota Bekasi', 'Jawa Barat', 'Demo pemberi kerja individu untuk kebutuhan showcase aplikasi.', 1, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 3 MONTH));

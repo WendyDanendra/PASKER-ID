@@ -55,13 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="auth-copy auth-copy-highlight">
                 <p><strong>Alur demo:</strong> pemberi kerja individu wajib melengkapi profil dulu sebelum masuk dashboard, pencari kerja akan diarahkan ke form biodata, dan admin langsung masuk ke daftar pemberi kerja individu.</p>
-                <p>Akun seed tersedia untuk demo, dan semua role sudah dipisah di database <strong>paskerid</strong>.</p>
+                <p>Akun seed tersedia untuk demo, dan semua role sudah dipisah di database <strong>pasker-id</strong>.</p>
             </div>
             <div class="demo-card">
                 <p><strong>Demo Account</strong></p>
-                <div class="demo-row"><span>Admin</span><code>admin@paskerid.test / admin123</code></div>
-                <div class="demo-row"><span>Perorangan</span><code>perorangan@paskerid.test / demo123</code></div>
-                <div class="demo-row"><span>Pencari kerja</span><code>seeker@paskerid.test / seeker123</code></div>
+                <div class="demo-row"><span>Admin</span><code>admin@pasker-id.test / admin123</code></div>
+                <div class="demo-row"><span>Perorangan</span><code>perorangan@pasker-id.test / demo123</code></div>
+                <div class="demo-row"><span>Pencari kerja</span><code>seeker@pasker-id.test / seeker123</code></div>
             </div>
         </div>
         <div class="auth-panel">

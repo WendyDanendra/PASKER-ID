@@ -5,7 +5,7 @@ define('APP_NAME', 'Karirhub');
 define('APP_URL', '');
 
 define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'paskerid');
+define('DB_NAME', 'pasker-id');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 

@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="auth-panel">
             <div class="auth-card">
                 <h2>Registrasi</h2>
-                <p>Buat akun baru untuk demo web Pasker ID.</p>
+                <p>Buat akun baru untuk demo web pasker-id.</p>
 
                 <?php if ($error): ?>
                     <div class="alert-box alert-error"><?php echo e($error); ?></div>
