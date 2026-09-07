@@ -187,6 +187,156 @@ function job_yes_no(bool $value): string
     return $value ? 'Ya' : 'Tidak';
 }
 
+function time_ago_id(?string $datetime): string
+{
+    $timestamp = strtotime((string) $datetime);
+    if (!$timestamp) {
+        return '-';
+    }
+
+    $diff = max(0, time() - $timestamp);
+    if ($diff < 60) {
+        return 'baru saja';
+    }
+    if ($diff < 3600) {
+        return 'sekitar ' . (int) floor($diff / 60) . ' menit yang lalu';
+    }
+    if ($diff < 86400) {
+        return 'sekitar ' . (int) floor($diff / 3600) . ' jam yang lalu';
+    }
+    if ($diff < 2592000) {
+        $days = (int) floor($diff / 86400);
+        return $days . ' hari yang lalu';
+    }
+
+    return date('d M Y', $timestamp);
+}
+
+function job_public_salary(array $job): string
+{
+    $data = job_to_form_data($job);
+    if (empty($data['show_salary']) || ($data['salary_min'] === null && $data['salary_max'] === null)) {
+        return 'Dirahasiakan';
+    }
+
+    $min = $data['salary_min'] !== null ? format_rupiah($data['salary_min']) : '';
+    $max = $data['salary_max'] !== null ? format_rupiah($data['salary_max']) : '';
+    if ($min && $max) {
+        return $min . ' - ' . $max;
+    }
+
+    return $min ?: $max;
+}
+
+function job_apply_deadline(array $job): string
+{
+    $days = (int) (job_to_form_data($job)['expiry_days'] ?: 30);
+    $created = strtotime((string) ($job['created_at'] ?? 'now')) ?: time();
+    return date('d M Y', strtotime('+' . $days . ' days', $created));
+}
+
+function job_employer_display_name(array $job): string
+{
+    $owner = trim((string) ($job['owner_name'] ?? ''));
+    return $owner !== '' ? $owner : (string) ($job['employer_name'] ?? 'Pemberi kerja individu');
+}
+
+function job_placement_address(array $job): string
+{
+    $parts = array_values(array_filter([
+        trim((string) ($job['address'] ?? '')),
+        trim((string) ($job['location'] ?? '')),
+        trim((string) ($job['city'] ?? '')),
+        trim((string) ($job['province'] ?? '')),
+    ], static fn($value) => $value !== ''));
+    $unique = [];
+    foreach ($parts as $part) {
+        if (!in_array($part, $unique, true)) {
+            $unique[] = $part;
+        }
+    }
+
+    return $unique ? implode(', ', $unique) : '-';
+}
+
+function job_employer_contact(array $job): string
+{
+    return trim((string) (($job['whatsapp'] ?? '') ?: ($job['phone'] ?? ''))) ?: '-';
+}
+
+function seeker_city_options(): array
+{
+    return [
+        'Kota Bekasi',
+        'Kabupaten Bekasi',
+        'Kota Jakarta Pusat',
+        'Kota Jakarta Selatan',
+        'Kota Jakarta Timur',
+        'Kota Jakarta Barat',
+        'Kota Jakarta Utara',
+        'Kota Bandung',
+        'Kota Surabaya',
+        'Kota Semarang',
+        'Kota Yogyakarta',
+        'Kota Depok',
+        'Kota Tangerang',
+        'Kota Tangerang Selatan',
+        'Kota Medan',
+        'Kota Makassar',
+        'Kota Denpasar',
+    ];
+}
+
+function seeker_job_type_options(): array
+{
+    return ['Penuh Waktu', 'Paruh Waktu', 'Kontrak', 'Magang', 'Freelance', 'Harian'];
+}
+
+function public_job_select_sql(): string
+{
+    return 'SELECT j.*, u.name AS employer_name, u.email AS employer_email,
+            ep.owner_name, ep.profession, ep.address, ep.city, ep.province, ep.phone, ep.whatsapp,
+            ep.verified, ep.description AS employer_bio, ep.workplace_photo, ep.latitude, ep.longitude
+        FROM job_posts j
+        JOIN users u ON u.id = j.user_id
+        LEFT JOIN employer_profiles ep ON ep.user_id = j.user_id
+        WHERE j.status = "Tayang"';
+}
+
+function render_seeker_job_card(array $job, array $appliedIds): string
+{
+    $applied = in_array((int) $job['id'], $appliedIds, true);
+    $name = job_employer_display_name($job);
+    $initial = strtoupper(mb_substr($name, 0, 1));
+    $photo = trim((string) ($job['workplace_photo'] ?? ''));
+    $avatar = $photo !== ''
+        ? '<img src="' . e($photo) . '" alt="' . e($name) . '">'
+        : e($initial);
+    $titleUrl = 'seeker.php?page=job&id=' . (int) $job['id'];
+    $quota = max(1, (int) ($job['quota'] ?? 1));
+
+    $html = '<article class="vacancy-card">';
+    $html .= '<div class="vacancy-card-top">';
+    $html .= '<div class="vacancy-logo">' . $avatar . '</div>';
+    $html .= '<span class="vacancy-time">' . e(time_ago_id($job['created_at'] ?? null)) . '</span>';
+    $html .= '</div>';
+    $html .= '<h3><a href="' . e($titleUrl) . '">' . e($job['title']) . '</a></h3>';
+    $html .= '<div class="vacancy-employer">' . e($name) . ' <span class="perorangan-badge">Perorangan</span></div>';
+    $html .= '<div class="vacancy-location"><i class="fa-solid fa-location-dot"></i> ' . e($job['location'] ?: '-') . '</div>';
+    $html .= '<div class="vacancy-salary"><span>Kisaran Gaji</span><strong>' . e(job_public_salary($job)) . '</strong></div>';
+    $html .= '<div class="vacancy-deadline">Lamar sebelum ' . e(job_apply_deadline($job)) . '</div>';
+    $html .= '<div class="vacancy-badge">Tersisa ' . $quota . ' lowongan</div>';
+    if ($applied) {
+        $html .= '<button class="vacancy-apply is-disabled" type="button" disabled>Sudah Dilamar</button>';
+    } else {
+        $html .= '<form method="post" class="vacancy-apply-form"><input type="hidden" name="apply_job_id" value="' . (int) $job['id'] . '"><button class="vacancy-apply" type="submit">Lamar Sekarang</button></form>';
+    }
+    $html .= '<div class="vacancy-card-foot"><span>Lowongan dari <strong>Karirhub Perorangan</strong></span><span class="vacancy-source-mark"><i class="fa-solid fa-star"></i> Karirhub</span></div>';
+    $html .= '</article>';
+
+    return $html;
+}
+
 function kbji_name_map(): array
 {
     static $map = null;

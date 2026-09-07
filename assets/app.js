@@ -698,6 +698,32 @@ function initJobReviewDrawer() {
     });
 }
 
+function initSeekerJobFilters() {
+    const extra = [...document.querySelectorAll('[data-extra-location]')];
+    const toggle = document.querySelector('[data-toggle-locations]');
+    if (toggle && extra.length) {
+        toggle.addEventListener('click', () => {
+            const hidden = extra[0].hidden;
+            extra.forEach((item) => {
+                item.hidden = !hidden;
+            });
+            toggle.textContent = hidden ? 'Lihat lebih sedikit' : 'Lihat lebih banyak';
+        });
+    }
+
+    const search = document.querySelector('[data-filter-location]');
+    search?.addEventListener('input', () => {
+        const query = search.value.trim().toLowerCase();
+        document.querySelectorAll('[data-location-options] .filter-check').forEach((label) => {
+            const match = label.textContent.toLowerCase().includes(query);
+            label.style.display = match || query === '' ? '' : 'none';
+            if (query !== '' && match) {
+                label.hidden = false;
+            }
+        });
+    });
+}
+
 function initNotifications() {
     const wrap = document.querySelector('.notif-wrap');
     if (!wrap) {
@@ -731,6 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initJobCreateWizard();
     initAdminJobReview();
     initJobReviewDrawer();
+    initSeekerJobFilters();
     initSidebarToggle();
     initNotifications();
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
