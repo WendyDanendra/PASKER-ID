@@ -640,31 +640,39 @@ function initJobReviewDrawer() {
         return;
     }
 
+    document.body.appendChild(drawer);
+
     const close = () => {
         drawer.hidden = true;
+        drawer.classList.remove('is-open');
         document.body.style.overflow = '';
         body.replaceChildren();
     };
 
     const open = (jobId) => {
         const template = document.querySelector(`[data-job-review-template="${jobId}"]`);
-        if (!template) {
-            return;
+        body.replaceChildren();
+        if (template) {
+            body.appendChild(template.content.cloneNode(true));
+        } else {
+            body.innerHTML = '<p class="job-review-empty">Detail lowongan tidak ditemukan.</p>';
         }
-        const content = template.content.cloneNode(true);
-        body.replaceChildren(content);
         const heading = body.querySelector('.job-review-summary h3');
-        if (title && heading) {
-            title.textContent = heading.textContent || 'Detail lengkap';
+        if (title) {
+            title.textContent = heading?.textContent || 'Detail lengkap';
         }
         body.querySelectorAll('[data-review-form]').forEach(bindAdminReviewForm);
+        drawer.removeAttribute('hidden');
         drawer.hidden = false;
+        drawer.classList.add('is-open');
         document.body.style.overflow = 'hidden';
         body.scrollTop = 0;
     };
 
     document.querySelectorAll('[data-open-job-review]').forEach((button) => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             open(button.dataset.openJobReview);
         });
     });
