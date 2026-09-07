@@ -38,6 +38,7 @@ function ensure_platform_schema(): void
         'parent_job_id' => 'INT NULL',
         'unfulfilled_reason' => 'TEXT NULL',
         'admin_notes' => 'TEXT NULL',
+        'revision_opened_at' => 'DATETIME NULL',
     ];
     foreach ($jobAdds as $name => $definition) {
         if (!in_array($name, $jobColumns, true)) {
@@ -147,6 +148,79 @@ function job_status_meta(string $status): array
         'Penuh' => ['label' => 'Penuh', 'class' => 'full'],
         default => ['label' => $status, 'class' => 'draft'],
     };
+}
+
+function job_default_approve_note(): string
+{
+    return 'Lowongan telah memenuhi syarat dan disetujui untuk ditayangkan';
+}
+
+function job_revision_quick_tags(): array
+{
+    return [
+        'Deskripsi pekerjaan kurang lengkap/jelas',
+        'Kode KBJI tidak sesuai dengan posisi',
+        'Persyaratan atau kualifikasi tidak sesuai ketentuan',
+        'Lokasi, jenis pekerjaan, atau informasi gaji tidak jelas',
+        'Data lowongan tidak lengkap',
+    ];
+}
+
+function parse_job_details(?string $json): array
+{
+    $decoded = json_decode((string) $json, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function job_decision_editable(array $job): bool
+{
+    $status = (string) ($job['status'] ?? '');
+    if (!in_array($status, ['Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditolak'], true)) {
+        return false;
+    }
+
+    // After the employer opens and works on the revision form, the saved
+    // decision can no longer be changed until they resubmit.
+    if ($status === 'Perlu Revisi' && !empty($job['revision_opened_at'])) {
+        return false;
+    }
+
+    return true;
+}
+
+function job_to_form_data(array $job): array
+{
+    $details = parse_job_details($job['details'] ?? null);
+
+    return [
+        'id' => (int) ($job['id'] ?? 0),
+        'title' => (string) ($job['title'] ?? ''),
+        'description' => (string) ($job['description'] ?? ''),
+        'location' => (string) ($job['location'] ?? ''),
+        'job_type' => (string) ($job['job_type'] ?? ''),
+        'industry' => (string) ($job['industry'] ?? ''),
+        'salary_min' => $job['salary_min'] ?? null,
+        'salary_max' => $job['salary_max'] ?? null,
+        'quota' => (int) ($job['quota'] ?? 1),
+        'kbji_code' => (string) ($job['kbji_code'] ?? ''),
+        'admin_notes' => (string) ($job['admin_notes'] ?? ''),
+        'job_field' => (string) ($details['job_field'] ?? ''),
+        'physical_conditions' => array_values((array) ($details['physical_conditions'] ?? ['Disabilitas', 'Non Disabilitas'])),
+        'genders' => array_values((array) ($details['genders'] ?? ['Laki-laki', 'Perempuan'])),
+        'disability_excluded' => (string) ($details['disability_excluded'] ?? ''),
+        'show_salary' => !empty($details['show_salary']),
+        'is_remote' => !empty($details['is_remote']),
+        'is_limited' => !empty($details['is_limited']),
+        'expiry_days' => ((int) ($details['expiry_days'] ?? 0)) > 0 ? (int) $details['expiry_days'] : '',
+        'education_required' => (string) ($details['education_required'] ?? ''),
+        'experience_required' => (string) ($details['experience_required'] ?? ''),
+        'marital_statuses' => array_values((array) ($details['marital_statuses'] ?? ['Telah Menikah', 'Lajang / Belum Menikah'])),
+        'age_min' => $details['age_min'] ?? '',
+        'age_max' => $details['age_max'] ?? '',
+        'special_requirements' => (string) ($details['special_requirements'] ?? ''),
+        'skills' => array_values((array) ($details['skills'] ?? [])),
+        'contacts' => array_values((array) ($details['contacts'] ?? [])),
+    ];
 }
 
 function render_notif_dropdown(array $notifications, int $unread): string

@@ -37,6 +37,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'revie
         redirect('admin.php?page=jobs');
     }
 
+    if (!job_decision_editable($job)) {
+        flash('error', 'Keputusan tidak dapat diubah karena pemberi kerja sudah membuka form revisi.');
+        redirect('admin.php?page=jobs');
+    }
+
+    if ($notes === '' && $decision === 'approve') {
+        $notes = job_default_approve_note();
+    }
+
     if ($notes === '') {
         flash('error', 'Catatan/Alasan Admin wajib diisi sebelum menyimpan keputusan.');
         redirect('admin.php?page=jobs');
@@ -48,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'revie
         'reject' => 'Ditolak',
     ];
     $nextStatus = $statusMap[$decision];
-    db()->prepare('UPDATE job_posts SET status = ?, admin_notes = ?, updated_at = NOW() WHERE id = ?')
+    db()->prepare('UPDATE job_posts SET status = ?, admin_notes = ?, revision_opened_at = NULL, updated_at = NOW() WHERE id = ?')
         ->execute([$nextStatus, $notes, $jobId]);
 
     if ($decision === 'revise') {
@@ -94,6 +103,8 @@ $jobs = db()->query('SELECT j.*, u.name AS employer_name, u.email AS employer_em
 
 $unread = unread_notification_count((int) $user['id']);
 $notifications = user_notifications((int) $user['id']);
+$defaultApproveNote = job_default_approve_note();
+$revisionQuickTags = job_revision_quick_tags();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -224,7 +235,7 @@ $notifications = user_notifications((int) $user['id']);
                 </div>
             <?php else: ?>
                 <div class="admin-page-title">Lowongan Kerja</div>
-                <p class="section-note" style="margin-bottom:16px">Lowongan baru masuk ke sini setelah pemberi kerja menekan Tambah Loker.</p>
+                <p class="section-note" style="margin-bottom:16px">Lowongan baru masuk ke sini setelah pemberi kerja menekan Tambah Loker. Catatan persetujuan terisi otomatis; alasan revisi/tolak dapat dipilih dari tag cepat dan tetap dapat diedit.</p>
                 <div class="admin-panel">
                     <div class="table-shell">
                         <table class="admin-table">
@@ -240,26 +251,54 @@ $notifications = user_notifications((int) $user['id']);
                             <tbody>
                             <?php if (!$jobs): ?>
                                 <tr><td colspan="5" class="admin-empty">Belum ada lowongan yang dikirim.</td></tr>
-                            <?php else: foreach ($jobs as $job): $meta = job_status_meta($job['status']); ?>
+                            <?php else: foreach ($jobs as $job):
+                                $meta = job_status_meta($job['status']);
+                                $editable = job_decision_editable($job);
+                                $reviewable = in_array($job['status'], ['Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditolak'], true);
+                            ?>
                                 <tr>
                                     <td>
                                         <strong><?php echo e($job['title']); ?></strong>
-                                        <div class="tiny"><?php echo e($job['job_type']); ?> · <?php echo e(date('d M Y', strtotime($job['created_at']))); ?></div>
+                                        <div class="tiny"><?php echo e($job['job_type']); ?> · KBJI <?php echo e($job['kbji_code'] ?: '-'); ?> · <?php echo e(date('d M Y', strtotime($job['created_at']))); ?></div>
+                                        <?php
+                                        $plainDesc = trim(preg_replace('/\s+/', ' ', strip_tags((string) $job['description'])));
+                                        if ($plainDesc !== ''):
+                                            $snippet = mb_strlen($plainDesc) > 110 ? mb_substr($plainDesc, 0, 110) . '…' : $plainDesc;
+                                        ?>
+                                        <div class="tiny"><?php echo e($snippet); ?></div>
+                                        <?php endif; ?>
                                     </td>
                                     <td><?php echo e($job['employer_name']); ?><div class="tiny"><?php echo e($job['employer_email']); ?></div></td>
                                     <td><?php echo e($job['location']); ?></td>
                                     <td><span class="status-chip <?php echo e($meta['class']); ?>"><?php echo e($meta['label']); ?></span></td>
                                     <td>
-                                        <form method="post" class="review-form">
+                                        <?php if ($editable): ?>
+                                        <form method="post" class="review-form" data-review-form data-default-approve="<?php echo e($defaultApproveNote); ?>">
                                             <input type="hidden" name="action" value="review_job">
                                             <input type="hidden" name="job_id" value="<?php echo (int) $job['id']; ?>">
+                                            <div class="quick-tags" data-quick-tags>
+                                                <?php foreach ($revisionQuickTags as $tag): ?>
+                                                    <button type="button" class="quick-tag" data-quick-tag="<?php echo e($tag); ?>"><?php echo e($tag); ?></button>
+                                                <?php endforeach; ?>
+                                            </div>
                                             <textarea name="admin_notes" placeholder="Catatan/Alasan Admin" required><?php echo e($job['admin_notes'] ?? ''); ?></textarea>
+                                            <p class="review-hint">Disetujui: catatan terisi otomatis. Perlu Revisi / Ditolak: klik tag atau ketik manual. Keputusan masih dapat diubah sampai pemberi kerja membuka form revisi.</p>
                                             <div class="review-actions">
-                                                <button name="decision" value="revise" class="ghost-btn">Perlu Revisi</button>
-                                                <button name="decision" value="approve" class="primary-btn">Disetujui</button>
-                                                <button name="decision" value="reject" class="ghost-btn" style="color:#b91c1c;border-color:#fecaca">Ditolak</button>
+                                                <button name="decision" value="revise" class="ghost-btn<?php echo $job['status'] === 'Perlu Revisi' ? ' is-current' : ''; ?>">Perlu Revisi</button>
+                                                <button name="decision" value="approve" class="primary-btn<?php echo $job['status'] === 'Tayang' ? ' is-current' : ''; ?>">Disetujui</button>
+                                                <button name="decision" value="reject" class="ghost-btn<?php echo $job['status'] === 'Ditolak' ? ' is-current' : ''; ?>" style="color:#b91c1c;border-color:#fecaca">Ditolak</button>
                                             </div>
                                         </form>
+                                        <?php elseif ($reviewable): ?>
+                                        <div class="review-locked">
+                                            <div class="tiny">Terkunci — pemberi kerja sudah membuka form revisi. Keputusan dapat diubah lagi setelah lowongan dikirim ulang.</div>
+                                            <?php if (trim((string) ($job['admin_notes'] ?? '')) !== ''): ?>
+                                                <p><?php echo nl2br(e($job['admin_notes'])); ?></p>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php else: ?>
+                                        <span class="tiny"><?php echo trim((string) ($job['admin_notes'] ?? '')) !== '' ? e($job['admin_notes']) : 'Tidak ada tindakan tinjauan.'; ?></span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; endif; ?>

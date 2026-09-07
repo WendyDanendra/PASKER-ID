@@ -42,6 +42,27 @@ if (isset($_GET['applicant_json'])) {
     exit;
 }
 
+if (isset($_GET['job_json'])) {
+    $jobId = (int) $_GET['job_json'];
+    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" LIMIT 1');
+    $jobStmt->execute([$jobId, $user['id']]);
+    $job = $jobStmt->fetch();
+    header('Content-Type: application/json');
+    if (!$job) {
+        http_response_code(404);
+        echo json_encode(['ok' => false]);
+        exit;
+    }
+
+    if (empty($job['revision_opened_at'])) {
+        db()->prepare('UPDATE job_posts SET revision_opened_at = NOW() WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" AND revision_opened_at IS NULL')
+            ->execute([$jobId, $user['id']]);
+    }
+
+    echo json_encode(['ok' => true, 'data' => job_to_form_data($job)], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_application_status'])) {
     $applicationId = (int) ($_POST['application_id'] ?? 0);
     $nextStatus = normalize_application_status($_POST['status'] ?? '');
@@ -223,6 +244,25 @@ $modalStyles = <<<'CSS'
         .modal-subtitle {
             color: #6b7280;
             font-size: 13px;
+        }
+        .revision-banner {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+        }
+        .revision-banner strong {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .revision-banner p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.45;
+            white-space: pre-wrap;
         }
         .modal-close {
             position: absolute;
@@ -685,7 +725,11 @@ $modal = <<<HTML
             <div class="modal-header">
                 <button type="button" class="modal-close" data-close-modal="job-create" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
                 <div class="modal-title" id="jobCreateTitle">Tambah Lowongan</div>
-                <div class="modal-subtitle">Lengkapi form berikut untuk mengisi lowongan</div>
+                <div class="modal-subtitle" id="jobCreateSubtitle">Lengkapi form berikut untuk mengisi lowongan</div>
+                <div class="revision-banner" id="revisionBanner" hidden>
+                    <strong>Catatan Admin (Perlu Revisi)</strong>
+                    <p id="revisionBannerText"></p>
+                </div>
                 <div class="stepper" data-job-stepper>
                     <span class="step active" data-step-label="1"><span class="bubble">1</span> Informasi Loker</span>
                     <span class="step-line" data-step-line="1"></span>
@@ -1269,7 +1313,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
         }
 
         if ($reviseJobId > 0) {
-            $statement = db()->prepare('UPDATE job_posts SET title=?, description=?, location=?, job_type=?, industry=?, status=?, salary_min=?, salary_max=?, quota=?, kbji_code=?, details=?, updated_at=NOW() WHERE id=? AND user_id=?');
+            $owned = db()->prepare('SELECT id FROM job_posts WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" LIMIT 1');
+            $owned->execute([$reviseJobId, $user['id']]);
+            if (!$owned->fetch()) {
+                flash('error', 'Lowongan revisi tidak ditemukan atau sudah dikirim ulang.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+            $statement = db()->prepare('UPDATE job_posts SET title=?, description=?, location=?, job_type=?, industry=?, status=?, salary_min=?, salary_max=?, quota=?, kbji_code=?, details=?, admin_notes=NULL, revision_opened_at=NULL, updated_at=NOW() WHERE id=? AND user_id=?');
             $statement->execute([$title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details, $reviseJobId, $user['id']]);
             flash('success', 'Revisi lowongan berhasil dikirim ulang ke Admin.');
         } else {
@@ -1393,7 +1444,11 @@ if (!$employerJobs) {
         $reviseBtn = $row['status'] === 'Perlu Revisi'
             ? '<button type="button" class="ghost-btn" data-revise-job="' . (int) $row['id'] . '">Revisi</button>'
             : '-';
-        $jobRowsHtml .= '<tr><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div></td>'
+        $adminNoteHtml = '';
+        if ($row['status'] === 'Perlu Revisi' && trim((string) ($row['admin_notes'] ?? '')) !== '') {
+            $adminNoteHtml = '<div class="tiny" style="color:#b45309">Catatan admin: ' . e($row['admin_notes']) . '</div>';
+        }
+        $jobRowsHtml .= '<tr><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div>' . $adminNoteHtml . '</td>'
             . '<td>' . e($row['location']) . '</td>'
             . '<td>' . (int) $row['quota'] . ' orang</td>'
             . '<td>' . $appCount . ' pelamar</td>'

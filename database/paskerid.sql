@@ -140,6 +140,7 @@ CREATE TABLE job_posts (
     kbji_code VARCHAR(20) NULL,
     details TEXT NULL,
     admin_notes TEXT NULL,
+    revision_opened_at DATETIME NULL,
     parent_job_id INT NULL,
     unfulfilled_reason TEXT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

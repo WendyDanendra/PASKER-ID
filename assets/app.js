@@ -210,6 +210,10 @@ function initJobCreateWizard() {
     const btnBack = modal.querySelector('[data-job-back]');
     const btnNext = modal.querySelector('[data-job-next]');
     const btnSubmit = modal.querySelector('[data-job-submit]');
+    const titleEl = document.getElementById('jobCreateTitle');
+    const subtitleEl = document.getElementById('jobCreateSubtitle');
+    const banner = document.getElementById('revisionBanner');
+    const bannerText = document.getElementById('revisionBannerText');
     let current = 1;
 
     initRichEditors(modal);
@@ -225,6 +229,123 @@ function initJobCreateWizard() {
                 input.value = text ? area.innerHTML.trim() : '';
             }
         });
+    };
+
+    const setJobCreateMode = (mode, adminNotes = '') => {
+        modal.dataset.jobFormMode = mode;
+        if (mode === 'revise') {
+            if (titleEl) {
+                titleEl.textContent = 'Revisi Lowongan';
+            }
+            if (subtitleEl) {
+                subtitleEl.textContent = 'Data sebelumnya sudah terisi. Perbarui bagian yang diminta admin, lalu kirim ulang.';
+            }
+            if (btnSubmit) {
+                btnSubmit.textContent = 'Kirim Ulang Revisi';
+            }
+            if (banner && bannerText) {
+                const notes = String(adminNotes || '').trim();
+                banner.hidden = notes === '';
+                bannerText.textContent = notes;
+            }
+            return;
+        }
+
+        if (titleEl) {
+            titleEl.textContent = 'Tambah Lowongan';
+        }
+        if (subtitleEl) {
+            subtitleEl.textContent = 'Lengkapi form berikut untuk mengisi lowongan';
+        }
+        if (btnSubmit) {
+            btnSubmit.textContent = 'Tambah Loker';
+        }
+        if (banner) {
+            banner.hidden = true;
+        }
+        if (bannerText) {
+            bannerText.textContent = '';
+        }
+    };
+
+    const setFieldValue = (name, value) => {
+        const field = form?.querySelector(`[name="${name}"]`);
+        if (!field) {
+            return;
+        }
+        field.value = value == null ? '' : String(value);
+    };
+
+    const setCheckboxGroup = (name, selected) => {
+        const values = new Set((selected || []).map((item) => String(item)));
+        form?.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+            input.checked = values.has(input.value);
+        });
+    };
+
+    const setCheckbox = (name, checked) => {
+        const input = form?.querySelector(`input[name="${name}"]`);
+        if (input) {
+            input.checked = Boolean(checked);
+        }
+    };
+
+    const setRichField = (name, html) => {
+        const input = form?.querySelector(`textarea[name="${name}"]`);
+        if (!input) {
+            return;
+        }
+        input.value = html || '';
+        const area = input.closest('[data-rich-editor]')?.querySelector('.rich-area');
+        if (area) {
+            area.innerHTML = html || '';
+        }
+    };
+
+    const setChips = (key, items) => {
+        const hidden = form?.querySelector(`[data-chip-value="${key}"]`);
+        if (!hidden) {
+            return;
+        }
+        hidden.value = (items || []).map((item) => String(item).trim()).filter(Boolean).join(',');
+        if (typeof hidden.refreshChips === 'function') {
+            hidden.refreshChips();
+        }
+    };
+
+    const fillJobCreateForm = (data) => {
+        if (!form || !data) {
+            return;
+        }
+
+        setFieldValue('job_title', data.title);
+        setRichField('job_description', data.description);
+        setFieldValue('kbji_code', data.kbji_code);
+        setFieldValue('job_location', data.location);
+        setFieldValue('job_type', data.job_type);
+        setFieldValue('job_field', data.job_field);
+        setFieldValue('industry', data.industry);
+        setCheckboxGroup('physical_condition[]', data.physical_conditions);
+        setCheckboxGroup('gender[]', data.genders);
+        setFieldValue('disability_excluded', data.disability_excluded);
+        setFieldValue('salary_min', data.salary_min);
+        setFieldValue('salary_max', data.salary_max);
+        setCheckbox('show_salary', data.show_salary);
+        setCheckbox('is_remote', data.is_remote);
+        setCheckbox('is_limited', data.is_limited);
+        setFieldValue('expiry_days', data.expiry_days);
+        setFieldValue('quota', data.quota || 1);
+        setFieldValue('education_required', data.education_required);
+        setFieldValue('experience_required', data.experience_required);
+        setCheckboxGroup('marital_status[]', data.marital_statuses);
+        setFieldValue('age_min', data.age_min);
+        setFieldValue('age_max', data.age_max);
+        setRichField('special_requirements', data.special_requirements);
+        setChips('skills', data.skills);
+        if (Array.isArray(data.contacts) && data.contacts.length) {
+            setChips('contacts', data.contacts);
+        }
+        syncRichText();
     };
 
     const setStep = (next) => {
@@ -338,7 +459,18 @@ function initJobCreateWizard() {
     });
 
     modal.addEventListener('modal:open', () => {
+        if (modal.dataset.skipReset === 'true') {
+            modal.dataset.skipReset = 'false';
+            setStep(1);
+            return;
+        }
+
+        modal.dataset.jobFormMode = 'create';
         form?.reset();
+        const reviseId = document.getElementById('reviseJobId');
+        if (reviseId) {
+            reviseId.value = '';
+        }
         modal.querySelectorAll('.rich-area').forEach((area) => {
             area.innerHTML = '';
         });
@@ -348,7 +480,39 @@ function initJobCreateWizard() {
                 field.refreshChips();
             }
         });
+        setJobCreateMode('create');
         setStep(1);
+    });
+
+    document.querySelectorAll('[data-revise-job]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const jobId = button.dataset.reviseJob;
+            const hidden = document.getElementById('reviseJobId');
+            fetch(`dashboard.php?job_json=${encodeURIComponent(jobId)}`)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('not found');
+                    }
+                    return response.json();
+                })
+                .then((payload) => {
+                    if (!payload?.ok || !payload.data) {
+                        throw new Error('invalid');
+                    }
+                    modal.dataset.jobFormMode = 'revise';
+                    modal.dataset.skipReset = 'true';
+                    if (hidden) {
+                        hidden.value = String(payload.data.id || jobId);
+                    }
+                    fillJobCreateForm(payload.data);
+                    setJobCreateMode('revise', payload.data.admin_notes);
+                    modal.classList.add('open');
+                    modal.dispatchEvent(new CustomEvent('modal:open'));
+                })
+                .catch(() => {
+                    window.alert('Data lowongan tidak dapat dimuat. Silakan coba lagi.');
+                });
+        });
     });
 
     setStep(1);
@@ -373,6 +537,57 @@ function initSidebarToggle() {
     toggle.dataset.bound = 'true';
     toggle.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
+    });
+}
+
+function initAdminJobReview() {
+    const forms = document.querySelectorAll('[data-review-form]');
+    if (!forms.length) {
+        return;
+    }
+
+    forms.forEach((form) => {
+        const notes = form.querySelector('[name="admin_notes"]');
+        const defaultApprove = form.dataset.defaultApprove || 'Lowongan telah memenuhi syarat dan disetujui untuk ditayangkan';
+
+        form.querySelectorAll('[data-quick-tag]').forEach((tagButton) => {
+            const tag = (tagButton.dataset.quickTag || tagButton.textContent || '').trim();
+            const currentNotes = (notes?.value || '').split(/\r?\n/).map((line) => line.trim());
+            if (tag && currentNotes.includes(tag)) {
+                tagButton.classList.add('active');
+            }
+            tagButton.addEventListener('click', () => {
+                if (!notes) {
+                    return;
+                }
+                const tag = (tagButton.dataset.quickTag || tagButton.textContent || '').trim();
+                if (!tag) {
+                    return;
+                }
+                const current = notes.value.trim();
+                const lines = current ? current.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
+                if (!lines.includes(tag)) {
+                    notes.value = lines.length ? `${current}\n${tag}` : tag;
+                }
+                tagButton.classList.add('active');
+                notes.focus();
+                notes.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        });
+
+        form.querySelectorAll('button[name="decision"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (!notes) {
+                    return;
+                }
+                if (button.value === 'approve' && notes.value.trim() === '') {
+                    notes.value = defaultApprove;
+                }
+                if (button.value !== 'approve' && notes.value.trim() === defaultApprove) {
+                    notes.value = '';
+                }
+            });
+        });
     });
 }
 
@@ -407,6 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindModal('[data-open-modal="job-create"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     bindModal('[data-open-modal="job-create-mobile"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     initJobCreateWizard();
+    initAdminJobReview();
     initSidebarToggle();
     initNotifications();
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -497,20 +713,6 @@ document.addEventListener('DOMContentLoaded', () => {
             expandApplicants.remove();
         });
     }
-
-    document.querySelectorAll('[data-revise-job]').forEach((button) => {
-        button.addEventListener('click', () => {
-            const hidden = document.getElementById('reviseJobId');
-            if (hidden) {
-                hidden.value = button.dataset.reviseJob;
-            }
-            const modal = document.querySelector('[data-modal="job-create"]');
-            if (modal) {
-                modal.classList.add('open');
-                modal.dispatchEvent(new CustomEvent('modal:open'));
-            }
-        });
-    });
 
     if (document.body.dataset.useAppJs === 'true' && document.body.dataset.defaultPage) {
         initHashRouting(document.body.dataset.defaultPage);
