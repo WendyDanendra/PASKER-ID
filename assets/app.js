@@ -548,31 +548,19 @@ function initAdminJobReview() {
 
     forms.forEach((form) => {
         const notes = form.querySelector('[name="admin_notes"]');
+        const reasonSelect = form.querySelector('[data-note-reason]');
         const defaultApprove = form.dataset.defaultApprove || 'Lowongan telah memenuhi syarat dan disetujui untuk ditayangkan';
 
-        form.querySelectorAll('[data-quick-tag]').forEach((tagButton) => {
-            const tag = (tagButton.dataset.quickTag || tagButton.textContent || '').trim();
-            const currentNotes = (notes?.value || '').split(/\r?\n/).map((line) => line.trim());
-            if (tag && currentNotes.includes(tag)) {
-                tagButton.classList.add('active');
+        const applyReason = (reason) => {
+            if (!notes || !reason) {
+                return;
             }
-            tagButton.addEventListener('click', () => {
-                if (!notes) {
-                    return;
-                }
-                const tag = (tagButton.dataset.quickTag || tagButton.textContent || '').trim();
-                if (!tag) {
-                    return;
-                }
-                const current = notes.value.trim();
-                const lines = current ? current.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
-                if (!lines.includes(tag)) {
-                    notes.value = lines.length ? `${current}\n${tag}` : tag;
-                }
-                tagButton.classList.add('active');
-                notes.focus();
-                notes.dispatchEvent(new Event('input', { bubbles: true }));
-            });
+            notes.value = reason;
+            notes.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+
+        reasonSelect?.addEventListener('change', () => {
+            applyReason(reasonSelect.value.trim());
         });
 
         form.querySelectorAll('button[name="decision"]').forEach((button) => {
@@ -580,10 +568,15 @@ function initAdminJobReview() {
                 if (!notes) {
                     return;
                 }
-                if (button.value === 'approve' && notes.value.trim() === '') {
+                if (button.value === 'approve') {
                     notes.value = defaultApprove;
+                    return;
                 }
-                if (button.value !== 'approve' && notes.value.trim() === defaultApprove) {
+
+                const selectedReason = (reasonSelect?.value || '').trim();
+                if (selectedReason) {
+                    applyReason(selectedReason);
+                } else if (notes.value.trim() === defaultApprove) {
                     notes.value = '';
                 }
             });

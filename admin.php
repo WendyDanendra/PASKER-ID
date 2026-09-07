@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'revie
     $jobId = (int) ($_POST['job_id'] ?? 0);
     $decision = $_POST['decision'] ?? '';
     $notes = trim($_POST['admin_notes'] ?? '');
+    $reason = trim($_POST['admin_note_reason'] ?? '');
 
     $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? LIMIT 1');
     $jobStmt->execute([$jobId]);
@@ -44,6 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'revie
 
     if ($notes === '' && $decision === 'approve') {
         $notes = job_default_approve_note();
+    }
+
+    if ($notes === '' && $decision !== 'approve' && in_array($reason, job_revision_quick_tags(), true)) {
+        $notes = $reason;
     }
 
     if ($notes === '') {
@@ -235,7 +240,7 @@ $revisionQuickTags = job_revision_quick_tags();
                 </div>
             <?php else: ?>
                 <div class="admin-page-title">Lowongan Kerja</div>
-                <p class="section-note" style="margin-bottom:16px">Lowongan baru masuk ke sini setelah pemberi kerja menekan Tambah Loker. Catatan persetujuan terisi otomatis; alasan revisi/tolak dapat dipilih dari tag cepat dan tetap dapat diedit.</p>
+                <p class="section-note" style="margin-bottom:16px">Lowongan baru masuk ke sini setelah pemberi kerja menekan Tambah Loker. Catatan persetujuan terisi otomatis; alasan revisi atau penolakan dipilih dari daftar.</p>
                 <div class="admin-panel">
                     <div class="table-shell">
                         <table class="admin-table">
@@ -276,13 +281,15 @@ $revisionQuickTags = job_revision_quick_tags();
                                         <form method="post" class="review-form" data-review-form data-default-approve="<?php echo e($defaultApproveNote); ?>">
                                             <input type="hidden" name="action" value="review_job">
                                             <input type="hidden" name="job_id" value="<?php echo (int) $job['id']; ?>">
-                                            <div class="quick-tags" data-quick-tags>
+                                            <label class="review-reason-label">Catatan / Alasan</label>
+                                            <select class="review-reason-select" name="admin_note_reason" data-note-reason>
+                                                <option value="">Pilih catatan/alasan</option>
                                                 <?php foreach ($revisionQuickTags as $tag): ?>
-                                                    <button type="button" class="quick-tag" data-quick-tag="<?php echo e($tag); ?>"><?php echo e($tag); ?></button>
+                                                    <option value="<?php echo e($tag); ?>"<?php echo trim((string) ($job['admin_notes'] ?? '')) === $tag ? ' selected' : ''; ?>><?php echo e($tag); ?></option>
                                                 <?php endforeach; ?>
-                                            </div>
-                                            <textarea name="admin_notes" placeholder="Catatan/Alasan Admin" required><?php echo e($job['admin_notes'] ?? ''); ?></textarea>
-                                            <p class="review-hint">Disetujui: catatan terisi otomatis. Perlu Revisi / Ditolak: klik tag atau ketik manual. Keputusan masih dapat diubah sampai pemberi kerja membuka form revisi.</p>
+                                            </select>
+                                            <textarea name="admin_notes" placeholder="Catatan terisi dari pilihan di atas, atau otomatis saat Disetujui" required><?php echo e($job['admin_notes'] ?? ''); ?></textarea>
+                                            <p class="review-hint">Disetujui: catatan terisi otomatis. Perlu Revisi / Ditolak: pilih satu alasan dari daftar. Keputusan masih dapat diubah sampai pemberi kerja membuka form revisi.</p>
                                             <div class="review-actions">
                                                 <button name="decision" value="revise" class="ghost-btn<?php echo $job['status'] === 'Perlu Revisi' ? ' is-current' : ''; ?>">Perlu Revisi</button>
                                                 <button name="decision" value="approve" class="primary-btn<?php echo $job['status'] === 'Tayang' ? ' is-current' : ''; ?>">Disetujui</button>
