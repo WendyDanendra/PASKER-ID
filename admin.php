@@ -121,7 +121,7 @@ $revisionQuickTags = job_revision_quick_tags();
     <title>Admin - Karirhub</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/app.css?v=job-review-2">
+    <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
 <div class="app-shell">
@@ -271,8 +271,8 @@ $revisionQuickTags = job_revision_quick_tags();
                                     <td><span class="status-chip <?php echo e($meta['class']); ?>"><?php echo e($meta['label']); ?></span></td>
                                     <td>
                                         <button type="button" class="tinjau-btn" data-open-job-review="<?php echo (int) $job['id']; ?>">
-                                            <i class="fa-solid fa-eye"></i>
                                             Tinjau Lengkap
+                                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -281,81 +281,82 @@ $revisionQuickTags = job_revision_quick_tags();
                         </table>
                     </div>
                 </div>
-            <?php endif; ?>
-        </div>
-    </div>
-</div>
-<?php if ($page === 'jobs' && $jobs): ?>
-<div class="job-review-backdrop" data-job-review-drawer hidden>
-    <div class="job-review-drawer" role="dialog" aria-modal="true" aria-labelledby="jobReviewTitle">
-        <div class="job-review-header">
-            <div>
-                <div class="job-review-kicker">Tinjauan Lowongan</div>
-                <h2 id="jobReviewTitle">Detail lengkap</h2>
-            </div>
-            <button type="button" class="job-review-close" data-close-job-review aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="job-review-body" data-job-review-body></div>
-    </div>
-</div>
-<?php foreach ($jobs as $job):
-    $meta = job_status_meta($job['status']);
-    $editable = job_decision_editable($job);
-    $reviewable = in_array($job['status'], ['Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditolak'], true);
-    $currentNotes = trim((string) ($job['admin_notes'] ?? ''));
-?>
-<template data-job-review-template="<?php echo (int) $job['id']; ?>">
-    <div class="job-review-pack">
-        <div class="job-review-summary">
-            <div>
-                <h3><?php echo e($job['title']); ?></h3>
-                <p><?php echo e($job['employer_name']); ?> · <?php echo e($job['location']); ?></p>
-            </div>
-            <span class="status-chip <?php echo e($meta['class']); ?>"><?php echo e($meta['label']); ?></span>
-        </div>
-        <?php echo render_job_review_details($job); ?>
-        <section class="job-review-section job-review-decision">
-            <h3>Keputusan &amp; Catatan Admin</h3>
-            <?php if ($editable): ?>
-            <form method="post" class="review-form" data-review-form data-default-approve="<?php echo e($defaultApproveNote); ?>">
-                <input type="hidden" name="action" value="review_job">
-                <input type="hidden" name="job_id" value="<?php echo (int) $job['id']; ?>">
-                <label class="review-reason-label">Alasan standar</label>
-                <div class="reason-dropdown" data-reason-dropdown>
-                    <input type="hidden" name="admin_note_reason" data-note-reason value="<?php echo in_array($currentNotes, $revisionQuickTags, true) ? e($currentNotes) : ''; ?>">
-                    <button type="button" class="reason-dropdown-trigger" data-reason-trigger>
-                        <span data-reason-label><?php echo in_array($currentNotes, $revisionQuickTags, true) ? e($currentNotes) : 'Pilih alasan standar'; ?></span>
-                        <i class="fa-solid fa-chevron-down reason-chevron"></i>
-                    </button>
-                    <div class="reason-dropdown-menu" data-reason-menu hidden>
-                        <?php foreach ($revisionQuickTags as $tag): ?>
-                            <button type="button" class="reason-option<?php echo $currentNotes === $tag ? ' is-selected' : ''; ?>" data-reason-option="<?php echo e($tag); ?>"><?php echo e($tag); ?></button>
-                        <?php endforeach; ?>
+
+                <?php if ($jobs): ?>
+                <div class="job-review-backdrop" data-job-review-drawer hidden>
+                    <div class="job-review-drawer" role="dialog" aria-modal="true" aria-labelledby="jobReviewTitle">
+                        <div class="job-review-header">
+                            <div>
+                                <div class="job-review-kicker">Tinjauan Lowongan</div>
+                                <h2 id="jobReviewTitle">Detail lengkap</h2>
+                            </div>
+                            <button type="button" class="job-review-close" data-close-job-review aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="job-review-body" data-job-review-body></div>
                     </div>
                 </div>
-                <label class="review-reason-label" for="admin-notes-<?php echo (int) $job['id']; ?>">Catatan admin</label>
-                <textarea id="admin-notes-<?php echo (int) $job['id']; ?>" name="admin_notes" placeholder="Catatan terisi otomatis saat Disetujui, atau dari alasan standar. Anda dapat mengedit teks ini sebelum menyimpan." required><?php echo e($currentNotes); ?></textarea>
-                <p class="review-hint">Disetujui: catatan terisi otomatis. Perlu Revisi / Ditolak: pilih satu alasan, lalu edit jika perlu. Keputusan masih dapat diubah sampai pemberi kerja membuka form revisi.</p>
-                <div class="review-actions">
-                    <button name="decision" value="revise" class="ghost-btn<?php echo $job['status'] === 'Perlu Revisi' ? ' is-current' : ''; ?>">Perlu Revisi</button>
-                    <button name="decision" value="approve" class="primary-btn<?php echo $job['status'] === 'Tayang' ? ' is-current' : ''; ?>">Disetujui</button>
-                    <button name="decision" value="reject" class="ghost-btn reject-btn<?php echo $job['status'] === 'Ditolak' ? ' is-current' : ''; ?>">Ditolak</button>
-                </div>
-            </form>
-            <?php elseif ($reviewable): ?>
-            <div class="review-locked">
-                <div class="tiny">Terkunci — pemberi kerja sudah membuka form revisi. Keputusan dapat diubah lagi setelah lowongan dikirim ulang.</div>
-                <?php if ($currentNotes !== ''): ?>
-                    <p><?php echo nl2br(e($currentNotes)); ?></p>
-                <?php endif; ?>
-            </div>
-            <?php else: ?>
-            <p class="job-review-empty"><?php echo $currentNotes !== '' ? e($currentNotes) : 'Tidak ada tindakan tinjauan untuk status ini.'; ?></p>
+                <?php foreach ($jobs as $job):
+                    $meta = job_status_meta($job['status']);
+                    $editable = job_decision_editable($job);
+                    $reviewable = in_array($job['status'], ['Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditolak'], true);
+                    $currentNotes = trim((string) ($job['admin_notes'] ?? ''));
+                ?>
+                <template data-job-review-template="<?php echo (int) $job['id']; ?>">
+                    <div class="job-review-pack">
+                        <div class="job-review-summary">
+                            <div>
+                                <h3><?php echo e($job['title']); ?></h3>
+                                <p><?php echo e($job['employer_name']); ?> · <?php echo e($job['location']); ?></p>
+                            </div>
+                            <span class="status-chip <?php echo e($meta['class']); ?>"><?php echo e($meta['label']); ?></span>
+                        </div>
+                        <?php echo render_job_review_details($job); ?>
+                        <section class="job-review-section job-review-decision">
+                            <h3>Keputusan &amp; Catatan Admin</h3>
+                            <?php if ($editable): ?>
+                            <form method="post" class="review-form" data-review-form data-default-approve="<?php echo e($defaultApproveNote); ?>">
+                                <input type="hidden" name="action" value="review_job">
+                                <input type="hidden" name="job_id" value="<?php echo (int) $job['id']; ?>">
+                                <label class="review-reason-label">Alasan standar</label>
+                                <div class="reason-dropdown" data-reason-dropdown>
+                                    <input type="hidden" name="admin_note_reason" data-note-reason value="<?php echo in_array($currentNotes, $revisionQuickTags, true) ? e($currentNotes) : ''; ?>">
+                                    <button type="button" class="reason-dropdown-trigger" data-reason-trigger>
+                                        <span data-reason-label><?php echo in_array($currentNotes, $revisionQuickTags, true) ? e($currentNotes) : 'Pilih alasan standar'; ?></span>
+                                        <i class="fa-solid fa-chevron-down reason-chevron"></i>
+                                    </button>
+                                    <div class="reason-dropdown-menu" data-reason-menu hidden>
+                                        <?php foreach ($revisionQuickTags as $tag): ?>
+                                            <button type="button" class="reason-option<?php echo $currentNotes === $tag ? ' is-selected' : ''; ?>" data-reason-option="<?php echo e($tag); ?>"><?php echo e($tag); ?></button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <label class="review-reason-label" for="admin-notes-<?php echo (int) $job['id']; ?>">Catatan admin</label>
+                                <textarea id="admin-notes-<?php echo (int) $job['id']; ?>" name="admin_notes" placeholder="Catatan terisi otomatis saat Disetujui, atau dari alasan standar. Anda dapat mengedit teks ini sebelum menyimpan." required><?php echo e($currentNotes); ?></textarea>
+                                <p class="review-hint">Disetujui: catatan terisi otomatis. Perlu Revisi / Ditolak: pilih satu alasan, lalu edit jika perlu. Keputusan masih dapat diubah sampai pemberi kerja membuka form revisi.</p>
+                                <div class="review-actions">
+                                    <button name="decision" value="revise" class="ghost-btn<?php echo $job['status'] === 'Perlu Revisi' ? ' is-current' : ''; ?>">Perlu Revisi</button>
+                                    <button name="decision" value="approve" class="primary-btn<?php echo $job['status'] === 'Tayang' ? ' is-current' : ''; ?>">Disetujui</button>
+                                    <button name="decision" value="reject" class="ghost-btn reject-btn<?php echo $job['status'] === 'Ditolak' ? ' is-current' : ''; ?>">Ditolak</button>
+                                </div>
+                            </form>
+                            <?php elseif ($reviewable): ?>
+                            <div class="review-locked">
+                                <div class="tiny">Terkunci — pemberi kerja sudah membuka form revisi. Keputusan dapat diubah lagi setelah lowongan dikirim ulang.</div>
+                                <?php if ($currentNotes !== ''): ?>
+                                    <p><?php echo nl2br(e($currentNotes)); ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <?php else: ?>
+                            <p class="job-review-empty"><?php echo $currentNotes !== '' ? e($currentNotes) : 'Tidak ada tindakan tinjauan untuk status ini.'; ?></p>
+                            <?php endif; ?>
+                        </section>
+                    </div>
+                </template>
+                <?php endforeach; endif; ?>
             <?php endif; ?>
-        </section>
+        </div>
     </div>
-</template>
-<?php endforeach; endif; ?>
-<script src="assets/app.js?v=job-review-2"></script>
+</div>
+<script src="assets/app.js"></script>
 </body>
 </html>
