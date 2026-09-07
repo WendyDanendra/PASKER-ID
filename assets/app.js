@@ -540,46 +540,160 @@ function initSidebarToggle() {
     });
 }
 
+function bindAdminReviewForm(form) {
+    if (!form || form.dataset.bound === 'true') {
+        return;
+    }
+    form.dataset.bound = 'true';
+
+    const notes = form.querySelector('[name="admin_notes"]');
+    const reasonInput = form.querySelector('[data-note-reason]');
+    const dropdown = form.querySelector('[data-reason-dropdown]');
+    const trigger = dropdown?.querySelector('[data-reason-trigger]');
+    const menu = dropdown?.querySelector('[data-reason-menu]');
+    const label = dropdown?.querySelector('[data-reason-label]');
+    const defaultApprove = form.dataset.defaultApprove || 'Lowongan telah memenuhi syarat dan disetujui untuk ditayangkan';
+    const standardReasons = [...(dropdown?.querySelectorAll('[data-reason-option]') || [])]
+        .map((option) => (option.dataset.reasonOption || option.textContent || '').trim())
+        .filter(Boolean);
+
+    const closeMenu = () => {
+        if (!dropdown || !menu) {
+            return;
+        }
+        dropdown.classList.remove('open');
+        menu.hidden = true;
+    };
+
+    const insertReason = (reason) => {
+        if (!notes || !reason) {
+            return;
+        }
+        const current = notes.value.trim();
+        if (!current || current === defaultApprove || standardReasons.includes(current)) {
+            notes.value = reason;
+        } else if (!current.includes(reason)) {
+            notes.value = `${current}\n${reason}`;
+        }
+        if (reasonInput) {
+            reasonInput.value = reason;
+        }
+        if (label) {
+            label.textContent = reason;
+        }
+        dropdown?.querySelectorAll('[data-reason-option]').forEach((option) => {
+            option.classList.toggle('is-selected', (option.dataset.reasonOption || '').trim() === reason);
+        });
+        notes.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    trigger?.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (!dropdown || !menu) {
+            return;
+        }
+        const willOpen = menu.hidden;
+        document.querySelectorAll('[data-reason-menu]').forEach((other) => {
+            other.hidden = true;
+            other.closest('[data-reason-dropdown]')?.classList.remove('open');
+        });
+        menu.hidden = !willOpen;
+        dropdown.classList.toggle('open', willOpen);
+    });
+
+    dropdown?.querySelectorAll('[data-reason-option]').forEach((option) => {
+        option.addEventListener('click', () => {
+            insertReason((option.dataset.reasonOption || option.textContent || '').trim());
+            closeMenu();
+        });
+    });
+
+    form.querySelectorAll('button[name="decision"]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!notes) {
+                return;
+            }
+            if (button.value === 'approve') {
+                notes.value = defaultApprove;
+                return;
+            }
+
+            const selectedReason = (reasonInput?.value || '').trim();
+            if (selectedReason) {
+                insertReason(selectedReason);
+            } else if (notes.value.trim() === defaultApprove) {
+                notes.value = '';
+            }
+        });
+    });
+}
+
 function initAdminJobReview() {
-    const forms = document.querySelectorAll('[data-review-form]');
-    if (!forms.length) {
+    document.querySelectorAll('[data-review-form]').forEach(bindAdminReviewForm);
+}
+
+function initJobReviewDrawer() {
+    const drawer = document.querySelector('[data-job-review-drawer]');
+    const body = document.querySelector('[data-job-review-body]');
+    const title = document.getElementById('jobReviewTitle');
+    if (!drawer || !body) {
         return;
     }
 
-    forms.forEach((form) => {
-        const notes = form.querySelector('[name="admin_notes"]');
-        const reasonSelect = form.querySelector('[data-note-reason]');
-        const defaultApprove = form.dataset.defaultApprove || 'Lowongan telah memenuhi syarat dan disetujui untuk ditayangkan';
+    const close = () => {
+        drawer.hidden = true;
+        document.body.style.overflow = '';
+        body.replaceChildren();
+    };
 
-        const applyReason = (reason) => {
-            if (!notes || !reason) {
-                return;
-            }
-            notes.value = reason;
-            notes.dispatchEvent(new Event('input', { bubbles: true }));
-        };
+    const open = (jobId) => {
+        const template = document.querySelector(`[data-job-review-template="${jobId}"]`);
+        if (!template) {
+            return;
+        }
+        const content = template.content.cloneNode(true);
+        body.replaceChildren(content);
+        const heading = body.querySelector('.job-review-summary h3');
+        if (title && heading) {
+            title.textContent = heading.textContent || 'Detail lengkap';
+        }
+        body.querySelectorAll('[data-review-form]').forEach(bindAdminReviewForm);
+        drawer.hidden = false;
+        document.body.style.overflow = 'hidden';
+        body.scrollTop = 0;
+    };
 
-        reasonSelect?.addEventListener('change', () => {
-            applyReason(reasonSelect.value.trim());
+    document.querySelectorAll('[data-open-job-review]').forEach((button) => {
+        button.addEventListener('click', () => {
+            open(button.dataset.openJobReview);
         });
+    });
 
-        form.querySelectorAll('button[name="decision"]').forEach((button) => {
-            button.addEventListener('click', () => {
-                if (!notes) {
-                    return;
-                }
-                if (button.value === 'approve') {
-                    notes.value = defaultApprove;
-                    return;
-                }
+    drawer.querySelectorAll('[data-close-job-review]').forEach((button) => {
+        button.addEventListener('click', close);
+    });
 
-                const selectedReason = (reasonSelect?.value || '').trim();
-                if (selectedReason) {
-                    applyReason(selectedReason);
-                } else if (notes.value.trim() === defaultApprove) {
-                    notes.value = '';
+    drawer.addEventListener('click', (event) => {
+        if (event.target === drawer) {
+            close();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !drawer.hidden) {
+            close();
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        document.querySelectorAll('[data-reason-dropdown]').forEach((dropdown) => {
+            if (!dropdown.contains(event.target)) {
+                dropdown.classList.remove('open');
+                const menu = dropdown.querySelector('[data-reason-menu]');
+                if (menu) {
+                    menu.hidden = true;
                 }
-            });
+            }
         });
     });
 }
@@ -616,6 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindModal('[data-open-modal="job-create-mobile"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     initJobCreateWizard();
     initAdminJobReview();
+    initJobReviewDrawer();
     initSidebarToggle();
     initNotifications();
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({

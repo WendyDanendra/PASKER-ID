@@ -158,12 +158,130 @@ function job_default_approve_note(): string
 function job_revision_quick_tags(): array
 {
     return [
-        'Deskripsi pekerjaan kurang lengkap/jelas',
-        'Kode KBJI tidak sesuai dengan posisi',
-        'Persyaratan atau kualifikasi tidak sesuai ketentuan',
-        'Lokasi, jenis pekerjaan, atau informasi gaji tidak jelas',
-        'Data lowongan tidak lengkap',
+        'Deskripsi pekerjaan kurang lengkap atau tidak jelas (rincian tugas/tanggung jawab belum dijabarkan spesifik).',
+        'Kode KBJI tidak sesuai dengan posisi jabatan (tidak sinkron dengan judul/uraian pekerjaan).',
+        'Persyaratan atau kualifikasi tidak wajar / diskriminatif (memuat kriteria fisik/syarat yang melanggar norma).',
+        'Informasi gaji atau kompensasi tidak jelas (tidak dicantumkan atau berpotensi menyesatkan).',
+        'Penulisan lowongan tidak profesional (huruf kapital berlebihan, banyak typo, atau tata bahasa tidak baku).',
+        'Jenis pekerjaan atau status kontrak tidak sesuai (kategori magang/kontrak/penuh waktu tidak sinkron dengan isi teks).',
     ];
+}
+
+function job_rich_html(?string $html): string
+{
+    $clean = strip_tags((string) $html, '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><h4><a><span>');
+    return trim($clean);
+}
+
+function format_rupiah(mixed $value): string
+{
+    if ($value === null || $value === '') {
+        return 'Tidak dicantumkan';
+    }
+
+    return 'Rp ' . number_format((int) $value, 0, ',', '.');
+}
+
+function job_yes_no(bool $value): string
+{
+    return $value ? 'Ya' : 'Tidak';
+}
+
+function kbji_name_map(): array
+{
+    static $map = null;
+    if ($map !== null) {
+        return $map;
+    }
+
+    $map = [];
+    try {
+        foreach (db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data') as $row) {
+            $map[(string) $row['kode_kbji']] = (string) $row['nama_jabatan'];
+        }
+    } catch (Throwable $ignored) {
+        $map = [];
+    }
+
+    return $map;
+}
+
+function render_job_review_details(array $job): string
+{
+    $data = job_to_form_data($job);
+    $kbjiName = kbji_name_map()[$data['kbji_code']] ?? '';
+    $kbjiText = trim($data['kbji_code'] . ($kbjiName !== '' ? ' — ' . $kbjiName : ''));
+    $salary = format_rupiah($data['salary_min']) . ' – ' . format_rupiah($data['salary_max']);
+    if (!empty($data['show_salary'])) {
+        $salary .= ' (ditampilkan pada lowongan)';
+    } else {
+        $salary .= ' (disembunyikan dari pelamar)';
+    }
+
+    $row = static function (string $label, string $value) {
+        return '<div class="job-review-row"><span>' . e($label) . '</span><strong>' . $value . '</strong></div>';
+    };
+
+    $text = static function (mixed $value, string $fallback = '-') {
+        $value = trim((string) $value);
+        return e($value !== '' ? $value : $fallback);
+    };
+
+    $list = static function (array $items, string $fallback = '-') {
+        $items = array_values(array_filter(array_map(static fn($item) => trim((string) $item), $items)));
+        return e($items ? implode(', ', $items) : $fallback);
+    };
+
+    $description = job_rich_html($data['description']);
+    $special = job_rich_html($data['special_requirements']);
+    $employerPhone = trim((string) (($job['employer_whatsapp'] ?? '') ?: ($job['employer_phone'] ?? '')));
+
+    $html = '<section class="job-review-section"><h3>Informasi Lowongan</h3>';
+    $html .= $row('Judul jabatan', $text($data['title']));
+    $html .= $row('Jenis pekerjaan', $text($data['job_type']));
+    $html .= $row('Bidang pekerjaan', $text($data['job_field']));
+    $html .= $row('Industri / sektor', $text($data['industry']));
+    $html .= $row('Kode KBJI', $text($kbjiText));
+    $html .= $row('Lokasi', $text($data['location']));
+    $html .= $row('Remote working', e(job_yes_no(!empty($data['is_remote']))));
+    $html .= $row('Terbatas', e(job_yes_no(!empty($data['is_limited']))));
+    $html .= $row('Durasi tayang', $data['expiry_days'] !== '' ? e($data['expiry_days'] . ' hari') : e('-'));
+    $html .= $row('Kuota', e((string) $data['quota'] . ' orang'));
+    $html .= $row('Gaji', e($salary));
+    $html .= '</section>';
+
+    $html .= '<section class="job-review-section"><h3>Deskripsi Pekerjaan</h3>';
+    $html .= $description !== '' ? '<div class="job-review-prose">' . $description . '</div>' : '<p class="job-review-empty">Tidak ada deskripsi.</p>';
+    $html .= '</section>';
+
+    $html .= '<section class="job-review-section"><h3>Kualifikasi &amp; Persyaratan</h3>';
+    $html .= $row('Pendidikan minimal', $text($data['education_required']));
+    $html .= $row('Pengalaman', $text($data['experience_required']));
+    $html .= $row('Status pernikahan', $list($data['marital_statuses']));
+    $html .= $row('Usia', e(trim(($data['age_min'] !== '' ? $data['age_min'] . ' th' : '-') . ' – ' . ($data['age_max'] !== '' ? $data['age_max'] . ' th' : '-'))));
+    $html .= $row('Kondisi fisik', $list($data['physical_conditions']));
+    $html .= $row('Jenis kelamin', $list($data['genders']));
+    $html .= $row('Disabilitas tidak diperbolehkan', $text($data['disability_excluded'], 'Tidak ada batasan'));
+    $html .= '</section>';
+
+    $html .= '<section class="job-review-section"><h3>Persyaratan Khusus</h3>';
+    $html .= $special !== '' ? '<div class="job-review-prose">' . $special . '</div>' : '<p class="job-review-empty">Tidak ada persyaratan khusus.</p>';
+    $html .= '</section>';
+
+    $html .= '<section class="job-review-section"><h3>Keahlian &amp; Kontak</h3>';
+    $html .= $row('Skill / keahlian', $list($data['skills']));
+    $html .= $row('Kontak lamaran', $list($data['contacts']));
+    $html .= '</section>';
+
+    $html .= '<section class="job-review-section"><h3>Pemberi Kerja</h3>';
+    $html .= $row('Nama', $text($job['employer_name'] ?? '-'));
+    $html .= $row('Email', $text($job['employer_email'] ?? '-'));
+    $html .= $row('Telepon / WA', $text($employerPhone, '-'));
+    $html .= $row('Profesi', $text($job['employer_profession'] ?? '-'));
+    $html .= $row('Dibuat', e(date('d M Y H:i', strtotime((string) ($job['created_at'] ?? 'now')))));
+    $html .= '</section>';
+
+    return $html;
 }
 
 function parse_job_details(?string $json): array
