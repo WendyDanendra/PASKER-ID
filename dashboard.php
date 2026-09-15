@@ -1418,6 +1418,32 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
     }
 
+    // 2b. UPDATE DRAFT LOWONGAN
+    if (isset($_POST['update_job'])) {
+        $jobId = (int)$_POST['job_id'];
+        $title = trim($_POST['title'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        $jobType = trim($_POST['job_type'] ?? '');
+        $industry = trim($_POST['industry'] ?? '');
+        $kbjiCode = trim($_POST['kbji_code'] ?? '');
+        $minEducation = trim($_POST['min_education'] ?? '');
+        $minExperience = trim($_POST['min_experience'] ?? '');
+        $quota = (int)($_POST['quota'] ?? 1);
+        $description = trim($_POST['description'] ?? '');
+
+        if ($title !== '' && $location !== '' && $kbjiCode !== '' && $quota > 0 && $description !== '') {
+            $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status = "Draft"');
+            $stmt->execute([$title, $location, $jobType, $industry, $kbjiCode, $minEducation, $minExperience, $quota, $description, $jobId, $user['id']]);
+            flash('success', 'Draft lowongan berhasil diperbarui.');
+            redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+            exit;
+        } else {
+            flash('error', 'Lengkapi semua field wajib pada form lowongan.');
+            redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+            exit;
+        }
+    }
+
     // 3. KIRIM LOWONGAN (RULES ENGINE KBJI)
     if (isset($_POST['send_job'])) {
         $jobId = (int)$_POST['job_id'];
@@ -1432,8 +1458,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
+        if (empty($targetJob['title']) || empty($targetJob['location']) || empty($targetJob['kbji_code']) || empty($targetJob['description'])) {
+            flash('error', 'Informasi lowongan belum lengkap. Harap perbarui draft Anda.');
+            redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+            exit;
+        }
+
         // Cek duplicate active job for SAME KBJI
-        $cekDuplicate = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Tayang", "Dikirim/Menunggu Verifikasi") AND id != ? LIMIT 1');
+        $cekDuplicate = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Tayang", "Lowongan Aktif") AND id != ? LIMIT 1');
         $cekDuplicate->execute([$user['id'], $targetJob['kbji_code'], $jobId]);
         $activeDuplicate = $cekDuplicate->fetch();
 
@@ -1445,13 +1477,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 'active_job_title' => $activeDuplicate['title'],
                 'active_job_status' => $activeDuplicate['status']
             ];
-            redirect('dashboard.php#lowongan');
+            redirect('dashboard.php?kbji_conflict=1&draft_id=' . $jobId . '#lowongan');
             exit;
         }
 
-        // If valid, submit for verification
-        $update = db()->prepare('UPDATE job_posts SET status = "Dikirim/Menunggu Verifikasi" WHERE id = ? AND user_id = ?');
+        // If valid, submit for verification & form Job Verification Case
+        $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi" WHERE id = ? AND user_id = ?');
         $update->execute([$jobId, $user['id']]);
+
+        // Form Job Verification Case
+        try {
+            $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status) VALUES (?, ?, ?, "PENDING")');
+            $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code']]);
+        } catch (Throwable $ignored) {}
+
         flash('success', 'Lowongan berhasil dikirim dan sedang Menunggu Verifikasi.');
         redirect('dashboard.php#lowongan');
         exit;

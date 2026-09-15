@@ -61,6 +61,15 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         updated_at DATETIME,
         UNIQUE (job_id, seeker_id)
     )');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS job_verifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        kbji_code TEXT NOT NULL,
+        status TEXT DEFAULT "PENDING",
+        verifier_notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )');
 
     try {
         $cols = array_column($pdo->query('PRAGMA table_info(employer_profiles)')->fetchAll(), 'name');
@@ -80,6 +89,15 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         if (!in_array('details', $cols, true)) {
             $pdo->exec('ALTER TABLE job_posts ADD COLUMN details TEXT');
         }
+        if (!in_array('min_education', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN min_education TEXT');
+        }
+        if (!in_array('min_experience', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN min_experience TEXT');
+        }
+        // Migrate status to canonical strings
+        $pdo->exec('UPDATE job_posts SET status = "Menunggu Verifikasi" WHERE status = "Dikirim/Menunggu Verifikasi" OR status = "Dikirim"');
+        $pdo->exec('UPDATE job_posts SET status = "Perlu Direvisi" WHERE status = "Perlu Revisi"');
     } catch (Throwable $ignored) {}
 }
 
@@ -98,37 +116,29 @@ function init_sqlite_schema(PDO $pdo): void
         )",
         "CREATE TABLE IF NOT EXISTS employer_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            owner_name TEXT NOT NULL,
+            user_id INTEGER NOT NULL UNIQUE,
+            owner_name TEXT,
             nik TEXT,
-            profession TEXT NOT NULL,
-            phone TEXT NOT NULL,
+            profession TEXT,
+            phone TEXT,
             whatsapp TEXT,
             npwp TEXT,
             linkedin TEXT,
             facebook TEXT,
             instagram TEXT,
-            same_location_siapkerja INTEGER DEFAULT 1,
-            province TEXT NOT NULL,
-            city TEXT NOT NULL,
+            province TEXT,
+            city TEXT,
             district TEXT,
-            village TEXT,
+            subdistrict TEXT,
             postal_code TEXT,
-            same_address_siapkerja INTEGER DEFAULT 1,
-            address TEXT NOT NULL,
+            address TEXT,
             address_detail TEXT,
             latitude TEXT,
             longitude TEXT,
-            doc_permission TEXT,
-            doc_location_photo TEXT,
             description TEXT,
-            user_consent INTEGER DEFAULT 0,
-            verified INTEGER DEFAULT 0,
-            verification_status TEXT DEFAULT 'NOT_SUBMITTED',
-            rejection_count INTEGER DEFAULT 0,
-            verifier_notes TEXT,
-            verification_checklist TEXT,
-            suspension_reason TEXT,
+            consent_agreed INTEGER DEFAULT 0,
+            profile_complete INTEGER DEFAULT 0,
+            verification_status TEXT DEFAULT 'ACTIVE_VERIFIED',
             active_until DATETIME,
             extension_requested INTEGER DEFAULT 0,
             extension_status TEXT DEFAULT 'NONE',

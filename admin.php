@@ -194,11 +194,11 @@ if ($view === 'verifikasi_job') {
     }
 
     if ($tab === 'process') {
-        $query .= ' AND j.status = "Dikirim/Menunggu Verifikasi"';
+        $query .= ' AND j.status IN ("Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi")';
     } elseif ($tab === 'approved') {
         $query .= ' AND j.status = "Tayang"';
     } elseif ($tab === 'revision') {
-        $query .= ' AND j.status = "Perlu Direvisi"';
+        $query .= ' AND j.status IN ("Perlu Direvisi", "Perlu Revisi")';
     } elseif ($tab === 'rejected') {
         $query .= ' AND j.status = "Ditolak"';
     }

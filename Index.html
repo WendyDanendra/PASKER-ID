@@ -1892,26 +1892,101 @@
                                                                 </div>
                                                             <?php endif; ?>
                                                         </div>
-                                                        <div class="modal-footer" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                                                        <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                                                             <?php if ($j['status'] === 'Draft'): ?>
-                                                                <form method="post" action="dashboard.php#lowongan" style="display:inline;">
-                                                                    <input type="hidden" name="delete_job" value="1">
-                                                                    <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
-                                                                    <button type="submit" class="ghost-btn" style="color:#dc2626; border-color:#fecaca;" onclick="return confirm('Yakin ingin menghapus draft lowongan ini?')">
-                                                                        <i class="fa-solid fa-trash"></i> Hapus Draft
+                                                                <div style="display:flex; gap:8px;">
+                                                                    <form method="post" action="dashboard.php#lowongan" style="display:inline;">
+                                                                        <input type="hidden" name="delete_job" value="1">
+                                                                        <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
+                                                                        <button type="submit" class="ghost-btn" style="color:#dc2626; border-color:#fecaca;" onclick="return confirm('Apakah Anda yakin ingin menghapus draft lowongan ini?')">
+                                                                            <i class="fa-solid fa-trash"></i> Hapus Lowongan
+                                                                        </button>
+                                                                    </form>
+                                                                    <button type="button" class="secondary-btn" style="border:1px solid #cbd5e1;" data-open-modal="edit-job-<?php echo $j['id']; ?>" data-close-modal="detail-draft-<?php echo $j['id']; ?>">
+                                                                        <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
                                                                     </button>
-                                                                </form>
+                                                                </div>
                                                                 <form method="post" action="dashboard.php#lowongan" style="display:inline;">
                                                                     <input type="hidden" name="send_job" value="1">
                                                                     <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
                                                                     <button type="submit" class="primary-btn" style="background:#0284c7;">
-                                                                        <i class="fa-solid fa-paper-plane"></i> Kirim Lowongan (Ajukan Verifikasi)
+                                                                        <i class="fa-solid fa-paper-plane"></i> Kirim Lowongan
                                                                     </button>
                                                                 </form>
                                                             <?php else: ?>
                                                                 <button type="button" class="ghost-btn" data-close-modal="detail-draft-<?php echo $j['id']; ?>">Tutup</button>
                                                             <?php endif; ?>
                                                         </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- MODAL EDIT DRAFT LOWONGAN -->
+                                                <div class="modal-backdrop" data-modal="edit-job-<?php echo $j['id']; ?>">
+                                                    <div class="modal-panel" style="width:min(640px, 95vw);">
+                                                        <form method="post" action="dashboard.php#lowongan">
+                                                            <input type="hidden" name="update_job" value="1">
+                                                            <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
+                                                            <div class="modal-header">
+                                                                <div>
+                                                                    <div class="modal-title">Edit Draft Lowongan</div>
+                                                                    <div class="modal-subtitle">Perbarui informasi lowongan sebelum dikirim</div>
+                                                                </div>
+                                                                <button type="button" class="ghost-btn" data-close-modal="edit-job-<?php echo $j['id']; ?>">×</button>
+                                                            </div>
+                                                            <div class="modal-body" style="font-size:13px; color:#334155; display:grid; gap:12px;">
+                                                                <div>
+                                                                    <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Judul Lowongan *</label>
+                                                                    <input type="text" name="title" class="form-control" value="<?php echo e($j['title']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                </div>
+                                                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                                                    <div>
+                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Lokasi Penempatan *</label>
+                                                                        <input type="text" name="location" class="form-control" value="<?php echo e($j['location']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                    </div>
+                                                                    <div>
+                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Jenis Pekerjaan *</label>
+                                                                        <select name="job_type" class="form-control" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                            <option value="Full Time" <?php echo $j['job_type'] === 'Full Time' ? 'selected' : ''; ?>>Full Time</option>
+                                                                            <option value="Part Time" <?php echo $j['job_type'] === 'Part Time' ? 'selected' : ''; ?>>Part Time</option>
+                                                                            <option value="Kontrak" <?php echo $j['job_type'] === 'Kontrak' ? 'selected' : ''; ?>>Kontrak</option>
+                                                                            <option value="Harian" <?php echo $j['job_type'] === 'Harian' ? 'selected' : ''; ?>>Harian</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                                                    <div>
+                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Bidang Pekerjaan *</label>
+                                                                        <input type="text" name="industry" class="form-control" value="<?php echo e($j['industry']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                    </div>
+                                                                    <div>
+                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Kode KBJI *</label>
+                                                                        <input type="text" name="kbji_code" class="form-control" value="<?php echo e($j['kbji_code']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                    </div>
+                                                                </div>
+                                                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                                                    <div>
+                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Pendidikan Minimal</label>
+                                                                        <input type="text" name="min_education" class="form-control" value="<?php echo e($j['min_education'] ?? ''); ?>" placeholder="Misal: SMA / SMK" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                    </div>
+                                                                    <div>
+                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Minimum Pengalaman</label>
+                                                                        <input type="text" name="min_experience" class="form-control" value="<?php echo e($j['min_experience'] ?? ''); ?>" placeholder="Misal: 1 tahun" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Kuota Posisi Tersedia *</label>
+                                                                    <input type="number" name="quota" min="1" class="form-control" value="<?php echo (int)$j['quota']; ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
+                                                                </div>
+                                                                <div>
+                                                                    <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Deskripsi Pekerjaan *</label>
+                                                                    <textarea name="description" rows="4" class="form-control" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-family:inherit;"><?php echo e($j['description']); ?></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+                                                                <button type="button" class="ghost-btn" data-close-modal="edit-job-<?php echo $j['id']; ?>">Batal</button>
+                                                                <button type="submit" class="primary-btn" style="background:#0284c7;">Simpan Perubahan</button>
+                                                            </div>
+                                                        </form>
                                                     </div>
                                                 </div>
                                             </td>
@@ -1923,6 +1998,67 @@
                         <div class="table-footer" style="padding:12px 16px; font-size:12px; color:#64748b; background:#f8fafc; border-top:1px solid #e2e8f0;">Daftar lowongan Anda (Total: <?php echo count($jobs); ?>)</div>
                     </div>
                 </div>
+
+                <!-- MODAL POP-UP KONFLIK KBJI -->
+                <?php
+                $kbjiErr = $_SESSION['kbji_duplicate_error'] ?? null;
+                unset($_SESSION['kbji_duplicate_error']);
+                $conflictDraftId = $_GET['draft_id'] ?? ($kbjiErr['job_id'] ?? null);
+                ?>
+                <div class="modal-backdrop <?php echo ($kbjiErr || isset($_GET['kbji_conflict'])) ? 'open' : ''; ?>" data-modal="kbji-conflict">
+                    <div class="modal-panel" style="width:min(520px, 95vw);">
+                        <div class="modal-header" style="background:#fef2f2; border-bottom:1px solid #fecaca; padding:16px;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:20px;"></i>
+                                <div>
+                                    <div class="modal-title" style="color:#991b1b; font-size:16px; font-weight:700;">Jabatan KBJI Sudah Aktif</div>
+                                    <div class="modal-subtitle" style="color:#b91c1c;">Konflik Aturan Pengajuan Lowongan</div>
+                                </div>
+                            </div>
+                            <button type="button" class="ghost-btn" data-close-modal="kbji-conflict">×</button>
+                        </div>
+                        <div class="modal-body" style="padding:20px; font-size:14px; color:#334155; text-align:center;">
+                            <p style="font-size:15px; font-weight:600; color:#1e293b; margin-bottom:12px;">
+                                Anda masih memiliki lowongan aktif untuk jabatan ini.
+                            </p>
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:16px; text-align:left; font-size:13px;">
+                                <div><strong>Kode KBJI:</strong> <?php echo e($kbjiErr['kbji_code'] ?? 'Sama'); ?></div>
+                                <div><strong>Lowongan Aktif Saat Ini:</strong> <?php echo e($kbjiErr['active_job_title'] ?? 'Koki Masakan Tradisional'); ?></div>
+                                <div style="margin-top:6px; color:#64748b; font-size:12px;">
+                                    <em>Catatan: Draft lowongan Anda tidak dihapus dan tetap aman tersimpan sebagai Draft.</em>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="display:flex; justify-content:center; gap:12px; padding:16px; background:#f8fafc; border-top:1px solid #e2e8f0;">
+                            <button type="button" class="secondary-btn" style="border:1px solid #0284c7; color:#0284c7; background:#ffffff;" onclick="filterActiveJobsAndCloseConflict()">
+                                <i class="fa-solid fa-briefcase"></i> Lihat Lowongan Aktif
+                            </button>
+                            <?php if ($conflictDraftId): ?>
+                                <button type="button" class="primary-btn" style="background:#0284c7;" onclick="openEditJobFromConflict(<?php echo (int)$conflictDraftId; ?>)">
+                                    <i class="fa-solid fa-pen-to-square"></i> Ubah Kode KBJI
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function filterActiveJobsAndCloseConflict() {
+                    const modal = document.querySelector('[data-modal="kbji-conflict"]');
+                    if (modal) modal.classList.remove('open');
+                    const filter = document.getElementById('jobStatusFilter');
+                    if (filter) {
+                        filter.value = 'Tayang';
+                        filterJobsTable();
+                    }
+                }
+                function openEditJobFromConflict(draftId) {
+                    const conflictModal = document.querySelector('[data-modal="kbji-conflict"]');
+                    if (conflictModal) conflictModal.classList.remove('open');
+                    const editModal = document.querySelector('[data-modal="edit-job-' + draftId + '"]');
+                    if (editModal) editModal.classList.add('open');
+                }
+                </script>
                 <div class="section-card" style="margin-top:16px">
                     <div class="section-header">
                         <h3><i class="fa-solid fa-user-check"></i> Pelamar Tersinkron</h3>
