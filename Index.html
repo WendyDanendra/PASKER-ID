@@ -1620,46 +1620,90 @@
                                     <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#0284c7;" data-open-modal="modal-employer-profile">
                                         <i class="fa-solid fa-paper-plane"></i> Ajukan Kembali
                                     </button>
-                                </div>
-                            </div>
                         </div>
-                    <?php elseif ($verificationStatus === 'TRANSITION_LIMITED'): ?>
-                        <div class="alert" style="background:#fffbeb; border-color:#fde68a; color:#92400e;">
-                            <i class="fa-solid fa-hourglass-half" style="color:#d97706; font-size:18px;"></i>
+                    <?php endif; ?>
+
+                    <!-- H-7 REMINDER BANNER FOR ACTIVE_VERIFIED -->
+                    <?php if (($verificationStatus === 'APPROVED' || $verificationStatus === 'ACTIVE_VERIFIED') && $daysRemaining <= 7 && $daysRemaining > 0): ?>
+                        <div class="alert" style="background:#fffbeb; border-color:#fde68a; color:#92400e; display:flex; gap:12px; align-items:center; margin-bottom:14px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="color:#d97706; font-size:20px;"></i>
                             <div style="flex:1;">
-                                <strong>Masa Transisi (Akses Dibatasi)</strong><br>
-                                Masa aktif 3 bulan Anda telah habis. Akses saat ini hanya untuk menyelesaikan proses rekrutmen yang sudah berjalan. Tombol posting lowongan baru telah dinonaktifkan.<br>
-                                Sisa masa transisi: <?php echo max(0, 7 + $daysRemaining); ?> hari.
+                                <strong>Masa Aktif Akun Akan Berakhir dalam <?php echo (int)$daysRemaining; ?> Hari</strong><br>
+                                <span style="font-size:12px;">Masa aktif 3 bulan Anda hampir selesai (dihitung sejak persetujuan Admin). Harap persiapkan data profil atau ajukan perpanjangan waktu 1x.</span>
+                            </div>
+                            <?php if (($profile['extension_requested'] ?? 0) == 0): ?>
+                                <form method="post" action="dashboard.php" style="margin:0;">
+                                    <input type="hidden" name="request_extension" value="1">
+                                    <button type="submit" class="ghost-btn" style="border-color:#b45309; color:#b45309; font-size:12px; height:32px; background:#ffffff;">
+                                        Ajukan Perpanjangan Waktu (1x)
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <span style="font-size:12px; color:#d97706; font-weight:700;"><i class="fa-solid fa-info-circle"></i> Permohonan Perpanjangan Dikirim</span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($verificationStatus === 'TRANSITION_LIMITED'): ?>
+                        <div class="alert" style="background:#fffbeb; border-color:#fde68a; color:#92400e; display:flex; gap:14px; align-items:flex-start; margin-bottom:14px;">
+                            <i class="fa-solid fa-hourglass-half" style="color:#d97706; font-size:20px; margin-top:2px;"></i>
+                            <div style="flex:1;">
+                                <strong style="font-size:14px; color:#78350f;">Masa Transisi (Akses Dibatasi — Sisa <?php echo max(0, 7 + $daysRemaining); ?> Hari)</strong><br>
+                                <div style="font-size:12px; margin-top:4px;">
+                                    Masa aktif 3 bulan Anda telah habis. Selama masa transisi 7 hari ini:
+                                    <ul style="margin:4px 0 4px 16px; padding:0;">
+                                        <li>❌ <strong>Dibatasi:</strong> Tambah Lowongan baru, Kirim Lowongan baru, dan Posting Ulang Sisa Kuota.</li>
+                                        <li>✓ <strong>Diizinkan:</strong> Menyelesaikan proses rekrutmen lowongan existing (pelamar & wawancara).</li>
+                                    </ul>
+                                </div>
                                 <?php if (($profile['extension_requested'] ?? 0) == 0): ?>
                                     <form method="post" action="dashboard.php" style="margin-top:10px;">
                                         <input type="hidden" name="request_extension" value="1">
-                                        <button type="submit" class="ghost-btn" style="border-color:#b45309; color:#b45309; font-size:12px; height:32px;">
+                                        <button type="submit" class="ghost-btn" style="border-color:#b45309; color:#b45309; font-size:12px; height:32px; background:#ffffff;">
                                             <i class="fa-solid fa-clock-rotate-left"></i> Ajukan Perpanjangan Waktu (1x)
                                         </button>
                                     </form>
                                 <?php else: ?>
-                                    <div style="margin-top:8px; font-size:12px; color:#d97706; font-weight:700;"><i class="fa-solid fa-info-circle"></i> Permohonan perpanjangan telah dikirim ke Admin.</div>
+                                    <div style="margin-top:8px; font-size:12px; color:#d97706; font-weight:700;"><i class="fa-solid fa-info-circle"></i> Permohonan perpanjangan telah dikirim ke Admin Dinas (Menunggu Persetujuan).</div>
                                 <?php endif; ?>
                             </div>
                         </div>
                     <?php elseif ($verificationStatus === 'SUSPENDED'): ?>
-                        <div class="alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b;">
-                            <i class="fa-solid fa-ban" style="color:#dc2626; font-size:18px;"></i>
-                            <div>
-                                <strong>Akun Ditangguhkan oleh Admin</strong><br>
-                                Alasan Penangguhan: <?php echo e($profile['suspension_reason'] ?: 'Aktivitas akun dibekukan sementara oleh petugas Disnaker.'); ?><br>
-                                Mohon hubungi kantor Disnaker terdekat untuk klarifikasi lebih lanjut.
+                        <div class="alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; display:flex; gap:14px; align-items:flex-start; margin-bottom:14px;">
+                            <i class="fa-solid fa-ban" style="color:#dc2626; font-size:20px; margin-top:2px;"></i>
+                            <div style="flex:1;">
+                                <strong style="font-size:14px; color:#991b1b;">Akun Ditangguhkan oleh Admin Dinas</strong><br>
+                                <div style="font-size:12px; margin-top:4px;">
+                                    Alasan Penangguhan: <strong><?php echo e($profile['suspension_reason'] ?: 'Aktivitas akun dibekukan sementara oleh petugas Disnaker.'); ?></strong>
+                                </div>
+                                <div style="margin-top:8px; font-size:11px; color:#7f1d1d; font-style:italic;">
+                                    Mohon hubungi kantor Dinas Tenaga Kerja setempat untuk penanganan lebih lanjut.
+                                </div>
                             </div>
                         </div>
                     <?php elseif ($verificationStatus === 'FULL_DISABLED'): ?>
-                        <div class="alert" style="background:#f1f5f9; border-color:#cbd5e1; color:#334155;">
-                            <i class="fa-solid fa-lock" style="color:#475569; font-size:18px;"></i>
+                        <?php $isEligibleForReactivation = empty($profile['suspension_reason']); ?>
+                        <div class="alert" style="background:#f1f5f9; border-color:#cbd5e1; color:#334155; display:flex; gap:14px; align-items:flex-start; margin-bottom:14px;">
+                            <i class="fa-solid fa-lock" style="color:#475569; font-size:20px; margin-top:2px;"></i>
                             <div style="flex:1;">
-                                <strong>Masa Transisi Telah Habis (Full Disable)</strong><br>
-                                Akun Anda dinonaktifkan sepenuhnya. Silakan ajukan Aktivasi Kembali Akun secara online atau melalui Dinas.
-                                <div style="margin-top:10px;">
-                                    <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px;" data-open-modal="modal-employer-profile">Aktifkan Kembali Akun</button>
-                                </div>
+                                <strong style="font-size:14px; color:#0f172a;">Masa Transisi Telah Habis (Full Disable)</strong><br>
+                                <div style="font-size:12px; margin-top:4px;">Dashboard tetap ditampilkan dalam kondisi terkunci (locked).</div>
+                                <?php if ($isEligibleForReactivation): ?>
+                                    <div style="margin-top:10px;">
+                                        <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#0284c7;" data-open-modal="modal-employer-profile">
+                                            <i class="fa-solid fa-arrows-rotate"></i> Aktifkan Kembali Akun
+                                        </button>
+                                    </div>
+                                <?php else: ?>
+                                    <div style="margin-top:10px; background:#ffffff; border:1px solid #e2e8f0; padding:10px; border-radius:8px;">
+                                        <strong style="color:#dc2626; font-size:12px;">Aktivasi Kembali Memerlukan Tindak Lanjut Dinas</strong>
+                                        <div style="margin-top:6px;">
+                                            <button type="button" class="secondary-btn" style="border:1px solid #cbd5e1; font-size:11px; padding:4px 10px;" data-open-modal="modal-disnaker-instructions">
+                                                <i class="fa-solid fa-building-flag"></i> Lihat Instruksi
+                                            </button>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -2589,6 +2633,39 @@
                     <i class="fa-solid fa-circle-info" style="color:#0284c7;"></i> Silakan klik tombol <strong>Perbaiki Profil</strong> untuk melengkapi data. Seluruh data yang diisikan sebelumnya telah tersimpan.
                 </div>
             </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result">Tutup</button>
+                <button type="button" class="primary-btn" style="background:#dc2626;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">
+                    <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── MODAL INSTRUKSI DINAS (NON-ELIGIBLE FULL_DISABLED) ────────────────── -->
+    <div class="modal-backdrop" data-modal="modal-disnaker-instructions">
+        <div class="modal-panel" style="width:min(500px, 95vw);">
+            <div class="modal-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                <div class="modal-title" style="font-size:15px; font-weight:700; color:#0f172a;">
+                    <i class="fa-solid fa-building-flag" style="color:#0284c7;"></i> Instruksi Tindak Lanjut Dinas
+                </div>
+                <button type="button" class="ghost-btn" data-close-modal="modal-disnaker-instructions">×</button>
+            </div>
+            <div class="modal-body" style="padding:16px; font-size:13px; color:#334155; line-height:1.6;">
+                <p><strong>Aktivasi Kembali Memerlukan Konsultasi Tatap Muka / Verifikasi Lapangan.</strong></p>
+                <div style="background:#f1f5f9; padding:12px; border-radius:8px; margin:10px 0;">
+                    <div><strong>Kantor Pelayanan:</strong> Dinas Tenaga Kerja Kota Bekasi</div>
+                    <div><strong>Alamat:</strong> Jl. Ahmad Yani No. 13, Bekasi Selatan, Kota Bekasi</div>
+                    <div><strong>Layanan:</strong> Seksi Penempatan & Verifikasi Pemberi Kerja Perorangan</div>
+                    <div><strong>Telepon Layanan:</strong> (021) 888-1234</div>
+                </div>
+                <p style="font-size:12px; color:#64748b;">Harap membawa Kartu Identitas (KTP), Dokumen NPWP, dan berkas pendukung saat berkunjung ke kantor dinas.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="primary-btn" data-close-modal="modal-disnaker-instructions">Saya Mengerti</button>
+            </div>
+        </div>
+    </div>
             <div class="modal-footer">
                 <button type="button" class="ghost-btn" data-close-modal="modal-verification-result">Tutup</button>
                 <button type="button" class="primary-btn" style="background:#dc2626;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">

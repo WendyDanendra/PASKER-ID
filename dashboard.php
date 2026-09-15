@@ -1454,6 +1454,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // 3. KIRIM LOWONGAN (RULES ENGINE KBJI)
     if (isset($_POST['send_job'])) {
+        if ($verificationStatus === 'TRANSITION_LIMITED' || $verificationStatus === 'FULL_DISABLED' || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat mengirim lowongan baru.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
         $jobId = (int)$_POST['job_id'];
         
         $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
@@ -1511,6 +1517,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $repost = ($_POST['repost'] ?? '0') === '1';
         $reasons = $_POST['reasons'] ?? [];
         $lainnya = trim($_POST['reason_lainnya'] ?? '');
+        
+        if ($repost && ($verificationStatus === 'TRANSITION_LIMITED' || $verificationStatus === 'FULL_DISABLED' || $verificationStatus === 'SUSPENDED')) {
+            flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat memposting ulang sisa kuota.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
         
         if (empty($reasons)) {
             flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');

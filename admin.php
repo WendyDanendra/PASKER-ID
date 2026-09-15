@@ -69,6 +69,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         exit;
     }
 
+    // 3b. Setujui Perpanjangan Masa Aktif
+    if ($action === 'approve_extension') {
+        $targetUserId = (int)$_POST['user_id'];
+        try {
+            $stmt = db()->prepare('UPDATE employer_profiles SET extension_status = "APPROVED", active_until = datetime(active_until, "+3 days") WHERE user_id = ?');
+            $stmt->execute([$targetUserId]);
+        } catch (Throwable $e) {
+            $stmt = db()->prepare('UPDATE employer_profiles SET extension_status = "APPROVED", active_until = DATE_ADD(active_until, INTERVAL 3 DAY) WHERE user_id = ?');
+            $stmt->execute([$targetUserId]);
+        }
+        flash('success', 'Permohonan perpanjangan masa aktif (3 hari) berhasil Disetujui.');
+        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        exit;
+    }
+
+    // 3c. Tolak Perpanjangan Masa Aktif
+    if ($action === 'reject_extension') {
+        $targetUserId = (int)$_POST['user_id'];
+        $stmt = db()->prepare('UPDATE employer_profiles SET extension_status = "REJECTED" WHERE user_id = ?');
+        $stmt->execute([$targetUserId]);
+        flash('success', 'Permohonan perpanjangan masa aktif Ditolak.');
+        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        exit;
+    }
+
     // 4. Decision for Job Verification Case
     if ($action === 'verify_job') {
         $jobId = (int)$_POST['job_id'];
@@ -114,7 +139,7 @@ if ($view === 'directory_individual') {
     $query = <<<SQL
         SELECT u.id as user_id, u.name, u.email, u.created_at, u.profile_complete,
                ep.owner_name, ep.phone, ep.whatsapp, ep.npwp, ep.profession, ep.address, ep.city, ep.province, ep.district, ep.village,
-               ep.verified, ep.verification_status, ep.suspension_reason
+               ep.verified, ep.verification_status, ep.suspension_reason, ep.extension_status
         FROM users u
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
         WHERE u.role = 'employer'
@@ -381,6 +406,25 @@ if ($view === 'verifikasi_job') {
                                                                 <div><strong>Wilayah:</strong> <?php echo e($emp['village']); ?>, <?php echo e($emp['district']); ?>, <?php echo e($emp['city']); ?>, <?php echo e($emp['province']); ?></div>
                                                                 <div><strong>Alamat Lengkap:</strong> <?php echo e($emp['address']); ?></div>
                                                             </div>
+                                                            <?php if (($emp['extension_status'] ?? '') === 'REQUESTED'): ?>
+                                                                <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
+                                                                <div style="background:#fffbeb; border:1px solid #fde68a; padding:12px; border-radius:8px; margin-bottom:12px;">
+                                                                    <strong style="color:#b45309; font-size:13px;">Permohonan Perpanjangan Masa Aktif (3 Hari)</strong>
+                                                                    <div style="font-size:12px; color:#92400e; margin-top:4px;">Pemohon mengajukan perpanjangan waktu 1x selama 3 hari.</div>
+                                                                    <div style="display:flex; gap:8px; margin-top:10px;">
+                                                                        <form method="post" action="admin.php?view=directory_individual" style="flex:1;">
+                                                                            <input type="hidden" name="admin_action" value="approve_extension">
+                                                                            <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
+                                                                            <button type="submit" class="primary-btn" style="background:#059669; width:100%; height:32px; font-size:11px;">Setujui (3 Hari)</button>
+                                                                        </form>
+                                                                        <form method="post" action="admin.php?view=directory_individual" style="flex:1;">
+                                                                            <input type="hidden" name="admin_action" value="reject_extension">
+                                                                            <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
+                                                                            <button type="submit" class="ghost-btn" style="color:#dc2626; border-color:#fecaca; width:100%; height:32px; font-size:11px;">Tolak</button>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+                                                            <?php endif; ?>
 
                                                             <?php if ($emp['verification_status'] === 'APPROVED'): ?>
                                                                 <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
