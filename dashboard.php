@@ -89,7 +89,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['update_app
         redirect('dashboard.php#lowongan');
     }
 
-    $owned = db()->prepare('SELECT a.id, a.seeker_id, j.title FROM job_applications a JOIN job_posts j ON j.id = a.job_id WHERE a.id = ? AND j.user_id = ?');
+    $owned = db()->prepare('SELECT a.id, a.job_id, a.seeker_id, j.title FROM job_applications a JOIN job_posts j ON j.id = a.job_id WHERE a.id = ? AND j.user_id = ?');
     $owned->execute([$applicationId, $user['id']]);
     $application = $owned->fetch();
     if (!$application) {
@@ -97,7 +97,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['update_app
         redirect('dashboard.php#lowongan');
     }
 
-    db()->prepare('UPDATE job_applications SET status = ?, updated_at = NOW() WHERE id = ?')->execute([$nextStatus, $applicationId]);
+    db()->prepare('UPDATE job_applications SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$nextStatus, $applicationId]);
+
+    // Recalculate accepted_count for parent job
+    $jobIdForApp = (int)$application['job_id'];
+    $accStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
+    $accStmt->execute([$jobIdForApp]);
+    $accCount = (int)$accStmt->fetchColumn();
+    db()->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$accCount, $jobIdForApp]);
+
     notify_user((int) $application['seeker_id'], 'Status lamaran diperbarui', 'Status lamaran Anda untuk "' . $application['title'] . '" sekarang: ' . $nextStatus . '.', 'info', $applicationId);
     flash('success', 'Status pelamar diperbarui menjadi ' . $nextStatus . '.');
     redirect('dashboard.php#lowongan');
@@ -1521,29 +1529,40 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $reasonStr .= ' - ' . $lainnya;
         }
 
-        // Close original job
+        // Close original job (source remains Ditutup)
         $stmt = db()->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = ? WHERE id = ? AND user_id = ?');
         $stmt->execute([$reasonStr, $jobId, $user['id']]);
 
-        if ($repost) {
+        if ($repost && $sisaKuota > 0) {
             $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ?');
             $jobStmt->execute([$jobId]);
             $oldJob = $jobStmt->fetch();
 
             if ($oldJob) {
-                $insert = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code, parent_job_id) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Dikirim/Menunggu Verifikasi", ?, ?, ?)');
+                // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi
+                $insert = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code, min_education, min_experience, parent_job_id) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Menunggu Verifikasi", ?, 0, ?, ?, ?, ?)');
                 $insert->execute([
                     $user['id'], 
-                    $oldJob['title'] . ' (Posting Ulang)', 
+                    $oldJob['title'] . ' (Posting Ulang Sisa Kuota)', 
                     $oldJob['description'], 
                     $oldJob['location'], 
                     $oldJob['job_type'], 
                     $oldJob['industry'], 
                     $sisaKuota, 
                     $oldJob['kbji_code'], 
+                    $oldJob['min_education'] ?? '', 
+                    $oldJob['min_experience'] ?? '', 
                     $jobId
                 ]);
-                flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ') berhasil dibuat dan Menunggu Verifikasi.');
+                $childId = (int)db()->lastInsertId();
+
+                // Form Job Verification Case for child posting
+                try {
+                    $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status) VALUES (?, ?, ?, "PENDING")');
+                    $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
+                } catch (Throwable $ignored) {}
+
+                flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
             }
         } else {
             flash('success', 'Lowongan berhasil ditutup.');
