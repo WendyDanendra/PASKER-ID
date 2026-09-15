@@ -29,8 +29,6 @@ if (empty($profile)) {
     $verificationStatus = $profile['verified'] ? 'APPROVED' : 'PENDING';
 }
 
-<<<<<<< HEAD
-=======
 if (isset($_GET['read_notif'])) {
     mark_notifications_read((int) $user['id']);
     header('Content-Type: application/json');
@@ -110,7 +108,6 @@ $profession = $profile['profession'] ?? 'Kuliner';
 $city = $profile['city'] ?? 'Kota Bekasi';
 
 // Guard: active_until bisa NULL untuk employer baru yang belum diverifikasi
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
 $activeUntilRaw = $profile['active_until'] ?? null;
 $now = new DateTime();
 $activeUntil = $activeUntilRaw ? new DateTime($activeUntilRaw) : null;
@@ -124,9 +121,8 @@ if ($verificationStatus === 'APPROVED' && $activeUntil) {
     $diff = $now->diff($activeUntil);
     $isExpired = $activeUntil < $now;
     $daysRemaining = $isExpired ? -$diff->days : $diff->days;
+}
 
-<<<<<<< HEAD
-=======
 // Ambil flash message SEBELUM ob_start (karena session harus dibaca dulu)
 $flashData = get_flash();
 $flashHtml = '';
@@ -1266,16 +1262,6 @@ $html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i
 if (empty($profile['verified']) || $isTransitionPeriod) {
     $html = str_replace('<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', '<button class="primary-btn" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', $html);
     $html = str_replace('<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan', '<button class="primary-btn" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah Lowongan', $html);
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
-    if (empty($profile['verified'])) {
-        flash('error', 'Tidak dapat membuat lowongan karena profil Anda belum diverifikasi oleh Admin.');
-        redirect('dashboard.php#lowongan');
-        exit;
-    }
-    
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     if ($isExpired) {
         if ($daysRemaining >= -7) {
             $verificationStatus = 'TRANSITION_LIMITED';
@@ -1375,75 +1361,66 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         exit;
     }
 
-<<<<<<< HEAD
-    // 2. BUAT LOWONGAN BARU (SELALU STATUS DRAFT)
     if (isset($_POST['create_job'])) {
         if ($verificationStatus !== 'APPROVED') {
             flash('error', 'Tidak dapat membuat lowongan. Akun Anda belum terverifikasi atau dalam status terkunci.');
-=======
-    $title = trim($_POST['job_title'] ?? '');
-    $description = trim(strip_tags($_POST['job_description'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>'));
-    $location = trim($_POST['job_location'] ?? '');
-    $jobType = trim($_POST['job_type'] ?? '');
-    $industry = trim($_POST['industry'] ?? '');
-    $kbjiCode = trim($_POST['kbji_code'] ?? '');
-    $quota = max(1, (int) ($_POST['quota'] ?? 1));
-    $status = 'Menunggu Verifikasi';
-    $reviseJobId = (int) ($_POST['revise_job_id'] ?? 0);
-    $salaryMin = ($_POST['salary_min'] ?? '') !== '' ? (int) $_POST['salary_min'] : null;
-    $salaryMax = ($_POST['salary_max'] ?? '') !== '' ? (int) $_POST['salary_max'] : null;
-    $details = json_encode([
-        'job_field' => trim($_POST['job_field'] ?? ''),
-        'physical_conditions' => array_values(array_filter((array) ($_POST['physical_condition'] ?? []))),
-        'genders' => array_values(array_filter((array) ($_POST['gender'] ?? []))),
-        'disability_excluded' => trim($_POST['disability_excluded'] ?? ''),
-        'show_salary' => !empty($_POST['show_salary']),
-        'is_remote' => !empty($_POST['is_remote']),
-        'is_limited' => !empty($_POST['is_limited']),
-        'expiry_days' => (int) ($_POST['expiry_days'] ?? 0),
-        'education_required' => trim($_POST['education_required'] ?? ''),
-        'experience_required' => trim($_POST['experience_required'] ?? ''),
-        'marital_statuses' => array_values(array_filter((array) ($_POST['marital_status'] ?? []))),
-        'age_min' => ($_POST['age_min'] ?? '') !== '' ? (int) $_POST['age_min'] : null,
-        'age_max' => ($_POST['age_max'] ?? '') !== '' ? (int) $_POST['age_max'] : null,
-        'special_requirements' => trim(strip_tags($_POST['special_requirements'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>')),
-        'skills' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['skills'] ?? ''))))),
-        'contacts' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['contacts'] ?? ''))))),
-    ], JSON_UNESCAPED_UNICODE);
-
-    if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
-        $jobColumns = array_column(db()->query('SHOW COLUMNS FROM job_posts')->fetchAll(), 'Field');
-        $neededColumns = [
-            'kbji_code' => 'VARCHAR(20) NULL',
-            'details' => 'TEXT NULL',
-            'parent_job_id' => 'INT NULL',
-            'unfulfilled_reason' => 'TEXT NULL',
-        ];
-        foreach ($neededColumns as $columnName => $columnDef) {
-            if (!in_array($columnName, $jobColumns, true)) {
-                db()->exec('ALTER TABLE job_posts ADD COLUMN ' . $columnName . ' ' . $columnDef);
-            }
-        }
-
-        $cekDuplicate = db()->prepare('SELECT id FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Menunggu Verifikasi", "Tayang") AND id != ? LIMIT 1');
-        $cekDuplicate->execute([$user['id'], $kbjiCode, $reviseJobId]);
-        if ($cekDuplicate->fetch()) {
-            flash('error', 'Anda tidak dapat membuat lowongan baru untuk jabatan yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.');
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
             redirect('dashboard.php#lowongan');
             exit;
         }
 
-<<<<<<< HEAD
         $title = trim($_POST['job_title'] ?? '');
-        $description = trim($_POST['job_description'] ?? '');
+        $description = trim(strip_tags($_POST['job_description'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>'));
         $location = trim($_POST['job_location'] ?? '');
         $jobType = trim($_POST['job_type'] ?? '');
         $industry = trim($_POST['industry'] ?? '');
         $kbjiCode = trim($_POST['kbji_code'] ?? '');
         $quota = max(1, (int) ($_POST['quota'] ?? 1));
-=======
-        if ($reviseJobId > 0) {
+        $status = 'Menunggu Verifikasi';
+        $reviseJobId = (int) ($_POST['revise_job_id'] ?? 0);
+        $salaryMin = ($_POST['salary_min'] ?? '') !== '' ? (int) $_POST['salary_min'] : null;
+        $salaryMax = ($_POST['salary_max'] ?? '') !== '' ? (int) $_POST['salary_max'] : null;
+        $details = json_encode([
+            'job_field' => trim($_POST['job_field'] ?? ''),
+            'physical_conditions' => array_values(array_filter((array) ($_POST['physical_condition'] ?? []))),
+            'genders' => array_values(array_filter((array) ($_POST['gender'] ?? []))),
+            'disability_excluded' => trim($_POST['disability_excluded'] ?? ''),
+            'show_salary' => !empty($_POST['show_salary']),
+            'is_remote' => !empty($_POST['is_remote']),
+            'is_limited' => !empty($_POST['is_limited']),
+            'expiry_days' => (int) ($_POST['expiry_days'] ?? 0),
+            'education_required' => trim($_POST['education_required'] ?? ''),
+            'experience_required' => trim($_POST['experience_required'] ?? ''),
+            'marital_statuses' => array_values(array_filter((array) ($_POST['marital_status'] ?? []))),
+            'age_min' => ($_POST['age_min'] ?? '') !== '' ? (int) $_POST['age_min'] : null,
+            'age_max' => ($_POST['age_max'] ?? '') !== '' ? (int) $_POST['age_max'] : null,
+            'special_requirements' => trim(strip_tags($_POST['special_requirements'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>')),
+            'skills' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['skills'] ?? ''))))),
+            'contacts' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['contacts'] ?? ''))))),
+        ], JSON_UNESCAPED_UNICODE);
+
+        if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
+            $jobColumns = array_column(db()->query('SHOW COLUMNS FROM job_posts')->fetchAll(), 'Field');
+            $neededColumns = [
+                'kbji_code' => 'VARCHAR(20) NULL',
+                'details' => 'TEXT NULL',
+                'parent_job_id' => 'INT NULL',
+                'unfulfilled_reason' => 'TEXT NULL',
+            ];
+            foreach ($neededColumns as $columnName => $columnDef) {
+                if (!in_array($columnName, $jobColumns, true)) {
+                    db()->exec('ALTER TABLE job_posts ADD COLUMN ' . $columnName . ' ' . $columnDef);
+                }
+            }
+
+            $cekDuplicate = db()->prepare('SELECT id FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Menunggu Verifikasi", "Tayang") AND id != ? LIMIT 1');
+            $cekDuplicate->execute([$user['id'], $kbjiCode, $reviseJobId]);
+            if ($cekDuplicate->fetch()) {
+                flash('error', 'Anda tidak dapat membuat lowongan baru untuk jabatan yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            if ($reviseJobId > 0) {
             $owned = db()->prepare('SELECT id FROM job_posts WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" LIMIT 1');
             $owned->execute([$reviseJobId, $user['id']]);
             if (!$owned->fetch()) {
@@ -1455,27 +1432,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $statement->execute([$title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details, $reviseJobId, $user['id']]);
             flash('success', 'Revisi lowongan berhasil dikirim ulang ke Admin.');
         } else {
+        if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
             $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, status, salary_min, salary_max, quota, kbji_code, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details]);
             flash('success', 'Lowongan baru berhasil dikirim dan menunggu tinjauan Admin.');
-        }
-        redirect('dashboard.php#lowongan');
-    } else {
-        flash('error', 'Lengkapi judul, deskripsi, lokasi, jenis pekerjaan, dan KBJI.');
-        redirect('dashboard.php#lowongan');
-    }
-}
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
-
-        if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
-            $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Draft", ?, ?)');
-            $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $quota, $kbjiCode]);
-            flash('success', 'Lowongan baru berhasil dibuat dan disimpan sebagai Draft.');
             redirect('dashboard.php#lowongan');
-            exit;
         } else {
-            flash('error', 'Mohon lengkapi judul, deskripsi, lokasi, jenis pekerjaan, dan KBJI.');
+            flash('error', 'Lengkapi judul, deskripsi, lokasi, jenis pekerjaan, dan KBJI.');
             redirect('dashboard.php#lowongan');
+        }
+    }
             exit;
         }
     }
@@ -1609,7 +1575,6 @@ if ($flashData && $flashData['type'] === 'pending_popup') {
     $flashData = null;
 }
 
-<<<<<<< HEAD
 $kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
 unset($_SESSION['kbji_duplicate_error']);
 
@@ -1617,7 +1582,7 @@ unset($_SESSION['kbji_duplicate_error']);
 ob_start();
 include __DIR__ . '/Index.html';
 $html = ob_get_clean();
-=======
+
 if (!str_contains($html, 'src="assets/app.js"')) {
     $html = str_replace('</body>', '<script src="assets/app.js"></script>' . "\n</body>", $html);
 }
@@ -1751,6 +1716,5 @@ $html = preg_replace('/<h3>Lowongan<\/h3>\s*<div class="value">\d+<\/div>/', '<h
 $html = preg_replace('/<h3>Pelamar<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Pelamar</h3><div class="value">' . $totalApplicants . '</div>', $html, 1);
 $html = preg_replace('/<h3>Wawancara<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Wawancara</h3><div class="value">' . $stageCounts['Wawancara'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Diterima<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Diterima</h3><div class="value">' . $stageCounts['Diterima'] . '</div>', $html, 1);
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
 
 echo $html;

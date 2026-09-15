@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS `pasker-id` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `pasker-id`;
+CREATE DATABASE IF NOT EXISTS `paskerid` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `paskerid`;
 
 DROP TABLE IF EXISTS kbji_data;
 DROP TABLE IF EXISTS job_posts;
@@ -36,28 +36,12 @@ CREATE TABLE employer_profiles (
     nik VARCHAR(30) NULL,
     profession VARCHAR(120) NOT NULL,
     phone VARCHAR(30) NOT NULL,
-<<<<<<< HEAD
     whatsapp VARCHAR(30) NULL,
     npwp VARCHAR(30) NULL,
     linkedin VARCHAR(255) NULL,
     facebook VARCHAR(255) NULL,
     instagram VARCHAR(255) NULL,
     same_location_siapkerja TINYINT(1) DEFAULT 1,
-=======
-    nik VARCHAR(30) NULL,
-    whatsapp VARCHAR(30) NULL,
-    linkedin VARCHAR(255) NULL,
-    facebook VARCHAR(255) NULL,
-    instagram VARCHAR(255) NULL,
-    npwp VARCHAR(40) NULL,
-    latitude VARCHAR(40) NULL,
-    longitude VARCHAR(40) NULL,
-    permit_document VARCHAR(255) NULL,
-    workplace_photo VARCHAR(255) NULL,
-    consent_accepted TINYINT(1) NOT NULL DEFAULT 0,
-    address TEXT NOT NULL,
-    city VARCHAR(120) NOT NULL,
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     province VARCHAR(120) NOT NULL,
     city VARCHAR(120) NOT NULL,
     district VARCHAR(120) NULL,
@@ -161,12 +145,8 @@ CREATE TABLE job_posts (
     location VARCHAR(150) NOT NULL,
     job_type VARCHAR(80) NOT NULL,
     industry VARCHAR(120) NULL,
-<<<<<<< HEAD
     entity_type ENUM('Perusahaan', 'Individu') DEFAULT 'Individu',
     status ENUM('Draft', 'Dikirim/Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft',
-=======
-    status ENUM('Draft', 'Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditutup', 'Ditolak', 'Penuh') NOT NULL DEFAULT 'Draft',
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     salary_min INT NULL,
     salary_max INT NULL,
     quota INT NOT NULL DEFAULT 1,

@@ -4,8 +4,8 @@ session_start();
 define('APP_NAME', 'Karirhub');
 define('APP_URL', '');
 
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'pasker-id');
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'paskerid');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
@@ -14,7 +14,6 @@ function db(): PDO
     static $pdo = null;
 
     if ($pdo === null) {
-<<<<<<< HEAD
         try {
             $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
             $pdo = new PDO($dsn, DB_USER, DB_PASS, [
@@ -22,6 +21,7 @@ function db(): PDO
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
             ensure_database_schema($pdo);
+            ensure_platform_schema();
         } catch (PDOException $e) {
             // Fallback to SQLite database file for guaranteed demo uptime
             $sqlitePath = __DIR__ . '/../database/demo.sqlite';
@@ -34,14 +34,6 @@ function db(): PDO
                 init_sqlite_schema($pdo);
             }
         }
-=======
-        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]);
-        ensure_platform_schema();
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     }
 
     return $pdo;

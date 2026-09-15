@@ -3,8 +3,6 @@ require __DIR__ . '/includes/bootstrap.php';
 $user = require_role('employer');
 redirect('dashboard.php?open_profile=1');
 
-<<<<<<< HEAD
-=======
 $statement = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
 $statement->execute([$user['id']]);
 $profile = $statement->fetch() ?: [];

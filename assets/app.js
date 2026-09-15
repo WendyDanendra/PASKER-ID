@@ -66,7 +66,6 @@ function bindPageSwitchers() {
     });
 }
 
-<<<<<<< HEAD
 function bindModalsAndDrawers() {
     document.querySelectorAll('[data-open-modal]').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -139,11 +138,9 @@ function bindModal(openSelector, closeSelector, modalSelector) {
 
     if (!modal || !openButtons.length) {
         return;
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     }
 }
 
-<<<<<<< HEAD
 // Cascading District & Village Select Sample Generator
 function bindCascadingLocation() {
     const provSelect = document.getElementById('selectProvince');
@@ -886,10 +883,8 @@ document.addEventListener('DOMContentLoaded', () => {
     bindModalsAndDrawers();
     bindCascadingLocation();
 
-<<<<<<< HEAD
     const defaultPage = document.body.dataset.defaultPage || 'dashboard';
     initHashRouting(defaultPage);
-=======
     bindModal('[data-open-modal="job-create"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     bindModal('[data-open-modal="job-create-mobile"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     initJobCreateWizard();

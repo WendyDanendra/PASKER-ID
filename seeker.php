@@ -205,15 +205,10 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                 <span>Beranda</span><span>&gt;</span>
                 <strong><?php echo $page === 'job' ? 'Detail Lowongan' : ($page === 'employer' ? 'Profil Pemberi Kerja' : ($page === 'jobs' ? 'Lowongan Kerja' : 'Dasbor')); ?></strong>
             </div>
-            <div class="top-actions">
-<<<<<<< HEAD
                 <a class="action-chip" href="dashboard.php" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;" title="Beralih ke Pemberi Kerja Individu">
                     <i class="fa-solid fa-briefcase"></i> Beralih ke Pemberi Kerja
                 </a>
-                <div class="notif"><i class="fa-regular fa-bell"></i></div>
-=======
                 <?php echo render_notif_dropdown($notifications, $unread); ?>
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
                 <div class="company-chip">
                     <div><strong><?php echo e($user['name']); ?></strong><span>Pencari kerja</span></div>
                 </div>
@@ -221,25 +216,9 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             </div>
         </header>
 
-        <div class="seeker-content">
-<<<<<<< HEAD
-            <div class="hero-card">
-                <div>
-                    <h1>Halo, <?php echo e($user['name']); ?></h1>
-                    <p>Profil kamu sudah lengkap. Sekarang dashboard ini bisa dipakai untuk lihat status dan riwayat data diri.</p>
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <a class="action-chip" href="dashboard.php" style="background:#0284c7; color:#fff; border:none; height:42px; padding:0 18px;">
-                        <i class="fa-solid fa-user-gear"></i> Beralih ke Pemberi Kerja Individu
-                    </a>
-                    <a class="primary-btn" href="profile-seeker.php"><i class="fa-solid fa-pen-to-square"></i> Edit Profil</a>
-                </div>
-            </div>
-=======
             <?php if ($flash = get_flash()): ?>
                 <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>"><?php echo e($flash['message']); ?></div>
             <?php endif; ?>
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
 
             <?php if ($page === 'dashboard'): ?>
                 <div class="hero-card" style="padding:20px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;">

@@ -1309,7 +1309,6 @@ body {
     }
 }
 
-<<<<<<< HEAD
 /* ─── DARK THEME STYLES ─────────────────────────── */
 html.dark-theme {
     --bg: #0f172a;
@@ -1951,4 +1950,3 @@ html.dark-theme .menu-item.active {
         grid-template-columns: 1fr;
     }
 }
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
