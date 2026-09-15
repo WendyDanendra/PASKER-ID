@@ -14,6 +14,7 @@ function db(): PDO
     static $pdo = null;
 
     if ($pdo === null) {
+<<<<<<< HEAD
         try {
             $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
             $pdo = new PDO($dsn, DB_USER, DB_PASS, [
@@ -33,6 +34,14 @@ function db(): PDO
                 init_sqlite_schema($pdo);
             }
         }
+=======
+        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+        ensure_platform_schema();
+>>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     }
 
     return $pdo;
@@ -443,3 +452,5 @@ function seeker_profile_exists(int $userId): bool
 
     return (int) $statement->fetchColumn() > 0;
 }
+
+require_once __DIR__ . '/platform.php';
