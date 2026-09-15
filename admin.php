@@ -139,7 +139,7 @@ if ($view === 'directory_individual') {
     $query = <<<SQL
         SELECT u.id as user_id, u.name, u.email, u.created_at, u.profile_complete,
                ep.owner_name, ep.phone, ep.whatsapp, ep.npwp, ep.profession, ep.address, ep.city, ep.province, ep.district, ep.village,
-               ep.verified, ep.verification_status, ep.suspension_reason, ep.extension_status
+               ep.verified, ep.verification_status, ep.suspension_reason, ep.extension_status, ep.verifier_notes, ep.verification_checklist
         FROM users u
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
         WHERE u.role = 'employer'
@@ -179,9 +179,11 @@ if ($view === 'verifikasi_employer') {
     $params = [];
 
     if ($entity === 'Individu') {
-        $query .= ' WHERE 1=1 '; // Filter by entity type if stored
+        $query .= ' WHERE (ep.profession IS NOT NULL OR ep.owner_name IS NOT NULL)';
+    } elseif ($entity === 'Perusahaan') {
+        $query .= ' WHERE (ep.profession IS NULL AND ep.owner_name IS NULL)';
     } else {
-        $query .= ' WHERE 1=1 ';
+        $query .= ' WHERE 1=1';
     }
 
     if ($tab === 'process' || $tab === 'all') {
@@ -323,7 +325,7 @@ if ($view === 'verifikasi_job') {
             <?php if ($view === 'directory_individual'): ?>
                 <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                     <h2 style="font-size:20px; font-weight:800; color:#0f172a;">Direktori Pemberi Kerja Individu</h2>
-                    <div style="font-size:12px; color:#64748b;"><i class="fa-solid fa-info-circle"></i> Tampilan direktori bersifat Read-Only. Verifikasi dilakukan di menu Verifikasi.</div>
+                    <div style="font-size:12px; color:#64748b;"><i class="fa-solid fa-info-circle"></i> Tampilan direktori bersifat Read-Only. Keputusan verifikasi dilakukan di menu Verifikasi.</div>
                 </div>
 
                 <div class="admin-card">
@@ -332,7 +334,7 @@ if ($view === 'verifikasi_job') {
                             <a class="<?php echo $tab === 'all' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=all">Semua</a>
                             <a class="<?php echo $tab === 'verified' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=verified">Terverifikasi</a>
                             <a class="<?php echo $tab === 'process' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=process">Dalam Proses</a>
-                            <a class="<?php echo $tab === 'rejected' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=rejected">Ditolak / Perlu Perbaikan</a>
+                            <a class="<?php echo $tab === 'rejected' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=rejected">Ditolak</a>
                         </div>
                         <form method="get" action="admin.php" style="display:flex; gap:8px;">
                             <input type="hidden" name="view" value="directory_individual">
@@ -352,7 +354,7 @@ if ($view === 'verifikasi_job') {
                                     <th>Alamat & Lokasi</th>
                                     <th>Status</th>
                                     <th>Tanggal Daftar</th>
-                                    <th>Lihat Detail</th>
+                                    <th>Aksi (Read-Only)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -379,15 +381,20 @@ if ($view === 'verifikasi_job') {
                                             </td>
                                             <td><?php echo date('d M Y', strtotime($emp['created_at'])); ?></td>
                                             <td>
-                                                <button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11px;" data-open-drawer="detail-emp-<?php echo $emp['user_id']; ?>">
-                                                    <i class="fa-solid fa-eye"></i> Detail
-                                                </button>
+                                                <div style="display:flex; gap:6px;">
+                                                    <button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11px;" data-open-drawer="detail-emp-<?php echo $emp['user_id']; ?>">
+                                                        <i class="fa-solid fa-eye"></i> Lihat Detail
+                                                    </button>
+                                                    <button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11px; color:#0284c7; border-color:#bae6fd;" data-open-drawer="detail-emp-<?php echo $emp['user_id']; ?>">
+                                                        <i class="fa-solid fa-clipboard-check"></i> Rincian Verifikasi
+                                                    </button>
+                                                </div>
 
                                                 <!-- DRAWER DETAIL INDIVIDUAL READ-ONLY -->
                                                 <div class="drawer-backdrop" data-drawer="detail-emp-<?php echo $emp['user_id']; ?>">
                                                     <div class="drawer-panel">
                                                         <div class="drawer-header">
-                                                            <div class="drawer-title">Detail Pemberi Kerja Individu</div>
+                                                            <div class="drawer-title">Detail & Rincian Verifikasi</div>
                                                             <button type="button" class="ghost-btn" data-close-drawer="detail-emp-<?php echo $emp['user_id']; ?>">×</button>
                                                         </div>
                                                         <div class="drawer-body">
@@ -396,7 +403,6 @@ if ($view === 'verifikasi_job') {
                                                                 <p style="font-size:12px; color:#64748b;"><?php echo e($emp['profession']); ?></p>
                                                                 <span class="badge <?php echo $emp['verification_status'] === 'APPROVED' ? 'ok' : 'pending'; ?>" style="margin-top:8px;">
                                                                     Status: <?php echo e($emp['verification_status']); ?>
-
                                                                 </span>
                                                             </div>
                                                             <div style="display:grid; gap:12px; font-size:13px;">
@@ -406,8 +412,22 @@ if ($view === 'verifikasi_job') {
                                                                 <div><strong>Wilayah:</strong> <?php echo e($emp['village']); ?>, <?php echo e($emp['district']); ?>, <?php echo e($emp['city']); ?>, <?php echo e($emp['province']); ?></div>
                                                                 <div><strong>Alamat Lengkap:</strong> <?php echo e($emp['address']); ?></div>
                                                             </div>
+
+                                                            <!-- RINCIAN VERIFIKASI READ-ONLY -->
+                                                            <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
+                                                            <div style="background:#f0f9ff; border:1px solid #bae6fd; padding:14px; border-radius:10px; margin-bottom:16px;">
+                                                                <div style="font-weight:700; color:#0369a1; font-size:13px; margin-bottom:6px;">
+                                                                    <i class="fa-solid fa-shield-halved"></i> Rincian Verifikasi Dinas
+                                                                </div>
+                                                                <div style="font-size:12px; color:#0c4a6e;">
+                                                                    <div><strong>Catatan Verifikator:</strong> <?php echo e($emp['verifier_notes'] ?: 'Belum ada catatan verifikasi.'); ?></div>
+                                                                    <?php if (!empty($emp['verification_checklist'])): ?>
+                                                                        <div style="margin-top:6px;"><strong>Checklist Hasil Pemeriksaan:</strong> <?php echo e($emp['verification_checklist']); ?></div>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+
                                                             <?php if (($emp['extension_status'] ?? '') === 'REQUESTED'): ?>
-                                                                <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
                                                                 <div style="background:#fffbeb; border:1px solid #fde68a; padding:12px; border-radius:8px; margin-bottom:12px;">
                                                                     <strong style="color:#b45309; font-size:13px;">Permohonan Perpanjangan Masa Aktif (3 Hari)</strong>
                                                                     <div style="font-size:12px; color:#92400e; margin-top:4px;">Pemohon mengajukan perpanjangan waktu 1x selama 3 hari.</div>
