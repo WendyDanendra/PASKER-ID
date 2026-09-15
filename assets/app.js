@@ -130,7 +130,6 @@ function scrollAndFocusKbji() {
             kbjiSelect.style.borderColor = '';
             kbjiSelect.style.boxShadow = '';
         }, 4000);
-=======
 function bindModal(openSelector, closeSelector, modalSelector) {
     const openButtons = document.querySelectorAll(openSelector);
     const closeButtons = document.querySelectorAll(closeSelector);
@@ -139,6 +138,30 @@ function bindModal(openSelector, closeSelector, modalSelector) {
     if (!modal || !openButtons.length) {
         return;
     }
+
+    const open = () => {
+        modal.classList.add('open');
+        modal.dispatchEvent(new CustomEvent('modal:open'));
+    };
+
+    const close = () => {
+        modal.classList.remove('open');
+        modal.dispatchEvent(new CustomEvent('modal:close'));
+    };
+
+    openButtons.forEach((button) => {
+        button.addEventListener('click', open);
+    });
+
+    closeButtons.forEach((button) => {
+        button.addEventListener('click', close);
+    });
+
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            close();
+        }
+    });
 }
 
 // Cascading District & Village Select Sample Generator
@@ -175,30 +198,6 @@ function bindCascadingLocation() {
         const val = distSelect.value;
         const list = villages[val] || ['Pekayon Jaya', 'Jatibening', 'Jakasetia', 'Marga Jaya'];
         villSelect.innerHTML = '<option value="">Pilih Kelurahan/Desa</option>' + list.map(v => `<option value="${v}">${v}</option>`).join('');
-=======
-    const open = () => {
-        modal.classList.add('open');
-        modal.dispatchEvent(new CustomEvent('modal:open'));
-    };
-
-    const close = () => {
-        modal.classList.remove('open');
-        modal.dispatchEvent(new CustomEvent('modal:close'));
-    };
-
-    openButtons.forEach((button) => {
-        button.addEventListener('click', open);
-    });
-
-    closeButtons.forEach((button) => {
-        button.addEventListener('click', close);
-    });
-
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) {
-            close();
-        }
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     });
 }
 
@@ -985,6 +984,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.body.dataset.useAppJs === 'true' && document.body.dataset.defaultPage) {
         initHashRouting(document.body.dataset.defaultPage);
     }
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
 });
 

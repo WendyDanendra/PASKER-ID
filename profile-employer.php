@@ -78,7 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('dashboard.php');
 }
 ?>
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
 <!DOCTYPE html>
 <html lang="id">
 <head>
