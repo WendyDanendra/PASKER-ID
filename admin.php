@@ -6,11 +6,9 @@ $user = require_role('admin');
 
 // Active Section & Filters
 $view = $_GET['view'] ?? 'directory_individual';
-$page = $_GET['page'] ?? 'individual';
 $entity = $_GET['entity'] ?? 'Individu';
 $tab = $_GET['tab'] ?? 'all';
 $search = trim($_GET['q'] ?? '');
-$cityFilter = trim($_GET['city'] ?? '');
 
 // --- POST HANDLERS FOR ADMIN ACTIONS ---
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_action'])) {
@@ -211,95 +209,6 @@ if ($view === 'verifikasi_job') {
     $verificationJobs = $stmt->fetchAll() ?: [];
 }
 
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '') === 'review_job') {
-    $jobId = (int) ($_POST['job_id'] ?? 0);
-    $decision = $_POST['decision'] ?? '';
-    $notes = trim($_POST['admin_notes'] ?? '');
-    $reason = trim($_POST['admin_note_reason'] ?? '');
-
-    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? LIMIT 1');
-    $jobStmt->execute([$jobId]);
-    $job = $jobStmt->fetch();
-
-    if (!$job || !in_array($decision, ['revise', 'approve', 'reject'], true)) {
-        flash('error', 'Keputusan tinjauan tidak valid.');
-        redirect('admin.php?page=jobs');
-    }
-
-    if (!job_decision_editable($job)) {
-        flash('error', 'Keputusan tidak dapat diubah karena pemberi kerja sudah membuka form revisi.');
-        redirect('admin.php?page=jobs');
-    }
-
-    if ($notes === '' && $decision === 'approve') {
-        $notes = job_default_approve_note();
-    }
-
-    if ($notes === '' && $decision !== 'approve' && in_array($reason, job_revision_quick_tags(), true)) {
-        $notes = $reason;
-    }
-
-    if ($notes === '') {
-        flash('error', 'Catatan/Alasan Admin wajib diisi sebelum menyimpan keputusan.');
-        redirect('admin.php?page=jobs');
-    }
-
-    $statusMap = [
-        'revise' => 'Perlu Revisi',
-        'approve' => 'Tayang',
-        'reject' => 'Ditolak',
-    ];
-    $nextStatus = $statusMap[$decision];
-    db()->prepare('UPDATE job_posts SET status = ?, admin_notes = ?, revision_opened_at = NULL, updated_at = NOW() WHERE id = ?')
-        ->execute([$nextStatus, $notes, $jobId]);
-
-    if ($decision === 'revise') {
-        notify_user((int) $job['user_id'], 'Lowongan perlu direvisi', 'Lowongan "' . $job['title'] . '" perlu direvisi. Catatan admin: ' . $notes, 'warning', $jobId);
-    } elseif ($decision === 'approve') {
-        notify_user((int) $job['user_id'], 'Lowongan disetujui', 'Lowongan "' . $job['title'] . '" telah disetujui dan kini tampil untuk pencari kerja.', 'success', $jobId);
-    } else {
-        notify_user((int) $job['user_id'], 'Lowongan ditolak', 'Lowongan "' . $job['title'] . '" ditolak. Alasan admin: ' . $notes, 'danger', $jobId);
-    }
-
-    flash('success', 'Keputusan lowongan berhasil disimpan.');
-    redirect('admin.php?page=jobs');
-}
-
-$query = <<<SQL
-    SELECT u.id, u.name, u.email, u.created_at, u.profile_complete, ep.phone, ep.whatsapp, ep.nik, ep.address, ep.city, ep.province, ep.verified, ep.profession
-    FROM users u
-    LEFT JOIN employer_profiles ep ON ep.user_id = u.id
-    WHERE u.role = 'employer'
-SQL;
-$params = [];
-if ($search !== '') {
-    $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ?)';
-    $like = '%' . $search . '%';
-    $params = [$like, $like, $like, $like, $like];
-}
-if ($tab === 'verified') {
-    $query .= ' AND ep.verified = 1';
-} elseif ($tab === 'process') {
-    $query .= ' AND (u.profile_complete = 1 AND ep.verified = 0)';
-} elseif ($tab === 'rejected') {
-    $query .= ' AND ep.verified = 0 AND u.profile_complete = 0';
-}
-$query .= ' ORDER BY u.created_at DESC';
-$statement = db()->prepare($query);
-$statement->execute($params);
-$employers = $statement->fetchAll();
-
-$jobs = db()->query('SELECT j.*, u.name AS employer_name, u.email AS employer_email,
-        ep.phone AS employer_phone, ep.whatsapp AS employer_whatsapp, ep.profession AS employer_profession
-    FROM job_posts j
-    JOIN users u ON u.id = j.user_id
-    LEFT JOIN employer_profiles ep ON ep.user_id = u.id
-    ORDER BY j.created_at DESC')->fetchAll();
-
-$unread = unread_notification_count((int) $user['id']);
-$notifications = user_notifications((int) $user['id']);
-$defaultApproveNote = job_default_approve_note();
-$revisionQuickTags = job_revision_quick_tags();
 ?>
 <!DOCTYPE html>
 <html lang="id">
