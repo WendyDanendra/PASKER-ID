@@ -1766,43 +1766,50 @@
 
                 <div class="cards4">
                     <div class="card">
-                        <div class="mini-icon" style="background:#eefafc;color:#2aa9d7"><i
-                                class="fa-solid fa-pencil"></i></div>
+                        <div class="mini-icon" style="background:#eefafc;color:#2aa9d7"><i class="fa-solid fa-pencil"></i></div>
                         <h3>Draft</h3>
-                        <div class="value">1</div>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => ($j['status'] ?? '') === 'Draft')); ?></div>
                         <div class="desc neutral">Belum diajukan</div>
                     </div>
                     <div class="card">
-                        <div class="mini-icon" style="background:#fff7ed;color:#f59e0b"><i
-                                class="fa-regular fa-clock"></i></div>
-                        <h3>Dikirim</h3>
-                        <div class="value">0</div>
-                        <div class="desc neutral">Menunggu verifikasi</div>
+                        <div class="mini-icon" style="background:#fff7ed;color:#f59e0b"><i class="fa-regular fa-clock"></i></div>
+                        <h3>Menunggu Verifikasi</h3>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => in_array($j['status'] ?? '', ['Dikirim/Menunggu Verifikasi', 'Menunggu Verifikasi', 'Dikirim'], true))); ?></div>
+                        <div class="desc neutral">Dalam proses tinjauan</div>
                     </div>
                     <div class="card">
-                        <div class="mini-icon" style="background:#fef2f2;color:#ef4444"><i
-                                class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="mini-icon" style="background:#fef2f2;color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i></div>
                         <h3>Perlu Direvisi</h3>
-                        <div class="value">0</div>
-                        <div class="desc neutral">Perlu perbaikan</div>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => in_array($j['status'] ?? '', ['Perlu Direvisi', 'Perlu Revisi'], true))); ?></div>
+                        <div class="desc neutral">Perlu perbaikan data</div>
                     </div>
                     <div class="card">
-                        <div class="mini-icon" style="background:#ecfdf5;color:#21b36b"><i
-                                class="fa-regular fa-circle-check"></i></div>
+                        <div class="mini-icon" style="background:#ecfdf5;color:#21b36b"><i class="fa-regular fa-circle-check"></i></div>
                         <h3>Lowongan Aktif</h3>
-                        <div class="value">0</div>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => ($j['status'] ?? '') === 'Tayang')); ?></div>
                         <div class="desc neutral">Sedang tayang</div>
                     </div>
                 </div>
 
                 <div class="section-card">
-                    <div class="table-toolbar">
-                        <div class="search-small"><i class="fa-solid fa-magnifying-glass"></i><input type="text"
-                                placeholder="Cari berdasarkan judul"></div>
-                        <div class="controls">
-                            <button class="ghost-btn active">Hari Ini</button>
-                            <button class="ghost-btn">Mingguan</button>
-                            <button class="ghost-btn">Bulanan</button>
+                    <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px;">
+                        <div class="search-small" style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; flex:1; min-width:220px;">
+                            <i class="fa-solid fa-magnifying-glass" style="color:#64748b;"></i>
+                            <input type="text" id="jobSearchInput" onkeyup="filterJobsTable()" placeholder="Cari berdasarkan judul lowongan..." style="border:none; background:transparent; font-size:12px; outline:none; width:100%;">
+                        </div>
+                        <div class="controls" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <select id="jobStatusFilter" onchange="filterJobsTable()" style="padding:6px 12px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; background:#fff; font-weight:600; color:#334155;">
+                                <option value="all">Semua Status</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                                <option value="Perlu Direvisi">Perlu Direvisi</option>
+                                <option value="Tayang">Lowongan Aktif</option>
+                            </select>
+                            <select id="jobSortSelect" onchange="sortJobsTable()" style="padding:6px 12px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; background:#fff; font-weight:600; color:#334155;">
+                                <option value="newest">Terbaru</option>
+                                <option value="oldest">Terlama</option>
+                                <option value="title">Judul (A-Z)</option>
+                            </select>
                         </div>
                     </div>
                     <div class="table-shell">
@@ -1817,11 +1824,103 @@
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!--JOB_TABLE_ROWS-->
+                            <tbody id="jobsTableBody">
+                                <?php if (!$jobs): ?>
+                                    <tr>
+                                        <td colspan="6" style="text-align:center; padding:30px; color:#64748b;">
+                                            Belum ada lowongan. Klik <strong>Tambah Lowongan</strong> di atas untuk membuat lowongan baru.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($jobs as $j): ?>
+                                        <tr data-job-row data-title="<?php echo e($j['title']); ?>" data-status="<?php echo e($j['status']); ?>" data-created="<?php echo e($j['created_at']); ?>">
+                                            <td>
+                                                <strong><?php echo e($j['title']); ?></strong>
+                                                <div class="tiny" style="color:#64748b; font-size:11px;">KBJI: <code><?php echo e($j['kbji_code']); ?></code> | Tipe: <?php echo e($j['job_type']); ?></div>
+                                            </td>
+                                            <td><?php echo e($j['location'] ?: 'Kota Bekasi'); ?></td>
+                                            <td><strong><?php echo (int)($j['quota'] ?? 1); ?></strong> Posisi</td>
+                                            <td>
+                                                <?php 
+                                                    $applicantCount = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
+                                                    $applicantCount->execute([$j['id']]);
+                                                    echo (int)$applicantCount->fetchColumn();
+                                                ?> Pelamar
+                                            </td>
+                                            <td>
+                                                <?php if ($j['status'] === 'Tayang'): ?>
+                                                    <span class="status-pill approved">Lowongan Aktif</span>
+                                                <?php elseif ($j['status'] === 'Draft'): ?>
+                                                    <span class="status-pill draft" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">Draft</span>
+                                                <?php elseif ($j['status'] === 'Perlu Direvisi' || $j['status'] === 'Perlu Revisi'): ?>
+                                                    <span class="status-pill revision" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">Perlu Direvisi</span>
+                                                <?php else: ?>
+                                                    <span class="status-pill pending" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;">Menunggu Verifikasi</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11px;" data-open-modal="detail-draft-<?php echo $j['id']; ?>">
+                                                    <i class="fa-solid fa-eye"></i> Detail
+                                                </button>
+
+                                                <!-- MODAL DETAIL DRAFT / LOWONGAN -->
+                                                <div class="modal-backdrop <?php echo (isset($_GET['open_draft']) && (int)$_GET['open_draft'] === (int)$j['id']) ? 'open' : ''; ?>" data-modal="detail-draft-<?php echo $j['id']; ?>">
+                                                    <div class="modal-panel" style="width:min(580px, 95vw);">
+                                                        <div class="modal-header">
+                                                            <div>
+                                                                <div class="modal-title"><?php echo e($j['title']); ?></div>
+                                                                <div class="modal-subtitle">Kode KBJI: <?php echo e($j['kbji_code']); ?> | Status: <?php echo e($j['status']); ?></div>
+                                                            </div>
+                                                            <button type="button" class="ghost-btn" data-close-modal="detail-draft-<?php echo $j['id']; ?>">×</button>
+                                                        </div>
+                                                        <div class="modal-body" style="font-size:13px; color:#334155;">
+                                                            <div style="background:#f8fafc; padding:14px; border-radius:12px; margin-bottom:14px; display:grid; gap:8px;">
+                                                                <div><strong>Judul:</strong> <?php echo e($j['title']); ?></div>
+                                                                <div><strong>Penempatan:</strong> <?php echo e($j['location']); ?></div>
+                                                                <div><strong>Jenis Pekerjaan:</strong> <?php echo e($j['job_type']); ?></div>
+                                                                <div><strong>Kuota:</strong> <?php echo (int)$j['quota']; ?> Posisi</div>
+                                                                <div><strong>Status Saat Ini:</strong> <span class="badge ok"><?php echo e($j['status']); ?></span></div>
+                                                            </div>
+                                                            <div style="margin-bottom:14px;">
+                                                                <strong>Deskripsi Pekerjaan:</strong>
+                                                                <div style="margin-top:4px; font-size:12px; line-height:1.5; color:#475569; white-space:pre-wrap;"><?php echo e($j['description']); ?></div>
+                                                            </div>
+                                                            <?php if (!empty($j['admin_notes'])): ?>
+                                                                <div style="background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:12px; border-radius:10px; margin-bottom:14px;">
+                                                                    <strong>Catatan Admin Disnaker:</strong>
+                                                                    <div style="font-size:12px; margin-top:4px;"><?php echo e($j['admin_notes']); ?></div>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div class="modal-footer" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                                                            <?php if ($j['status'] === 'Draft'): ?>
+                                                                <form method="post" action="dashboard.php#lowongan" style="display:inline;">
+                                                                    <input type="hidden" name="delete_job" value="1">
+                                                                    <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
+                                                                    <button type="submit" class="ghost-btn" style="color:#dc2626; border-color:#fecaca;" onclick="return confirm('Yakin ingin menghapus draft lowongan ini?')">
+                                                                        <i class="fa-solid fa-trash"></i> Hapus Draft
+                                                                    </button>
+                                                                </form>
+                                                                <form method="post" action="dashboard.php#lowongan" style="display:inline;">
+                                                                    <input type="hidden" name="send_job" value="1">
+                                                                    <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
+                                                                    <button type="submit" class="primary-btn" style="background:#0284c7;">
+                                                                        <i class="fa-solid fa-paper-plane"></i> Kirim Lowongan (Ajukan Verifikasi)
+                                                                    </button>
+                                                                </form>
+                                                            <?php else: ?>
+                                                                <button type="button" class="ghost-btn" data-close-modal="detail-draft-<?php echo $j['id']; ?>">Tutup</button>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
-                        <div class="table-footer">Daftar lowongan Anda</div>
+                        <div class="table-footer" style="padding:12px 16px; font-size:12px; color:#64748b; background:#f8fafc; border-top:1px solid #e2e8f0;">Daftar lowongan Anda (Total: <?php echo count($jobs); ?>)</div>
                     </div>
                 </div>
                 <div class="section-card" style="margin-top:16px">
@@ -2485,6 +2584,44 @@
                 });
             }
         });
+        window.filterJobsTable = function() {
+            const searchVal = (document.getElementById('jobSearchInput')?.value || '').toLowerCase();
+            const statusVal = document.getElementById('jobStatusFilter')?.value || 'all';
+            const rows = document.querySelectorAll('tr[data-job-row]');
+
+            rows.forEach(row => {
+                const title = (row.dataset.title || '').toLowerCase();
+                const status = row.dataset.status || '';
+
+                let matchSearch = title.includes(searchVal);
+                let matchStatus = (statusVal === 'all') ||
+                    (statusVal === 'Draft' && status === 'Draft') ||
+                    (statusVal === 'Menunggu Verifikasi' && (status === 'Dikirim/Menunggu Verifikasi' || status === 'Menunggu Verifikasi')) ||
+                    (statusVal === 'Perlu Direvisi' && (status === 'Perlu Direvisi' || status === 'Perlu Revisi')) ||
+                    (statusVal === 'Tayang' && status === 'Tayang');
+
+                row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+            });
+        };
+
+        window.sortJobsTable = function() {
+            const sortVal = document.getElementById('jobSortSelect')?.value || 'newest';
+            const tbody = document.getElementById('jobsTableBody');
+            if (!tbody) return;
+            const rows = Array.from(tbody.querySelectorAll('tr[data-job-row]'));
+
+            rows.sort((a, b) => {
+                if (sortVal === 'title') {
+                    return (a.dataset.title || '').localeCompare(b.dataset.title || '');
+                } else if (sortVal === 'oldest') {
+                    return (a.dataset.created || '').localeCompare(b.dataset.created || '');
+                } else { // newest
+                    return (b.dataset.created || '').localeCompare(a.dataset.created || '');
+                }
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        };
     </script>
 </body>
 </html>
