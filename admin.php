@@ -211,7 +211,7 @@ if ($view === 'verifikasi_job') {
     $verificationJobs = $stmt->fetchAll() ?: [];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'review_job') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '') === 'review_job') {
     $jobId = (int) ($_POST['job_id'] ?? 0);
     $decision = $_POST['decision'] ?? '';
     $notes = trim($_POST['admin_notes'] ?? '');
@@ -405,75 +405,6 @@ $revisionQuickTags = job_revision_quick_tags();
                             <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
                             <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari nama, email, NPWP..." style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px;">
                             <button class="primary-btn" type="submit" style="height:32px; padding:0 12px; font-size:12px;">Cari</button>
-                        </form>
-                    </div>
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-mark"><i class="fa-solid fa-grip-lines"></i></div>
-            <div class="brand-text">
-                <h1>Karirhub</h1>
-                <p>Admin Pusat</p>
-            </div>
-        </div>
-        <div class="menu-list">
-            <a class="menu-item <?php echo $page === 'individual' ? 'active' : ''; ?>" href="admin.php?page=individual">
-                <i class="fa-solid fa-users"></i>
-                <span class="menu-label"><strong>Individual</strong><span>Data pemberi kerja</span></span>
-            </a>
-            <a class="menu-item <?php echo $page === 'jobs' ? 'active' : ''; ?>" href="admin.php?page=jobs">
-                <i class="fa-solid fa-briefcase"></i>
-                <span class="menu-label"><strong>Lowongan Kerja</strong><span>Tinjau posting baru</span></span>
-            </a>
-        </div>
-        <div class="sidebar-spacer"></div>
-        <div style="padding:0 4px">
-            <div class="profile-card">
-                <div class="profile-avatar">AD</div>
-                <div>
-                    <strong><?php echo e($user['name']); ?></strong>
-                    <span>Admin pusat</span>
-                </div>
-            </div>
-            <a href="logout.php" class="sidebar-logout"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
-        </div>
-    </aside>
-
-    <div class="main">
-        <header class="topbar">
-            <button id="sidebarToggle" class="sidebar-toggle" type="button"><i class="fa-solid fa-bars"></i></button>
-            <div class="crumbs">
-                <span>Beranda</span><span>&gt;</span>
-                <strong><?php echo $page === 'jobs' ? 'Lowongan Kerja' : 'Individual'; ?></strong>
-            </div>
-            <div class="top-actions">
-                <?php echo render_notif_dropdown($notifications, $unread); ?>
-                <div class="company-chip">
-                    <div><strong>Admin</strong><span>Pusat</span></div>
-                </div>
-                <a class="action-chip" href="logout.php">Logout</a>
-            </div>
-        </header>
-
-        <div class="admin-content">
-            <?php if ($flash = get_flash()): ?>
-                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>"><?php echo e($flash['message']); ?></div>
-            <?php endif; ?>
-
-            <?php if ($page !== 'jobs'): ?>
-                <div class="admin-page-title">Individual</div>
-                <div class="tab-row">
-                    <a class="<?php echo $tab === 'all' ? 'active' : ''; ?>" href="admin.php?page=individual&tab=all">Semua</a>
-                    <a class="<?php echo $tab === 'verified' ? 'active' : ''; ?>" href="admin.php?page=individual&tab=verified">Terverifikasi</a>
-                    <a class="<?php echo $tab === 'process' ? 'active' : ''; ?>" href="admin.php?page=individual&tab=process">Dalam Proses</a>
-                    <a class="<?php echo $tab === 'rejected' ? 'active' : ''; ?>" href="admin.php?page=individual&tab=rejected">Ditolak</a>
-                </div>
-                <div class="admin-panel">
-                    <div class="admin-toolbar">
-                        <form method="get" action="admin.php" style="flex:1;display:flex;gap:10px;flex-wrap:wrap;">
-                            <input type="hidden" name="page" value="individual">
-                            <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
-                            <div class="search-small"><i class="fa-solid fa-magnifying-glass"></i><input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari individual..."></div>
-                            <button class="ghost-btn" type="submit">Cari</button>
                         </form>
                     </div>
                     <div class="table-shell">
@@ -673,7 +604,7 @@ $revisionQuickTags = job_revision_quick_tags();
                                             </td>
                                         </tr>                                     <?php endforeach; ?>
                                 <?php endif; ?>
-                            </tbody>>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -696,7 +627,6 @@ $revisionQuickTags = job_revision_quick_tags();
                             <a class="<?php echo $tab === 'rejected' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_job&entity=<?php echo $entity; ?>&tab=rejected">Ditolak</a>
                         </div>
                     </div>
-                    <div class="admin-panel">
                     <div class="table-shell">
                         <table class="admin-table">
                             <thead>
@@ -787,29 +717,6 @@ $revisionQuickTags = job_revision_quick_tags();
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
-                            </thead>
-                            <tbody>
-                            <?php if (!$jobs): ?>
-                                <tr><td colspan="5" class="admin-empty">Belum ada lowongan yang dikirim.</td></tr>
-                            <?php else: foreach ($jobs as $job):
-                                $meta = job_status_meta($job['status']);
-                            ?>
-                                <tr>
-                                    <td>
-                                        <strong><?php echo e($job['title']); ?></strong>
-                                        <div class="tiny"><?php echo e($job['job_type']); ?> · KBJI <?php echo e($job['kbji_code'] ?: '-'); ?> · <?php echo e(date('d M Y', strtotime($job['created_at']))); ?></div>
-                                    </td>
-                                    <td><?php echo e($job['employer_name']); ?><div class="tiny"><?php echo e($job['employer_email']); ?></div></td>
-                                    <td><?php echo e($job['location']); ?></td>
-                                    <td><span class="status-chip <?php echo e($meta['class']); ?>"><?php echo e($meta['label']); ?></span></td>
-                                    <td>
-                                        <button type="button" class="tinjau-btn" data-open-job-review="<?php echo (int) $job['id']; ?>">
-                                            Tinjau Lengkap
-                                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -817,81 +724,6 @@ $revisionQuickTags = job_revision_quick_tags();
             <?php endif; ?>
         </div>
     </main>
-
-                <?php if ($jobs): ?>
-                <div class="job-review-backdrop" data-job-review-drawer hidden>
-                    <div class="job-review-drawer" role="dialog" aria-modal="true" aria-labelledby="jobReviewTitle">
-                        <div class="job-review-header">
-                            <div>
-                                <div class="job-review-kicker">Tinjauan Lowongan</div>
-                                <h2 id="jobReviewTitle">Detail lengkap</h2>
-                            </div>
-                            <button type="button" class="job-review-close" data-close-job-review aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <div class="job-review-body" data-job-review-body></div>
-                    </div>
-                </div>
-                <?php foreach ($jobs as $job):
-                    $meta = job_status_meta($job['status']);
-                    $editable = job_decision_editable($job);
-                    $reviewable = in_array($job['status'], ['Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditolak'], true);
-                    $currentNotes = trim((string) ($job['admin_notes'] ?? ''));
-                ?>
-                <template data-job-review-template="<?php echo (int) $job['id']; ?>">
-                    <div class="job-review-pack">
-                        <div class="job-review-summary">
-                            <div>
-                                <h3><?php echo e($job['title']); ?></h3>
-                                <p><?php echo e($job['employer_name']); ?> · <?php echo e($job['location']); ?></p>
-                            </div>
-                            <span class="status-chip <?php echo e($meta['class']); ?>"><?php echo e($meta['label']); ?></span>
-                        </div>
-                        <?php echo render_job_review_details($job); ?>
-                        <section class="job-review-section job-review-decision">
-                            <h3>Keputusan &amp; Catatan Admin</h3>
-                            <?php if ($editable): ?>
-                            <form method="post" class="review-form" data-review-form data-default-approve="<?php echo e($defaultApproveNote); ?>">
-                                <input type="hidden" name="action" value="review_job">
-                                <input type="hidden" name="job_id" value="<?php echo (int) $job['id']; ?>">
-                                <label class="review-reason-label">Alasan standar</label>
-                                <div class="reason-dropdown" data-reason-dropdown>
-                                    <input type="hidden" name="admin_note_reason" data-note-reason value="<?php echo in_array($currentNotes, $revisionQuickTags, true) ? e($currentNotes) : ''; ?>">
-                                    <button type="button" class="reason-dropdown-trigger" data-reason-trigger>
-                                        <span data-reason-label><?php echo in_array($currentNotes, $revisionQuickTags, true) ? e($currentNotes) : 'Pilih alasan standar'; ?></span>
-                                        <i class="fa-solid fa-chevron-down reason-chevron"></i>
-                                    </button>
-                                    <div class="reason-dropdown-menu" data-reason-menu hidden>
-                                        <?php foreach ($revisionQuickTags as $tag): ?>
-                                            <button type="button" class="reason-option<?php echo $currentNotes === $tag ? ' is-selected' : ''; ?>" data-reason-option="<?php echo e($tag); ?>"><?php echo e($tag); ?></button>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                                <label class="review-reason-label" for="admin-notes-<?php echo (int) $job['id']; ?>">Catatan admin</label>
-                                <textarea id="admin-notes-<?php echo (int) $job['id']; ?>" name="admin_notes" placeholder="Catatan terisi otomatis saat Disetujui, atau dari alasan standar. Anda dapat mengedit teks ini sebelum menyimpan." required><?php echo e($currentNotes); ?></textarea>
-                                <p class="review-hint">Disetujui: catatan terisi otomatis. Perlu Revisi / Ditolak: pilih satu alasan, lalu edit jika perlu. Keputusan masih dapat diubah sampai pemberi kerja membuka form revisi.</p>
-                                <div class="review-actions">
-                                    <button name="decision" value="revise" class="ghost-btn<?php echo $job['status'] === 'Perlu Revisi' ? ' is-current' : ''; ?>">Perlu Revisi</button>
-                                    <button name="decision" value="approve" class="primary-btn<?php echo $job['status'] === 'Tayang' ? ' is-current' : ''; ?>">Disetujui</button>
-                                    <button name="decision" value="reject" class="ghost-btn reject-btn<?php echo $job['status'] === 'Ditolak' ? ' is-current' : ''; ?>">Ditolak</button>
-                                </div>
-                            </form>
-                            <?php elseif ($reviewable): ?>
-                            <div class="review-locked">
-                                <div class="tiny">Terkunci — pemberi kerja sudah membuka form revisi. Keputusan dapat diubah lagi setelah lowongan dikirim ulang.</div>
-                                <?php if ($currentNotes !== ''): ?>
-                                    <p><?php echo nl2br(e($currentNotes)); ?></p>
-                                <?php endif; ?>
-                            </div>
-                            <?php else: ?>
-                            <p class="job-review-empty"><?php echo $currentNotes !== '' ? e($currentNotes) : 'Tidak ada tindakan tinjauan untuk status ini.'; ?></p>
-                            <?php endif; ?>
-                        </section>
-                    </div>
-                </template>
-                <?php endforeach; endif; ?>
-            <?php endif; ?>
-        </div>
-    </div>
 </div>
 <script src="assets/app.js"></script>
 </body>

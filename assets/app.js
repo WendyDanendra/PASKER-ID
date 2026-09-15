@@ -130,6 +130,9 @@ function scrollAndFocusKbji() {
             kbjiSelect.style.borderColor = '';
             kbjiSelect.style.boxShadow = '';
         }, 4000);
+    }
+}
+
 function bindModal(openSelector, closeSelector, modalSelector) {
     const openButtons = document.querySelectorAll(openSelector);
     const closeButtons = document.querySelectorAll(closeSelector);

@@ -33,10 +33,54 @@ function db(): PDO
             if ($isNew) {
                 init_sqlite_schema($pdo);
             }
+            ensure_sqlite_extra_tables($pdo);
         }
     }
 
     return $pdo;
+}
+
+function ensure_sqlite_extra_tables(PDO $pdo): void
+{
+    $pdo->exec('CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT NOT NULL,
+        job_id INTEGER,
+        is_read INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS job_applications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id INTEGER NOT NULL,
+        seeker_id INTEGER NOT NULL,
+        status TEXT DEFAULT "Lamaran Masuk",
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME,
+        UNIQUE (job_id, seeker_id)
+    )');
+
+    try {
+        $cols = array_column($pdo->query('PRAGMA table_info(employer_profiles)')->fetchAll(), 'name');
+        if (!in_array('workplace_photo', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN workplace_photo TEXT');
+        }
+        if (!in_array('permit_document', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN permit_document TEXT');
+        }
+    } catch (Throwable $ignored) {}
+
+    try {
+        $cols = array_column($pdo->query('PRAGMA table_info(job_posts)')->fetchAll(), 'name');
+        if (!in_array('admin_notes', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN admin_notes TEXT');
+        }
+        if (!in_array('details', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN details TEXT');
+        }
+    } catch (Throwable $ignored) {}
 }
 
 function init_sqlite_schema(PDO $pdo): void

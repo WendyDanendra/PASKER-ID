@@ -10,7 +10,7 @@ if (!is_profile_complete($user)) {
 
 $page = $_GET['page'] ?? 'dashboard';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply_job_id'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['apply_job_id'])) {
     $jobId = (int) $_POST['apply_job_id'];
     $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND status = "Tayang" LIMIT 1');
     $jobStmt->execute([$jobId]);
@@ -205,6 +205,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                 <span>Beranda</span><span>&gt;</span>
                 <strong><?php echo $page === 'job' ? 'Detail Lowongan' : ($page === 'employer' ? 'Profil Pemberi Kerja' : ($page === 'jobs' ? 'Lowongan Kerja' : 'Dasbor')); ?></strong>
             </div>
+            <div class="top-actions">
                 <a class="action-chip" href="dashboard.php" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;" title="Beralih ke Pemberi Kerja Individu">
                     <i class="fa-solid fa-briefcase"></i> Beralih ke Pemberi Kerja
                 </a>
@@ -216,6 +217,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             </div>
         </header>
 
+        <div class="seeker-content">
             <?php if ($flash = get_flash()): ?>
                 <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>"><?php echo e($flash['message']); ?></div>
             <?php endif; ?>

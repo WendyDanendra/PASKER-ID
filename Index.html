@@ -1704,131 +1704,44 @@
                             <?php endif; ?>
                         </div>
                     </div>
-                </section>
-
-                <!-- SECTION F: LOWONGAN PAGE (REUSE EMPLOYER PERUSAHAAN TABLE & STATS) -->
-                <section class="page" data-page="lowongan" id="page-lowongan">
-                    <div class="page-title-row">
-                        <div>
-                            <h2>Lowongan Kerja Individu</h2>
-                            <div class="section-note">Kelola posting lowongan, status verifikasi KBJI, dan kandidat.</div>
-                        </div>
-                        <?php if ($verificationStatus === 'APPROVED'): ?>
-                            <button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>
-                        <?php endif; ?>
-                    </div>
 
                     <div class="section-card">
-                        <div class="table-toolbar">
-                            <div class="search-small"><i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="Cari berdasarkan judul atau KBJI..."></div>
-                            <div class="controls">
-                                <button class="ghost-btn">Filter Status <i class="fa-solid fa-chevron-down"></i></button>
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-filter"></i> Corong Rekrutmen</h3>
+                        </div>
+                            <!--FUNNEL_METRICS-->
+                    </div>
+
+                    <div class="widget-grid">
+                        <div class="widget-card">
+                            <div class="widget-header"><span>Pelamar siap diseleksi</span></div>
+                            <!--READY_APPLICANTS-->
+                        </div>
+
+                        <div class="widget-card">
+                            <div class="widget-header">
+                                <span><i class="fa-regular fa-clock chip-icon"></i> Aktivitas Lamaran</span>
+                                <i class="fa-regular fa-calendar chip-icon"></i>
+                            </div>
+                            <!--APPLICATION_ACTIVITY-->
+                        </div>
+
+                        <div class="widget-card">
+                            <div class="widget-header">
+                                <span><i class="fa-regular fa-calendar-check chip-icon"></i> Wawancara Terdekat</span>
+                                <button class="btn-link" data-nav="jadwal">Kalender <i
+                                        class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                            <div class="empty-state">
+                                <i class="fa-regular fa-calendar-xmark"></i>
+                                <p>Tidak ada jadwal wawancara dalam<br>14 hari ke depan.</p>
                             </div>
                         </div>
-                        <div class="table-shell">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Judul Lowongan</th>
-                                        <th>Kode KBJI</th>
-                                        <th>Penempatan</th>
-                                        <th>Kuota</th>
-                                        <th>Status</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (!$jobs): ?>
-                                        <tr><td colspan="6" style="text-align:center; padding:30px; color:#64748b;">Belum ada lowongan.</td></tr>
-                                    <?php else: ?>
-                                        <?php foreach ($jobs as $j): ?>
-                                            <tr>
-                                                <td>
-                                                    <strong><?php echo e($j['title']); ?></strong>
-                                                    <div class="tiny">Dibuat: <?php echo date('d M Y', strtotime($j['created_at'])); ?></div>
-                                                </td>
-                                                <td><code><?php echo e($j['kbji_code']); ?></code></td>
-                                                <td><?php echo e($j['location']); ?></td>
-                                                <td><?php echo $j['accepted_count']; ?> / <?php echo $j['quota']; ?> Terpenuhi</td>
-                                                <td><span class="status-pill <?php echo strtolower(str_replace(['/', ' '], '_', $j['status'])); ?>"><?php echo e($j['status']); ?></span></td>
-                                                <td>
-                                                    <div style="display:flex; gap:6px;">
-                                                        <?php if ($j['status'] === 'Draft'): ?>
-                                                            <!-- CTA KIRIM LOWONGAN (RULES ENGINE KBJI ON SEND) -->
-                                                            <form method="post" action="dashboard.php#lowongan" style="margin:0;">
-                                                                <input type="hidden" name="send_job" value="1">
-                                                                <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
-                                                                <button type="submit" class="ghost-btn" style="color:#0284c7; border-color:#bae6fd;" title="Kirim Lowongan untuk Verifikasi">
-                                                                    <i class="fa-solid fa-paper-plane"></i> Kirim
-                                                                </button>
-                                                            </form>
-                                                            <form method="post" action="dashboard.php#lowongan" style="margin:0;">
-                                                                <input type="hidden" name="delete_job" value="1">
-                                                                <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
-                                                                <button type="submit" class="ghost-btn" style="color:#dc2626; border-color:#fecaca;" title="Hapus Draft">
-                                                                    <i class="fa-solid fa-trash"></i>
-                                                                </button>
-                                                            </form>
-                                                        <?php elseif ($j['status'] === 'Tayang'): ?>
-                                                            <!-- CTA TUTUP LOWONGAN (SECTION K) -->
-                                                            <button type="button" class="ghost-btn" style="color:#d97706; border-color:#fde68a;" onclick="testCloseJob(<?php echo $j['id']; ?>, <?php echo max(1, $j['quota'] - $j['accepted_count']); ?>)">
-                                                                <i class="fa-solid fa-lock"></i> Tutup Lowongan
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
+                </section>
 
-                    <div class="notice-row">
-                        <i class="fa-regular fa-clock"></i>
-                        <div>Belum ada lowongan yang ditampilkan. Gunakan tombol <strong>Kelola Lowongan</strong> untuk
-                            membuat lowongan pertama Anda.</div>
-                    </div>
-                </div>
-
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3><i class="fa-solid fa-filter"></i> Corong Rekrutmen</h3>
-                    </div>
-                        <!--FUNNEL_METRICS-->
-                </div>
-
-                <div class="widget-grid">
-                    <div class="widget-card">
-                        <div class="widget-header"><span>Pelamar siap diseleksi</span></div>
-                        <!--READY_APPLICANTS-->
-                    </div>
-
-                    <div class="widget-card">
-                        <div class="widget-header">
-                            <span><i class="fa-regular fa-clock chip-icon"></i> Aktivitas Lamaran</span>
-                            <i class="fa-regular fa-calendar chip-icon"></i>
-                        </div>
-                        <!--APPLICATION_ACTIVITY-->
-                    </div>
-
-                    <div class="widget-card">
-                        <div class="widget-header">
-                            <span><i class="fa-regular fa-calendar-check chip-icon"></i> Wawancara Terdekat</span>
-                            <button class="btn-link" data-nav="jadwal">Kalender <i
-                                    class="fa-solid fa-arrow-right"></i></button>
-                        </div>
-                        <div class="empty-state">
-                            <i class="fa-regular fa-calendar-xmark"></i>
-                            <p>Tidak ada jadwal wawancara dalam<br>14 hari ke depan.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="page" id="page-lowongan">
-                <div class="page-title-row">
+                <section class="page" data-page="lowongan" id="page-lowongan">
+                    <div class="page-title-row">
                     <div>
                         <h2>Lowongan</h2>
                         <div class="section-note">Kelola status lowongan, kandidat, dan publikasi.</div>

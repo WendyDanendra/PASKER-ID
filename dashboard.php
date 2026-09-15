@@ -81,7 +81,7 @@ if (isset($_GET['job_json'])) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_application_status'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['update_application_status'])) {
     $applicationId = (int) ($_POST['application_id'] ?? 0);
     $nextStatus = normalize_application_status($_POST['status'] ?? '');
     if (!in_array($nextStatus, application_statuses(), true)) {
@@ -126,7 +126,11 @@ if ($verificationStatus === 'APPROVED' && $activeUntil) {
 // Ambil flash message SEBELUM ob_start (karena session harus dibaca dulu)
 $flashData = get_flash();
 $flashHtml = '';
-if ($flashData) {
+$pendingPopupMessage = null;
+if ($flashData && $flashData['type'] === 'pending_popup') {
+    $pendingPopupMessage = $flashData['message'];
+    $flashData = null;
+} elseif ($flashData) {
     $flashType = $flashData['type'] === 'success' ? 'success' : 'error';
     $flashIcon = $flashType === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
     $flashColor = $flashType === 'success'
@@ -137,6 +141,15 @@ if ($flashData) {
     $flashHtml .= htmlspecialchars($flashData['message'], ENT_QUOTES, 'UTF-8');
     $flashHtml .= '<button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:inherit;opacity:0.6;">×</button>';
     $flashHtml .= '</div>';
+}
+
+$kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
+unset($_SESSION['kbji_duplicate_error']);
+
+if (isset($_GET['open_profile']) && $_GET['open_profile'] == '1') {
+    $showProfileModal = true;
+} else {
+    $showProfileModal = ($verificationStatus === 'NOT_SUBMITTED');
 }
 
 ob_start();
@@ -1565,23 +1578,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         exit;
     }
 }
-
-// Flash toast notification
-$flashData = get_flash();
-$pendingPopupMessage = null;
-
-if ($flashData && $flashData['type'] === 'pending_popup') {
-    $pendingPopupMessage = $flashData['message'];
-    $flashData = null;
-}
-
-$kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
-unset($_SESSION['kbji_duplicate_error']);
-
-// Load HTML Prototype Template
-ob_start();
-include __DIR__ . '/Index.html';
-$html = ob_get_clean();
 
 if (!str_contains($html, 'src="assets/app.js"')) {
     $html = str_replace('</body>', '<script src="assets/app.js"></script>' . "\n</body>", $html);
