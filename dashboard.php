@@ -1311,14 +1311,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $instagram   = trim($_POST['instagram'] ?? '');
 
         $sameLoc     = isset($_POST['same_location_siapkerja']) ? 1 : 0;
-        $province    = trim($_POST['province'] ?? '');
-        $city        = trim($_POST['city'] ?? '');
-        $district    = trim($_POST['district'] ?? '');
-        $village     = trim($_POST['village'] ?? '');
-        $postalCode  = trim($_POST['postal_code'] ?? '');
+        $province    = trim($_POST['province'] ?? '') ?: 'Jawa Barat';
+        $city        = trim($_POST['city'] ?? '') ?: 'Kota Bekasi';
+        $district    = trim($_POST['district'] ?? '') ?: 'Bekasi Selatan';
+        $village     = trim($_POST['village'] ?? '') ?: 'Pekayon Jaya';
+        $postalCode  = trim($_POST['postal_code'] ?? '') ?: '17148';
 
         $sameAddr    = isset($_POST['same_address_siapkerja']) ? 1 : 0;
-        $address     = trim($_POST['address'] ?? '');
+        $address     = trim($_POST['address'] ?? '') ?: 'Jl. Ahmad Yani No. 12';
         $addressDetail = trim($_POST['address_detail'] ?? '');
 
         $latitude    = trim($_POST['latitude'] ?? '-6.241586');
@@ -1326,8 +1326,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $consent     = isset($_POST['user_consent']) ? 1 : 0;
 
-        if ($ownerName === '' || $nik === '' || $phone === '' || $profession === '' || $npwp === '' || $province === '' || $city === '' || $address === '' || !$consent) {
-            flash('error', 'Lengkapi semua field wajib dan centang persetujuan pengguna.');
+        if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || !$consent) {
+            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Profesi, NPWP) dan centang persetujuan pengguna.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }
@@ -1339,7 +1339,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 same_location_siapkerja = ?, province = ?, city = ?, district = ?, village = ?, postal_code = ?,
                 same_address_siapkerja = ?, address = ?, address_detail = ?,
                 latitude = ?, longitude = ?, description = ?, user_consent = ?,
-                verification_status = "PENDING", verified = 0, updated_at = NOW()
+                verification_status = "PENDING", verified = 0, updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?');
             $stmt->execute([
                 $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,

@@ -1938,138 +1938,72 @@
             <div class="modal-header">
                 <div>
                     <div class="modal-title">Form Profil Pemberi Kerja Individu</div>
-                    <div class="modal-subtitle">Lengkapi biodata dan alamat domisili untuk verifikasi Admin Disnaker.</div>
+                    <div class="modal-subtitle">Lengkapi biodata individu untuk pengajuan verifikasi akun Pemberi Kerja.</div>
                 </div>
             </div>
             <form method="post" action="dashboard.php">
                 <input type="hidden" name="submit_profile" value="1">
                 <div class="modal-body">
-                    <!-- IDENTITAS -->
+                    <!-- IDENTITAS WAJIB -->
                     <div class="modal-section">
-                        <div class="section-title">1. Identitas Perorangan</div>
+                        <div class="section-title">1. Identitas Perorangan (Wajib)</div>
                         <div class="field-grid">
                             <div class="field">
                                 <label>Nama Pemberi Kerja <span class="req">*</span></label>
                                 <input type="text" name="owner_name" value="<?php echo e($profile['owner_name'] ?? $user['name']); ?>" required placeholder="Sesuai KTP">
                             </div>
                             <div class="field">
-                                <label>NIK <span class="req">*</span></label>
-                                <input type="text" name="nik" value="<?php echo e($profile['nik'] ?? ''); ?>" required placeholder="16 digit NIK">
+                                <label>NIK <span class="req">*</span> <small style="color:#0284c7; font-weight:600;"><i class="fa-solid fa-lock"></i> SIAPkerja Protected</small></label>
+                                <input type="text" name="nik" value="<?php echo e($profile['nik'] ?: '3275012304890001'); ?>" readonly required style="background:#f1f5f9; cursor:not-allowed; color:#475569; font-weight:600;" title="NIK berasal dari akun SIAPkerja dan bersifat read-only">
                             </div>
                             <div class="field">
                                 <label>Nomor Telepon Aktif <span class="req">*</span></label>
                                 <input type="text" name="phone" value="<?php echo e($profile['phone'] ?? ''); ?>" required placeholder="Contoh: 08123456789">
                             </div>
                             <div class="field">
-                                <label>Nomor WhatsApp</label>
-                                <input type="text" name="whatsapp" value="<?php echo e($profile['whatsapp'] ?? ''); ?>" placeholder="Nomor WhatsApp aktif">
+                                <label>Nomor WhatsApp <span class="req">*</span></label>
+                                <input type="text" name="whatsapp" value="<?php echo e($profile['whatsapp'] ?? ''); ?>" required placeholder="Contoh: 08123456789">
                             </div>
                             <div class="field">
                                 <label>Jenis Profesi / Usaha Individu <span class="req">*</span></label>
-                                <input type="text" name="profession" value="<?php echo e($profile['profession'] ?? ''); ?>" required placeholder="Contoh: Kuliner, Jasa, Perorangan">
+                                <input type="text" name="profession" value="<?php echo e($profile['profession'] ?? ''); ?>" required placeholder="Contoh: Kuliner & Katering, Jasa, Perorangan">
                             </div>
                             <div class="field">
-                                <label>NPWP WAJIB <span class="req">*</span></label>
-                                <input type="text" name="npwp" value="<?php echo e($profile['npwp'] ?? ''); ?>" required placeholder="15/16 digit NPWP">
+                                <label>NPWP (WAJIB) <span class="req">*</span></label>
+                                <input type="text" name="npwp" value="<?php echo e($profile['npwp'] ?? ''); ?>" required placeholder="15 atau 16 digit NPWP">
                             </div>
                         </div>
                     </div>
 
-                    <!-- MEDIA SOSIAL OPSIONAL -->
+                    <!-- OPSIONAL: MEDIA SOSIAL & DESKRIPSI -->
                     <div class="modal-section">
-                        <div class="section-title">2. Media Sosial (Opsional)</div>
-                        <div class="field-grid">
+                        <div class="section-title">2. Media Sosial & Deskripsi Singkat (Opsional)</div>
+                        <div class="field-grid" style="margin-bottom:12px;">
                             <div class="field"><label>LinkedIn</label><input type="url" name="linkedin" value="<?php echo e($profile['linkedin'] ?? ''); ?>" placeholder="https://linkedin.com/in/username"></div>
                             <div class="field"><label>Facebook</label><input type="url" name="facebook" value="<?php echo e($profile['facebook'] ?? ''); ?>" placeholder="https://facebook.com/username"></div>
                             <div class="field"><label>Instagram</label><input type="url" name="instagram" value="<?php echo e($profile['instagram'] ?? ''); ?>" placeholder="https://instagram.com/username"></div>
                         </div>
-                    </div>
-
-                    <!-- LOKASI CASCADING -->
-                    <div class="modal-section">
-                        <div class="section-title">3. Lokasi & Wilayah Administrative</div>
-                        <div style="margin-bottom:10px;">
-                            <label style="font-size:12px; font-weight:600;">
-                                <input type="checkbox" name="same_location_siapkerja" value="1" <?php echo ($profile['same_location_siapkerja'] ?? 1) ? 'checked' : ''; ?>>
-                                Sama seperti lokasi domisili di SIAPkerja?
-                            </label>
-                        </div>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Provinsi <span class="req">*</span></label>
-                                <select name="province" id="selectProvince" required>
-                                    <option value="Jawa Barat" selected>Jawa Barat</option>
-                                    <option value="DKI Jakarta">DKI Jakarta</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Kabupaten / Kota <span class="req">*</span></label>
-                                <select name="city" id="selectCity" required>
-                                    <option value="Kota Bekasi" selected>Kota Bekasi</option>
-                                    <option value="Kabupaten Bekasi">Kabupaten Bekasi</option>
-                                    <option value="Jakarta Selatan">Jakarta Selatan</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Kecamatan</label>
-                                <select name="district" id="selectDistrict">
-                                    <option value="Bekasi Selatan" selected>Bekasi Selatan</option>
-                                    <option value="Bekasi Timur">Bekasi Timur</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Kelurahan / Desa</label>
-                                <select name="village" id="selectVillage">
-                                    <option value="Pekayon Jaya" selected>Pekayon Jaya</option>
-                                    <option value="Jatibening">Jatibening</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Kode Pos</label>
-                                <input type="text" name="postal_code" value="<?php echo e($profile['postal_code'] ?? '17148'); ?>" placeholder="17148">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ALAMAT & PETA -->
-                    <div class="modal-section">
-                        <div class="section-title">4. Alamat Lengkap & Peta Read-Only</div>
-                        <div class="field" style="margin-bottom:10px;">
-                            <label>Alamat Lengkap <span class="req">*</span></label>
-                            <input type="text" name="address" value="<?php echo e($profile['address'] ?? ''); ?>" required placeholder="Jalan, No. Rumah, RT/RW">
-                        </div>
-                        <div class="field" style="margin-bottom:12px;">
-                            <label>Detail Alamat / Patokan (Opsional)</label>
-                            <input type="text" name="address_detail" value="<?php echo e($profile['address_detail'] ?? ''); ?>" placeholder="Patokan lokasi...">
-                        </div>
-
-                        <!-- PETA READ-ONLY READ-ONLY PIN (SECTION D) -->
-                        <div style="background:#e2e8f0; height:180px; border-radius:14px; position:relative; overflow:hidden; display:grid; place-items:center; color:#334155;">
-                            <div style="text-align:center;">
-                                <i class="fa-solid fa-map-location-dot" style="font-size:32px; color:#0284c7; margin-bottom:6px;"></i>
-                                <div style="font-weight:700; font-size:13px;">Koordinat Tersekat Automatis (-6.241586, 106.992416)</div>
-                                <div style="font-size:11px; color:#64748b;">Pin Read-Only (Zoom/Pan diizinkan, Pin tidak dapat digeser manual)</div>
-                                <a href="https://maps.google.com/?q=-6.241586,106.992416" target="_blank" class="ghost-btn" style="margin-top:8px; height:28px; font-size:11px; background:#fff;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Peta</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- DOKUMEN & CONSENT -->
-                    <div class="modal-section">
-                        <div class="section-title">5. Dokumen Pendukung & Consent</div>
-                        <div class="field-grid" style="margin-bottom:12px;">
-                            <div class="field"><label>Dokumen Perizinan/KTP</label><input type="file" disabled title="Mockup Upload File"></div>
-                            <div class="field"><label>Foto Tempat/Lokasi Usaha</label><input type="file" disabled title="Mockup Upload File"></div>
-                        </div>
                         <div class="field">
-                            <label><input type="checkbox" name="user_consent" value="1" required checked> Saya menyatakan bahwa seluruh data yang diisikan adalah benar dan valid sesuai hukum berlaku. <span class="req">*</span></label>
+                            <label>Deskripsi Singkat Usaha / Rekrutmen</label>
+                            <textarea name="description" placeholder="Jelaskan bidang usaha perorangan atau aktivitas rekrutmen Anda..." style="min-height:70px; padding:10px; font-size:13px; border:1px solid #cbd5e1; border-radius:8px; width:100%;"><?php echo e($profile['description'] ?? ''); ?></textarea>
+                        </div>
+                    </div>
+
+                    <!-- CONSENT PERSETUJUAN -->
+                    <div class="modal-section">
+                        <div class="section-title">3. Pernyataan Persetujuan (Consent Wajib)</div>
+                        <div class="field">
+                            <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer;">
+                                <input type="checkbox" name="user_consent" value="1" required checked style="margin-top:2px;">
+                                <span>Saya menyatakan bahwa seluruh data yang diisikan adalah benar, sah, dan valid sesuai hukum yang berlaku. <span class="req">*</span></span>
+                            </label>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <!-- BATALKAN -> KEMBALI KE KONTEKS PENCARI KERJA (JANGAN LOGOUT) -->
-                    <a href="dashboard.php?switch_context=seeker" class="ghost-btn">Batalkan</a>
-                    <button type="submit" class="primary-btn">Ajukan Profil</button>
+                    <!-- BATALKAN -> KEMBALI KE KONTEKS PENCARI KERJA (TANPA LOGOUT) -->
+                    <a href="dashboard.php?switch_context=seeker" class="ghost-btn" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i> Batalkan</a>
+                    <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Ajukan Profil</button>
                 </div>
             </form>
         </div>
