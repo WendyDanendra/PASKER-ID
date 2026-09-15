@@ -1598,14 +1598,28 @@
                             </div>
                         </div>
                     <?php elseif ($verificationStatus === 'NEEDS_REVISION'): ?>
-                        <div class="alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b;">
-                            <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:18px;"></i>
+                        <div class="alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; display:flex; gap:14px; align-items:flex-start;">
+                            <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:22px; margin-top:2px;"></i>
                             <div style="flex:1;">
-                                <strong>Profil Perlu Diperbaiki</strong><br>
-                                Catatan Verifikator: <?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi dokumen/data lokasi Anda.'); ?>
+                                <strong style="font-size:15px; display:block; margin-bottom:4px;">Profil Perlu Diperbaiki</strong>
+                                <div>Catatan Verifikator: <strong><?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi dokumen/data lokasi Anda.'); ?></strong></div>
+                                <?php if (!empty($profile['verification_checklist'])): ?>
+                                    <div style="font-size:12px; margin-top:4px; opacity:0.9;">Checklist: <?php echo e($profile['verification_checklist']); ?></div>
+                                <?php endif; ?>
 
-                                <div style="margin-top:10px; display:flex; gap:10px;">
-                                    <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#dc2626;" data-open-modal="modal-employer-profile">Perbaiki Profil Sekarang</button>
+                                <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px;">
+                                    <!-- CTA 1: LIHAT HASIL VERIFIKASI -->
+                                    <button type="button" class="ghost-btn" style="height:32px; padding:0 12px; font-size:12px; border-color:#dc2626; color:#dc2626; background:#fff;" data-open-modal="modal-verification-result">
+                                        <i class="fa-solid fa-file-circle-exclamation"></i> Lihat Hasil Verifikasi
+                                    </button>
+                                    <!-- CTA 2: PERBAIKI PROFIL -->
+                                    <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#dc2626;" data-open-modal="modal-employer-profile">
+                                        <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil
+                                    </button>
+                                    <!-- CTA 3: AJUKAN KEMBALI -->
+                                    <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#0284c7;" data-open-modal="modal-employer-profile">
+                                        <i class="fa-solid fa-paper-plane"></i> Ajukan Kembali
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1989,9 +2003,102 @@
                         </div>
                     </div>
 
+                    <!-- LOKASI & WILAYAH ADMINISTRATIVE (SECTION E) -->
+                    <div class="modal-section">
+                        <div class="section-title">3. Wilayah Administratif Domisili</div>
+                        <div style="margin-bottom:12px;">
+                            <label style="font-size:13px; font-weight:700; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" <?php echo ($profile['same_location_siapkerja'] ?? 1) ? 'checked' : ''; ?> onchange="document.getElementById('locationFieldsGrid').style.display = this.checked ? 'none' : 'grid';">
+                                <span>Sama seperti lokasi domisili di SIAPkerja?</span>
+                            </label>
+                        </div>
+                        <div class="field-grid" id="locationFieldsGrid" style="<?php echo ($profile['same_location_siapkerja'] ?? 1) ? 'display:none;' : 'display:grid;'; ?>">
+                            <div class="field">
+                                <label>Provinsi <span class="req">*</span></label>
+                                <select name="province" id="selectProvince">
+                                    <option value="Jawa Barat" <?php echo ($profile['province'] ?? 'Jawa Barat') === 'Jawa Barat' ? 'selected' : ''; ?>>Jawa Barat</option>
+                                    <option value="DKI Jakarta" <?php echo ($profile['province'] ?? '') === 'DKI Jakarta' ? 'selected' : ''; ?>>DKI Jakarta</option>
+                                    <option value="Jawa Tengah" <?php echo ($profile['province'] ?? '') === 'Jawa Tengah' ? 'selected' : ''; ?>>Jawa Tengah</option>
+                                    <option value="Jawa Timur" <?php echo ($profile['province'] ?? '') === 'Jawa Timur' ? 'selected' : ''; ?>>Jawa Timur</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Kabupaten / Kota <span class="req">*</span></label>
+                                <select name="city" id="selectCity">
+                                    <option value="Kota Bekasi" <?php echo ($profile['city'] ?? 'Kota Bekasi') === 'Kota Bekasi' ? 'selected' : ''; ?>>Kota Bekasi</option>
+                                    <option value="Kabupaten Bekasi" <?php echo ($profile['city'] ?? '') === 'Kabupaten Bekasi' ? 'selected' : ''; ?>>Kabupaten Bekasi</option>
+                                    <option value="Jakarta Selatan" <?php echo ($profile['city'] ?? '') === 'Jakarta Selatan' ? 'selected' : ''; ?>>Jakarta Selatan</option>
+                                    <option value="Bandung" <?php echo ($profile['city'] ?? '') === 'Bandung' ? 'selected' : ''; ?>>Bandung</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Kecamatan <span class="req">*</span></label>
+                                <select name="district" id="selectDistrict">
+                                    <option value="Bekasi Selatan" <?php echo ($profile['district'] ?? 'Bekasi Selatan') === 'Bekasi Selatan' ? 'selected' : ''; ?>>Bekasi Selatan</option>
+                                    <option value="Bekasi Timur" <?php echo ($profile['district'] ?? '') === 'Bekasi Timur' ? 'selected' : ''; ?>>Bekasi Timur</option>
+                                    <option value="Bekasi Barat" <?php echo ($profile['district'] ?? '') === 'Bekasi Barat' ? 'selected' : ''; ?>>Bekasi Barat</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Kelurahan / Desa <span class="req">*</span></label>
+                                <select name="village" id="selectVillage">
+                                    <option value="Pekayon Jaya" <?php echo ($profile['village'] ?? 'Pekayon Jaya') === 'Pekayon Jaya' ? 'selected' : ''; ?>>Pekayon Jaya</option>
+                                    <option value="Jatibening" <?php echo ($profile['village'] ?? '') === 'Jatibening' ? 'selected' : ''; ?>>Jatibening</option>
+                                    <option value="Margahayu" <?php echo ($profile['village'] ?? '') === 'Margahayu' ? 'selected' : ''; ?>>Margahayu</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Kode Pos</label>
+                                <input type="text" name="postal_code" id="inputPostalCode" value="<?php echo e($profile['postal_code'] ?? '17148'); ?>" placeholder="Contoh: 17148">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ALAMAT LENGKAP & PETA READ-ONLY (SECTION E) -->
+                    <div class="modal-section">
+                        <div class="section-title">4. Alamat Lengkap & Peta Tempat Kerja</div>
+                        <div style="margin-bottom:12px;">
+                            <label style="font-size:13px; font-weight:700; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" name="same_address_siapkerja" id="cbSameAddress" value="1" <?php echo ($profile['same_address_siapkerja'] ?? 1) ? 'checked' : ''; ?> onchange="document.getElementById('addressFieldsGroup').style.display = this.checked ? 'none' : 'block';">
+                                <span>Sama seperti alamat lengkap domisili di SIAPkerja?</span>
+                            </label>
+                        </div>
+                        <div id="addressFieldsGroup" style="<?php echo ($profile['same_address_siapkerja'] ?? 1) ? 'display:none;' : 'display:block;'; ?>">
+                            <div class="field" style="margin-bottom:10px;">
+                                <label>Alamat Lengkap Tempat Kerja <span class="req">*</span></label>
+                                <input type="text" name="address" id="inputAddress" value="<?php echo e($profile['address'] ?? 'Jl. Ahmad Yani No. 12'); ?>" placeholder="Nama Jalan, No. Rumah, RT/RW">
+                            </div>
+                            <div class="field" style="margin-bottom:12px;">
+                                <label>Detail Alamat / Patokan (Opsional)</label>
+                                <input type="text" name="address_detail" id="inputAddressDetail" value="<?php echo e($profile['address_detail'] ?? ''); ?>" placeholder="Samping patokan gedung / toko...">
+                            </div>
+                        </div>
+
+                        <!-- HIDDEN KOORDINAT (TIDAK TAMPILKAN INPUT LAT/LNG VISIBLE) -->
+                        <input type="hidden" name="latitude" id="inputLat" value="<?php echo e($profile['latitude'] ?: '-6.241586'); ?>">
+                        <input type="hidden" name="longitude" id="inputLng" value="<?php echo e($profile['longitude'] ?: '106.992416'); ?>">
+
+                        <!-- PETA READ-ONLY PREVIEW CONTAINER -->
+                        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:14px; padding:16px; margin-top:12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div style="font-size:13px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-map-location-dot" style="color:#0284c7;"></i> Peta Lokasi (Marker Read-Only)</div>
+                                <a href="https://maps.google.com/?q=<?php echo urlencode(($profile['latitude'] ?: '-6.241586') . ',' . ($profile['longitude'] ?: '106.992416')); ?>" target="_blank" class="ghost-btn" style="height:28px; padding:0 10px; font-size:11px; background:#fff; border-color:#cbd5e1; text-decoration:none;">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Peta
+                                </a>
+                            </div>
+                            <div id="pkiMapContainer" style="height:180px; width:100%; border-radius:10px; background:#e2e8f0; display:grid; place-items:center; color:#475569; font-size:12px;">
+                                <div style="text-align:center; padding:16px;">
+                                    <i class="fa-solid fa-location-dot" style="font-size:28px; color:#ef4444; margin-bottom:6px;"></i>
+                                    <div style="font-weight:700; color:#0f172a;">Koordinat Otomatis Terikat: <?php echo e($profile['latitude'] ?: '-6.241586'); ?>, <?php echo e($profile['longitude'] ?: '106.992416'); ?></div>
+                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Marker Read-Only (Marker tidak draggable & klik tidak mengubah posisi. Pan/Zoom diizinkan).</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- CONSENT PERSETUJUAN -->
                     <div class="modal-section">
-                        <div class="section-title">3. Pernyataan Persetujuan (Consent Wajib)</div>
+                        <div class="section-title">5. Pernyataan Persetujuan (Consent Wajib)</div>
                         <div class="field">
                             <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer;">
                                 <input type="checkbox" name="user_consent" value="1" required checked style="margin-top:2px;">
@@ -2003,9 +2110,47 @@
                 <div class="modal-footer">
                     <!-- BATALKAN -> KEMBALI KE KONTEKS PENCARI KERJA (TANPA LOGOUT) -->
                     <a href="dashboard.php?switch_context=seeker" class="ghost-btn" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i> Batalkan</a>
-                    <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Ajukan Profil</button>
+                    <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> <?php echo $verificationStatus === 'NEEDS_REVISION' ? 'Ajukan Kembali' : 'Ajukan Profil'; ?></button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ─── MODAL HASIL VERIFIKASI (STATE: NEEDS_REVISION) ───────────────────── -->
+    <div class="modal-backdrop" data-modal="modal-verification-result">
+        <div class="modal-panel" style="width:min(560px, 95vw);">
+            <div class="modal-header" style="background:#fef2f2; border-bottom:1px solid #fecaca;">
+                <div>
+                    <div class="modal-title" style="color:#991b1b;"><i class="fa-solid fa-file-circle-exclamation"></i> Hasil Verifikasi Profil (Perlu Diperbaiki)</div>
+                    <div class="modal-subtitle" style="color:#b91c1c;">Catatan resmi verifikator Admin Disnaker</div>
+                </div>
+                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="background:#fff; border:1px solid #fecaca; border-radius:12px; padding:16px; margin-bottom:16px;">
+                    <div style="font-size:12px; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Catatan Verifikator:</div>
+                    <div style="font-size:14px; color:#0f172a; font-weight:600; line-height:1.5;"><?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi data lokasi serta NPWP Anda.'); ?></div>
+                </div>
+
+                <?php if (!empty($profile['verification_checklist'])): ?>
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom:8px;">Checklist Poin Pemeriksaan:</div>
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:13px; color:#334155;">
+                            <i class="fa-solid fa-square-check" style="color:#dc2626; margin-right:6px;"></i> <?php echo e($profile['verification_checklist']); ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div style="font-size:12px; color:#64748b; background:#f8fafc; padding:12px; border-radius:10px;">
+                    <i class="fa-solid fa-circle-info" style="color:#0284c7;"></i> Silakan klik tombol <strong>Perbaiki Profil</strong> untuk melengkapi data. Seluruh data yang diisikan sebelumnya telah tersimpan.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result">Tutup</button>
+                <button type="button" class="primary-btn" style="background:#dc2626;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">
+                    <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil Sekarang
+                </button>
+            </div>
         </div>
     </div>
 
@@ -2319,6 +2464,25 @@
             const nextPage = (window.location.hash || '#dashboard').slice(1);
             if (pageTitles[nextPage]) {
                 showPage(nextPage);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileForm = document.querySelector('form[action="dashboard.php"] input[name="submit_profile"]')?.form;
+            if (profileForm) {
+                profileForm.addEventListener('submit', function(e) {
+                    const cbLoc = document.getElementById('cbSameLocation');
+                    const cbAddr = document.getElementById('cbSameAddress');
+                    const isManualLoc = cbLoc && !cbLoc.checked;
+                    const isManualAddr = cbAddr && !cbAddr.checked;
+                    if (isManualLoc || isManualAddr) {
+                        const ok = confirm('Domisili manual Anda berbeda dengan data di SIAPkerja. Apakah Anda yakin ingin memperbarui data lokasi tempat kerja ini?');
+                        if (!ok) {
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                });
             }
         });
     </script>
