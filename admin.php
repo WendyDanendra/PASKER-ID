@@ -25,10 +25,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             flash('error', 'Catatan Verifikator wajib diisi untuk keputusan Revisi atau Tolak.');
         } else {
             if ($decision === 'approve') {
-                $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
+                if ($driver === 'sqlite') {
+                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                } else {
+                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                }
                 $stmt->execute([$notes, $checklist, $targetUserId]);
                 db()->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
-                flash('success', 'Profil Pemberi Kerja Individu berhasil Disetujui.');
+                flash('success', 'Profil Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 3 Bulan).');
             } elseif ($decision === 'revision') {
                 $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 $stmt->execute([$notes, $checklist, $targetUserId]);
@@ -69,17 +74,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         exit;
     }
 
-    // 3b. Setujui Perpanjangan Masa Aktif
+    // 3b. Setujui Perpanjangan Masa Aktif (Admin Memilih Durasi 1-3 Hari)
     if ($action === 'approve_extension') {
         $targetUserId = (int)$_POST['user_id'];
-        try {
-            $stmt = db()->prepare('UPDATE employer_profiles SET extension_status = "APPROVED", active_until = datetime(active_until, "+3 days") WHERE user_id = ?');
-            $stmt->execute([$targetUserId]);
-        } catch (Throwable $e) {
-            $stmt = db()->prepare('UPDATE employer_profiles SET extension_status = "APPROVED", active_until = DATE_ADD(active_until, INTERVAL 3 DAY) WHERE user_id = ?');
-            $stmt->execute([$targetUserId]);
+        $extDays = isset($_POST['extension_days']) ? max(1, min(3, (int)$_POST['extension_days'])) : 3;
+        $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = db()->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', active_until = datetime(CASE WHEN active_until < datetime('now') THEN datetime('now') ELSE active_until END, '+{$extDays} days') WHERE user_id = ?");
+        } else {
+            $stmt = db()->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', active_until = DATE_ADD(GREATEST(COALESCE(active_until, NOW()), NOW()), INTERVAL {$extDays} DAY) WHERE user_id = ?");
         }
-        flash('success', 'Permohonan perpanjangan masa aktif (3 hari) berhasil Disetujui.');
+        $stmt->execute([$targetUserId]);
+        flash('success', "Permohonan perpanjangan masa aktif ({$extDays} hari) berhasil Disetujui.");
         redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
         exit;
     }
@@ -429,20 +435,27 @@ if ($view === 'verifikasi_job') {
 
                                                             <?php if (($emp['extension_status'] ?? '') === 'REQUESTED'): ?>
                                                                 <div style="background:#fffbeb; border:1px solid #fde68a; padding:12px; border-radius:8px; margin-bottom:12px;">
-                                                                    <strong style="color:#b45309; font-size:13px;">Permohonan Perpanjangan Masa Aktif (3 Hari)</strong>
-                                                                    <div style="font-size:12px; color:#92400e; margin-top:4px;">Pemohon mengajukan perpanjangan waktu 1x selama 3 hari.</div>
-                                                                    <div style="display:flex; gap:8px; margin-top:10px;">
-                                                                        <form method="post" action="admin.php?view=directory_individual" style="flex:1;">
-                                                                            <input type="hidden" name="admin_action" value="approve_extension">
-                                                                            <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
-                                                                            <button type="submit" class="primary-btn" style="background:#059669; width:100%; height:32px; font-size:11px;">Setujui (3 Hari)</button>
-                                                                        </form>
-                                                                        <form method="post" action="admin.php?view=directory_individual" style="flex:1;">
-                                                                            <input type="hidden" name="admin_action" value="reject_extension">
-                                                                            <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
-                                                                            <button type="submit" class="ghost-btn" style="color:#dc2626; border-color:#fecaca; width:100%; height:32px; font-size:11px;">Tolak</button>
-                                                                        </form>
-                                                                    </div>
+                                                                    <strong style="color:#b45309; font-size:13px;"><i class="fa-solid fa-clock-rotate-left"></i> Permohonan Perpanjangan Masa Transisi</strong>
+                                                                    <div style="font-size:12px; color:#92400e; margin-top:4px;">Pemohon mengajukan permohonan perpanjangan waktu masa transisi (1x). Pilih durasi yang disetujui (1–3 hari):</div>
+                                                                    <form method="post" action="admin.php?view=directory_individual" style="margin-top:10px;">
+                                                                        <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
+                                                                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                                                            <label style="font-size:12px; font-weight:700; color:#451a03;">Durasi:</label>
+                                                                            <select name="extension_days" style="flex:1; height:32px; font-size:12px; border:1px solid #fde68a; border-radius:6px; background:#fff; padding:0 8px;">
+                                                                                <option value="1">1 Hari</option>
+                                                                                <option value="2">2 Hari</option>
+                                                                                <option value="3" selected>3 Hari</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div style="display:flex; gap:8px;">
+                                                                            <button type="submit" name="admin_action" value="approve_extension" class="primary-btn" style="background:#059669; flex:1; height:32px; font-size:11px;">
+                                                                                <i class="fa-solid fa-check"></i> Setujui Perpanjangan
+                                                                            </button>
+                                                                            <button type="submit" name="admin_action" value="reject_extension" class="ghost-btn" style="color:#dc2626; border-color:#fecaca; flex:1; height:32px; font-size:11px;">
+                                                                                <i class="fa-solid fa-xmark"></i> Tolak
+                                                                            </button>
+                                                                        </div>
+                                                                    </form>
                                                                 </div>
                                                             <?php endif; ?>
 
