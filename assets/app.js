@@ -53,6 +53,11 @@ function setActivePage(pageName) {
         item.classList.toggle('active', item.dataset.page === pageName);
     });
 
+    const navDrawer = document.getElementById('navDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    if (navDrawer) navDrawer.classList.remove('open');
+    if (drawerBackdrop) drawerBackdrop.classList.remove('open');
+
     const currentCrumb = document.querySelector('[data-current-crumb]');
     const labelMap = {
         dashboard: 'Dasbor',
@@ -1047,13 +1052,45 @@ function initHashRouting(defaultPage) {
 function initSidebarToggle() {
     const sidebar = document.querySelector('.sidebar');
     const toggle = document.getElementById('sidebarToggle');
-    if (!sidebar || !toggle || toggle.dataset.bound === 'true') {
-        return;
+    if (sidebar && toggle && toggle.dataset.bound !== 'true') {
+        toggle.dataset.bound = 'true';
+        toggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
     }
-    toggle.dataset.bound = 'true';
-    toggle.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
-    });
+
+    const railToggle = document.getElementById('railToggleBtn');
+    const navDrawer = document.getElementById('navDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const drawerClose = document.getElementById('drawerCloseBtn');
+
+    if (railToggle && railToggle.dataset.bound !== 'true') {
+        railToggle.dataset.bound = 'true';
+        railToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (navDrawer) navDrawer.classList.toggle('open');
+            if (drawerBackdrop) drawerBackdrop.classList.toggle('open');
+        });
+    }
+    if (drawerClose && drawerClose.dataset.bound !== 'true') {
+        drawerClose.dataset.bound = 'true';
+        drawerClose.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (navDrawer) navDrawer.classList.remove('open');
+            if (drawerBackdrop) drawerBackdrop.classList.remove('open');
+        });
+    }
+    if (drawerBackdrop && drawerBackdrop.dataset.bound !== 'true') {
+        drawerBackdrop.dataset.bound = 'true';
+        drawerBackdrop.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (navDrawer) navDrawer.classList.remove('open');
+            if (drawerBackdrop) drawerBackdrop.classList.remove('open');
+        });
+    }
 }
 
 function bindAdminReviewForm(form) {

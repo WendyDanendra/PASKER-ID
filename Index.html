@@ -1459,22 +1459,22 @@
             </div>
 
             <!-- Hamburger Toggle Button -->
-            <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi">
+            <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi" onclick="toggleDrawer(event)">
                 <i class="fa-solid fa-bars"></i>
             </button>
 
             <!-- Navigation Icons -->
             <div class="sidebar-rail-nav">
-                <button type="button" class="rail-btn active" data-page="dashboard" title="Dasbor">
+                <button type="button" class="rail-btn active" data-page="dashboard" title="Dasbor" onclick="showPage('dashboard')">
                     <i class="fa-solid fa-chart-line"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="lowongan" title="Lowongan">
+                <button type="button" class="rail-btn" data-page="lowongan" title="Lowongan" onclick="showPage('lowongan')">
                     <i class="fa-solid fa-briefcase"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="jadwal" title="Jadwal Wawancara">
+                <button type="button" class="rail-btn" data-page="jadwal" title="Jadwal Wawancara" onclick="showPage('jadwal')">
                     <i class="fa-regular fa-calendar-check"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi kerja">
+                <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi kerja" onclick="showPage('profil')">
                     <i class="fa-regular fa-building"></i>
                 </button>
             </div>
@@ -1545,7 +1545,7 @@
         </aside>
 
         <!-- FLYOUT / EXPANDED NAVIGATION DRAWER (SCREENSHOT 3) -->
-        <div class="nav-drawer-backdrop" id="drawerBackdrop"></div>
+        <div class="nav-drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer(event)"></div>
         <div class="nav-drawer" id="navDrawer">
             <div class="drawer-header">
                 <div class="drawer-brand-logo">
@@ -1558,25 +1558,25 @@
                     <h3>Karirhub</h3>
                     <p>Pemberi Kerja</p>
                 </div>
-                <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup">
+                <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup" onclick="closeDrawer(event)">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
 
             <div class="drawer-menu-list">
-                <button type="button" class="drawer-menu-item active" data-page="dashboard">
+                <button type="button" class="drawer-menu-item active" data-page="dashboard" onclick="showPage('dashboard')">
                     <i class="fa-solid fa-chart-line"></i>
                     <span>Dasbor</span>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="lowongan">
+                <button type="button" class="drawer-menu-item" data-page="lowongan" onclick="showPage('lowongan')">
                     <i class="fa-solid fa-briefcase"></i>
                     <span>Lowongan</span>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="jadwal">
+                <button type="button" class="drawer-menu-item" data-page="jadwal" onclick="showPage('jadwal')">
                     <i class="fa-regular fa-calendar-check"></i>
                     <span>Jadwal Wawancara</span>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="profil">
+                <button type="button" class="drawer-menu-item" data-page="profil" onclick="showPage('profil')">
                     <i class="fa-regular fa-building"></i>
                     <span>Profil Pemberi kerja</span>
                 </button>
@@ -3397,22 +3397,44 @@
     };
 
     // Toggle Flyout Drawer
+    function openDrawer(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        const drawer = document.getElementById('navDrawer');
+        const backdrop = document.getElementById('drawerBackdrop');
+        if (drawer) drawer.classList.add('open');
+        if (backdrop) backdrop.classList.add('open');
+    }
+
+    function closeDrawer(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        const drawer = document.getElementById('navDrawer');
+        const backdrop = document.getElementById('drawerBackdrop');
+        if (drawer) drawer.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+    }
+
+    function toggleDrawer(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        const drawer = document.getElementById('navDrawer');
+        if (drawer && drawer.classList.contains('open')) {
+            closeDrawer(e);
+        } else {
+            openDrawer(e);
+        }
+    }
+
+    window.openDrawer = openDrawer;
+    window.closeDrawer = closeDrawer;
+    window.toggleDrawer = toggleDrawer;
+    window.openNavDrawer = openDrawer;
+    window.closeNavDrawer = closeDrawer;
+    window.toggleNavDrawer = toggleDrawer;
+
     const railToggleBtn = document.getElementById('railToggleBtn');
     const drawerCloseBtn = document.getElementById('drawerCloseBtn');
-    const navDrawer = document.getElementById('navDrawer');
     const drawerBackdrop = document.getElementById('drawerBackdrop');
 
-    function openDrawer() {
-        if (navDrawer) navDrawer.classList.add('open');
-        if (drawerBackdrop) drawerBackdrop.classList.add('open');
-    }
-
-    function closeDrawer() {
-        if (navDrawer) navDrawer.classList.remove('open');
-        if (drawerBackdrop) drawerBackdrop.classList.remove('open');
-    }
-
-    if (railToggleBtn) railToggleBtn.addEventListener('click', openDrawer);
+    if (railToggleBtn) railToggleBtn.addEventListener('click', toggleDrawer);
     if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
     if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
 
