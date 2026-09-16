@@ -3026,17 +3026,39 @@
         }
     });
 
-    // Theme Switcher Cycle (Light -> Dark -> System)
+    // Theme Switcher Toggle (Light <-> Dark)
     function toggleThemeCycle() {
-        const current = localStorage.getItem('karirhub_theme') || 'light';
-        const next = current === 'light' ? 'dark' : (current === 'dark' ? 'system' : 'light');
+        const isCurrentlyDark = document.documentElement.classList.contains('dark-theme');
+        const nextTheme = isCurrentlyDark ? 'light' : 'dark';
         if (typeof setTheme === 'function') {
-            setTheme(next);
+            setTheme(nextTheme);
         } else {
-            localStorage.setItem('karirhub_theme', next);
-            document.documentElement.classList.toggle('dark-theme', next === 'dark');
+            localStorage.setItem('karirhub_theme', nextTheme);
+            document.documentElement.classList.toggle('dark-theme', nextTheme === 'dark');
+            if (document.body) document.body.classList.toggle('dark-theme', nextTheme === 'dark');
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = nextTheme === 'dark' ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
+            }
         }
     }
+    window.toggleThemeCycle = toggleThemeCycle;
+
+    // Auto-init theme
+    (function() {
+        const savedTheme = localStorage.getItem('karirhub_theme') || 'light';
+        if (typeof setTheme === 'function') {
+            setTheme(savedTheme);
+        } else {
+            const isDark = (savedTheme === 'dark');
+            document.documentElement.classList.toggle('dark-theme', isDark);
+            if (document.body) document.body.classList.toggle('dark-theme', isDark);
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
+            }
+        }
+    })();
 
     // Toggle Applicants More/Less
     let applicantsExpanded = false;

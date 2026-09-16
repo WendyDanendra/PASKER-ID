@@ -1,11 +1,21 @@
 // Theme Management (Terang, Gelap, Sistem)
 function setTheme(theme) {
     localStorage.setItem('karirhub_theme', theme);
+    let isDark = false;
     if (theme === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark-theme', prefersDark);
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     } else {
-        document.documentElement.classList.toggle('dark-theme', theme === 'dark');
+        isDark = (theme === 'dark');
+    }
+    document.documentElement.classList.toggle('dark-theme', isDark);
+    if (document.body) {
+        document.body.classList.toggle('dark-theme', isDark);
+    }
+
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (toggleBtn) {
+        toggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
+        toggleBtn.title = isDark ? 'Tema: Gelap (Klik untuk beralih ke Terang)' : 'Tema: Terang (Klik untuk beralih ke Gelap)';
     }
 
     document.querySelectorAll('[data-theme-option]').forEach(btn => {
@@ -19,7 +29,13 @@ function initTheme() {
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
         if (localStorage.getItem('karirhub_theme') === 'system') {
-            document.documentElement.classList.toggle('dark-theme', e.matches);
+            const prefersDark = e.matches;
+            document.documentElement.classList.toggle('dark-theme', prefersDark);
+            if (document.body) document.body.classList.toggle('dark-theme', prefersDark);
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = prefersDark ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
+            }
         }
     });
 }
