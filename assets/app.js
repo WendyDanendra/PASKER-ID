@@ -1355,3 +1355,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Schedule View Switcher (Bulanan, Mingguan, Harian)
+let currentScheduleView = 'bulanan';
+let currentSchedulePeriodOffset = 0;
+
+function setScheduleView(mode) {
+    currentScheduleView = mode;
+    
+    // Update pill buttons active state
+    document.querySelectorAll('.sched-pill[data-sched-pill]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.schedPill === mode);
+    });
+
+    // Toggle panes
+    const paneBulanan = document.getElementById('schedViewBulanan');
+    const paneMingguan = document.getElementById('schedViewMingguan');
+    const paneHarian = document.getElementById('schedViewHarian');
+
+    if (paneBulanan) paneBulanan.style.display = (mode === 'bulanan') ? 'block' : 'none';
+    if (paneMingguan) paneMingguan.style.display = (mode === 'mingguan') ? 'block' : 'none';
+    if (paneHarian) paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
+
+    updateSchedulePeriodTitle();
+}
+
+function updateSchedulePeriodTitle() {
+    const titleEl = document.getElementById('schedPeriodTitle');
+    if (!titleEl) return;
+
+    if (currentScheduleView === 'bulanan') {
+        titleEl.textContent = 'September 2026';
+    } else if (currentScheduleView === 'mingguan') {
+        titleEl.textContent = '14 Sep – 20 Sep 2026';
+    } else if (currentScheduleView === 'harian') {
+        titleEl.textContent = 'Senin, 14 September 2026';
+    }
+}
+
+function navigateSchedule(delta) {
+    currentSchedulePeriodOffset += delta;
+    const titleEl = document.getElementById('schedPeriodTitle');
+    if (!titleEl) return;
+    
+    if (currentScheduleView === 'bulanan') {
+        const months = ['Agustus 2026', 'September 2026', 'Oktober 2026', 'November 2026'];
+        const baseIdx = 1;
+        const targetIdx = Math.max(0, Math.min(months.length - 1, baseIdx + currentSchedulePeriodOffset));
+        titleEl.textContent = months[targetIdx];
+    } else if (currentScheduleView === 'mingguan') {
+        titleEl.textContent = currentSchedulePeriodOffset === 0 ? '14 Sep – 20 Sep 2026' : (currentSchedulePeriodOffset > 0 ? '21 Sep – 27 Sep 2026' : '7 Sep – 13 Sep 2026');
+    } else if (currentScheduleView === 'harian') {
+        titleEl.textContent = currentSchedulePeriodOffset === 0 ? 'Senin, 14 September 2026' : (currentSchedulePeriodOffset > 0 ? 'Selasa, 15 September 2026' : 'Minggu, 13 September 2026');
+    }
+}
+
+function resetScheduleToday() {
+    currentSchedulePeriodOffset = 0;
+    updateSchedulePeriodTitle();
+}
+
+window.setScheduleView = setScheduleView;
+window.navigateSchedule = navigateSchedule;
+window.resetScheduleToday = resetScheduleToday;
+
+

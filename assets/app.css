@@ -2940,6 +2940,448 @@ html, body {
     }
 }
 
+/* ─── JADWAL WAWANCARA SCHEDULE SYSTEM (EXACT MATCH SCREENSHOTS) ─── */
+.schedule-container {
+    padding: 24px 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.schedule-page-heading {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+}
+
+.schedule-control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.sched-ctrl-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sched-nav-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    transition: all 0.15s ease;
+}
+
+.sched-nav-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0284c7;
+}
+
+.sched-today-btn {
+    padding: 0 14px;
+    height: 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sched-today-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.sched-period-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-left: 6px;
+}
+
+.sched-ctrl-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sched-view-pills {
+    display: flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 10px;
+    gap: 2px;
+}
+
+.sched-pill {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sched-pill:hover {
+    color: #0f172a;
+}
+
+.sched-pill.active {
+    background: #ffffff;
+    color: #0284c7;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.sched-filter-btn {
+    padding: 0 14px;
+    height: 34px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+}
+
+.sched-filter-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.sched-select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.sched-select {
+    appearance: none;
+    padding: 0 32px 0 14px;
+    height: 34px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+}
+
+.sched-select-wrap i {
+    position: absolute;
+    right: 12px;
+    pointer-events: none;
+    font-size: 10px;
+    color: #64748b;
+}
+
+/* MAIN LAYOUT: CALENDAR + AGENDA SIDEBAR */
+.schedule-main-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+
+.sched-calendar-panel {
+    background: #ffffff;
+    border: 1px solid #eef2f6;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+}
+
+/* MONTHLY VIEW (BULANAN) */
+.month-head-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f8fafc;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.month-head-cell {
+    padding: 12px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.month-body-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.month-day-cell {
+    min-height: 95px;
+    padding: 10px;
+    border-right: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.month-day-cell:nth-child(7n) {
+    border-right: none;
+}
+
+.month-day-cell.other-month .day-num {
+    color: #cbd5e1;
+}
+
+.day-num {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+}
+
+.day-num.today-badge {
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* WEEKLY VIEW (MINGGUAN) */
+.week-head-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f8fafc;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.week-head-cell {
+    padding: 14px 10px;
+    text-align: center;
+    border-right: 1px solid #f1f5f9;
+}
+
+.week-head-cell:last-child {
+    border-right: none;
+}
+
+.week-head-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.week-head-num {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    width: 28px;
+    height: 28px;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+}
+
+.week-head-num.today-badge {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.week-body-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    min-height: 480px;
+}
+
+.week-day-col {
+    border-right: 1px solid #f1f5f9;
+    padding: 12px 8px;
+    background: #ffffff;
+    position: relative;
+}
+
+.week-day-col:last-child {
+    border-right: none;
+}
+
+/* DAILY VIEW (HARIAN) */
+.day-view-container {
+    padding: 20px 24px;
+    min-height: 520px;
+    position: relative;
+    background: #ffffff;
+}
+
+.day-hour-row {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    border-bottom: 1px solid #f8fafc;
+}
+
+.day-hour-label {
+    width: 55px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.day-hour-line {
+    flex: 1;
+    height: 1px;
+    background: #f1f5f9;
+}
+
+.day-current-time-marker {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    top: 420px;
+    display: flex;
+    align-items: center;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.day-time-pill {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    margin-right: 8px;
+}
+
+.day-time-line {
+    flex: 1;
+    height: 1.5px;
+    background: #ef4444;
+}
+
+/* RIGHT SIDEBAR: AGENDA MENDATANG */
+.sched-agenda-panel {
+    background: #ffffff;
+    border: 1px solid #eef2f6;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+    display: flex;
+    flex-direction: column;
+}
+
+.agenda-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 24px;
+}
+
+.agenda-empty-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 30px 10px 40px;
+    gap: 12px;
+}
+
+.agenda-empty-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #f8fafc;
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    color: #cbd5e1;
+}
+
+.agenda-empty-text {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+    max-width: 200px;
+}
+
+.agenda-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 16px 0;
+}
+
+.agenda-legend-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.agenda-legend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.agenda-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-dot.purple {
+    background: #9333ea;
+}
+
+.legend-dot.pink {
+    background: #ec4899;
+}
+
+@media (max-width: 1024px) {
+    .schedule-main-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ─── COMPREHENSIVE DARK THEME STYLES FOR NEW EMPLOYER DASHBOARD & RAIL ─── */
 html.dark-theme,
 html.dark-theme body {
@@ -3290,5 +3732,78 @@ html.dark-theme .field textarea {
 
 html.dark-theme .field label {
     color: #cbd5e1 !important;
+}
+
+html.dark-theme .schedule-page-heading {
+    color: #f8fafc !important;
+}
+html.dark-theme .sched-nav-btn,
+html.dark-theme .sched-today-btn,
+html.dark-theme .sched-filter-btn,
+html.dark-theme .sched-select {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+html.dark-theme .sched-period-title {
+    color: #f8fafc !important;
+}
+html.dark-theme .sched-view-pills {
+    background: #0b132b !important;
+}
+html.dark-theme .sched-pill {
+    color: #94a3b8 !important;
+}
+html.dark-theme .sched-pill.active {
+    background: #1e293b !important;
+    color: #38bdf8 !important;
+}
+html.dark-theme .sched-calendar-panel,
+html.dark-theme .sched-agenda-panel {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+}
+html.dark-theme .month-head-row,
+html.dark-theme .week-head-row {
+    background: #0b132b !important;
+    border-bottom-color: #1e293b !important;
+}
+html.dark-theme .month-head-cell,
+html.dark-theme .week-head-name {
+    color: #94a3b8 !important;
+}
+html.dark-theme .month-day-cell,
+html.dark-theme .week-day-col,
+html.dark-theme .day-view-container {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+}
+html.dark-theme .day-num,
+html.dark-theme .week-head-num,
+html.dark-theme .agenda-title {
+    color: #f8fafc !important;
+}
+html.dark-theme .month-day-cell.other-month .day-num {
+    color: #475569 !important;
+}
+html.dark-theme .agenda-empty-icon {
+    background: #0b132b !important;
+    color: #475569 !important;
+}
+html.dark-theme .agenda-empty-text,
+html.dark-theme .agenda-legend-list {
+    color: #94a3b8 !important;
+}
+html.dark-theme .agenda-divider {
+    background: #1e293b !important;
+}
+html.dark-theme .day-hour-row {
+    border-bottom-color: #1e293b !important;
+}
+html.dark-theme .day-hour-line {
+    background: #1e293b !important;
+}
+html.dark-theme .day-hour-label {
+    color: #64748b !important;
 }
 

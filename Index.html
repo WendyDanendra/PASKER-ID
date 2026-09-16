@@ -2439,82 +2439,205 @@
                 </div>
             </section>
 
-            <!-- SECTION: JADWAL WAWANCARA -->
+            <!-- SECTION: JADWAL WAWANCARA (EXACT KARIRHUB SCREENSHOTS 1, 2, 3) -->
             <section class="page" data-page="jadwal" id="page-jadwal">
-                <div class="dash-container">
-                    <div class="page-title-row">
-                        <div>
-                            <h2>Jadwal Wawancara</h2>
-                            <div class="section-note">Kelola agenda dan jadwal wawancara dengan kandidat pelamar.</div>
-                        </div>
-                        <div class="controls">
-                            <button type="button" class="ghost-btn">Hari Ini</button>
-                            <button type="button" class="ghost-btn active">Mingguan</button>
-                            <button type="button" class="ghost-btn">Bulanan</button>
-                        </div>
-                    </div>
+                <div class="schedule-container">
+                    <h1 class="schedule-page-heading">Jadwal Wawancara</h1>
 
-                    <div class="schedule-toolbar" style="margin-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                        <div class="controls" style="display:flex; align-items:center; gap:8px;">
-                            <button type="button" class="ghost-btn"><i class="fa-solid fa-chevron-left"></i></button>
-                            <button type="button" class="ghost-btn"><i class="fa-solid fa-chevron-right"></i></button>
-                            <span class="chip-inline" style="font-weight:700; color:#0f172a; padding:6px 12px; background:#f1f5f9; border-radius:8px;">16 Sep - 22 Sep 2026</span>
+                    <!-- CONTROL TOOLBAR (NAV, TODAY, DATE RANGE, VIEW PILLS, FILTER, JOB SELECT) -->
+                    <div class="schedule-control-bar">
+                        <div class="sched-ctrl-left">
+                            <button type="button" class="sched-nav-btn" onclick="navigateSchedule(-1)" title="Sebelumnya"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button type="button" class="sched-nav-btn" onclick="navigateSchedule(1)" title="Berikutnya"><i class="fa-solid fa-chevron-right"></i></button>
+                            <button type="button" class="sched-today-btn" onclick="resetScheduleToday()">Hari Ini</button>
+                            <span class="sched-period-title" id="schedPeriodTitle">September 2026</span>
                         </div>
-                        <div class="controls" style="display:flex; align-items:center; gap:8px;">
-                            <button type="button" class="ghost-btn"><i class="fa-solid fa-filter"></i> Filter</button>
-                            <button type="button" class="ghost-btn">Semua Lowongan <i class="fa-solid fa-chevron-down"></i></button>
-                        </div>
-                    </div>
 
-                    <div class="dash-main-card" style="margin-top:16px;">
-                        <div class="dash-card-header">
-                            <div class="dash-card-title">
-                                <i class="fa-regular fa-calendar-check" style="color:#0284c7;"></i>
-                                <span>Kalender Wawancara Mingguan</span>
+                        <div class="sched-ctrl-right">
+                            <div class="sched-view-pills">
+                                <button type="button" class="sched-pill" data-sched-pill="harian" onclick="setScheduleView('harian')">Harian</button>
+                                <button type="button" class="sched-pill" data-sched-pill="mingguan" onclick="setScheduleView('mingguan')">Mingguan</button>
+                                <button type="button" class="sched-pill active" data-sched-pill="bulanan" onclick="setScheduleView('bulanan')">Bulanan</button>
+                            </div>
+
+                            <button type="button" class="sched-filter-btn" onclick="alert('Filter wawancara siap digunakan.')">
+                                <i class="fa-solid fa-filter" style="font-size:12px; color:#64748b;"></i> Filter
+                            </button>
+
+                            <div class="sched-select-wrap">
+                                <select class="sched-select" id="schedJobFilter">
+                                    <option value="all">Semua Lowongan</option>
+                                    <option value="1">Koki Masakan Tradisional</option>
+                                    <option value="2">Asisten Rumah Tangga</option>
+                                    <option value="3">Staf Entri Data</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down"></i>
                             </div>
                         </div>
-                        <div class="calendar-layout" style="margin-top:16px;">
-                            <div class="calendar-shell" style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
-                                <div class="calendar-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); background:#ffffff;">
-                                    <div class="day-head" style="padding:12px; text-align:center; background:#f8fafc; border-bottom:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
-                                        <div class="day-name" style="font-size:11px; font-weight:700; color:#64748b;">Sen</div>
-                                        <div class="day-number" style="font-size:14px; font-weight:700; color:#0f172a; margin-top:2px;">14</div>
+                    </div>
+
+                    <!-- MAIN 2-COLUMN LAYOUT -->
+                    <div class="schedule-main-layout">
+                        <!-- LEFT CALENDAR PANEL -->
+                        <div class="sched-calendar-panel">
+                            
+                            <!-- 1. MODE BULANAN (SCREENSHOT 1) -->
+                            <div id="schedViewBulanan" class="sched-view-pane" style="display:block;">
+                                <div class="month-head-row">
+                                    <div class="month-head-cell">Sen</div>
+                                    <div class="month-head-cell">Sel</div>
+                                    <div class="month-head-cell">Rab</div>
+                                    <div class="month-head-cell">Kam</div>
+                                    <div class="month-head-cell">Jum</div>
+                                    <div class="month-head-cell">Sab</div>
+                                    <div class="month-head-cell">Min</div>
+                                </div>
+                                <div class="month-body-grid">
+                                    <!-- Row 1 -->
+                                    <div class="month-day-cell other-month"><span class="day-num">31</span></div>
+                                    <div class="month-day-cell"><span class="day-num">1</span></div>
+                                    <div class="month-day-cell"><span class="day-num">2</span></div>
+                                    <div class="month-day-cell"><span class="day-num">3</span></div>
+                                    <div class="month-day-cell"><span class="day-num">4</span></div>
+                                    <div class="month-day-cell"><span class="day-num">5</span></div>
+                                    <div class="month-day-cell"><span class="day-num">6</span></div>
+                                    <!-- Row 2 -->
+                                    <div class="month-day-cell"><span class="day-num">7</span></div>
+                                    <div class="month-day-cell"><span class="day-num">8</span></div>
+                                    <div class="month-day-cell"><span class="day-num">9</span></div>
+                                    <div class="month-day-cell"><span class="day-num">10</span></div>
+                                    <div class="month-day-cell"><span class="day-num">11</span></div>
+                                    <div class="month-day-cell"><span class="day-num">12</span></div>
+                                    <div class="month-day-cell"><span class="day-num">13</span></div>
+                                    <!-- Row 3 (Day 14 is Today) -->
+                                    <div class="month-day-cell"><span class="day-num today-badge">14</span></div>
+                                    <div class="month-day-cell"><span class="day-num">15</span></div>
+                                    <div class="month-day-cell"><span class="day-num">16</span></div>
+                                    <div class="month-day-cell"><span class="day-num">17</span></div>
+                                    <div class="month-day-cell"><span class="day-num">18</span></div>
+                                    <div class="month-day-cell"><span class="day-num">19</span></div>
+                                    <div class="month-day-cell"><span class="day-num">20</span></div>
+                                    <!-- Row 4 -->
+                                    <div class="month-day-cell"><span class="day-num">21</span></div>
+                                    <div class="month-day-cell"><span class="day-num">22</span></div>
+                                    <div class="month-day-cell"><span class="day-num">23</span></div>
+                                    <div class="month-day-cell"><span class="day-num">24</span></div>
+                                    <div class="month-day-cell"><span class="day-num">25</span></div>
+                                    <div class="month-day-cell"><span class="day-num">26</span></div>
+                                    <div class="month-day-cell"><span class="day-num">27</span></div>
+                                    <!-- Row 5 -->
+                                    <div class="month-day-cell"><span class="day-num">28</span></div>
+                                    <div class="month-day-cell"><span class="day-num">29</span></div>
+                                    <div class="month-day-cell"><span class="day-num">30</span></div>
+                                    <div class="month-day-cell other-month"><span class="day-num">1</span></div>
+                                    <div class="month-day-cell other-month"><span class="day-num">2</span></div>
+                                    <div class="month-day-cell other-month"><span class="day-num">3</span></div>
+                                    <div class="month-day-cell other-month"><span class="day-num">4</span></div>
+                                </div>
+                            </div>
+
+                            <!-- 2. MODE MINGGUAN (SCREENSHOT 2) -->
+                            <div id="schedViewMingguan" class="sched-view-pane" style="display:none;">
+                                <div class="week-head-row">
+                                    <div class="week-head-cell">
+                                        <div class="week-head-name">Sen</div>
+                                        <div class="week-head-num today-badge">14</div>
                                     </div>
-                                    <div class="day-head" style="padding:12px; text-align:center; background:#f8fafc; border-bottom:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
-                                        <div class="day-name" style="font-size:11px; font-weight:700; color:#64748b;">Sel</div>
-                                        <div class="day-number" style="font-size:14px; font-weight:700; color:#0f172a; margin-top:2px;">15</div>
+                                    <div class="week-head-cell">
+                                        <div class="week-head-name">Sel</div>
+                                        <div class="week-head-num">15</div>
                                     </div>
-                                    <div class="day-head" style="padding:12px; text-align:center; background:#e0f2fe; border-bottom:1px solid #bae6fd; border-right:1px solid #e2e8f0;">
-                                        <div class="day-name" style="font-size:11px; font-weight:700; color:#0284c7;">Rab</div>
-                                        <div class="day-number active" style="font-size:14px; font-weight:800; color:#0284c7; margin-top:2px;">16 (Hari Ini)</div>
+                                    <div class="week-head-cell">
+                                        <div class="week-head-name">Rab</div>
+                                        <div class="week-head-num">16</div>
                                     </div>
-                                    <div class="day-head" style="padding:12px; text-align:center; background:#f8fafc; border-bottom:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
-                                        <div class="day-name" style="font-size:11px; font-weight:700; color:#64748b;">Kam</div>
-                                        <div class="day-number" style="font-size:14px; font-weight:700; color:#0f172a; margin-top:2px;">17</div>
+                                    <div class="week-head-cell">
+                                        <div class="week-head-name">Kam</div>
+                                        <div class="week-head-num">17</div>
                                     </div>
-                                    <div class="day-head" style="padding:12px; text-align:center; background:#f8fafc; border-bottom:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
-                                        <div class="day-name" style="font-size:11px; font-weight:700; color:#64748b;">Jum</div>
-                                        <div class="day-number" style="font-size:14px; font-weight:700; color:#0f172a; margin-top:2px;">18</div>
+                                    <div class="week-head-cell">
+                                        <div class="week-head-name">Jum</div>
+                                        <div class="week-head-num">18</div>
                                     </div>
-                                    <div class="day-head" style="padding:12px; text-align:center; background:#f8fafc; border-bottom:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
-                                        <div class="day-name" style="font-size:11px; font-weight:700; color:#64748b;">Sab</div>
-                                        <div class="day-number" style="font-size:14px; font-weight:700; color:#0f172a; margin-top:2px;">19</div>
+                                    <div class="week-head-cell">
+                                        <div class="week-head-name">Sab</div>
+                                        <div class="week-head-num">19</div>
                                     </div>
-                                    <div class="day-head" style="padding:12px; text-align:center; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
-                                        <div class="day-name" style="font-size:11px; font-weight:700; color:#64748b;">Min</div>
-                                        <div class="day-number" style="font-size:14px; font-weight:700; color:#0f172a; margin-top:2px;">20</div>
+                                    <div class="week-head-cell">
+                                        <div class="week-head-name">Min</div>
+                                        <div class="week-head-num">20</div>
                                     </div>
-                                    
-                                    <!-- Calendar Cells -->
-                                    <div class="day-cell" style="min-height:140px; padding:8px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;"></div>
-                                    <div class="day-cell" style="min-height:140px; padding:8px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;"></div>
-                                    <div class="day-cell" style="min-height:140px; padding:8px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9; background:#f0f9ff;">
-                                        <div style="font-size:11px; color:#0369a1; font-style:italic; text-align:center; padding-top:40px;">Tidak ada agenda hari ini</div>
+                                </div>
+                                <div class="week-body-grid">
+                                    <div class="week-day-col"></div>
+                                    <div class="week-day-col"></div>
+                                    <div class="week-day-col"></div>
+                                    <div class="week-day-col"></div>
+                                    <div class="week-day-col"></div>
+                                    <div class="week-day-col"></div>
+                                    <div class="week-day-col"></div>
+                                </div>
+                            </div>
+
+                            <!-- 3. MODE HARIAN (SCREENSHOT 3) -->
+                            <div id="schedViewHarian" class="sched-view-pane" style="display:none;">
+                                <div class="day-view-container">
+                                    <div class="day-current-time-marker">
+                                        <div class="day-time-pill">10:54</div>
+                                        <div class="day-time-line"></div>
                                     </div>
-                                    <div class="day-cell" style="min-height:140px; padding:8px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;"></div>
-                                    <div class="day-cell" style="min-height:140px; padding:8px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;"></div>
-                                    <div class="day-cell" style="min-height:140px; padding:8px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;"></div>
-                                    <div class="day-cell" style="min-height:140px; padding:8px; border-bottom:1px solid #f1f5f9;"></div>
+
+                                    <div class="day-hour-row"><span class="day-hour-label">01:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">02:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">03:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">04:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">05:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">06:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">07:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">08:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">09:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">10:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">11:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">12:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">13:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">14:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">15:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">16:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">17:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">18:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">19:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">20:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">21:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">22:00</span><div class="day-hour-line"></div></div>
+                                    <div class="day-hour-row"><span class="day-hour-label">23:00</span><div class="day-hour-line"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT AGENDA MENDATANG PANEL -->
+                        <div class="sched-agenda-panel">
+                            <div class="agenda-title">Agenda Mendatang</div>
+
+                            <div class="agenda-empty-box">
+                                <div class="agenda-empty-icon">
+                                    <i class="fa-regular fa-calendar"></i>
+                                </div>
+                                <div class="agenda-empty-text">
+                                    Tidak ada wawancara hari ini & besok.
+                                </div>
+                            </div>
+
+                            <div class="agenda-divider"></div>
+
+                            <div class="agenda-legend-title">KETERANGAN</div>
+                            <div class="agenda-legend-list">
+                                <div class="agenda-legend-item">
+                                    <span class="legend-dot purple"></span>
+                                    <span>Wawancara online</span>
+                                </div>
+                                <div class="agenda-legend-item">
+                                    <span class="legend-dot pink"></span>
+                                    <span>Wawancara offline</span>
                                 </div>
                             </div>
                         </div>
