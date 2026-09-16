@@ -603,6 +603,7 @@ $replacements = [
     // Profile page & Popover
     'Pandu Isdiyanto, S.T., M.M.'         => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'ppandfoee@gmail.com'                 => htmlspecialchars($user['email'] ?? 'ppandfoee@gmail.com', ENT_QUOTES, 'UTF-8'),
+    '3402153112760034'                    => htmlspecialchars($profile['nik'] ?? ($seekerProfile['nik'] ?? '3402153112760034'), ENT_QUOTES, 'UTF-8'),
     'PT. Pandu Jaya'                      => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'Kota Bekasi'                         => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
     '<strong>Sisa 87 hari</strong>'       => '<strong>Sisa ' . max(0, $daysRemaining) . ' hari</strong>',

@@ -2723,45 +2723,124 @@
                 </div>
             </section>
 
-            <!-- SECTION M: PROFIL PEMBERI KERJA VIEW -->
+            <!-- SECTION M: PROFIL PEMBERI KERJA VIEW (EXACT MATCH USER SCREENSHOT) -->
             <section class="page" data-page="profil" id="page-profil">
-                <div class="dash-container">
-                    <div class="page-title-row">
-                        <div>
-                            <h2>Profil Pemberi Kerja Individu</h2>
-                            <div class="section-note">Ringkasan biodata perorangan, lokasi kerja, dan status verifikasi akun.</div>
+                <div class="dash-container profile-page-wrapper">
+                    <h1 class="profile-page-heading">Profil Pemberi Kerja</h1>
+
+                    <!-- TOP BANNER CARD: PEMBERI KERJA TERVERIFIKASI -->
+                    <div class="profile-verified-banner">
+                        <div class="profile-banner-alert">
+                            <i class="fa-regular fa-circle-check profile-alert-icon"></i>
+                            <div class="profile-alert-text">
+                                <strong>Pemberi Kerja Terverifikasi</strong>
+                                <span>Selamat! Pemberi kerja Anda telah berhasil diverifikasi dan kini dapat menggunakan seluruh fitur yang tersedia.</span>
+                            </div>
                         </div>
-                        <button type="button" class="primary-btn" data-open-modal="modal-employer-profile"><i class="fa-solid fa-pen-to-square"></i> Edit / Perbarui Profil</button>
+
+                        <div class="profile-banner-company">
+                            <div class="profile-company-avatar-box">
+                                <i class="fa-regular fa-building"></i>
+                            </div>
+                            <div class="profile-company-info">
+                                <span class="profile-type-badge">PERUSAHAAN</span>
+                                <h2 class="profile-company-title">PT. Pandu Jaya</h2>
+                                <div class="profile-contact-pills">
+                                    <span class="profile-contact-pill">
+                                        <i class="fa-regular fa-envelope"></i> pandu@gmail.com
+                                    </span>
+                                    <span class="profile-contact-pill">
+                                        <i class="fa-solid fa-phone"></i> 0216645828
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="info-grid" style="margin-top:16px;">
-                        <!-- CARD KIRI: IDENTITAS PERORANGAN -->
-                        <div class="info-card">
-                            <h4><i class="fa-solid fa-user chip-icon"></i> Identitas Perorangan</h4>
-                            <div class="kv-grid">
-                                <dl class="kv"><dt>Nama Pemberi Kerja</dt><dd><?php echo e($profile['owner_name'] ?? $user['name']); ?></dd></dl>
-                                <dl class="kv"><dt>NIK (SIAPkerja)</dt><dd><code><?php echo e($profile['nik'] ?: '-'); ?></code></dd></dl>
-                                <dl class="kv"><dt>NPWP (WAJIB)</dt><dd><code><?php echo e($profile['npwp'] ?: '-'); ?></code></dd></dl>
-                                <dl class="kv"><dt>Profesi / Usaha</dt><dd><?php echo e($profile['profession'] ?: '-'); ?></dd></dl>
-                                <dl class="kv"><dt>Email Akun</dt><dd><?php echo e($user['email']); ?></dd></dl>
-                                <dl class="kv"><dt>Telepon / WA</dt><dd><?php echo e($profile['phone'] ?: '-'); ?> / <?php echo e($profile['whatsapp'] ?: '-'); ?></dd></dl>
+                    <!-- 2-COLUMN BOTTOM GRID -->
+                    <div class="profile-grid-layout">
+                        <!-- LEFT COLUMN: TENTANG & LOKASI -->
+                        <div class="profile-col-stack">
+                            <!-- Card: Tentang Pemberi Kerja -->
+                            <div class="profile-card-box">
+                                <div class="profile-card-header">
+                                    <div class="profile-icon-square">
+                                        <i class="fa-regular fa-building"></i>
+                                    </div>
+                                    <h3>Tentang Pemberi Kerja</h3>
+                                </div>
+
+                                <p class="profile-desc-muted">
+                                    Belum ada deskripsi. Deskripsi pemberi kerja membantu calon pekerja mengenal organisasi Anda.
+                                </p>
+
+                                <div class="profile-card-sep"></div>
+
+                                <div>
+                                    <div class="profile-meta-label">Terdaftar Sebagai Pemberi Kerja Sejak</div>
+                                    <div class="profile-meta-val">
+                                        <i class="fa-regular fa-calendar"></i> 16 Juni 2021
+                                    </div>
+                                </div>
                             </div>
-                            <div class="info-line" style="margin-top:14px;">
-                                <span>Deskripsi Usaha:</span>
-                                <strong><?php echo e($profile['description'] ?: 'Belum mengisi deskripsi.'); ?></strong>
+
+                            <!-- Card: Lokasi Pemberi Kerja -->
+                            <div class="profile-card-box">
+                                <div class="profile-card-header">
+                                    <div class="profile-icon-square">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                    </div>
+                                    <h3>Lokasi Pemberi Kerja</h3>
+                                </div>
+
+                                <div class="profile-fields-2col">
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Provinsi</span>
+                                        <span class="pfl-value">Jawa Barat</span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Kota/Kabupaten</span>
+                                        <span class="pfl-value">Kota Bekasi</span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Kecamatan</span>
+                                        <span class="pfl-value">Rawalumbu</span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Kelurahan</span>
+                                        <span class="pfl-value">Pengasinan</span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Alamat</span>
+                                        <span class="pfl-value">Bekasi</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- CARD KANAN: ALAMAT & LOKASI USAHA -->
-                        <div class="info-card">
-                            <h4><i class="fa-solid fa-location-dot chip-icon"></i> Alamat & Lokasi Tempat Kerja</h4>
-                            <div class="kv-grid">
-                                <dl class="kv"><dt>Alamat Domisili KTP</dt><dd><?php echo e($seekerProfile['domicile_address'] ?? $profile['workplace_address'] ?? '-'); ?></dd></dl>
-                                <dl class="kv"><dt>Lokasi Tempat Kerja</dt><dd><?php echo e($profile['workplace_location'] ?: '-'); ?></dd></dl>
-                                <dl class="kv"><dt>Alamat Tempat Kerja</dt><dd><?php echo e($profile['workplace_address'] ?: '-'); ?></dd></dl>
-                                <dl class="kv"><dt>Status Verifikasi</dt><dd><span class="status-pill <?php echo strtolower($verificationStatus); ?>"><?php echo e($verificationStatus); ?></span></dd></dl>
-                                <dl class="kv"><dt>Masa Aktif Akun</dt><dd><?php echo $activeUntil ? e($activeUntil->format('d M Y')) : '1 Tahun sejak verifikasi'; ?></dd></dl>
-                                <dl class="kv"><dt>Tautan Aktivitas</dt><dd><?php echo !empty($profile['activity_proof_url']) ? '<a href="' . e($profile['activity_proof_url']) . '" target="_blank" style="color:#0284c7;font-weight:600;">Lihat Bukti Usaha</a>' : '-'; ?></dd></dl>
+                        <!-- RIGHT COLUMN: PIC PEMBERI KERJA -->
+                        <div class="profile-col-stack">
+                            <div class="profile-card-box">
+                                <h3 class="profile-pic-title">PIC Pemberi Kerja</h3>
+
+                                <div class="profile-pic-stack">
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Nama</span>
+                                        <span class="pfl-value">Pandu Isdiyanto, S.T., M.M.</span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">NIK</span>
+                                        <span class="pfl-value">3402153112760034</span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Email</span>
+                                        <span class="pfl-value">ppandfoee@gmail.com</span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">No. Telp</span>
+                                        <span class="pfl-value">-</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

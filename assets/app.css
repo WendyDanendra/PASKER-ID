@@ -4203,8 +4203,304 @@ html.dark-theme .rail-popover-item.item-logout i {
     color: #f87171 !important;
 }
 
-html.dark-theme .rail-popover-item.item-logout:hover {
-    background: rgba(239, 68, 68, 0.15) !important;
+/* ─── PROFIL PEMBERI KERJA (EXACT MATCH SCREENSHOT) ─── */
+.profile-page-wrapper {
+    padding: 0;
+    max-width: 100%;
 }
+
+.profile-page-heading {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 20px;
+}
+
+/* Banner Card */
+.profile-verified-banner {
+    background: linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 100%);
+    border: 1px solid #d1fae5;
+    border-radius: 16px;
+    padding: 22px 26px;
+    margin-bottom: 24px;
+}
+
+.profile-banner-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.profile-alert-icon {
+    font-size: 20px;
+    color: #10b981;
+    margin-top: 1px;
+}
+
+.profile-alert-text strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: #065f46;
+}
+
+.profile-alert-text span {
+    font-size: 13px;
+    color: #047857;
+    margin-top: 2px;
+    display: block;
+}
+
+.profile-banner-company {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.profile-company-avatar-box {
+    width: 76px;
+    height: 76px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    flex-shrink: 0;
+}
+
+.profile-company-avatar-box i {
+    font-size: 32px;
+    color: #0284c7;
+}
+
+.profile-company-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-type-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #00a79d;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.profile-company-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 3px 0 8px;
+}
+
+.profile-contact-pills {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.profile-contact-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.profile-contact-pill i {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* 2-Column Grid */
+.profile-grid-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+}
+
+.profile-col-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.profile-card-box {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+}
+
+.profile-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.profile-icon-square {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f0f9ff;
+    color: #0284c7;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+}
+
+.profile-card-header h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.profile-desc-muted {
+    font-size: 13px;
+    color: #64748b;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+.profile-card-sep {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 18px 0;
+}
+
+.profile-meta-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.profile-meta-val {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-meta-val i {
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Fields Grid for Lokasi */
+.profile-fields-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+}
+
+.profile-field-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-field-block .pfl-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.profile-field-block .pfl-value {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* PIC Card */
+.profile-pic-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 20px;
+}
+
+.profile-pic-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Dark Theme Overrides for Profil */
+html.dark-theme .profile-page-heading {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .profile-verified-banner {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+}
+
+html.dark-theme .profile-alert-text strong {
+    color: #34d399 !important;
+}
+
+html.dark-theme .profile-alert-text span {
+    color: #94a3b8 !important;
+}
+
+html.dark-theme .profile-company-avatar-box {
+    background: #0b132b !important;
+    border-color: #1e293b !important;
+}
+
+html.dark-theme .profile-company-title {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .profile-contact-pill {
+    background: #0b132b !important;
+    border-color: #1e293b !important;
+    color: #cbd5e1 !important;
+}
+
+html.dark-theme .profile-card-box {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.dark-theme .profile-card-header h3,
+html.dark-theme .profile-pic-title {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .profile-icon-square {
+    background: #1e293b !important;
+    color: #38bdf8 !important;
+}
+
+html.dark-theme .profile-desc-muted {
+    color: #94a3b8 !important;
+}
+
+html.dark-theme .profile-card-sep {
+    background: #1e293b !important;
+}
+
+html.dark-theme .profile-meta-label,
+html.dark-theme .profile-field-block .pfl-label {
+    color: #94a3b8 !important;
+}
+
+html.dark-theme .profile-meta-val,
+html.dark-theme .profile-field-block .pfl-value {
+    color: #f8fafc !important;
+}
+
 
 
