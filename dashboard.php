@@ -297,7 +297,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
     }
 
-    // 4. KIRIM LOWONGAN (VALIDATION + RULES ENGINE KBJI)
+    // 4. KIRIM LOWONGAN (VALIDATION + RULES ENGINE 3 LAYERS)
     if (isset($_POST['send_job'])) {
         if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
             flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat mengirim lowongan baru.');
@@ -323,34 +323,53 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        // Rules Engine: check if there is an active job with SAME KBJI
-        $cekDuplicate = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Tayang", "Lowongan Aktif") AND id != ? LIMIT 1');
-        $cekDuplicate->execute([$user['id'], $targetJob['kbji_code'], $jobId]);
-        $activeDuplicate = $cekDuplicate->fetch();
+        $isChildRepost = !empty($targetJob['parent_job_id']);
+        $rulesResult = check_pki_job_rules_engine(
+            db(),
+            (int)$user['id'],
+            (string)$targetJob['kbji_code'],
+            (int)($targetJob['quota'] ?? 1),
+            $jobId,
+            $isChildRepost
+        );
 
-        if ($activeDuplicate) {
-            $_SESSION['kbji_duplicate_error'] = [
-                'job_id' => $jobId,
-                'kbji_code' => $targetJob['kbji_code'],
-                'active_job_id' => $activeDuplicate['id'],
-                'active_job_title' => $activeDuplicate['title'],
-                'active_job_status' => $activeDuplicate['status']
-            ];
-            redirect('dashboard.php?kbji_conflict=1&draft_id=' . $jobId . '#lowongan');
-            exit;
+        if (!$rulesResult['allowed']) {
+            if ($rulesResult['layer'] === 1) {
+                $_SESSION['kbji_duplicate_error'] = [
+                    'job_id' => $jobId,
+                    'kbji_code' => $targetJob['kbji_code'],
+                    'active_job_id' => $rulesResult['conflict_job']['id'] ?? 0,
+                    'active_job_title' => $rulesResult['conflict_job']['title'] ?? '',
+                    'active_job_status' => $rulesResult['conflict_job']['status'] ?? ''
+                ];
+                redirect('dashboard.php?kbji_conflict=1&draft_id=' . $jobId . '#lowongan');
+                exit;
+            } else {
+                // Layer 3: Monthly quota exceeded (>10)
+                flash('error', $rulesResult['error_message']);
+                redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+                exit;
+            }
         }
 
+        $additionalDocRequired = !empty($rulesResult['additional_doc_required']) ? 1 : 0;
+        $layerFlag = $additionalDocRequired ? 'ADDITIONAL_DOCUMENT_PENDING' : ($isChildRepost ? 'REPOST_CONTINUATION' : null);
+
         // Update to canonical status: Menunggu Verifikasi
-        $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
-        $update->execute([$jobId, $user['id']]);
+        $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_required = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+        $update->execute([$additionalDocRequired, $jobId, $user['id']]);
 
         // Create or update verification record
         try {
-            $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status) VALUES (?, ?, ?, "PENDING")');
-            $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code']]);
+            $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, additional_doc_required, layer_flags) VALUES (?, ?, ?, "PENDING", ?, ?)');
+            $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code'], $additionalDocRequired, $layerFlag]);
         } catch (Throwable $ignored) {}
 
-        flash('success', 'Lowongan berhasil dikirim dan sedang Menunggu Verifikasi.');
+        if ($additionalDocRequired) {
+            flash('warning', 'Lowongan berhasil dikirim dan Menunggu Verifikasi. Catatan: Pengajuan publikasi ini masuk kuota ke-4+ untuk KBJI ' . $targetJob['kbji_code'] . ' bulan ini (Status: ADDITIONAL_DOCUMENT_PENDING).');
+        } else {
+            flash('success', 'Lowongan berhasil dikirim dan sedang Menunggu Verifikasi.');
+        }
         redirect('dashboard.php#lowongan');
         exit;
     }
@@ -358,11 +377,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     // 5. TUTUP LOWONGAN & POSTING ULANG SISA KUOTA
     if (isset($_POST['close_job'])) {
         $jobId = (int)$_POST['job_id'];
-        $sisaKuota = (int)$_POST['sisa_kuota'];
         $repost = ($_POST['repost'] ?? '0') === '1';
         $reasons = $_POST['reasons'] ?? [];
         $lainnya = trim($_POST['reason_lainnya'] ?? '');
         
+        $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
+        $jobStmt->execute([$jobId, $user['id']]);
+        $oldJob = $jobStmt->fetch();
+
+        if (!$oldJob) {
+            flash('error', 'Lowongan tidak ditemukan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        // Calculate accepted_count and remaining_quota
+        $accStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
+        $accStmt->execute([$jobId]);
+        $acceptedCount = (int)$accStmt->fetchColumn();
+        $requestedQuota = (int)($oldJob['quota'] ?? 1);
+        $sisaKuota = max(0, $requestedQuota - $acceptedCount);
+
+        // Update accepted_count on source job
+        db()->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$acceptedCount, $jobId]);
+
         if ($repost && ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED')) {
             flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat memposting ulang sisa kuota.');
             redirect('dashboard.php#lowongan');
@@ -370,9 +408,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
         
         if (empty($reasons)) {
-            flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');
+            flash('error', 'Anda wajib memilih minimal 1 alasan mengapa lowongan diselesaikan / sisa kuota belum terpenuhi.');
             redirect('dashboard.php#lowongan');
             exit;
+        }
+
+        $validReasons = pki_close_reasons();
+        foreach ($reasons as $r) {
+            if (!in_array($r, $validReasons, true)) {
+                flash('error', 'Alasan penutupan tidak valid.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
         }
 
         if (in_array('Lainnya', $reasons, true) && $lainnya === '') {
@@ -391,37 +438,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $stmt->execute([$reasonStr, $jobId, $user['id']]);
 
         if ($repost && $sisaKuota > 0) {
-            $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ?');
-            $jobStmt->execute([$jobId]);
-            $oldJob = $jobStmt->fetch();
+            // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi
+            $insert = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code, min_education, min_experience, parent_job_id, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Menunggu Verifikasi", ?, 0, ?, ?, ?, ?, CURRENT_TIMESTAMP)');
+            $insert->execute([
+                $user['id'], 
+                $oldJob['title'] . ' (Posting Ulang Sisa Kuota)', 
+                $oldJob['description'], 
+                $oldJob['location'], 
+                $oldJob['job_type'], 
+                $oldJob['industry'], 
+                $sisaKuota, 
+                $oldJob['kbji_code'], 
+                $oldJob['min_education'] ?? '', 
+                $oldJob['min_experience'] ?? '', 
+                $jobId
+            ]);
+            $childId = (int)db()->lastInsertId();
 
-            if ($oldJob) {
-                // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi
-                $insert = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code, min_education, min_experience, parent_job_id) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Menunggu Verifikasi", ?, 0, ?, ?, ?, ?)');
-                $insert->execute([
-                    $user['id'], 
-                    $oldJob['title'] . ' (Posting Ulang Sisa Kuota)', 
-                    $oldJob['description'], 
-                    $oldJob['location'], 
-                    $oldJob['job_type'], 
-                    $oldJob['industry'], 
-                    $sisaKuota, 
-                    $oldJob['kbji_code'], 
-                    $oldJob['min_education'] ?? '', 
-                    $oldJob['min_experience'] ?? '', 
-                    $jobId
-                ]);
-                $childId = (int)db()->lastInsertId();
+            try {
+                $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, layer_flags) VALUES (?, ?, ?, "PENDING", "REPOST_CONTINUATION")');
+                $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
+            } catch (Throwable $ignored) {}
 
-                try {
-                    $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status) VALUES (?, ?, ?, "PENDING")');
-                    $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
-                } catch (Throwable $ignored) {}
-
-                flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
-            }
+            flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
         } else {
-            flash('success', 'Lowongan berhasil ditutup.');
+            flash('success', 'Lowongan berhasil Ditutup.');
         }
 
         redirect('dashboard.php#lowongan');
@@ -925,10 +966,11 @@ $modal = <<<'HTML'
                             Anda menetapkan kandidat kurang dari kuota yang tersedia. Mohon pilih alasan mengapa sisa kuota belum terpenuhi (pilih minimal 1):
                         </div>
                         <div style="display:flex; flex-direction:column; gap:8px; margin-bottom: 16px;">
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar tidak sesuai kualifikasi"> Pelamar tidak sesuai kualifikasi</label>
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar menolak tawaran"> Pelamar menolak tawaran</label>
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kebutuhan perusahaan berubah"> Kebutuhan perusahaan berubah</label>
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kandidat dari luar sistem"> Kandidat dari luar sistem</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Jumlah pelamar belum mencukupi"> Jumlah pelamar belum mencukupi</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar belum sesuai kompetensi/kualifikasi"> Pelamar belum sesuai kompetensi/kualifikasi</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar mengundurkan diri"> Pelamar mengundurkan diri</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kandidat tidak hadir/tidak melanjutkan proses seleksi"> Kandidat tidak hadir/tidak melanjutkan proses seleksi</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kesepakatan kerja tidak tercapai"> Kesepakatan kerja tidak tercapai</label>
                             <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Lainnya" onchange="document.getElementById('reason_lainnya').style.display = this.checked ? 'block' : 'none'"> Lainnya</label>
                             <textarea id="reason_lainnya" name="reason_lainnya" placeholder="Tulis alasan spesifik Anda..." style="display:none; font-size:13px; padding:8px; border:1px solid #dbe7f0; border-radius:8px; min-height:60px; margin-top:4px;"></textarea>
                         </div>

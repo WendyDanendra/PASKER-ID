@@ -1881,10 +1881,21 @@
                                         <tr data-job-row data-title="<?php echo e($j['title']); ?>" data-status="<?php echo e($cStatus); ?>" data-created="<?php echo e($j['created_at']); ?>">
                                             <td>
                                                 <strong><?php echo e($j['title']); ?></strong>
-                                                <div class="tiny" style="color:#64748b; font-size:11px;">KBJI: <code><?php echo e($j['kbji_code']); ?></code> | Tipe: <?php echo e($j['job_type']); ?></div>
+                                                <div class="tiny" style="color:#64748b; font-size:11px;">
+                                                    KBJI: <code><?php echo e($j['kbji_code']); ?></code> | Tipe: <?php echo e($j['job_type']); ?>
+
+                                                    <?php if (!empty($j['parent_job_id'])): ?>
+                                                        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10px; padding:1px 6px; margin-left:4px; border-radius:4px;"><i class="fa-solid fa-arrows-rotate"></i> Repost (Parent #<?php echo (int)$j['parent_job_id']; ?>)</span>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
                                             <td><?php echo e($j['location'] ?: 'Kota Bekasi'); ?></td>
-                                            <td><strong><?php echo (int)($j['quota'] ?? 1); ?></strong> Posisi</td>
+                                            <td>
+                                                <strong><?php echo (int)($j['quota'] ?? 1); ?></strong> Posisi
+                                                <?php if ((int)($j['accepted_count'] ?? 0) > 0): ?>
+                                                    <div style="font-size:11px; color:#16a34a;">(Terisi: <?php echo (int)$j['accepted_count']; ?>)</div>
+                                                <?php endif; ?>
+                                            </td>
                                             <td>
                                                 <?php 
                                                     $applicantCount = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
@@ -1918,7 +1929,13 @@
                                                          <div class="modal-header">
                                                              <div>
                                                                  <div class="modal-title"><?php echo e($j['title']); ?></div>
-                                                                 <div class="modal-subtitle">Kode KBJI: <?php echo e($j['kbji_code']); ?> | Status: <?php echo e($j['status']); ?></div>
+                                                                 <div class="modal-subtitle">
+                                                                     Kode KBJI: <?php echo e($j['kbji_code']); ?> | Status: <?php echo e($j['status']); ?>
+
+                                                                     <?php if (!empty($j['parent_job_id'])): ?>
+                                                                         | <span style="color:#0284c7;">Posting Ulang dari #<?php echo (int)$j['parent_job_id']; ?></span>
+                                                                     <?php endif; ?>
+                                                                 </div>
                                                              </div>
                                                              <button type="button" class="ghost-btn" data-close-modal="detail-draft-<?php echo $j['id']; ?>">×</button>
                                                          </div>
@@ -1973,13 +1990,18 @@
                                                                          <div style="font-size:11px; color:#7f1d1d; margin-top:6px; font-style:italic;">Lowongan yang telah ditolak tidak dapat diajukan ulang.</div>
                                                                      </div>
                                                                  <?php elseif ($j['status'] === 'Ditutup'): ?>
-                                                                     <?php if ((int)$j['accepted_count'] < (int)$j['quota']): ?>
+                                                                     <?php 
+                                                                         $reqQ = (int)($j['quota'] ?? 1);
+                                                                         $accQ = (int)($j['accepted_count'] ?? 0);
+                                                                         $remQ = max(0, $reqQ - $accQ);
+                                                                     ?>
+                                                                     <?php if ($remQ > 0): ?>
                                                                          <div style="background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:10px 14px; border-radius:10px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
                                                                              <div>
                                                                                  <strong style="color:#c2410c;"><i class="fa-solid fa-triangle-exclamation"></i> Kuota Belum Terpenuhi</strong>
-                                                                                 <div style="font-size:12px;">Diterima: <?php echo (int)$j['accepted_count']; ?> / Kuota: <?php echo (int)$j['quota']; ?> Posisi</div>
+                                                                                 <div style="font-size:12px;">Diterima: <?php echo $accQ; ?> / Kuota: <?php echo $reqQ; ?> Posisi (Sisa: <?php echo $remQ; ?> Posisi)</div>
                                                                              </div>
-                                                                             <span class="badge warning" style="background:#ffedd5; color:#c2410c; padding:4px 8px; font-weight:600; font-size:11px;">Belum Terpenuhi</span>
+                                                                             <span class="badge warning" style="background:#ffedd5; color:#c2410c; padding:4px 8px; font-weight:600; font-size:11px;">Sisa <?php echo $remQ; ?> Kuota</span>
                                                                          </div>
                                                                      <?php endif; ?>
                                                                  <?php elseif ($j['status'] === 'Diblokir'): ?>
@@ -1997,7 +2019,10 @@
                                                                      <div><strong>Kode KBJI:</strong> <?php echo e($j['kbji_code']); ?></div>
                                                                      <div><strong>Pendidikan Minimal:</strong> <?php echo e($j['min_education'] ?? 'SMA / Sederajat'); ?></div>
                                                                      <div><strong>Minimum Pengalaman:</strong> <?php echo e($j['min_experience'] ?? 'Tidak Diutamakan'); ?></div>
-                                                                     <div><strong>Kuota Posisi:</strong> <?php echo (int)$j['quota']; ?> Orang | <strong>Diterima:</strong> <?php echo (int)$j['accepted_count']; ?> Orang</div>
+                                                                     <div><strong>Kuota Posisi:</strong> <?php echo (int)$j['quota']; ?> Orang | <strong>Diterima:</strong> <?php echo (int)($j['accepted_count'] ?? 0); ?> Orang | <strong>Sisa:</strong> <?php echo max(0, (int)$j['quota'] - (int)($j['accepted_count'] ?? 0)); ?> Orang</div>
+                                                                     <?php if (!empty($j['unfulfilled_reason'])): ?>
+                                                                         <div><strong>Alasan Penutupan / Sisa Kuota:</strong> <span style="color:#b45309; font-weight:600;"><?php echo e($j['unfulfilled_reason']); ?></span></div>
+                                                                     <?php endif; ?>
                                                                      <div><strong>Status Saat Ini:</strong> <span class="badge ok"><?php echo e($j['status']); ?></span></div>
                                                                  </div>
 

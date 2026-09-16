@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-
 $user = require_role('admin');
 
 // Active Section & Filters
@@ -112,16 +111,25 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             flash('error', 'CATATAN VERIFIKATOR wajib diisi jika checklist pelanggaran dipilih.');
         } else {
             if ($decision === 'approve') {
-                $stmt = db()->prepare('UPDATE job_posts SET status = "Tayang", verifier_notes = ?, verification_checklist = ? WHERE id = ?');
+                $stmt = db()->prepare('UPDATE job_posts SET status = "Tayang", published_at = CURRENT_TIMESTAMP, verifier_notes = ?, verification_checklist = ? WHERE id = ?');
                 $stmt->execute([$notes, $checklistStr, $jobId]);
+                try {
+                    db()->prepare('UPDATE job_verifications SET status = "APPROVED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
+                } catch (Throwable $ignored) {}
                 flash('success', 'Lowongan berhasil disetujui dan Tayang.');
             } elseif ($decision === 'revision') {
-                $stmt = db()->prepare('UPDATE job_posts SET status = "Perlu Direvisi", verifier_notes = ?, verification_checklist = ? WHERE id = ?');
-                $stmt->execute([$notes, $checklistStr, $jobId]);
+                $stmt = db()->prepare('UPDATE job_posts SET status = "Perlu Direvisi", admin_notes = ?, verifier_notes = ?, verification_checklist = ? WHERE id = ?');
+                $stmt->execute([$notes, $notes, $checklistStr, $jobId]);
+                try {
+                    db()->prepare('UPDATE job_verifications SET status = "NEEDS_REVISION", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
+                } catch (Throwable $ignored) {}
                 flash('success', 'Lowongan dikembalikan ke pemberi kerja (Perlu Direvisi).');
             } elseif ($decision === 'reject') {
-                $stmt = db()->prepare('UPDATE job_posts SET status = "Ditolak", verifier_notes = ?, verification_checklist = ? WHERE id = ?');
-                $stmt->execute([$notes, $checklistStr, $jobId]);
+                $stmt = db()->prepare('UPDATE job_posts SET status = "Ditolak", admin_notes = ?, verifier_notes = ?, verification_checklist = ? WHERE id = ?');
+                $stmt->execute([$notes, $notes, $checklistStr, $jobId]);
+                try {
+                    db()->prepare('UPDATE job_verifications SET status = "REJECTED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
+                } catch (Throwable $ignored) {}
                 flash('success', 'Lowongan Ditolak.');
             }
         }
@@ -588,7 +596,8 @@ if ($view === 'verifikasi_job') {
                                                     </div>
                                                 </div>
                                             </td>
-                                        </tr>                                     <?php endforeach; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -632,7 +641,16 @@ if ($view === 'verifikasi_job') {
                                 <?php else: ?>
                                     <?php foreach ($verificationJobs as $vJob): ?>
                                         <tr>
-                                            <td><strong><?php echo e($vJob['title']); ?></strong><br><small style="color:#64748b;">KBJI: <?php echo e($vJob['kbji_code']); ?></small></td>
+                                            <td>
+                                                <strong><?php echo e($vJob['title']); ?></strong><br>
+                                                <small style="color:#64748b;">KBJI: <code><?php echo e($vJob['kbji_code']); ?></code></small>
+                                                <?php if (!empty($vJob['additional_doc_required'])): ?>
+                                                    <br><span class="badge warning" style="background:#fef3c7; color:#92400e; font-size:10px; padding:2px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⚠️ Dokumen Tambahan (Layer 2)</span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($vJob['parent_job_id'])): ?>
+                                                    <br><span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10px; padding:2px 6px; border-radius:4px; margin-top:2px; display:inline-block;"><i class="fa-solid fa-arrows-rotate"></i> Repost (Parent #<?php echo (int)$vJob['parent_job_id']; ?>)</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><span class="badge ok"><?php echo e($vJob['entity_type']); ?></span></td>
                                             <td><?php echo e($vJob['owner_name'] ?: $vJob['user_name']); ?></td>
                                             <td><span class="badge pending"><?php echo e($vJob['status']); ?></span></td>
@@ -642,7 +660,6 @@ if ($view === 'verifikasi_job') {
                                                     <input type="hidden" name="job_id" value="<?php echo $vJob['id']; ?>">
                                                     <button type="submit" class="badge <?php echo $vJob['is_blacklisted'] ? 'suspended' : 'ok'; ?>" style="border:none; cursor:pointer;">
                                                         <?php echo $vJob['is_blacklisted'] ? 'Blacklisted' : 'Aman'; ?>
-
                                                     </button>
                                                 </form>
                                             </td>
@@ -652,7 +669,7 @@ if ($view === 'verifikasi_job') {
                                                     <i class="fa-solid fa-gavel"></i> Keputusan
                                                 </button>
 
-                                                <!-- MODAL KEPUTUSAN VERIFIKASI LOWONGAN (SECTION P) -->
+                                                <!-- MODAL KEPUTUSAN VERIFIKASI LOWONGAN -->
                                                 <div class="modal-backdrop" data-modal="modal-job-dec-<?php echo $vJob['id']; ?>">
                                                     <div class="modal-panel" style="width:min(600px, 90vw);">
                                                         <div class="modal-header">
@@ -663,8 +680,20 @@ if ($view === 'verifikasi_job') {
                                                             <input type="hidden" name="admin_action" value="verify_job">
                                                             <input type="hidden" name="job_id" value="<?php echo $vJob['id']; ?>">
                                                             <div class="modal-body">
+                                                                <?php if (!empty($vJob['additional_doc_required'])): ?>
+                                                                    <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:12px;">
+                                                                        <strong>⚠️ PERINGATAN RULES ENGINE (LAYER 2):</strong><br>
+                                                                        Pengajuan lowongan ini merupakan pengajuan ke-4+ untuk KBJI <code><?php echo e($vJob['kbji_code']); ?></code> pada bulan ini (Status: <code>ADDITIONAL_DOCUMENT_PENDING</code>). Pastikan dokumen pendukung tambahan telah diperiksa sebelum menyetujui.
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($vJob['parent_job_id'])): ?>
+                                                                    <div style="background:#f0f9ff; border:1px solid #bae6fd; color:#0369a1; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:12px;">
+                                                                        <i class="fa-solid fa-arrows-rotate"></i> <strong>POSTING ULANG SISA KUOTA:</strong><br>
+                                                                        Lowongan ini merupakan kelanjutan dari lowongan awal <strong>#<?php echo (int)$vJob['parent_job_id']; ?></strong>. Kuota yang diajukan: <strong><?php echo (int)$vJob['quota']; ?> posisi</strong>.
+                                                                    </div>
+                                                                <?php endif; ?>
                                                                 <div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:14px; font-size:12px;">
-                                                                    <div><strong>Lokasi:</strong> <?php echo e($vJob['location']); ?> | <strong>Tipe:</strong> <?php echo e($vJob['job_type']); ?></div>
+                                                                    <div><strong>Lokasi:</strong> <?php echo e($vJob['location']); ?> | <strong>Tipe:</strong> <?php echo e($vJob['job_type']); ?> | <strong>Kuota:</strong> <?php echo (int)$vJob['quota']; ?> Posisi</div>
                                                                     <div><strong>Deskripsi:</strong> <?php echo e($vJob['description']); ?></div>
                                                                 </div>
 

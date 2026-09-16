@@ -95,9 +95,29 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         if (!in_array('min_experience', $cols, true)) {
             $pdo->exec('ALTER TABLE job_posts ADD COLUMN min_experience TEXT');
         }
+        if (!in_array('parent_job_id', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN parent_job_id INTEGER');
+        }
+        if (!in_array('published_at', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN published_at DATETIME');
+        }
+        if (!in_array('unfulfilled_reason', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN unfulfilled_reason TEXT');
+        }
+        if (!in_array('additional_doc_required', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_required INTEGER DEFAULT 0');
+        }
         // Migrate status to canonical strings
         $pdo->exec('UPDATE job_posts SET status = "Menunggu Verifikasi" WHERE status = "Dikirim/Menunggu Verifikasi" OR status = "Dikirim"');
         $pdo->exec('UPDATE job_posts SET status = "Perlu Direvisi" WHERE status = "Perlu Revisi"');
+
+        $verCols = array_column($pdo->query('PRAGMA table_info(job_verifications)')->fetchAll(), 'name');
+        if (!in_array('additional_doc_required', $verCols, true)) {
+            $pdo->exec('ALTER TABLE job_verifications ADD COLUMN additional_doc_required INTEGER DEFAULT 0');
+        }
+        if (!in_array('layer_flags', $verCols, true)) {
+            $pdo->exec('ALTER TABLE job_verifications ADD COLUMN layer_flags TEXT');
+        }
     } catch (Throwable $ignored) {}
 }
 
@@ -323,9 +343,13 @@ function ensure_database_schema(PDO $pdo): void
         $addJobCols = [
             'entity_type' => "ENUM('Perusahaan', 'Individu') DEFAULT 'Individu' AFTER industry",
             'accepted_count' => "INT NOT NULL DEFAULT 0 AFTER quota",
+            'parent_job_id' => "INT NULL AFTER kbji_code",
+            'published_at' => "DATETIME NULL AFTER created_at",
+            'unfulfilled_reason' => "TEXT NULL AFTER parent_job_id",
             'verifier_notes' => "TEXT NULL AFTER unfulfilled_reason",
             'verification_checklist' => "TEXT NULL AFTER verifier_notes",
             'is_blacklisted' => "TINYINT(1) DEFAULT 0 AFTER verification_checklist",
+            'additional_doc_required' => "TINYINT(1) DEFAULT 0 AFTER is_blacklisted",
         ];
 
         foreach ($addJobCols as $col => $definition) {
