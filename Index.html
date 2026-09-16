@@ -1653,7 +1653,7 @@
                                     <i class="fa-solid fa-filter" style="color:#0284c7;"></i>
                                     <span>Corong Rekrutmen</span>
                                 </div>
-                                <button type="button" class="dash-outline-btn" data-nav="lowongan">
+                                <button type="button" class="dash-outline-btn" data-page="lowongan" data-nav="lowongan" onclick="if(typeof showPage==='function'){showPage('lowongan');}else if(typeof setActivePage==='function'){setActivePage('lowongan');}else{window.location.hash='#lowongan';}">
                                     Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
                                 </button>
                             </div>
@@ -1864,7 +1864,7 @@
                                         <i class="fa-regular fa-calendar-check" style="color:#0284c7;"></i>
                                         <span>Wawancara Terdekat</span>
                                     </div>
-                                    <button type="button" class="dash-outline-btn" data-nav="jadwal" style="padding:4px 10px; font-size:11px;">
+                                    <button type="button" class="dash-outline-btn" data-page="jadwal" data-nav="jadwal" onclick="if(typeof showPage==='function'){showPage('jadwal');}else if(typeof setActivePage==='function'){setActivePage('jadwal');}else{window.location.hash='#jadwal';}" style="padding:4px 10px; font-size:11px;">
                                         Kalender <i class="fa-solid fa-arrow-right"></i>
                                     </button>
                                 </div>
@@ -3012,6 +3012,8 @@
         closeDrawer();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    window.showPage = showPage;
+    window.setActivePage = showPage;
 
     // Bind all data-page and data-nav clickers
     document.querySelectorAll('[data-page]').forEach(btn => {
