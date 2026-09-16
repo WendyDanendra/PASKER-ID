@@ -600,7 +600,9 @@ $replacements = [
     'id="topbarAvatar">PI'                => 'id="topbarAvatar">' . $initials,
     'id="topbarCompName">PT. Pandu Jaya'  => 'id="topbarCompName">' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'id="topbarCompType">Perusahaan'      => 'id="topbarCompType">' . htmlspecialchars($profession, ENT_QUOTES, 'UTF-8'),
-    // Profile page
+    // Profile page & Popover
+    'Pandu Isdiyanto, S.T., M.M.'         => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    'ppandfoee@gmail.com'                 => htmlspecialchars($user['email'] ?? 'ppandfoee@gmail.com', ENT_QUOTES, 'UTF-8'),
     'PT. Pandu Jaya'                      => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'Kota Bekasi'                         => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
     '<strong>Sisa 87 hari</strong>'       => '<strong>Sisa ' . max(0, $daysRemaining) . ' hari</strong>',

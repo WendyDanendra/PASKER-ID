@@ -21,6 +21,10 @@ function setTheme(theme) {
     document.querySelectorAll('[data-theme-option]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.themeOption === theme);
     });
+
+    document.querySelectorAll('[data-theme-val]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.themeVal === theme);
+    });
 }
 
 function initTheme() {
@@ -1442,8 +1446,51 @@ document.addEventListener('click', (e) => {
     const popover = document.getElementById('schedFilterPopover');
     const btn = document.getElementById('schedFilterBtn');
     if (popover && wrap && !wrap.contains(e.target)) {
-        popover.classList.remove('open');
-        if (btn) btn.classList.remove('active');
+// Sidebar Rail Popovers (Tema Tampilan & Akun Pengguna)
+function toggleThemeMenu(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('railThemePopover');
+    const accountPopover = document.getElementById('railAccountPopover');
+    if (accountPopover) accountPopover.classList.remove('open');
+    if (popover) {
+        popover.classList.toggle('open');
+    }
+}
+
+function toggleAccountMenu(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('railAccountPopover');
+    const themePopover = document.getElementById('railThemePopover');
+    if (themePopover) themePopover.classList.remove('open');
+    if (popover) {
+        popover.classList.toggle('open');
+    }
+}
+
+function closeRailPopovers() {
+    const themePopover = document.getElementById('railThemePopover');
+    const accountPopover = document.getElementById('railAccountPopover');
+    if (themePopover) themePopover.classList.remove('open');
+    if (accountPopover) accountPopover.classList.remove('open');
+}
+
+function selectThemeOption(theme) {
+    setTheme(theme);
+    closeRailPopovers();
+}
+
+// Global click outside listener for rail popovers & filter popover
+document.addEventListener('click', (e) => {
+    const wrapTheme = document.getElementById('railThemePopover');
+    const btnTheme = document.getElementById('themeToggleBtn');
+    const wrapAccount = document.getElementById('railAccountPopover');
+    const btnAccount = document.getElementById('sidebarAvatar');
+
+    if (wrapTheme && wrapTheme.classList.contains('open') && !wrapTheme.contains(e.target) && !btnTheme?.contains(e.target)) {
+        wrapTheme.classList.remove('open');
+    }
+    if (wrapAccount && wrapAccount.classList.contains('open') && !wrapAccount.contains(e.target) && !btnAccount?.contains(e.target)) {
+        wrapAccount.classList.remove('open');
     }
 });
 
@@ -1452,6 +1499,11 @@ window.navigateSchedule = navigateSchedule;
 window.resetScheduleToday = resetScheduleToday;
 window.toggleScheduleFilter = toggleScheduleFilter;
 window.toggleFilterOption = toggleFilterOption;
+window.toggleThemeMenu = toggleThemeMenu;
+window.toggleAccountMenu = toggleAccountMenu;
+window.closeRailPopovers = closeRailPopovers;
+window.selectThemeOption = selectThemeOption;
+
 
 
 

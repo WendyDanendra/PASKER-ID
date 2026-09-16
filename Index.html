@@ -1483,12 +1483,64 @@
 
             <!-- Bottom Theme & Account Avatar -->
             <div class="rail-bottom">
-                <button type="button" class="rail-btn" id="themeToggleBtn" title="Ganti Tema Tampilan" onclick="toggleThemeCycle()">
-                    <i class="fa-solid fa-display"></i>
-                </button>
-                <button type="button" class="rail-avatar-btn" data-open-modal="modal-user-account" id="sidebarAvatar" title="Akun Pengguna">
-                    <?php echo mb_strtoupper(mb_substr($profile['owner_name'] ?? $user['name'], 0, 2)); ?>
-                </button>
+                <div class="rail-popover-wrap">
+                    <button type="button" class="rail-btn" id="themeToggleBtn" title="Tema Tampilan" onclick="toggleThemeMenu(event)">
+                        <i class="fa-solid fa-display"></i>
+                    </button>
+                    <!-- Popover Tema Tampilan (Screenshot 2) -->
+                    <div class="rail-popover rail-theme-popover" id="railThemePopover">
+                        <div class="rail-popover-header">TEMA TAMPILAN</div>
+                        <div class="rail-popover-list">
+                            <button type="button" class="rail-popover-item" data-theme-val="light" onclick="selectThemeOption('light')">
+                                <div class="rail-popover-item-left">
+                                    <i class="fa-regular fa-sun"></i>
+                                    <span>Terang</span>
+                                </div>
+                                <i class="fa-solid fa-check rail-theme-check"></i>
+                            </button>
+                            <button type="button" class="rail-popover-item" data-theme-val="dark" onclick="selectThemeOption('dark')">
+                                <div class="rail-popover-item-left">
+                                    <i class="fa-regular fa-moon"></i>
+                                    <span>Gelap</span>
+                                </div>
+                                <i class="fa-solid fa-check rail-theme-check"></i>
+                            </button>
+                            <button type="button" class="rail-popover-item" data-theme-val="system" onclick="selectThemeOption('system')">
+                                <div class="rail-popover-item-left">
+                                    <i class="fa-solid fa-display"></i>
+                                    <span>Sistem</span>
+                                </div>
+                                <i class="fa-solid fa-check rail-theme-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rail-popover-wrap">
+                    <button type="button" class="rail-avatar-btn" id="sidebarAvatar" title="Akun Pengguna" onclick="toggleAccountMenu(event)">PI</button>
+                    <!-- Popover Akun Pengguna (Screenshot 1) -->
+                    <div class="rail-popover rail-account-popover" id="railAccountPopover">
+                        <div class="rail-account-info">
+                            <div class="rail-account-name" id="railAccountName">Pandu Isdiyanto, S.T., M.M.</div>
+                            <div class="rail-account-email" id="railAccountEmail">ppandfoee@gmail.com</div>
+                        </div>
+                        <div class="rail-popover-divider"></div>
+                        <div class="rail-popover-list">
+                            <button type="button" class="rail-popover-item" onclick="if(typeof showPage==='function'){showPage('profil');}else if(typeof setActivePage==='function'){setActivePage('profil');}else{window.location.hash='#profil';}closeRailPopovers();">
+                                <div class="rail-popover-item-left">
+                                    <i class="fa-solid fa-gear"></i>
+                                    <span>Pengaturan</span>
+                                </div>
+                            </button>
+                            <a href="logout.php" class="rail-popover-item item-logout">
+                                <div class="rail-popover-item-left">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                    <span>Keluar</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </aside>
 
@@ -3188,39 +3240,82 @@
         }
     });
 
-    // Theme Switcher Toggle (Light <-> Dark)
-    function toggleThemeCycle() {
-        const isCurrentlyDark = document.documentElement.classList.contains('dark-theme');
-        const nextTheme = isCurrentlyDark ? 'light' : 'dark';
-        if (typeof setTheme === 'function') {
-            setTheme(nextTheme);
-        } else {
-            localStorage.setItem('karirhub_theme', nextTheme);
-            document.documentElement.classList.toggle('dark-theme', nextTheme === 'dark');
-            if (document.body) document.body.classList.toggle('dark-theme', nextTheme === 'dark');
-            const toggleBtn = document.getElementById('themeToggleBtn');
-            if (toggleBtn) {
-                toggleBtn.innerHTML = nextTheme === 'dark' ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
-            }
+    // Sidebar Rail Popovers (Tema Tampilan & Akun Pengguna)
+    function toggleThemeMenu(event) {
+        if (event) event.stopPropagation();
+        const popover = document.getElementById('railThemePopover');
+        const accountPopover = document.getElementById('railAccountPopover');
+        if (accountPopover) accountPopover.classList.remove('open');
+        if (popover) {
+            popover.classList.toggle('open');
         }
     }
-    window.toggleThemeCycle = toggleThemeCycle;
+    window.toggleThemeMenu = toggleThemeMenu;
 
-    // Auto-init theme
-    (function() {
-        const savedTheme = localStorage.getItem('karirhub_theme') || 'light';
+    function toggleAccountMenu(event) {
+        if (event) event.stopPropagation();
+        const popover = document.getElementById('railAccountPopover');
+        const themePopover = document.getElementById('railThemePopover');
+        if (themePopover) themePopover.classList.remove('open');
+        if (popover) {
+            popover.classList.toggle('open');
+        }
+    }
+    window.toggleAccountMenu = toggleAccountMenu;
+
+    function closeRailPopovers() {
+        const themePopover = document.getElementById('railThemePopover');
+        const accountPopover = document.getElementById('railAccountPopover');
+        if (themePopover) themePopover.classList.remove('open');
+        if (accountPopover) accountPopover.classList.remove('open');
+    }
+    window.closeRailPopovers = closeRailPopovers;
+
+    function selectThemeOption(theme) {
         if (typeof setTheme === 'function') {
-            setTheme(savedTheme);
+            setTheme(theme);
         } else {
-            const isDark = (savedTheme === 'dark');
+            localStorage.setItem('karirhub_theme', theme);
+            let isDark = false;
+            if (theme === 'system') {
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } else {
+                isDark = (theme === 'dark');
+            }
             document.documentElement.classList.toggle('dark-theme', isDark);
             if (document.body) document.body.classList.toggle('dark-theme', isDark);
             const toggleBtn = document.getElementById('themeToggleBtn');
             if (toggleBtn) {
                 toggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
             }
+            document.querySelectorAll('[data-theme-val]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.themeVal === theme);
+            });
         }
+        closeRailPopovers();
+    }
+    window.selectThemeOption = selectThemeOption;
+
+    // Auto-init theme
+    (function() {
+        const savedTheme = localStorage.getItem('karirhub_theme') || 'system';
+        selectThemeOption(savedTheme);
     })();
+
+    // Click outside handler for rail popovers
+    document.addEventListener('click', (e) => {
+        const wrapTheme = document.getElementById('railThemePopover');
+        const btnTheme = document.getElementById('themeToggleBtn');
+        const wrapAccount = document.getElementById('railAccountPopover');
+        const btnAccount = document.getElementById('sidebarAvatar');
+
+        if (wrapTheme && wrapTheme.classList.contains('open') && !wrapTheme.contains(e.target) && !btnTheme?.contains(e.target)) {
+            wrapTheme.classList.remove('open');
+        }
+        if (wrapAccount && wrapAccount.classList.contains('open') && !wrapAccount.contains(e.target) && !btnAccount?.contains(e.target)) {
+            wrapAccount.classList.remove('open');
+        }
+    });
 
     // Toggle Applicants More/Less
     let applicantsExpanded = false;
