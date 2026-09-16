@@ -1350,6 +1350,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $permitDoc = $permitDoc ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null);
         $workplacePhoto = $workplacePhoto ?: ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? null);
 
+        if (empty($permitDoc)) {
+            flash('error', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.');
+            redirect('dashboard.php?open_profile=1');
+            exit;
+        }
+
         if ($profile) {
             $stmt = db()->prepare('UPDATE employer_profiles SET 
                 owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,

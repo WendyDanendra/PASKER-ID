@@ -2559,8 +2559,8 @@
                         <!-- UPLOAD DOKUMEN PENDUKUNG & FOTO LOKASI -->
                         <div class="field-grid" style="margin-top:12px;">
                             <div class="field">
-                                <label>Dokumen Pendukung / Surat Izin (Opsional)</label>
-                                <input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png">
+                                <label>Dokumen Pendukung <span class="req">*</span> <span style="font-weight:400; font-size:12px; color:#64748b;">(Wajib unggah minimal 1 dokumen)</span></label>
+                                <input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png" <?php echo (empty($profile['permit_document']) && empty($profile['doc_permission'])) ? 'required' : ''; ?>>
                                 <?php if (!empty($profile['permit_document']) || !empty($profile['doc_permission'])): ?>
                                     <?php $dPath = $profile['permit_document'] ?? $profile['doc_permission']; ?>
                                     <div class="tiny" style="margin-top:4px; color:#0284c7;">
@@ -2569,7 +2569,7 @@
                                 <?php endif; ?>
                             </div>
                             <div class="field">
-                                <label>Foto Lokasi / Tempat Kerja (Opsional)</label>
+                                <label>Foto Bukti Tempat Usaha / Lokasi <span style="font-weight:400; font-size:12px; color:#64748b;">(Opsional)</span></label>
                                 <input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp">
                                 <?php if (!empty($profile['workplace_photo']) || !empty($profile['doc_location_photo'])): ?>
                                     <?php $pPath = $profile['workplace_photo'] ?? $profile['doc_location_photo']; ?>
