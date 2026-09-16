@@ -14,13 +14,29 @@ function db(): PDO
     static $pdo = null;
 
     if ($pdo === null) {
-        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]);
-        ensure_database_schema($pdo);
-        ensure_platform_schema();
+        try {
+            $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]);
+            ensure_database_schema($pdo);
+            ensure_platform_schema();
+        } catch (PDOException $e) {
+            error_log('[Karirhub DB] MySQL connection failed: ' . $e->getMessage());
+
+            // Fallback to SQLite database file for guaranteed demo uptime
+            $sqlitePath = __DIR__ . '/../database/demo.sqlite';
+            $isNew = !file_exists($sqlitePath);
+            $pdo = new PDO('sqlite:' . $sqlitePath, null, null, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]);
+            if ($isNew) {
+                init_sqlite_schema($pdo);
+            }
+            ensure_sqlite_extra_tables($pdo);
+        }
     }
 
     return $pdo;
