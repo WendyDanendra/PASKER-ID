@@ -1805,25 +1805,25 @@
                     <div class="card">
                         <div class="mini-icon" style="background:#eefafc;color:#2aa9d7"><i class="fa-solid fa-pencil"></i></div>
                         <h3>Draft</h3>
-                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => ($j['status'] ?? '') === 'Draft')); ?></div>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Draft')); ?></div>
                         <div class="desc neutral">Belum diajukan</div>
                     </div>
                     <div class="card">
                         <div class="mini-icon" style="background:#fff7ed;color:#f59e0b"><i class="fa-regular fa-clock"></i></div>
                         <h3>Menunggu Verifikasi</h3>
-                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => in_array($j['status'] ?? '', ['Dikirim/Menunggu Verifikasi', 'Menunggu Verifikasi', 'Dikirim'], true))); ?></div>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Menunggu Verifikasi')); ?></div>
                         <div class="desc neutral">Dalam proses tinjauan</div>
                     </div>
                     <div class="card">
                         <div class="mini-icon" style="background:#fef2f2;color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i></div>
                         <h3>Perlu Direvisi</h3>
-                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => in_array($j['status'] ?? '', ['Perlu Direvisi', 'Perlu Revisi'], true))); ?></div>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Perlu Direvisi')); ?></div>
                         <div class="desc neutral">Perlu perbaikan data</div>
                     </div>
                     <div class="card">
                         <div class="mini-icon" style="background:#ecfdf5;color:#21b36b"><i class="fa-regular fa-circle-check"></i></div>
                         <h3>Lowongan Aktif</h3>
-                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => ($j['status'] ?? '') === 'Tayang')); ?></div>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Tayang')); ?></div>
                         <div class="desc neutral">Sedang tayang</div>
                     </div>
                 </div>
@@ -1840,7 +1840,12 @@
                                 <option value="Draft">Draft</option>
                                 <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
                                 <option value="Perlu Direvisi">Perlu Direvisi</option>
-                                <option value="Tayang">Lowongan Aktif</option>
+                                <option value="Tayang">Tayang</option>
+                                <option value="Ditolak">Ditolak</option>
+                                <option value="Ditutup">Ditutup</option>
+                                <option value="Ditangguhkan">Ditangguhkan</option>
+                                <option value="Kedaluwarsa">Kedaluwarsa</option>
+                                <option value="Diblokir">Diblokir</option>
                             </select>
                             <select id="jobSortSelect" onchange="sortJobsTable()" style="padding:6px 12px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; background:#fff; font-weight:600; color:#334155;">
                                 <option value="newest">Terbaru</option>
@@ -1869,8 +1874,11 @@
                                         </td>
                                     </tr>
                                 <?php else: ?>
-                                    <?php foreach ($jobs as $j): ?>
-                                        <tr data-job-row data-title="<?php echo e($j['title']); ?>" data-status="<?php echo e($j['status']); ?>" data-created="<?php echo e($j['created_at']); ?>">
+                                    <?php foreach ($jobs as $j): 
+                                        $cStatus = normalize_job_status($j['status'] ?? 'Draft');
+                                        $meta = job_status_meta($cStatus);
+                                    ?>
+                                        <tr data-job-row data-title="<?php echo e($j['title']); ?>" data-status="<?php echo e($cStatus); ?>" data-created="<?php echo e($j['created_at']); ?>">
                                             <td>
                                                 <strong><?php echo e($j['title']); ?></strong>
                                                 <div class="tiny" style="color:#64748b; font-size:11px;">KBJI: <code><?php echo e($j['kbji_code']); ?></code> | Tipe: <?php echo e($j['job_type']); ?></div>
@@ -1885,14 +1893,18 @@
                                                 ?> Pelamar
                                             </td>
                                             <td>
-                                                <?php if ($j['status'] === 'Tayang'): ?>
-                                                    <span class="status-pill approved">Lowongan Aktif</span>
-                                                <?php elseif ($j['status'] === 'Draft'): ?>
+                                                <?php if ($cStatus === 'Tayang'): ?>
+                                                    <span class="status-pill approved">Tayang</span>
+                                                <?php elseif ($cStatus === 'Draft'): ?>
                                                     <span class="status-pill draft" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">Draft</span>
-                                                <?php elseif ($j['status'] === 'Perlu Direvisi' || $j['status'] === 'Perlu Revisi'): ?>
+                                                <?php elseif ($cStatus === 'Perlu Direvisi'): ?>
                                                     <span class="status-pill revision" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">Perlu Direvisi</span>
+                                                <?php elseif ($cStatus === 'Ditolak'): ?>
+                                                    <span class="status-pill rejected" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca;">Ditolak</span>
+                                                <?php elseif ($cStatus === 'Ditutup'): ?>
+                                                    <span class="status-pill closed" style="background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">Ditutup</span>
                                                 <?php else: ?>
-                                                    <span class="status-pill pending" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;">Menunggu Verifikasi</span>
+                                                    <span class="status-pill pending" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;"><?php echo e($meta['label']); ?></span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>

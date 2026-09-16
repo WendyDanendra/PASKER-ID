@@ -18,7 +18,7 @@ $jobsStatement = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER 
 $jobsStatement->execute([$user['id']]);
 $jobs = $jobsStatement->fetchAll() ?: [];
 
-// Status calculation logic according to FSD Final & Step 4 specification
+// Status calculation logic according to FSD Final & Step 4/5 specification
 $verificationStatus = $profile['verification_status'] ?? 'NOT_SUBMITTED';
 if (empty($profile)) {
     $verificationStatus = 'NOT_SUBMITTED';
@@ -101,7 +101,7 @@ if (isset($_GET['applicant_json'])) {
 
 if (isset($_GET['job_json'])) {
     $jobId = (int) $_GET['job_json'];
-    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" LIMIT 1');
+    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? AND status IN ("Perlu Direvisi", "Perlu Revisi", "Draft") LIMIT 1');
     $jobStmt->execute([$jobId, $user['id']]);
     $job = $jobStmt->fetch();
     header('Content-Type: application/json');
@@ -111,8 +111,8 @@ if (isset($_GET['job_json'])) {
         exit;
     }
 
-    if (empty($job['revision_opened_at'])) {
-        db()->prepare('UPDATE job_posts SET revision_opened_at = NOW() WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" AND revision_opened_at IS NULL')
+    if (in_array($job['status'], ['Perlu Direvisi', 'Perlu Revisi'], true) && empty($job['revision_opened_at'])) {
+        db()->prepare('UPDATE job_posts SET revision_opened_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status IN ("Perlu Direvisi", "Perlu Revisi") AND revision_opened_at IS NULL')
             ->execute([$jobId, $user['id']]);
     }
 
@@ -256,34 +256,36 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         exit;
     }
 
-    // 3. TAMBAH / UPDATE DRAFT LOWONGAN
-    if (isset($_POST['save_job'])) {
+    // 3. TAMBAH / UPDATE DRAFT LOWONGAN (SELALU Draft, TANPA Rules Engine)
+    if (isset($_POST['save_job']) || isset($_POST['update_job'])) {
         if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
             flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat membuat atau mengubah lowongan.');
             redirect('dashboard.php#lowongan');
             exit;
         }
 
-        $jobId = (int)$_POST['job_id'];
-        $title = trim($_POST['job_title'] ?? '');
-        $location = trim($_POST['job_location'] ?? '');
+        $jobId = (int)($_POST['job_id'] ?? 0);
+        $title = trim($_POST['job_title'] ?? $_POST['title'] ?? '');
+        $location = trim($_POST['job_location'] ?? $_POST['location'] ?? '');
         $jobType = trim($_POST['job_type'] ?? '');
-        $industry = trim($_POST['industry'] ?? '');
+        $industry = trim($_POST['industry'] ?? $_POST['job_field'] ?? '');
         $kbjiCode = trim($_POST['kbji_code'] ?? '');
-        $minEducation = trim($_POST['min_education'] ?? '');
-        $minExperience = trim($_POST['min_experience'] ?? '');
+        $minEducation = trim($_POST['min_education'] ?? $_POST['education_required'] ?? '');
+        $minExperience = trim($_POST['min_experience'] ?? $_POST['experience_required'] ?? '');
         $quota = (int)($_POST['quota'] ?? 1);
-        $description = trim($_POST['description'] ?? '');
+        $description = trim($_POST['job_description'] ?? $_POST['description'] ?? '');
 
         if ($title !== '' && $location !== '' && $kbjiCode !== '' && $quota > 0 && $description !== '') {
             if ($jobId > 0) {
-                $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status = "Perlu Revisi"');
+                // Update existing job maintaining its identity and draft/revision status
+                $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status IN ("Draft", "Perlu Direvisi", "Perlu Revisi")');
                 $stmt->execute([$title, $location, $jobType, $industry, $kbjiCode, $minEducation, $minExperience, $quota, $description, $jobId, $user['id']]);
                 flash('success', 'Draft lowongan berhasil diperbarui.');
             } else {
+                // Always create as Draft with NO rules engine checks
                 $stmt = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code, min_education, min_experience, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Draft", ?, ?, ?, ?, CURRENT_TIMESTAMP)');
                 $stmt->execute([$user['id'], $title, $description, $location, $jobType, $industry, $quota, $kbjiCode, $minEducation, $minExperience]);
-                $jobId = db()->lastInsertId();
+                $jobId = (int)db()->lastInsertId();
                 flash('success', 'Lowongan baru berhasil dibuat dan disimpan sebagai Draft.');
             }
             redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
@@ -295,7 +297,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
     }
 
-    // 4. KIRIM LOWONGAN (RULES ENGINE KBJI)
+    // 4. KIRIM LOWONGAN (VALIDATION + RULES ENGINE KBJI)
     if (isset($_POST['send_job'])) {
         if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
             flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat mengirim lowongan baru.');
@@ -321,7 +323,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        // Cek duplicate active job for SAME KBJI
+        // Rules Engine: check if there is an active job with SAME KBJI
         $cekDuplicate = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Tayang", "Lowongan Aktif") AND id != ? LIMIT 1');
         $cekDuplicate->execute([$user['id'], $targetJob['kbji_code'], $jobId]);
         $activeDuplicate = $cekDuplicate->fetch();
@@ -338,11 +340,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        // If valid, submit for verification & form Job Verification Case
-        $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi" WHERE id = ? AND user_id = ?');
+        // Update to canonical status: Menunggu Verifikasi
+        $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
         $update->execute([$jobId, $user['id']]);
 
-        // Form Job Verification Case
+        // Create or update verification record
         try {
             $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status) VALUES (?, ?, ?, "PENDING")');
             $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code']]);
@@ -411,7 +413,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 ]);
                 $childId = (int)db()->lastInsertId();
 
-                // Form Job Verification Case for child posting
                 try {
                     $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status) VALUES (?, ?, ?, "PENDING")');
                     $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
@@ -748,24 +749,25 @@ $modal = <<<'HTML'
             <div class="modal-header">
                 <button type="button" class="modal-close" data-close-modal="job-create" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
                 <div class="modal-title" id="jobCreateTitle">Tambah Lowongan</div>
-                <div class="modal-subtitle" id="jobCreateSubtitle">Lengkapi form berikut untuk mengisi lowongan</div>
+                <div class="modal-subtitle" id="jobCreateSubtitle">Lengkapi formulir 3 langkah untuk membuat lowongan baru</div>
                 <div class="revision-banner" id="revisionBanner" hidden>
                     <strong><i class="fa-solid fa-triangle-exclamation"></i> Catatan Revisi dari Admin</strong>
                     <p id="revisionBannerText"></p>
                 </div>
             </div>
             <div class="step-progress" aria-hidden="true">
-                <div class="step-progress-item active" data-step-label="1"><span class="bubble">1</span><span>Informasi Pekerjaan</span></div>
+                <div class="step-progress-item active" data-step-label="1"><span class="bubble">1</span><span>Informasi Loker</span></div>
                 <div class="step-progress-line" data-step-line="1"></div>
-                <div class="step-progress-item" data-step-label="2"><span class="bubble">2</span><span>Kompensasi & Lokasi</span></div>
+                <div class="step-progress-item" data-step-label="2"><span class="bubble">2</span><span>Persyaratan</span></div>
                 <div class="step-progress-line" data-step-line="2"></div>
-                <div class="step-progress-item" data-step-label="3"><span class="bubble">3</span><span>Persyaratan Khusus</span></div>
+                <div class="step-progress-item" data-step-label="3"><span class="bubble">3</span><span>Tambahan</span></div>
             </div>
             <form method="post" action="dashboard.php" data-job-create-form>
+                <input type="hidden" name="save_job" value="1">
                 <input type="hidden" name="job_action" value="save">
                 <input type="hidden" name="job_id" id="reviseJobId" value="">
                 <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px 24px;">
-                    <!-- Step 1: Info Dasar -->
+                    <!-- Step 1: Informasi Loker -->
                     <div class="form-step active" data-job-step="1">
                         <div class="field" style="margin-bottom:14px;">
                             <label>Judul Lowongan <span class="req">*</span></label>
@@ -818,46 +820,8 @@ $modal = <<<'HTML'
                         </div>
                     </div>
 
-                    <!-- Step 2: Kompensasi & Lokasi -->
+                    <!-- Step 2: Persyaratan -->
                     <div class="form-step" data-job-step="2" hidden>
-                        <div class="field" style="margin-bottom:14px;">
-                            <label>Lokasi Kerja <span class="req">*</span></label>
-                            <input type="text" name="job_location" placeholder="Kota / Wilayah Kerja" required>
-                        </div>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
-                            <div class="field">
-                                <label>Gaji Minimal (Rp)</label>
-                                <input type="number" name="salary_min" placeholder="0">
-                            </div>
-                            <div class="field">
-                                <label>Gaji Maksimal (Rp)</label>
-                                <input type="number" name="salary_max" placeholder="0">
-                            </div>
-                        </div>
-                        <div class="field" style="margin-bottom:14px;">
-                            <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;">
-                                <input type="checkbox" name="show_salary" value="1">
-                                <span>Tampilkan besaran gaji kepada pencari kerja</span>
-                            </label>
-                        </div>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                            <div class="field">
-                                <label>Kuota Penerimaan (Orang) <span class="req">*</span></label>
-                                <input type="number" name="quota" min="1" value="1" required>
-                            </div>
-                            <div class="field">
-                                <label>Masa Berlaku Tayang (Hari) <span class="req">*</span></label>
-                                <select name="expiry_days" required>
-                                    <option value="14">14 Hari</option>
-                                    <option value="30" selected>30 Hari</option>
-                                    <option value="60">60 Hari</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 3: Persyaratan Khusus -->
-                    <div class="form-step" data-job-step="3" hidden>
                         <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
                             <div class="field">
                                 <label>Minimal Pendidikan <span class="req">*</span></label>
@@ -897,12 +861,50 @@ $modal = <<<'HTML'
                             <div class="choice-chip-wrap" data-chip-list="skills"></div>
                         </div>
                     </div>
+
+                    <!-- Step 3: Tambahan -->
+                    <div class="form-step" data-job-step="3" hidden>
+                        <div class="field" style="margin-bottom:14px;">
+                            <label>Lokasi Kerja <span class="req">*</span></label>
+                            <input type="text" name="job_location" placeholder="Kota / Wilayah Kerja" required>
+                        </div>
+                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+                            <div class="field">
+                                <label>Gaji Minimal (Rp)</label>
+                                <input type="number" name="salary_min" placeholder="0">
+                            </div>
+                            <div class="field">
+                                <label>Gaji Maksimal (Rp)</label>
+                                <input type="number" name="salary_max" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="field" style="margin-bottom:14px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;">
+                                <input type="checkbox" name="show_salary" value="1">
+                                <span>Tampilkan besaran gaji kepada pencari kerja</span>
+                            </label>
+                        </div>
+                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                            <div class="field">
+                                <label>Kuota Penerimaan (Orang) <span class="req">*</span></label>
+                                <input type="number" name="quota" min="1" value="1" required>
+                            </div>
+                            <div class="field">
+                                <label>Masa Berlaku Tayang (Hari) <span class="req">*</span></label>
+                                <select name="expiry_days" required>
+                                    <option value="14">14 Hari</option>
+                                    <option value="30" selected>30 Hari</option>
+                                    <option value="60">60 Hari</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="ghost-btn" data-job-cancel data-close-modal="job-create">Batal</button>
                     <button type="button" class="ghost-btn" data-job-back hidden><i class="fa-solid fa-arrow-left"></i> Kembali</button>
                     <button type="button" class="primary-btn" data-job-next>Lanjut <i class="fa-solid fa-arrow-right"></i></button>
-                    <button type="submit" class="primary-btn" data-job-submit hidden><i class="fa-solid fa-paper-plane"></i> Tambah Loker</button>
+                    <button type="submit" class="primary-btn" data-job-submit hidden><i class="fa-solid fa-paper-plane"></i> TAMBAH LOKER</button>
                 </div>
             </form>
         </div>
@@ -1018,27 +1020,36 @@ JS, $html);
 $employerJobs = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER BY created_at DESC');
 $employerJobs->execute([$user['id']]);
 $employerJobs = $employerJobs->fetchAll();
-$jobCounts = ['Draft' => 0, 'Menunggu Verifikasi' => 0, 'Perlu Revisi' => 0, 'Tayang' => 0];
+
+$jobCounts = [
+    'Draft' => 0, 
+    'Menunggu Verifikasi' => 0, 
+    'Perlu Direvisi' => 0, 
+    'Tayang' => 0,
+    'Ditolak' => 0,
+    'Ditutup' => 0
+];
 foreach ($employerJobs as $row) {
-    if (isset($jobCounts[$row['status']])) {
-        $jobCounts[$row['status']]++;
+    $cStat = normalize_job_status($row['status'] ?? '');
+    if (isset($jobCounts[$cStat])) {
+        $jobCounts[$cStat]++;
     }
 }
 
 $jobRowsHtml = '';
 if (!$employerJobs) {
-    $jobRowsHtml = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:28px">Belum ada lowongan. Klik Tambah Lowongan untuk mengirim ke Admin.</td></tr>';
+    $jobRowsHtml = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:28px">Belum ada lowongan. Klik Tambah Lowongan untuk membuat postingan baru.</td></tr>';
 } else {
     foreach ($employerJobs as $row) {
         $meta = job_status_meta($row['status']);
         $countStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
         $countStmt->execute([$row['id']]);
         $appCount = (int) $countStmt->fetchColumn();
-        $reviseBtn = $row['status'] === 'Perlu Revisi'
+        $reviseBtn = in_array($row['status'], ['Perlu Direvisi', 'Perlu Revisi'], true)
             ? '<button type="button" class="ghost-btn" data-revise-job="' . (int) $row['id'] . '">Revisi</button>'
             : '-';
         $adminNoteHtml = '';
-        if ($row['status'] === 'Perlu Revisi' && trim((string) ($row['admin_notes'] ?? '')) !== '') {
+        if (in_array($row['status'], ['Perlu Direvisi', 'Perlu Revisi'], true) && trim((string) ($row['admin_notes'] ?? '')) !== '') {
             $adminNoteHtml = '<div class="tiny" style="color:#b45309">Catatan admin: ' . e($row['admin_notes']) . '</div>';
         }
         $jobRowsHtml .= '<tr><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div>' . $adminNoteHtml . '</td>'
@@ -1119,7 +1130,7 @@ $unread = unread_notification_count((int) $user['id']);
 $html = str_replace('<div class="notif"><i class="fa-regular fa-bell"></i></div>', render_notif_dropdown($notifications, $unread), $html);
 $html = preg_replace('/<h3>Draft<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Draft</h3><div class="value">' . $jobCounts['Draft'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Dikirim<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Dikirim</h3><div class="value">' . $jobCounts['Menunggu Verifikasi'] . '</div>', $html, 1);
-$html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Perlu Direvisi</h3><div class="value">' . $jobCounts['Perlu Revisi'] . '</div>', $html, 1);
+$html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Perlu Direvisi</h3><div class="value">' . $jobCounts['Perlu Direvisi'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Lowongan Aktif<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Lowongan Aktif</h3><div class="value">' . $jobCounts['Tayang'] . '</div>', $html, 1);
 $html = str_replace('<!--JOB_TABLE_ROWS-->', $jobRowsHtml, $html);
 $html = str_replace('<!--JOB_APPLICANTS-->', $applicantHtml, $html);

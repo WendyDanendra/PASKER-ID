@@ -334,8 +334,10 @@ function ensure_database_schema(PDO $pdo): void
             }
         }
 
-        // Modify status ENUM in job_posts if needed
-        $pdo->exec("ALTER TABLE job_posts MODIFY COLUMN status ENUM('Draft', 'Dikirim/Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft'");
+        // Modify status ENUM in job_posts to canonical statuses
+        $pdo->exec("UPDATE job_posts SET status = 'Menunggu Verifikasi' WHERE status IN ('Dikirim/Menunggu Verifikasi', 'Dikirim')");
+        $pdo->exec("UPDATE job_posts SET status = 'Perlu Direvisi' WHERE status = 'Perlu Revisi'");
+        $pdo->exec("ALTER TABLE job_posts MODIFY COLUMN status ENUM('Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft'");
 
     } catch (Exception $e) {
         // Silently handle if table structures already match

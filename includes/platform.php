@@ -136,16 +136,60 @@ function store_upload(string $field, string $subdir, array $allowedExt): ?string
     return 'uploads/' . trim($subdir, '/') . '/' . $filename;
 }
 
+function canonical_job_statuses(): array
+{
+    return [
+        'Draft',
+        'Menunggu Verifikasi',
+        'Perlu Direvisi',
+        'Ditolak',
+        'Terjadwal Tayang',
+        'Tayang',
+        'Ditangguhkan',
+        'Ditutup',
+        'Kedaluwarsa',
+        'Diblokir',
+    ];
+}
+
+function normalize_job_status(string $status): string
+{
+    $trimmed = trim($status);
+    return match ($trimmed) {
+        'Dikirim/Menunggu Verifikasi', 'Dikirim', 'Menunggu Persetujuan' => 'Menunggu Verifikasi',
+        'Perlu Revisi', 'Revisi' => 'Perlu Direvisi',
+        'Lowongan Aktif', 'Disetujui', 'Aktif' => 'Tayang',
+        'Tutup' => 'Ditutup',
+        'Expired' => 'Kedaluwarsa',
+        'Suspended' => 'Ditangguhkan',
+        'Blocked' => 'Diblokir',
+        'Draft' => 'Draft',
+        'Perlu Direvisi' => 'Perlu Direvisi',
+        'Ditolak' => 'Ditolak',
+        'Terjadwal Tayang' => 'Terjadwal Tayang',
+        'Tayang' => 'Tayang',
+        'Ditangguhkan' => 'Ditangguhkan',
+        'Ditutup' => 'Ditutup',
+        'Kedaluwarsa' => 'Kedaluwarsa',
+        'Diblokir' => 'Diblokir',
+        default => in_array($trimmed, canonical_job_statuses(), true) ? $trimmed : 'Draft',
+    };
+}
+
 function job_status_meta(string $status): array
 {
-    return match ($status) {
+    $canonical = normalize_job_status($status);
+    return match ($canonical) {
         'Draft' => ['label' => 'Draft', 'class' => 'draft'],
         'Menunggu Verifikasi' => ['label' => 'Menunggu Verifikasi', 'class' => 'pending'],
-        'Perlu Revisi' => ['label' => 'Perlu Revisi', 'class' => 'revision'],
-        'Tayang' => ['label' => 'Disetujui', 'class' => 'live'],
-        'Ditutup' => ['label' => 'Ditutup', 'class' => 'closed'],
+        'Perlu Direvisi' => ['label' => 'Perlu Direvisi', 'class' => 'revision'],
         'Ditolak' => ['label' => 'Ditolak', 'class' => 'rejected'],
-        'Penuh' => ['label' => 'Penuh', 'class' => 'full'],
+        'Terjadwal Tayang' => ['label' => 'Terjadwal Tayang', 'class' => 'scheduled'],
+        'Tayang' => ['label' => 'Tayang', 'class' => 'live'],
+        'Ditangguhkan' => ['label' => 'Ditangguhkan', 'class' => 'suspended'],
+        'Ditutup' => ['label' => 'Ditutup', 'class' => 'closed'],
+        'Kedaluwarsa' => ['label' => 'Kedaluwarsa', 'class' => 'expired'],
+        'Diblokir' => ['label' => 'Diblokir', 'class' => 'blocked'],
         default => ['label' => $status, 'class' => 'draft'],
     };
 }
@@ -442,14 +486,14 @@ function parse_job_details(?string $json): array
 
 function job_decision_editable(array $job): bool
 {
-    $status = (string) ($job['status'] ?? '');
-    if (!in_array($status, ['Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditolak'], true)) {
+    $status = normalize_job_status((string) ($job['status'] ?? ''));
+    if (!in_array($status, ['Menunggu Verifikasi', 'Perlu Direvisi', 'Tayang', 'Ditolak'], true)) {
         return false;
     }
 
     // After the employer opens and works on the revision form, the saved
     // decision can no longer be changed until they resubmit.
-    if ($status === 'Perlu Revisi' && !empty($job['revision_opened_at'])) {
+    if ($status === 'Perlu Direvisi' && !empty($job['revision_opened_at'])) {
         return false;
     }
 
