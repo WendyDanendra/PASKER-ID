@@ -1690,59 +1690,225 @@
                             </div>
                         </div>
 
-                        <!-- CARD: CORONG REKRUTMEN -->
-                        <div class="dash-main-card">
+                        <!-- CARD: PENGAJUAN & VERIFIKASI LOWONGAN -->
+                        <div class="dash-main-card" id="cardPengajuanVerifikasi">
                             <div class="dash-card-header">
-                                <div class="dash-card-title">
-                                    <i class="fa-solid fa-filter" style="color:#0284c7;"></i>
-                                    <span>Corong Rekrutmen</span>
+                                <div>
+                                    <div class="dash-card-title">
+                                        <i class="fa-solid fa-folder-open" style="color:#0284c7;"></i>
+                                        <span>Pengajuan &amp; Verifikasi Lowongan</span>
+                                    </div>
+                                    <div class="dash-card-subtitle" style="margin-top:4px; margin-bottom:0;">
+                                        Pengajuan 6 bulan terakhir · berdasarkan status saat ini
+                                    </div>
                                 </div>
                                 <button type="button" class="dash-outline-btn" id="btnKelolaLowongan" onclick="if(typeof showPage==='function'){showPage('lowongan');}else if(typeof setActivePage==='function'){setActivePage('lowongan');}else{window.location.hash='#lowongan';}">
                                     Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
                                 </button>
                             </div>
 
-                            <div class="funnel-layout-grid">
-                                <div class="funnel-bars-col">
-                                    <div class="funnel-tier funnel-tier-1">
-                                        <span>Pelamar Masuk</span>
-                                        <span style="font-size:13px;">8822</span>
-                                        <span style="font-weight:400;font-size:11px;">100%</span>
-                                    </div>
-                                    <div class="funnel-tier funnel-tier-2">
-                                        <span>Dipelajari</span>
-                                        <span style="font-size:13px;">23</span>
-                                        <span style="font-weight:400;font-size:11px;">0.3% lanjut</span>
-                                    </div>
-                                    <div class="funnel-tier funnel-tier-3">
-                                        <span>Wawancara</span>
-                                        <span style="font-size:13px;">4</span>
-                                        <span style="font-weight:400;font-size:11px;">17% lanjut</span>
-                                    </div>
-                                    <div class="funnel-tier funnel-tier-4">
-                                        <span>Diterima</span>
-                                        <span style="font-size:13px;">2</span>
-                                        <span style="font-weight:400;font-size:11px;">50% lanjut</span>
+                            <div class="chart-breakdown-grid" style="margin-top:16px;">
+                                <!-- Left side: Interactive SVG Area Chart -->
+                                <div class="chart-canvas-wrap" id="chartCanvasWrap">
+                                    <svg class="pv-chart-svg" id="pvChartSvg" viewBox="0 0 620 220" preserveAspectRatio="none" style="width:100%; height:100%; overflow:visible;">
+                                        <defs>
+                                            <linearGradient id="gradMaroon" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#7f1d1d" stop-opacity="0.18" />
+                                                <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0.01" />
+                                            </linearGradient>
+                                            <linearGradient id="gradGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#10b981" stop-opacity="0.25" />
+                                                <stop offset="100%" stop-color="#10b981" stop-opacity="0.02" />
+                                            </linearGradient>
+                                            <linearGradient id="gradOrange" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.22" />
+                                                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.02" />
+                                            </linearGradient>
+                                            <linearGradient id="gradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.22" />
+                                                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02" />
+                                            </linearGradient>
+                                            <linearGradient id="gradRed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25" />
+                                                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.02" />
+                                            </linearGradient>
+                                        </defs>
+
+                                        <!-- Grid lines -->
+                                        <g class="pv-grid-lines">
+                                            <line x1="36" y1="20" x2="600" y2="20" stroke="#f1f5f9" stroke-width="1" />
+                                            <line x1="36" y1="62" x2="600" y2="62" stroke="#f1f5f9" stroke-width="1" />
+                                            <line x1="36" y1="104" x2="600" y2="104" stroke="#f1f5f9" stroke-width="1" />
+                                            <line x1="36" y1="146" x2="600" y2="146" stroke="#f1f5f9" stroke-width="1" />
+                                            <line x1="36" y1="188" x2="600" y2="188" stroke="#f1f5f9" stroke-width="1" />
+                                        </g>
+                                        <!-- Y-Axis Labels -->
+                                        <g class="pv-y-labels" font-size="11" fill="#94a3b8" font-family="Inter, sans-serif">
+                                            <text x="14" y="24" text-anchor="start">16</text>
+                                            <text x="14" y="66" text-anchor="start">12</text>
+                                            <text x="14" y="108" text-anchor="start">8</text>
+                                            <text x="14" y="150" text-anchor="start">4</text>
+                                            <text x="14" y="192" text-anchor="start">0</text>
+                                        </g>
+
+                                        <!-- Area series paths matching Screenshot 1 curves -->
+                                        <!-- Maroon Series -->
+                                        <path class="pv-area-maroon" d="M 46 167 C 100 180, 120 188, 154 188 C 188 188, 220 178, 262 178 C 304 178, 330 180, 370 178 C 410 176, 440 140, 478 114 C 516 88, 550 40, 586 20 L 586 188 L 46 188 Z" fill="url(#gradMaroon)" />
+                                        <path class="pv-line-maroon" d="M 46 167 C 100 180, 120 188, 154 188 C 188 188, 220 178, 262 178 C 304 178, 330 180, 370 178 C 410 176, 440 140, 478 114 C 516 88, 550 40, 586 20" fill="none" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round" />
+
+                                        <!-- Green Series (Tayang) -->
+                                        <path class="pv-area-green" d="M 46 188 C 154 188, 262 188, 370 188 C 420 188, 440 180, 478 178 C 516 176, 540 65, 586 32 L 586 188 L 46 188 Z" fill="url(#gradGreen)" />
+                                        <path class="pv-line-green" d="M 46 188 C 154 188, 262 188, 370 188 C 420 188, 440 180, 478 178 C 516 176, 540 65, 586 32" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
+
+                                        <!-- Orange Series -->
+                                        <path class="pv-area-orange" d="M 46 188 C 262 188, 370 188, 478 188 C 510 188, 540 110, 586 150 L 586 188 L 46 188 Z" fill="url(#gradOrange)" />
+                                        <path class="pv-line-orange" d="M 46 188 C 262 188, 370 188, 478 188 C 510 188, 540 110, 586 150" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+
+                                        <!-- Blue Series -->
+                                        <path class="pv-area-blue" d="M 46 188 C 370 188, 440 188, 478 188 C 520 188, 550 172, 586 167 L 586 188 L 46 188 Z" fill="url(#gradBlue)" />
+                                        <path class="pv-line-blue" d="M 46 188 C 370 188, 440 188, 478 188 C 520 188, 550 172, 586 167" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
+
+                                        <!-- Red Series -->
+                                        <path class="pv-area-red" d="M 46 188 C 370 188, 478 188, 510 188 C 540 188, 560 176, 586 172 L 586 188 L 46 188 Z" fill="url(#gradRed)" />
+                                        <path class="pv-line-red" d="M 46 188 C 370 188, 478 188, 510 188 C 540 188, 560 176, 586 172" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
+
+                                        <!-- Hover guide line & point -->
+                                        <line class="pv-hover-guideline" id="pvHoverLine" x1="0" y1="20" x2="0" y2="188" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" opacity="0" />
+                                        <circle class="pv-hover-dot" id="pvHoverDot" cx="0" cy="0" r="4" fill="#ffffff" stroke="#7f1d1d" stroke-width="2" opacity="0" />
+
+                                        <!-- X-Axis Labels -->
+                                        <g class="pv-x-labels" font-size="11" fill="#64748b" font-family="Inter, sans-serif">
+                                            <text class="pv-x-tick" data-month-index="0" x="46" y="210" text-anchor="middle" cursor="pointer">Apr</text>
+                                            <text class="pv-x-tick" data-month-index="1" x="154" y="210" text-anchor="middle" cursor="pointer">May</text>
+                                            <text class="pv-x-tick" data-month-index="2" x="262" y="210" text-anchor="middle" cursor="pointer">Jun</text>
+                                            <text class="pv-x-tick" data-month-index="3" x="370" y="210" text-anchor="middle" cursor="pointer">Jul</text>
+                                            <text class="pv-x-tick" data-month-index="4" x="478" y="210" text-anchor="middle" cursor="pointer">Aug</text>
+                                            <text class="pv-x-tick" data-month-index="5" x="586" y="210" text-anchor="middle" cursor="pointer">Sep</text>
+                                        </g>
+                                    </svg>
+
+                                    <!-- Interactive Tooltip Overlay (Screenshot 2) -->
+                                    <div class="pv-chart-tooltip" id="pvChartTooltip" style="display:none;">
+                                        <div class="pv-tt-month" id="pvTtMonth">May</div>
+                                        <div class="pv-tt-list">
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq draft"></span> Draft</span>
+                                                <strong class="pv-tt-val" id="pvTtDraft">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq menunggu"></span> Menunggu Verifikasi</span>
+                                                <strong class="pv-tt-val" id="pvTtMenunggu">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq revisi"></span> Perlu Direvisi</span>
+                                                <strong class="pv-tt-val" id="pvTtRevisi">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq ditolak"></span> Ditolak</span>
+                                                <strong class="pv-tt-val" id="pvTtDitolak">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq terjadwal"></span> Terjadwal Tayang</span>
+                                                <strong class="pv-tt-val" id="pvTtTerjadwal">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq tayang"></span> Tayang</span>
+                                                <strong class="pv-tt-val" id="pvTtTayang">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq ditangguhkan"></span> Ditangguhkan</span>
+                                                <strong class="pv-tt-val" id="pvTtDitangguhkan">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq ditutup"></span> Ditutup</span>
+                                                <strong class="pv-tt-val" id="pvTtDitutup">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq kedaluwarsa"></span> Kedaluwarsa</span>
+                                                <strong class="pv-tt-val" id="pvTtKedaluwarsa">0</strong>
+                                            </div>
+                                            <div class="pv-tt-row">
+                                                <span class="pv-tt-name"><span class="pv-tt-sq diblokir"></span> Diblokir</span>
+                                                <strong class="pv-tt-val" id="pvTtDiblokir">0</strong>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="funnel-stats-col">
-                                    <div class="funnel-overall-label">Konversi keseluruhan</div>
-                                    <div class="funnel-overall-rate">0%</div>
-                                    <div class="funnel-overall-sub">dari pelamar masuk sampai diterima</div>
-
-                                    <div class="funnel-dropout-box">
-                                        <div class="funnel-dropout-title">Tidak berlanjut</div>
-                                        <div class="funnel-dropout-row">
-                                            <span>Ditolak</span>
-                                            <strong>18</strong>
+                                <!-- Right side: Total lowongan Breakdown (Screenshot 1) -->
+                                <div class="chart-total-side">
+                                    <div class="chart-total-label">Total lowongan</div>
+                                    <div class="chart-total-val" id="chartTotalLowonganVal">174</div>
+                                    <div class="chart-total-divider"></div>
+                                    <div class="chart-status-list">
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-menunggu"></span> Menunggu Verifikasi
+                                            </div>
+                                            <span class="chart-status-count" id="countMenunggu">1</span>
                                         </div>
-                                        <div class="funnel-dropout-row">
-                                            <span>Dibatalkan pelamar</span>
-                                            <strong>1404</strong>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-revisi"></span> Perlu Direvisi
+                                            </div>
+                                            <span class="chart-status-count" id="countRevisi">2</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-ditolak"></span> Ditolak
+                                            </div>
+                                            <span class="chart-status-count" id="countDitolak">1</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-ditangguhkan"></span> Ditangguhkan
+                                            </div>
+                                            <span class="chart-status-count" id="countDitangguhkan">0</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-diblokir"></span> Diblokir
+                                            </div>
+                                            <span class="chart-status-count" id="countDiblokir">3</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-terjadwal"></span> Terjadwal Tayang
+                                            </div>
+                                            <span class="chart-status-count" id="countTerjadwal">0</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-tayang"></span> Tayang
+                                            </div>
+                                            <span class="chart-status-count" id="countTayang">12</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-draft"></span> Draft
+                                            </div>
+                                            <span class="chart-status-count" id="countDraft">0</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-kedaluwarsa"></span> Kedaluwarsa
+                                            </div>
+                                            <span class="chart-status-count" id="countKedaluwarsa">7</span>
+                                        </div>
+                                        <div class="chart-status-row">
+                                            <div class="chart-status-name">
+                                                <span class="status-dot dot-ditutup"></span> Ditutup
+                                            </div>
+                                            <span class="chart-status-count" id="countDitutup">148</span>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Bottom Warning Alert Banner (Screenshot 1) -->
+                            <div class="chart-warning-banner" id="chartWarningBanner">
+                                <i class="fa-solid fa-triangle-exclamation" style="color:#d97706; font-size:14px; flex-shrink:0;"></i>
+                                <span><strong>1 lowongan</strong> menunggu verifikasi, <strong>2 lowongan</strong> perlu direvisi, <strong>1 lowongan</strong> ditolak dan <strong>3 lowongan</strong> diblokir. Periksa agar lowongan dapat segera tayang.</span>
                             </div>
                         </div>
 

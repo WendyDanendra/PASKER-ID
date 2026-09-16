@@ -1278,6 +1278,121 @@ function initNotifications() {
     });
 }
 
+function initPengajuanVerifikasiChart() {
+    const wrap = document.getElementById('chartCanvasWrap');
+    const svg = document.getElementById('pvChartSvg');
+    const tooltip = document.getElementById('pvChartTooltip');
+    const hoverLine = document.getElementById('pvHoverLine');
+    const hoverDot = document.getElementById('pvHoverDot');
+    if (!wrap || !svg || !tooltip) {
+        return;
+    }
+
+    const monthlyData = [
+        { month: 'Apr', x: 46, dotY: 167, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 2, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'May', x: 154, dotY: 188, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 0, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Jun', x: 262, dotY: 178, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 1, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Jul', x: 370, dotY: 178, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 1, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Aug', x: 478, dotY: 114, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 1, Ditangguhkan: 0, Ditutup: 5, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Sep', x: 586, dotY: 20, Draft: 0, Menunggu: 1, Revisi: 2, Ditolak: 1, Terjadwal: 0, Tayang: 11, Ditangguhkan: 0, Ditutup: 139, Kedaluwarsa: 7, Diblokir: 3 }
+    ];
+
+    const xTicks = svg.querySelectorAll('.pv-x-tick');
+
+    function showTooltipForIndex(index) {
+        if (index < 0 || index >= monthlyData.length) return;
+        const d = monthlyData[index];
+
+        document.getElementById('pvTtMonth').textContent = d.month;
+        document.getElementById('pvTtDraft').textContent = d.Draft;
+        document.getElementById('pvTtMenunggu').textContent = d.Menunggu;
+        document.getElementById('pvTtRevisi').textContent = d.Revisi;
+        document.getElementById('pvTtDitolak').textContent = d.Ditolak;
+        document.getElementById('pvTtTerjadwal').textContent = d.Terjadwal;
+        document.getElementById('pvTtTayang').textContent = d.Tayang;
+        document.getElementById('pvTtDitangguhkan').textContent = d.Ditangguhkan;
+        document.getElementById('pvTtDitutup').textContent = d.Ditutup;
+        document.getElementById('pvTtKedaluwarsa').textContent = d.Kedaluwarsa;
+        document.getElementById('pvTtDiblokir').textContent = d.Diblokir;
+
+        // Position guideline & dot
+        if (hoverLine) {
+            hoverLine.setAttribute('x1', d.x);
+            hoverLine.setAttribute('x2', d.x);
+            hoverLine.setAttribute('opacity', '1');
+        }
+        if (hoverDot) {
+            hoverDot.setAttribute('cx', d.x);
+            hoverDot.setAttribute('cy', d.dotY);
+            hoverDot.setAttribute('opacity', '1');
+        }
+
+        // Highlight x-axis tick
+        xTicks.forEach((tick, i) => {
+            if (i === index) {
+                tick.classList.add('active');
+                tick.setAttribute('font-weight', '700');
+            } else {
+                tick.classList.remove('active');
+                tick.removeAttribute('font-weight');
+            }
+        });
+
+        // Position tooltip relative to wrap
+        const wrapRect = wrap.getBoundingClientRect();
+        let posX = (d.x / 620) * wrapRect.width;
+        let posY = 10;
+
+        if (posX > wrapRect.width - 200) {
+            tooltip.style.left = 'auto';
+            tooltip.style.right = Math.max(10, wrapRect.width - posX + 15) + 'px';
+        } else {
+            tooltip.style.left = Math.max(10, posX + 15) + 'px';
+            tooltip.style.right = 'auto';
+        }
+        tooltip.style.top = posY + 'px';
+        tooltip.style.display = 'block';
+    }
+
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+        if (hoverLine) hoverLine.setAttribute('opacity', '0');
+        if (hoverDot) hoverDot.setAttribute('opacity', '0');
+        xTicks.forEach(tick => {
+            tick.classList.remove('active');
+            tick.removeAttribute('font-weight');
+        });
+    }
+
+    wrap.addEventListener('mousemove', (e) => {
+        const wrapRect = wrap.getBoundingClientRect();
+        const relX = (e.clientX - wrapRect.left) / wrapRect.width;
+        const svgX = relX * 620;
+
+        let closestIndex = 0;
+        let minDiff = Infinity;
+        monthlyData.forEach((d, idx) => {
+            const diff = Math.abs(d.x - svgX);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestIndex = idx;
+            }
+        });
+
+        showTooltipForIndex(closestIndex);
+    });
+
+    wrap.addEventListener('mouseleave', () => {
+        hideTooltip();
+    });
+
+    xTicks.forEach((tick, idx) => {
+        tick.addEventListener('mouseenter', () => {
+            showTooltipForIndex(idx);
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     bindPageSwitchers();
@@ -1292,6 +1407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSeekerJobFilters();
     initSidebarToggle();
     initNotifications();
+    initPengajuanVerifikasiChart();
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
         '&': '&amp;',
         '<': '&lt;',

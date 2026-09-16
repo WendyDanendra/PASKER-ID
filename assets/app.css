@@ -2823,20 +2823,109 @@ html, body {
     color: #0284c7;
 }
 
-/* CHART & BREAKDOWN SPLIT */
+/* CHART & BREAKDOWN SPLIT (PENGAJUAN & VERIFIKASI LOWONGAN) */
 .chart-breakdown-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(220px, 320px);
+    grid-template-columns: minmax(0, 1fr) 280px;
     gap: 24px;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .chart-canvas-wrap {
     position: relative;
     width: 100%;
-    height: 230px;
+    height: 240px;
+    min-height: 240px;
 }
 
+.pv-chart-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.pv-x-tick {
+    transition: fill 0.15s, font-weight 0.15s;
+    user-select: none;
+}
+
+.pv-x-tick:hover,
+.pv-x-tick.active {
+    fill: #0f172a;
+    font-weight: 700;
+}
+
+/* Tooltip Popup (Screenshot 2) */
+.pv-chart-tooltip {
+    position: absolute;
+    z-index: 50;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 14px 34px -4px rgba(15, 23, 42, 0.15), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+    min-width: 170px;
+    pointer-events: none;
+    transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.pv-tt-month {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.pv-tt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pv-tt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.pv-tt-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.pv-tt-sq {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.pv-tt-sq.draft { background: #94a3b8; }
+.pv-tt-sq.menunggu { background: #f59e0b; }
+.pv-tt-sq.revisi { background: #ef4444; }
+.pv-tt-sq.ditolak { background: #991b1b; }
+.pv-tt-sq.terjadwal { background: #3b82f6; }
+.pv-tt-sq.tayang { background: #10b981; }
+.pv-tt-sq.ditangguhkan { background: #ea580c; }
+.pv-tt-sq.ditutup { background: #475569; }
+.pv-tt-sq.kedaluwarsa { background: #64748b; }
+.pv-tt-sq.diblokir { background: #7f1d1d; }
+
+.pv-tt-val {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 12px;
+}
+
+/* Right side total breakdown (Screenshot 1) */
 .chart-total-side {
     border-left: 1px solid #f1f5f9;
     padding-left: 24px;
@@ -2851,11 +2940,16 @@ html, body {
 }
 
 .chart-total-val {
-    font-size: 30px;
+    font-size: 26px;
     font-weight: 800;
     color: #0f172a;
     line-height: 1.1;
-    margin-bottom: 12px;
+    margin: 4px 0 8px;
+}
+
+.chart-total-divider {
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 10px;
 }
 
 .chart-status-list {
@@ -2878,119 +2972,42 @@ html, body {
 }
 
 .status-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
+.status-dot.dot-menunggu { background: #f59e0b; }
+.status-dot.dot-revisi { background: #ef4444; }
+.status-dot.dot-ditolak { background: #991b1b; }
+.status-dot.dot-ditangguhkan { background: #ea580c; }
+.status-dot.dot-diblokir { background: #7f1d1d; }
+.status-dot.dot-terjadwal { background: #3b82f6; }
+.status-dot.dot-tayang { background: #10b981; }
+.status-dot.dot-draft { background: #94a3b8; }
+.status-dot.dot-kedaluwarsa { background: #64748b; }
+.status-dot.dot-ditutup { background: #475569; }
+
 .chart-status-count {
     font-weight: 700;
     color: #0f172a;
+    font-size: 11px;
 }
 
+/* Alert Banner (Screenshot 1) */
 .chart-warning-banner {
     margin-top: 18px;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    border-radius: 12px;
+    background: #fffdf0;
+    border: 1px solid #fef08a;
+    border-radius: 10px;
     padding: 10px 16px;
     font-size: 12px;
-    color: #92400e;
+    color: #713f12;
     display: flex;
     align-items: center;
     gap: 10px;
     line-height: 1.4;
-}
-
-/* FUNNEL WIDGET */
-.funnel-layout-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(200px, 280px);
-    gap: 30px;
-    align-items: center;
-    margin-top: 10px;
-}
-
-.funnel-bars-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    width: 100%;
-}
-
-.funnel-tier {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 14px;
-    height: 38px;
-    border-radius: 4px;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 12px;
-    transition: transform 0.15s;
-}
-
-.funnel-tier:hover {
-    transform: scaleX(1.02);
-}
-
-.funnel-tier-1 { width: 90%; background: #0284c7; }
-.funnel-tier-2 { width: 62%; background: #0ea5e9; }
-.funnel-tier-3 { width: 38%; background: #38bdf8; }
-.funnel-tier-4 { width: 22%; background: #7dd3fc; color: #0369a1; }
-
-.funnel-stats-col {
-    border-left: 1px solid #f1f5f9;
-    padding-left: 24px;
-    display: flex;
-    flex-direction: column;
-}
-
-.funnel-overall-label {
-    font-size: 12px;
-    color: #64748b;
-}
-
-.funnel-overall-rate {
-    font-size: 34px;
-    font-weight: 800;
-    color: #0284c7;
-    line-height: 1.1;
-    margin: 2px 0 4px;
-}
-
-.funnel-overall-sub {
-    font-size: 11px;
-    color: #64748b;
-    margin-bottom: 16px;
-}
-
-.funnel-dropout-box {
-    border-top: 1px solid #f1f5f9;
-    padding-top: 12px;
-    display: grid;
-    gap: 6px;
-    font-size: 12px;
-}
-
-.funnel-dropout-title {
-    font-size: 11px;
-    color: #94a3b8;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.funnel-dropout-row {
-    display: flex;
-    justify-content: space-between;
-    color: #475569;
-}
-
-.funnel-dropout-row strong {
-    color: #0f172a;
 }
 
 /* BOTTOM 3-COLUMN GRID */
@@ -4004,37 +4021,66 @@ html.dark-theme .dash-outline-btn:hover {
     color: #ffffff !important;
 }
 
-html.dark-theme .funnel-stats-col {
+html.dark-theme .pv-chart-tooltip {
+    background: #0b132b !important;
+    border-color: #1e293b !important;
+    box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark-theme .pv-tt-month {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .pv-tt-row {
+    color: #cbd5e1 !important;
+}
+
+html.dark-theme .pv-tt-val {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .pv-grid-lines line {
+    stroke: #1e293b !important;
+}
+
+html.dark-theme .pv-y-labels text,
+html.dark-theme .pv-x-labels text {
+    fill: #64748b !important;
+}
+
+html.dark-theme .pv-x-labels text.active,
+html.dark-theme .pv-x-labels text:hover {
+    fill: #f8fafc !important;
+}
+
+html.dark-theme .chart-total-side {
     border-left-color: #1e293b !important;
 }
 
-html.dark-theme .funnel-overall-label {
+html.dark-theme .chart-total-label {
     color: #94a3b8 !important;
 }
 
-html.dark-theme .funnel-overall-rate {
+html.dark-theme .chart-total-val {
     color: #f8fafc !important;
 }
 
-html.dark-theme .funnel-overall-sub {
-    color: #64748b !important;
+html.dark-theme .chart-total-divider {
+    border-bottom-color: #1e293b !important;
 }
 
-html.dark-theme .funnel-dropout-box {
-    background: #0b132b !important;
-    border: 1px solid #1e293b !important;
+html.dark-theme .chart-status-row {
+    color: #cbd5e1 !important;
 }
 
-html.dark-theme .funnel-dropout-title {
-    color: #94a3b8 !important;
-}
-
-html.dark-theme .funnel-dropout-row {
-    color: #94a3b8 !important;
-}
-
-html.dark-theme .funnel-dropout-row strong {
+html.dark-theme .chart-status-count {
     color: #f8fafc !important;
+}
+
+html.dark-theme .chart-warning-banner {
+    background: #422006 !important;
+    border-color: #78350f !important;
+    color: #fef08a !important;
 }
 
 html.dark-theme .dash-bottom-card {
