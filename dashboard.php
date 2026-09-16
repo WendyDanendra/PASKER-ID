@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/bootstrap.php';
 
 $user = require_role('employer');
-
+//test
 // Fetch Employer Profile
 $profileStatement = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
 $profileStatement->execute([$user['id']]);
