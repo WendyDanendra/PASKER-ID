@@ -2460,9 +2460,35 @@
                                 <button type="button" class="sched-pill active" data-sched-pill="bulanan" onclick="setScheduleView('bulanan')">Bulanan</button>
                             </div>
 
-                            <button type="button" class="sched-filter-btn" onclick="alert('Filter wawancara siap digunakan.')">
-                                <i class="fa-solid fa-filter" style="font-size:12px; color:#64748b;"></i> Filter
-                            </button>
+                            <div class="sched-filter-wrap">
+                                <button type="button" class="sched-filter-btn" id="schedFilterBtn" onclick="toggleScheduleFilter(event)">
+                                    <i class="fa-solid fa-filter" style="font-size:12px; color:#64748b;"></i> Filter
+                                </button>
+                                
+                                <div class="sched-filter-popover" id="schedFilterPopover">
+                                    <div class="sched-filter-header">
+                                        JENIS WAWANCARA
+                                    </div>
+                                    <div class="sched-filter-list">
+                                        <div class="sched-filter-item active" onclick="toggleFilterOption(this, 'online')">
+                                            <div class="sched-filter-item-left">
+                                                <span class="sched-check-icon"><i class="fa-solid fa-check"></i></span>
+                                                <span class="sched-type-icon"><i class="fa-solid fa-video"></i></span>
+                                                <span class="sched-type-text">Wawancara Online</span>
+                                            </div>
+                                            <span class="sched-count-badge">0</span>
+                                        </div>
+                                        <div class="sched-filter-item active" onclick="toggleFilterOption(this, 'offline')">
+                                            <div class="sched-filter-item-left">
+                                                <span class="sched-check-icon"><i class="fa-solid fa-check"></i></span>
+                                                <span class="sched-type-icon"><i class="fa-solid fa-location-dot"></i></span>
+                                                <span class="sched-type-text">Wawancara Offline</span>
+                                            </div>
+                                            <span class="sched-count-badge">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div class="sched-select-wrap">
                                 <select class="sched-select" id="schedJobFilter">

@@ -1414,8 +1414,38 @@ function resetScheduleToday() {
     updateSchedulePeriodTitle();
 }
 
+function toggleScheduleFilter(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('schedFilterPopover');
+    const btn = document.getElementById('schedFilterBtn');
+    if (!popover) return;
+    
+    const isOpen = popover.classList.contains('open');
+    popover.classList.toggle('open', !isOpen);
+    if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+function toggleFilterOption(itemEl, type) {
+    if (!itemEl) return;
+    itemEl.classList.toggle('active');
+}
+
+// Close filter popover on clicking outside
+document.addEventListener('click', (e) => {
+    const wrap = document.querySelector('.sched-filter-wrap');
+    const popover = document.getElementById('schedFilterPopover');
+    const btn = document.getElementById('schedFilterBtn');
+    if (popover && wrap && !wrap.contains(e.target)) {
+        popover.classList.remove('open');
+        if (btn) btn.classList.remove('active');
+    }
+});
+
 window.setScheduleView = setScheduleView;
 window.navigateSchedule = navigateSchedule;
 window.resetScheduleToday = resetScheduleToday;
+window.toggleScheduleFilter = toggleScheduleFilter;
+window.toggleFilterOption = toggleFilterOption;
+
 
 

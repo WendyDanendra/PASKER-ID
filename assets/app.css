@@ -3051,6 +3051,11 @@ html, body {
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
+.sched-filter-wrap {
+    position: relative;
+    display: inline-block;
+}
+
 .sched-filter-btn {
     padding: 0 14px;
     height: 34px;
@@ -3067,9 +3072,120 @@ html, body {
     transition: all 0.15s ease;
 }
 
-.sched-filter-btn:hover {
+.sched-filter-btn:hover,
+.sched-filter-btn.active {
     background: #f8fafc;
     border-color: #cbd5e1;
+}
+
+.sched-filter-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 250px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.12), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+    padding: 12px 0 6px;
+    z-index: 99;
+    display: none;
+    animation: schedPopIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sched-filter-popover.open {
+    display: block;
+}
+
+@keyframes schedPopIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.sched-filter-header {
+    padding: 0 16px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.sched-filter-list {
+    padding: 6px 6px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sched-filter-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.sched-filter-item:hover {
+    background: #f8fafc;
+}
+
+.sched-filter-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sched-check-icon {
+    width: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.sched-filter-item:not(.active) .sched-check-icon {
+    opacity: 0;
+    transform: scale(0.6);
+}
+
+.sched-type-icon {
+    font-size: 14px;
+    color: #94a3b8;
+    width: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sched-type-text {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.sched-count-badge {
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 9999px;
+    min-width: 20px;
+    text-align: center;
 }
 
 .sched-select-wrap {
@@ -3805,5 +3921,33 @@ html.dark-theme .day-hour-line {
 }
 html.dark-theme .day-hour-label {
     color: #64748b !important;
+}
+
+html.dark-theme .sched-filter-popover {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark-theme .sched-filter-header {
+    color: #64748b !important;
+    border-bottom-color: #1e293b !important;
+}
+
+html.dark-theme .sched-filter-item:hover {
+    background: #1e293b !important;
+}
+
+html.dark-theme .sched-check-icon {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .sched-type-text {
+    color: #f1f5f9 !important;
+}
+
+html.dark-theme .sched-count-badge {
+    background: #1e293b !important;
+    color: #94a3b8 !important;
 }
 
