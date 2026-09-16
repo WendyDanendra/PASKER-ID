@@ -1620,6 +1620,8 @@
                                     <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#0284c7;" data-open-modal="modal-employer-profile">
                                         <i class="fa-solid fa-paper-plane"></i> Ajukan Kembali
                                     </button>
+                                </div>
+                            </div>
                         </div>
                     <?php endif; ?>
 
@@ -2387,7 +2389,8 @@
                             <div class="day-cell"></div>
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
 
                 <!-- SECTION M: PROFIL PEMBERI KERJA VIEW -->
                 <section class="page" data-page="profil" id="page-profil">
@@ -2666,14 +2669,6 @@
             </div>
         </div>
     </div>
-            <div class="modal-footer">
-                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result">Tutup</button>
-                <button type="button" class="primary-btn" style="background:#dc2626;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">
-                    <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil Sekarang
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- ─── POP-UP STATUS PROFIL: MENUNGGU VERIFIKASI (SECTION E) ──────────────── -->
     <?php if ($pendingPopupMessage): ?>
@@ -2724,25 +2719,6 @@
         </div>
     <?php endif; ?>
 
-    <!-- ─── MODAL USER ACCOUNT (SECTION B) ────────────────────────────────────── -->
-    <div class="modal-backdrop" data-modal="modal-user-account">
-        <div class="popup-dialog-card" style="text-align:left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                <h3 style="font-size:16px; font-weight:800;">Akun Pengguna SIAPkerja</h3>
-                <button type="button" class="ghost-btn" data-close-modal="modal-user-account">×</button>
-            </div>
-            <div style="font-size:13px; display:grid; gap:10px; margin-bottom:20px;">
-                <div><span style="color:#64748b;">Nama:</span> <strong><?php echo e($user['name']); ?></strong></div>
-                <div><span style="color:#64748b;">Email:</span> <strong><?php echo e($user['email']); ?></strong></div>
-                <div><span style="color:#64748b;">Role Asli:</span> <strong><?php echo e($user['role']); ?></strong></div>
-            </div>
-            <div style="display:grid; gap:10px;">
-                <a href="dashboard.php?switch_context=seeker" class="ghost-btn" style="width:100%; justify-content:center;"><i class="fa-solid fa-repeat"></i> Beralih ke Pencari Kerja</a>
-                <a href="logout.php" class="ghost-btn" style="width:100%; justify-content:center; color:#dc2626; border-color:#fecaca;"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
-            </div>
-        </div>
-    </div>
-
     <!-- ─── MODAL NOTIFIKASI LONCENG (SECTION B) ──────────────────────────────── -->
     <div class="modal-backdrop" data-modal="modal-notifications">
         <div class="popup-dialog-card" style="text-align:left;">
@@ -2762,133 +2738,6 @@
                     </div>
                 <?php endif; ?>
             </div>
-        </div>
-    </div>
-
-    <!-- ─── MODAL WIZARD TAMBAH LOWONGAN 3 TAHAP (SECTION G) ──────────────────── -->
-    <div class="modal-backdrop" data-modal="job-create">
-        <div class="modal-panel" style="width:min(720px, 95vw);">
-            <div class="modal-header">
-                <div class="modal-title">Tambah Lowongan Perorangan</div>
-                <div class="modal-subtitle">Wizard 3 Tahap Pengisian Lowongan (Status Otomatis Draft)</div>
-            </div>
-            <form method="post" action="dashboard.php#lowongan">
-                <input type="hidden" name="create_job" value="1">
-                <div class="modal-body">
-                    <!-- TAHAP 1: INFORMASI LOKER -->
-                    <div class="modal-section">
-                        <div class="section-title">1. Informasi Loker</div>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Judul loker <span class="req">*</span></label>
-                                <input type="text" name="job_title" placeholder="Contoh: Koki Masakan Tradisional" required>
-                            </div>
-                            <div class="field">
-                                <label>Lokasi loker <span class="req">*</span></label>
-                                <input type="text" name="job_location" value="<?php echo e($profile['city'] ?: 'Kota Bekasi'); ?>" required>
-                            </div>
-                            <div class="field">
-                                <label>Jenis pekerjaan <span class="req">*</span></label>
-                                <select name="job_type" required>
-                                    <option value="Full Time">Full Time</option>
-                                    <option value="Part Time">Part Time</option>
-                                    <option value="Freelance">Freelance</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Bidang pekerjaan</label>
-                                <input type="text" name="industry" value="<?php echo e($profile['profession'] ?: 'Kuliner'); ?>">
-                            </div>
-                            <div class="field" style="grid-column: span 2;">
-                                <label>Jabatan Standar KBJI <span class="req">*</span></label>
-                                <select name="kbji_code" required>
-                                    <option value="">Pilih Jabatan Standar KBJI</option>
-                                    <?php
-                                    $kbjiStmt = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY nama_jabatan ASC');
-                                    while ($kbji = $kbjiStmt->fetch()) {
-                                        echo '<option value="' . $kbji['kode_kbji'] . '">' . htmlspecialchars($kbji['nama_jabatan']) . ' (' . $kbji['kode_kbji'] . ')</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="field" style="margin-top:12px;">
-                            <label>Deskripsi loker <span class="req">*</span></label>
-                            <textarea name="job_description" placeholder="Jelaskan detail kebutuhan dan tugas pekerjaan..." required></textarea>
-                        </div>
-                    </div>
-
-                    <!-- TAHAP 2: PERSYARATAN -->
-                    <div class="modal-section">
-                        <div class="section-title">2. Persyaratan</div>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Pendidikan minimal</label>
-                                <select name="education_required"><option>SMA / SMK</option><option>D3</option><option>S1</option><option>Tanpa Minimal</option></select>
-                            </div>
-                            <div class="field">
-                                <label>Pengalaman dibutuhkan</label>
-                                <select name="experience_required"><option>Tanpa pengalaman</option><option>1 - 2 tahun</option><option>3 - 5 tahun</option></select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAHAP 3: TAMBAHAN (TANPA FIELD STATUS PER SECTION G) -->
-                    <div class="modal-section">
-                        <div class="section-title">3. Tambahan</div>
-                        <div class="field">
-                            <label>Kuota Posisi <span class="req">*</span></label>
-                            <input type="number" name="quota" min="1" value="1" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="ghost-btn" data-close-modal="job-create">Batal</button>
-                    <!-- CTA END WIZARD: TAMBAH LOKER (ALWAYS DRAFT PER SECTION G) -->
-                    <button type="submit" class="primary-btn">TAMBAH LOKER</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ─── MODAL TUTUP LOWONGAN (SECTION K) ──────────────────────────────────── -->
-    <div class="modal-backdrop" data-modal="job-close">
-        <div class="modal-panel" style="width: min(500px, 95vw);">
-            <div class="modal-header">
-                <div class="modal-title">Tutup Lowongan</div>
-                <div class="modal-subtitle">Kuota Belum Terpenuhi. Isi alasan untuk melanjutkan.</div>
-            </div>
-            <form method="post" action="dashboard.php#lowongan">
-                <input type="hidden" name="close_job" value="1">
-                <input type="hidden" name="job_id" id="close_job_id" value="">
-                <input type="hidden" name="sisa_kuota" id="close_sisa_kuota" value="1">
-                <div class="modal-body">
-                    <div class="section-text" style="margin-bottom:8px;">
-                        Anda menutup lowongan dengan sisa kuota belum terpenuhi. Mohon pilih minimal 1 alasan:
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom: 16px;">
-                        <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar tidak sesuai kualifikasi"> Pelamar tidak sesuai kualifikasi</label>
-                        <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar menolak tawaran"> Pelamar menolak tawaran</label>
-                        <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kebutuhan perusahaan berubah"> Kebutuhan perusahaan berubah</label>
-                        <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kandidat dari luar sistem"> Kandidat dari luar sistem</label>
-                        <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Lainnya" onchange="document.getElementById('reason_lainnya').style.display = this.checked ? 'block' : 'none'"> Lainnya</label>
-                        <textarea id="reason_lainnya" name="reason_lainnya" placeholder="Tulis alasan spesifik Anda..." style="display:none; font-size:13px; padding:8px; border:1px solid #dbe7f0; border-radius:8px; min-height:60px; margin-top:4px;"></textarea>
-                    </div>
-                    
-                    <div style="background:#f0f9ff; padding:12px; border-radius:8px; border:1px solid #bae6fd;">
-                        <div style="font-weight:700; font-size:13px; color:#0369a1; margin-bottom:4px;">Posting Ulang Sisa Kuota?</div>
-                        <div style="font-size:12px; color:#0c4a6e; margin-bottom:10px;">Apakah Anda ingin mempublikasikan ulang sisa kuota ini menjadi posting turunan baru?</div>
-                        <select name="repost" required style="width:100%; padding:8px; border:1px solid #bae6fd; border-radius:6px; font-size:13px;">
-                            <option value="1">Ya, Posting Ulang Sisa Kuota</option>
-                            <option value="0">Tidak, Tutup Saja</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="ghost-btn" data-close-modal="job-close">Batal</button>
-                    <button type="submit" class="primary-btn">Simpan & Tutup Lowongan</button>
-                </div>
-            </form>
         </div>
     </div>
 

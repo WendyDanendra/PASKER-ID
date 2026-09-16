@@ -166,7 +166,7 @@ $html = ob_get_clean();
 
 // Sisipkan flash toast ke dalam body
 if ($flashHtml) {
-    $html = str_replace('<body', $flashHtml . '<body', $html);
+    $html = preg_replace('/(<body[^>]*>)/i', '$1' . "\n" . $flashHtml, $html, 1);
 }
 
 $initials = mb_strtoupper(mb_substr($ownerName, 0, 1));

@@ -887,8 +887,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const defaultPage = document.body.dataset.defaultPage || 'dashboard';
     initHashRouting(defaultPage);
-    bindModal('[data-open-modal="job-create"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
-    bindModal('[data-open-modal="job-create-mobile"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     initJobCreateWizard();
     initAdminJobReview();
     initJobReviewDrawer();
@@ -965,12 +963,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-open-applicant]').forEach((trigger) => {
         trigger.addEventListener('click', () => {
             openApplicantProfile(trigger.dataset.openApplicant);
-        });
-    });
-
-    document.querySelectorAll('[data-close-modal="applicant-profile"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            document.querySelector('[data-modal="applicant-profile"]')?.classList.remove('open');
         });
     });
 
