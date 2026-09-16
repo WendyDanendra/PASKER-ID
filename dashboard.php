@@ -16,6 +16,11 @@ $profileStatement = db()->prepare('SELECT * FROM employer_profiles WHERE user_id
 $profileStatement->execute([$user['id']]);
 $profile = $profileStatement->fetch() ?: [];
 
+// Fetch Seeker Profile (SIAPkerja data)
+$seekerStatement = db()->prepare('SELECT * FROM seeker_profiles WHERE user_id = ? LIMIT 1');
+$seekerStatement->execute([$user['id']]);
+$seekerProfile = $seekerStatement->fetch() ?: [];
+
 // Fetch Jobs
 $jobsStatement = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER BY id DESC');
 $jobsStatement->execute([$user['id']]);
@@ -1319,18 +1324,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $instagram   = trim($_POST['instagram'] ?? '');
 
         $sameLoc     = isset($_POST['same_location_siapkerja']) ? 1 : 0;
-        $province    = trim($_POST['province'] ?? '') ?: 'Jawa Barat';
-        $city        = trim($_POST['city'] ?? '') ?: 'Kota Bekasi';
-        $district    = trim($_POST['district'] ?? '') ?: 'Bekasi Selatan';
-        $village     = trim($_POST['village'] ?? '') ?: 'Pekayon Jaya';
-        $postalCode  = trim($_POST['postal_code'] ?? '') ?: '17148';
+        $province    = trim($_POST['province'] ?? '');
+        $city        = trim($_POST['city'] ?? '');
+        $district    = trim($_POST['district'] ?? '');
+        $village     = trim($_POST['village'] ?? '');
+        $postalCode  = trim($_POST['postal_code'] ?? '');
 
         $sameAddr    = isset($_POST['same_address_siapkerja']) ? 1 : 0;
-        $address     = trim($_POST['address'] ?? '') ?: 'Jl. Ahmad Yani No. 12';
+        $address     = trim($_POST['address'] ?? '');
         $addressDetail = trim($_POST['address_detail'] ?? '');
 
-        $latitude    = trim($_POST['latitude'] ?? '-6.241586');
-        $longitude   = trim($_POST['longitude'] ?? '106.992416');
+        $latitude    = trim($_POST['latitude'] ?? '');
+        $longitude   = trim($_POST['longitude'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $consent     = isset($_POST['user_consent']) ? 1 : 0;
 
@@ -1340,21 +1345,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
+        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
+        $permitDoc = $permitDoc ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null);
+        $workplacePhoto = $workplacePhoto ?: ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? null);
+
         if ($profile) {
             $stmt = db()->prepare('UPDATE employer_profiles SET 
                 owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
                 linkedin = ?, facebook = ?, instagram = ?,
                 same_location_siapkerja = ?, province = ?, city = ?, district = ?, village = ?, postal_code = ?,
                 same_address_siapkerja = ?, address = ?, address_detail = ?,
-                latitude = ?, longitude = ?, description = ?, user_consent = ?,
-                verification_status = "PENDING", verified = 0, updated_at = CURRENT_TIMESTAMP
+                latitude = ?, longitude = ?, permit_document = ?, doc_permission = ?,
+                workplace_photo = ?, doc_location_photo = ?,
+                description = ?, user_consent = ?,
+                verification_status = "PENDING", verified = 0, active_until = NULL, updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?');
             $stmt->execute([
                 $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
                 $sameLoc, $province, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
-                $latitude, $longitude, $description, $consent,
+                $latitude, $longitude, $permitDoc, $permitDoc,
+                $workplacePhoto, $workplacePhoto,
+                $description, $consent,
                 $user['id']
             ]);
         } else {
@@ -1363,15 +1377,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 linkedin, facebook, instagram,
                 same_location_siapkerja, province, city, district, village, postal_code,
                 same_address_siapkerja, address, address_detail,
-                latitude, longitude, description, user_consent,
-                verification_status, verified
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0)');
+                latitude, longitude, permit_document, doc_permission, workplace_photo, doc_location_photo,
+                description, user_consent,
+                verification_status, verified, active_until
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0, NULL)');
             $stmt->execute([
                 $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
                 $sameLoc, $province, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
-                $latitude, $longitude, $description, $consent
+                $latitude, $longitude, $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
+                $description, $consent
             ]);
         }
 

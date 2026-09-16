@@ -72,7 +72,13 @@ function bindModalsAndDrawers() {
             e.preventDefault();
             const modalId = btn.dataset.openModal;
             const modal = document.querySelector(`[data-modal="${modalId}"]`);
-            if (modal) modal.classList.add('open');
+            if (modal) {
+                modal.classList.add('open');
+                modal.dispatchEvent(new CustomEvent('modal:open'));
+                if (modalId === 'modal-employer-profile' && typeof invalidatePkiMap === 'function') {
+                    invalidatePkiMap();
+                }
+            }
         });
     });
 
@@ -81,7 +87,10 @@ function bindModalsAndDrawers() {
             e.preventDefault();
             const modalId = btn.dataset.closeModal;
             const modal = document.querySelector(`[data-modal="${modalId}"]`);
-            if (modal) modal.classList.remove('open');
+            if (modal) {
+                modal.classList.remove('open');
+                modal.dispatchEvent(new CustomEvent('modal:close'));
+            }
         });
     });
 
@@ -167,41 +176,387 @@ function bindModal(openSelector, closeSelector, modalSelector) {
     });
 }
 
-// Cascading District & Village Select Sample Generator
+// Comprehensive Cascading Locations Dictionary for Indonesia
+const ID_LOCATIONS = {
+    'DKI Jakarta': {
+        'Jakarta Pusat': {
+            'Gambir': { 'Gambir': '10110', 'Kebon Kelapa': '10120', 'Petojo Selatan': '10160', 'Duri Pulo': '10140' },
+            'Tanah Abang': { 'Bendungan Hilir': '10210', 'Karet Tengsin': '10220', 'Kebon Melati': '10230', 'Kebon Kacang': '10240', 'Kampung Bali': '10250', 'Petamburan': '10260', 'Gelora': '10270' },
+            'Menteng': { 'Menteng': '10310', 'Pegangsaan': '10320', 'Cikini': '10330', 'Gondangdia': '10350', 'Kebon Sirih': '10340' },
+            'Senen': { 'Senen': '10410', 'Kenari': '10430', 'Paseban': '10440', 'Kramat': '10450', 'Kwitang': '10420', 'Bungur': '10460' }
+        },
+        'Jakarta Selatan': {
+            'Kebayoran Baru': { 'Selong': '12110', 'Gunung': '12120', 'Kramat Pela': '12130', 'Gandaria Utara': '12140', 'Cipete Utara': '12150', 'Melawai': '12160', 'Pulo': '12160', 'Petogogan': '12170', 'Rawa Barat': '12180', 'Senayan': '12190' },
+            'Cilandak': { 'Cilandak Barat': '12430', 'Lebak Bulus': '12440', 'Pondok Labu': '12450', 'Gandaria Selatan': '12420', 'Cipete Selatan': '12410' },
+            'Setiabudi': { 'Setiabudi': '12910', 'Karet': '12920', 'Karet Semanggi': '12930', 'Karet Kuningan': '12940', 'Kuningan Timur': '12950', 'Menteng Atas': '12960', 'Pasar Manggis': '12970', 'Guntur': '12980' },
+            'Pasar Minggu': { 'Pejaten Barat': '12510', 'Pejaten Timur': '12510', 'Pasar Minggu': '12520', 'Kebagusan': '12520', 'Jati Padang': '12540', 'Ragunan': '12550', 'Cilandak Timur': '12560' },
+            'Tebet': { 'Tebet Barat': '12810', 'Tebet Timur': '12820', 'Kebon Baru': '12830', 'Bukit Duri': '12840', 'Manggarai': '12850', 'Manggarai Selatan': '12860', 'Menteng Dalam': '12870' }
+        },
+        'Jakarta Barat': {
+            'Grogol Petamburan': { 'Tanjung Duren Utara': '11470', 'Tanjung Duren Selatan': '11470', 'Tomang': '11440', 'Grogol': '11450', 'Jelambar': '11460', 'Wijaya Kusuma': '11460' },
+            'Kebon Jeruk': { 'Kebon Jeruk': '11530', 'Sukabumi Utara': '11540', 'Sukabumi Selatan': '11560', 'Kelapa Dua': '11550', 'Duri Kepa': '11510', 'Kedoya Selatan': '11520', 'Kedoya Utara': '11520' },
+            'Kembangan': { 'Kembangan Utara': '11610', 'Kembangan Selatan': '11610', 'Meruya Utara': '11620', 'Meruya Selatan': '11650', 'Srengseng': '11630', 'Joglo': '11640' }
+        },
+        'Jakarta Timur': {
+            'Jatinegara': { 'Bali Mester': '13310', 'Kampung Melayu': '13320', 'Bidara Cina': '13330', 'Cipinang Cempedak': '13340', 'Rawa Bunga': '13350', 'Cipinang Besar Utara': '13410', 'Cipinang Besar Selatan': '13410', 'Cipinang Muara': '13420' },
+            'Duren Sawit': { 'Pondok Bambu': '13430', 'Duren Sawit': '13440', 'Pondok Kelapa': '13450', 'Malaka Jaya': '13460', 'Malaka Sari': '13460', 'Pondok Kopi': '13460', 'Klender': '13470' },
+            'Matraman': { 'Pisangan Baru': '13110', 'Utan Kayu Selatan': '13120', 'Utan Kayu Utara': '13120', 'Kayu Manis': '13130', 'Pal Matraman': '13140', 'Kebon Manggis': '13150' }
+        },
+        'Jakarta Utara': {
+            'Penjaringan': { 'Pluit': '14450', 'Pejagalan': '14450', 'Kapuk Muara': '14460', 'Kamal Muara': '14470', 'Penjaringan': '14440' },
+            'Kelapa Gading': { 'Kelapa Gading Barat': '14240', 'Kelapa Gading Timur': '14240', 'Pegangsaan Dua': '14250' }
+        }
+    },
+    'Jawa Barat': {
+        'Kota Bekasi': {
+            'Bekasi Selatan': { 'Pekayon Jaya': '17148', 'Jaka Setia': '17147', 'Kayuringin Jaya': '17144', 'Marga Jaya': '17141' },
+            'Bekasi Timur': { 'Aren Jaya': '17111', 'Bekasi Jaya': '17112', 'Duren Jaya': '17111', 'Margahayu': '17113' },
+            'Bekasi Barat': { 'Bintara': '17134', 'Kranji': '17135', 'Kota Baru': '17133', 'Jaka Sampurna': '17145' },
+            'Bekasi Utara': { 'Harapan Baru': '17123', 'Harapan Jaya': '17124', 'Kaliabang Tengah': '17125', 'Perwira': '17122', 'Teluk Pucung': '17121' },
+            'Pondok Gede': { 'Jatibening': '17412', 'Jatibening Baru': '17412', 'Jaticempaka': '17411', 'Jatimakmur': '17413', 'Jatiwaringin': '17411' },
+            'Jatiasih': { 'Jatiasih': '17423', 'Jatikramat': '17421', 'Jatimekar': '17422', 'Jatirasa': '17424', 'Jatisari': '17426', 'Jatiluhur': '17425' },
+            'Medan Satria': { 'Medan Satria': '17132', 'Pejuang': '17131', 'Harapan Mulya': '17143', 'Kali Baru': '17133' },
+            'Rawalumbu': { 'Bojong Rawalumbu': '17116', 'Bojong Menteng': '17117', 'Pengasinan': '17115', 'Sepanjang Jaya': '17114' }
+        },
+        'Kabupaten Bekasi': {
+            'Cikarang Pusat': { 'Jayamukti': '17530', 'Pasirranji': '17530', 'Pasirtanjung': '17530', 'Sukamahi': '17530', 'Cicau': '17530', 'Hegarmanah': '17530' },
+            'Cikarang Selatan': { 'Ciantra': '17530', 'Cibatu': '17530', 'Pasirsari': '17530', 'Serang': '17530', 'Sukadami': '17530', 'Sukaresmi': '17530', 'Sukasejati': '17530' },
+            'Cikarang Barat': { 'Danau Indah': '17520', 'Gandamekar': '17520', 'Gandasari': '17520', 'Jatiwangi': '17520', 'Kalijaya': '17520', 'Telagamurni': '17520', 'Telajung': '17520' },
+            'Cikarang Utara': { 'Cikarang Kota': '17530', 'Harjamekar': '17530', 'Karangasih': '17530', 'Karangbaru': '17530', 'Pasirgombong': '17530', 'Simpangan': '17530', 'Tanjungsari': '17530' },
+            'Tambun Selatan': { 'Jatimulya': '17510', 'Lambangjaya': '17510', 'Lambangsari': '17510', 'Mangunjaya': '17510', 'Setiadarma': '17510', 'Setiamekar': '17510', 'Sumberjaya': '17510', 'Tambun': '17510', 'Tridaya Sakti': '17510' }
+        },
+        'Kota Bandung': {
+            'Coblong': { 'Dago': '40135', 'Lebak Gede': '40132', 'Lebak Siliwangi': '40132', 'Sadang Serang': '40133', 'Sekeloa': '40134' },
+            'Sukajadi': { 'Cipedes': '40162', 'Pasteur': '40161', 'Sukabungah': '40162', 'Sukagalih': '40163', 'Sukawarna': '40164' },
+            'Cicendo': { 'Arjuna': '40172', 'Husen Sastranegara': '40174', 'Pajajaran': '40173', 'Pamoyanan': '40173', 'Pasirkaliki': '40171', 'Sukaraja': '40175' },
+            'Sumur Bandung': { 'Braga': '40111', 'Kebon Pisang': '40112', 'Merdeka': '40113', 'Babakan Ciamis': '40117' },
+            'Bandung Wetan': { 'Cihapit': '40114', 'Citarum': '40115', 'Tamansari': '40116' }
+        },
+        'Kota Bogor': {
+            'Bogor Tengah': { 'Babakan': '16128', 'Babakan Pasar': '16126', 'Cibogor': '16124', 'Ciwaringin': '16124', 'Gudang': '16123', 'Kebon Kelapa': '16125', 'Pabaton': '16121', 'Paledang': '16122', 'Panaragan': '16125', 'Sempur': '16129', 'Tegallega': '16127' },
+            'Bogor Selatan': { 'Batutulis': '16133', 'Bondongan': '16131', 'Empang': '16132', 'Genteng': '16137', 'Harjasari': '16138', 'Kertamaya': '16138', 'Lawanggintung': '16134', 'Muarasari': '16137', 'Mulyaharja': '16135', 'Pakuan': '16134', 'Pamoyanan': '16136', 'Rancamaya': '16139', 'Ranggamekar': '16136' }
+        },
+        'Kota Depok': {
+            'Pancoran Mas': { 'Depok': '16431', 'Depok Jaya': '16432', 'Mampang': '16433', 'Pancoran Mas': '16436', 'Rangkapan Jaya': '16435', 'Rangkapan Jaya Baru': '16434' },
+            'Beji': { 'Beji': '16421', 'Beji Timur': '16422', 'Kemiri Muka': '16423', 'Kukusan': '16425', 'Pondok Cina': '16424', 'Tanah Baru': '16426' }
+        },
+        'Kota Tangerang Selatan': {
+            'Serpong': { 'Buaran': '15310', 'Ciater': '15310', 'Cilenggang': '15310', 'Lengkong Gudang': '15321', 'Lengkong Gudang Timur': '15321', 'Lengkong Wetan': '15322', 'Rawa Buntu': '15318', 'Rawa Mekar Jaya': '15310', 'Serpong': '15311' },
+            'Pondok Aren': { 'Jurang Mangu Barat': '15223', 'Jurang Mangu Timur': '15222', 'Pondok Kacang Barat': '15226', 'Pondok Kacang Timur': '15226', 'Pondok Karya': '15225', 'Pondok Jaya': '15224', 'Pondok Betung': '15221', 'Pondok Pucung': '15229', 'Pondok Aren': '15224' }
+        }
+    },
+    'Banten': {
+        'Kota Tangerang': {
+            'Tangerang': { 'Babakan': '15118', 'Buaran Indah': '15119', 'Cikokol': '15117', 'Kelapa Indah': '15117', 'Sukarasa': '15111', 'Sukasari': '15118', 'Tanah Tinggi': '15119' },
+            'Cipondoh': { 'Cipondoh': '15148', 'Cipondoh Indah': '15148', 'Cipondoh Makmur': '15148', 'Gondrong': '15146', 'Kenanga': '15146', 'Ketapang': '15147', 'Petir': '15147', 'Poris Plawad': '15141', 'Poris Plawad Indah': '15141', 'Poris Plawad Utara': '15141' }
+        },
+        'Kota Serang': {
+            'Serang': { 'Cipare': '42117', 'Kagungan': '42114', 'Kotabaru': '42112', 'Lontarbaru': '42115', 'Serang': '42116', 'Sukawana': '42116', 'Sumurpecung': '42118' }
+        }
+    },
+    'Jawa Tengah': {
+        'Kota Semarang': {
+            'Semarang Tengah': { 'Bangunharjo': '50139', 'Brumbungan': '50135', 'Gabahan': '50135', 'Jagalan': '50136', 'Karangkidul': '50136', 'Kauman': '50138', 'Kembangsari': '50133', 'Kranggan': '50139', 'Miroto': '50134', 'Pandansari': '50139', 'Pekunden': '50134', 'Pendrikan Kidul': '50131', 'Pendrikan Lor': '50131', 'Purwodinatan': '50137', 'Sekayu': '50132' },
+            'Semarang Barat': { 'Bojongsalaman': '50141', 'Bongsari': '50148', 'Cabean': '50141', 'Gisikdrono': '50149', 'Kalibanteng Kidul': '50145', 'Kalibanteng Kulon': '50145', 'Karangayu': '50149', 'Krobokan': '50141', 'Manyaran': '50147', 'Ngemplak Simongan': '50148', 'Salamanmloyo': '50149', 'Tambakharjo': '50149', 'Tawangmas': '50144', 'Tawangsari': '50144' }
+        },
+        'Kota Surakarta': {
+            'Banjarsari': { 'Banyuanyar': '57137', 'Gilingan': '57134', 'Kadipiro': '57136', 'Keprabon': '57131', 'Kestalan': '57133', 'Ketelan': '57132', 'Manahan': '57139', 'Mangkubumen': '57139', 'Nusukan': '57135', 'Punggawan': '57132', 'Setabelan': '57133', 'Sumber': '57138', 'Timuran': '57131' }
+        }
+    },
+    'DI Yogyakarta': {
+        'Kota Yogyakarta': {
+            'Danurejan': { 'Bausasran': '55211', 'Tegal Panggung': '55212', 'Suryatmajan': '55213' },
+            'Gondomanan': { 'Ngupasan': '55122', 'Prawirodirjan': '55121' },
+            'Kotagede': { 'Prenggan': '55172', 'Purbayan': '55173', 'Rejowinangun': '55171' }
+        },
+        'Kabupaten Sleman': {
+            'Depok': { 'Caturtunggal': '55281', 'Condongcatur': '55283', 'Maguwoharjo': '55282' },
+            'Mlati': { 'Sendangadi': '55285', 'Sinduadi': '55284', 'Sumberadi': '55288', 'Tirtoadi': '55287', 'Tlogoadi': '55286' }
+        }
+    },
+    'Jawa Timur': {
+        'Kota Surabaya': {
+            'Genteng': { 'Embong Kaliasin': '60271', 'Genteng': '60272', 'Kapasari': '60273', 'Ketabang': '60272', 'Peneleh': '60274' },
+            'Gubeng': { 'Airlangga': '60286', 'Barata Jaya': '60284', 'Gubeng': '60281', 'Kertajaya': '60282', 'Mojo': '60285', 'Pucang Sewu': '60283' },
+            'Wonokromo': { 'Darmo': '60241', 'Jagir': '60244', 'Ngagel': '60246', 'Ngagelrejo': '60245', 'Sawunggaling': '60242', 'Wonokromo': '60243' }
+        },
+        'Kota Malang': {
+            'Klojen': { 'Bareng': '65116', 'Gadingasri': '65115', 'Kasin': '65117', 'Kauman': '65119', 'Kiduldalem': '65119', 'Klojen': '65111', 'Oro-oro Dowo': '65112', 'Penanggungan': '65113', 'Rampal Celaket': '65111', 'Samaan': '65112', 'Sukoharjo': '65118' },
+            'Lowokwaru': { 'Dinoyo': '65144', 'Jatimulyo': '65141', 'Ketawanggede': '65145', 'Lowokwaru': '65141', 'Merjosari': '65144', 'Mojolangu': '65142', 'Sumbersari': '65145', 'Tasikmadu': '65143', 'Tlogomas': '65144', 'Tulusrejo': '65143', 'Tunggulwulung': '65143' }
+        }
+    },
+    'Bali': {
+        'Kota Denpasar': {
+            'Denpasar Barat': { 'Dauh Puri': '80113', 'Padangsambian': '80118', 'Pemecutan': '80111' },
+            'Denpasar Selatan': { 'Panjer': '80225', 'Pedungan': '80222', 'Sanur': '80228', 'Renon': '80226' }
+        },
+        'Kabupaten Badung': {
+            'Kuta': { 'Kedonganan': '80361', 'Tuban': '80361', 'Kuta': '80361', 'Legian': '80361', 'Seminyak': '80361' },
+            'Kuta Selatan': { 'Jimbaran': '80361', 'Benoa': '80361', 'Pecatu': '80361', 'Ungasan': '80361' }
+        }
+    },
+    'Sumatera Utara': {
+        'Kota Medan': {
+            'Medan Kota': { 'Kotamatsum III': '20215', 'Mesjid': '20212', 'Pasar Baru': '20212', 'Pasar Merah Barat': '20214', 'Pusat Pasar': '20211', 'Sitirejo II': '20216', 'Sudirejo I': '20218', 'Sudirejo II': '20218', 'Teladan Barat': '20217', 'Teladan Timur': '20217' },
+            'Medan Petisah': { 'Petisah Tengah': '20112', 'Sekip': '20113', 'Sei Putih Barat': '20118', 'Sei Putih Timur I': '20118', 'Sei Putih Timur II': '20118', 'Sei Putih Tengah': '20118', 'Sikambing D': '20111' }
+        }
+    }
+};
+
+const ID_COORDINATES = {
+    'DKI Jakarta': [-6.2088, 106.8456],
+    'Jawa Barat': [-6.9175, 107.6191],
+    'Banten': [-6.4058, 106.0640],
+    'Jawa Tengah': [-7.1510, 110.1403],
+    'DI Yogyakarta': [-7.7956, 110.3695],
+    'Jawa Timur': [-7.5360, 112.2384],
+    'Bali': [-8.4095, 115.1889],
+    'Sumatera Utara': [2.1154, 99.5451],
+
+    'Jakarta Pusat': [-6.1805, 106.8284],
+    'Jakarta Selatan': [-6.2615, 106.8106],
+    'Jakarta Barat': [-6.1683, 106.7588],
+    'Jakarta Timur': [-6.2250, 106.9004],
+    'Jakarta Utara': [-6.1384, 106.8640],
+    'Kota Bekasi': [-6.2383, 106.9756],
+    'Kabupaten Bekasi': [-6.3644, 107.1725],
+    'Kota Bandung': [-6.9175, 107.6191],
+    'Kota Bogor': [-6.5971, 106.8060],
+    'Kota Depok': [-6.4025, 106.7942],
+    'Kota Tangerang': [-6.1783, 106.6319],
+    'Kota Tangerang Selatan': [-6.2887, 106.7179],
+    'Kota Serang': [-6.1104, 106.1639],
+    'Kota Semarang': [-6.9667, 110.4167],
+    'Kota Surakarta': [-7.5755, 110.8243],
+    'Kota Yogyakarta': [-7.7956, 110.3695],
+    'Kabupaten Sleman': [-7.7156, 110.3556],
+    'Kota Surabaya': [-7.2575, 112.7521],
+    'Kota Malang': [-7.9797, 112.6304],
+    'Kota Denpasar': [-8.6705, 115.2126],
+    'Kabupaten Badung': [-8.5819, 115.1771],
+    'Kota Medan': [3.5952, 98.6722],
+
+    'Bekasi Selatan': [-6.2572, 106.9896],
+    'Pekayon Jaya': [-6.2639, 106.9858],
+    'Kebayoran Baru': [-6.2443, 106.7997],
+    'Coblong': [-6.8833, 107.6167],
+    'Dago': [-6.8770, 107.6186]
+};
+
+let pkiLeafletMap = null;
+let pkiMapMarker = null;
+
+function invalidatePkiMap() {
+    setTimeout(() => {
+        if (pkiLeafletMap) {
+            pkiLeafletMap.invalidateSize();
+        }
+    }, 250);
+}
+
+function updatePkiMap(lat, lng) {
+    const latInput = document.getElementById('inputLat');
+    const lngInput = document.getElementById('inputLng');
+    const mapDiv = document.getElementById('leafletMap');
+    const emptyState = document.getElementById('mapEmptyState');
+    const openBtn = document.getElementById('btnOpenMap');
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+
+    if (isNaN(latitude) || isNaN(longitude) || latitude === 0 || longitude === 0) {
+        if (mapDiv) mapDiv.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'flex';
+        if (openBtn) openBtn.style.display = 'none';
+        if (latInput) latInput.value = '';
+        if (lngInput) lngInput.value = '';
+        return;
+    }
+
+    if (latInput) latInput.value = latitude.toFixed(6);
+    if (lngInput) lngInput.value = longitude.toFixed(6);
+
+    if (emptyState) emptyState.style.display = 'none';
+    if (mapDiv) mapDiv.style.display = 'block';
+
+    if (openBtn) {
+        openBtn.style.display = 'inline-flex';
+        openBtn.href = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    }
+
+    if (typeof L === 'undefined') return;
+
+    if (!pkiLeafletMap) {
+        pkiLeafletMap = L.map('leafletMap', {
+            center: [latitude, longitude],
+            zoom: 15,
+            dragging: true,
+            touchZoom: true,
+            scrollWheelZoom: true,
+            doubleClickZoom: true,
+            boxZoom: true
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(pkiLeafletMap);
+
+        pkiMapMarker = L.marker([latitude, longitude], {
+            draggable: false,
+            interactive: false
+        }).addTo(pkiLeafletMap);
+    } else {
+        pkiLeafletMap.setView([latitude, longitude], 15);
+        if (pkiMapMarker) {
+            pkiMapMarker.setLatLng([latitude, longitude]);
+        } else {
+            pkiMapMarker = L.marker([latitude, longitude], { draggable: false, interactive: false }).addTo(pkiLeafletMap);
+        }
+        invalidatePkiMap();
+    }
+}
+
+function autoGeocodeLocation() {
+    const prov = document.getElementById('selectProvince')?.value || '';
+    const city = document.getElementById('selectCity')?.value || '';
+    const dist = document.getElementById('selectDistrict')?.value || '';
+    const vill = document.getElementById('selectVillage')?.value || '';
+
+    let coords = null;
+    if (vill && ID_COORDINATES[vill]) {
+        coords = ID_COORDINATES[vill];
+    } else if (dist && ID_COORDINATES[dist]) {
+        coords = ID_COORDINATES[dist];
+    } else if (city && ID_COORDINATES[city]) {
+        coords = ID_COORDINATES[city];
+    } else if (prov && ID_COORDINATES[prov]) {
+        coords = ID_COORDINATES[prov];
+    }
+
+    if (coords) {
+        updatePkiMap(coords[0], coords[1]);
+    } else {
+        const existingLat = document.getElementById('inputLat')?.value;
+        const existingLng = document.getElementById('inputLng')?.value;
+        if (existingLat && existingLng) {
+            updatePkiMap(existingLat, existingLng);
+        } else {
+            updatePkiMap(null, null);
+        }
+    }
+}
+
+// Cascading Province -> City -> District -> Village -> Postal Code
 function bindCascadingLocation() {
     const provSelect = document.getElementById('selectProvince');
     const citySelect = document.getElementById('selectCity');
     const distSelect = document.getElementById('selectDistrict');
     const villSelect = document.getElementById('selectVillage');
+    const postalInput = document.getElementById('inputPostalCode');
 
     if (!provSelect || !citySelect || !distSelect || !villSelect) return;
 
-    const districts = {
-        'Kota Bekasi': ['Bekasi Selatan', 'Bekasi Timur', 'Bekasi Barat', 'Bekasi Utara', 'Pondok Gede', 'Jatiasih'],
-        'Kabupaten Bekasi': ['Cikarang Pusat', 'Cikarang Selatan', 'Cikarang Barat', 'Cikarang Utara', 'Tambun Selatan'],
-        'Kota Bandung': ['Coblong', 'Sukajadi', 'Cicendo', 'Sumur Bandung', 'Bandung Wetan'],
-        'Jakarta Selatan': ['Kebayoran Baru', 'Cilandak', 'Pasar Minggu', 'Setiabudi', 'Tebet']
-    };
+    // 1. Populate Provinces
+    const savedProv = provSelect.dataset.saved || '';
+    const savedCity = citySelect.dataset.saved || '';
+    const savedDist = distSelect.dataset.saved || '';
+    const savedVill = villSelect.dataset.saved || '';
 
-    const villages = {
-        'Bekasi Selatan': ['Pekayon Jaya', 'Jatibening', 'Jakasetia', 'Kayuringin Jaya', 'Marga Jaya'],
-        'Bekasi Timur': ['Duren Jaya', 'Bekasi Jaya', 'Margahayu'],
-        'Cikarang Pusat': ['Jayamukti', 'Pasirranji', 'Sukamahi'],
-        'Coblong': ['Dago', 'Lebak Siliwangi', 'Sekeloa']
-    };
+    const provinces = Object.keys(ID_LOCATIONS);
+    provSelect.innerHTML = '<option value="">Pilih Provinsi</option>' + provinces.map(p => `<option value="${p}" ${p === savedProv ? 'selected' : ''}>${p}</option>`).join('');
+
+    function updateCities(selectedProv, preselectCity = '') {
+        citySelect.innerHTML = '<option value="">Pilih Kabupaten / Kota</option>';
+        distSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        villSelect.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
+
+        if (!selectedProv || !ID_LOCATIONS[selectedProv]) {
+            if (preselectCity) {
+                citySelect.innerHTML += `<option value="${preselectCity}" selected>${preselectCity}</option>`;
+            }
+            return;
+        }
+
+        const cities = Object.keys(ID_LOCATIONS[selectedProv]);
+        citySelect.innerHTML += cities.map(c => `<option value="${c}" ${c === preselectCity ? 'selected' : ''}>${c}</option>`).join('');
+    }
+
+    function updateDistricts(selectedProv, selectedCity, preselectDist = '') {
+        distSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        villSelect.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
+
+        if (!selectedProv || !selectedCity || !ID_LOCATIONS[selectedProv]?.[selectedCity]) {
+            if (preselectDist) {
+                distSelect.innerHTML += `<option value="${preselectDist}" selected>${preselectDist}</option>`;
+            }
+            return;
+        }
+
+        const districts = Object.keys(ID_LOCATIONS[selectedProv][selectedCity]);
+        distSelect.innerHTML += districts.map(d => `<option value="${d}" ${d === preselectDist ? 'selected' : ''}>${d}</option>`).join('');
+    }
+
+    function updateVillages(selectedProv, selectedCity, selectedDist, preselectVill = '') {
+        villSelect.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
+
+        if (!selectedProv || !selectedCity || !selectedDist || !ID_LOCATIONS[selectedProv]?.[selectedCity]?.[selectedDist]) {
+            if (preselectVill) {
+                villSelect.innerHTML += `<option value="${preselectVill}" selected>${preselectVill}</option>`;
+            }
+            return;
+        }
+
+        const villages = Object.keys(ID_LOCATIONS[selectedProv][selectedCity][selectedDist]);
+        villSelect.innerHTML += villages.map(v => `<option value="${v}" ${v === preselectVill ? 'selected' : ''}>${v}</option>`).join('');
+    }
+
+    // Initial fill if data is saved
+    if (savedProv) {
+        updateCities(savedProv, savedCity);
+        if (savedCity) {
+            updateDistricts(savedProv, savedCity, savedDist);
+            if (savedDist) {
+                updateVillages(savedProv, savedCity, savedDist, savedVill);
+            }
+        }
+    }
+
+    // Event listeners
+    provSelect.addEventListener('change', () => {
+        updateCities(provSelect.value);
+        autoGeocodeLocation();
+    });
 
     citySelect.addEventListener('change', () => {
-        const val = citySelect.value;
-        const list = districts[val] || ['Bekasi Selatan', 'Cikarang Pusat', 'Coblong', 'Kebayoran Baru'];
-        distSelect.innerHTML = '<option value="">Pilih Kecamatan</option>' + list.map(d => `<option value="${d}">${d}</option>`).join('');
-        villSelect.innerHTML = '<option value="">Pilih Kelurahan/Desa</option>';
+        updateDistricts(provSelect.value, citySelect.value);
+        autoGeocodeLocation();
     });
 
     distSelect.addEventListener('change', () => {
-        const val = distSelect.value;
-        const list = villages[val] || ['Pekayon Jaya', 'Jatibening', 'Jakasetia', 'Marga Jaya'];
-        villSelect.innerHTML = '<option value="">Pilih Kelurahan/Desa</option>' + list.map(v => `<option value="${v}">${v}</option>`).join('');
+        updateVillages(provSelect.value, citySelect.value, distSelect.value);
+        autoGeocodeLocation();
     });
+
+    villSelect.addEventListener('change', () => {
+        const prov = provSelect.value;
+        const city = citySelect.value;
+        const dist = distSelect.value;
+        const vill = villSelect.value;
+
+        if (postalInput && prov && city && dist && vill && ID_LOCATIONS[prov]?.[city]?.[dist]?.[vill]) {
+            postalInput.value = ID_LOCATIONS[prov][city][dist][vill];
+        }
+        autoGeocodeLocation();
+    });
+
+    // Check if lat/lng already exists
+    const initialLat = document.getElementById('inputLat')?.value;
+    const initialLng = document.getElementById('inputLng')?.value;
+    if (initialLat && initialLng) {
+        updatePkiMap(initialLat, initialLng);
+    } else {
+        autoGeocodeLocation();
+    }
 }
 
 function initRichEditors(root) {

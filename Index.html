@@ -7,6 +7,7 @@
     <title>Karirhub - Pemberi Kerja Individu</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="assets/app.css">
     <style>
         :root {
@@ -2446,7 +2447,7 @@
                     <div class="modal-subtitle">Lengkapi biodata individu untuk pengajuan verifikasi akun Pemberi Kerja.</div>
                 </div>
             </div>
-            <form method="post" action="dashboard.php">
+            <form method="post" action="dashboard.php" enctype="multipart/form-data">
                 <input type="hidden" name="submit_profile" value="1">
                 <div class="modal-body">
                     <!-- IDENTITAS WAJIB -->
@@ -2459,15 +2460,15 @@
                             </div>
                             <div class="field">
                                 <label>NIK <span class="req">*</span> <small style="color:#0284c7; font-weight:600;"><i class="fa-solid fa-lock"></i> SIAPkerja Protected</small></label>
-                                <input type="text" name="nik" value="<?php echo e($profile['nik'] ?: '3275012304890001'); ?>" readonly required style="background:#f1f5f9; cursor:not-allowed; color:#475569; font-weight:600;" title="NIK berasal dari akun SIAPkerja dan bersifat read-only">
+                                <input type="text" name="nik" value="<?php echo e($profile['nik'] ?? $seekerProfile['nik'] ?? ''); ?>" readonly required style="background:#f1f5f9; cursor:not-allowed; color:#475569; font-weight:600;" title="NIK berasal dari akun SIAPkerja dan bersifat read-only">
                             </div>
                             <div class="field">
                                 <label>Nomor Telepon Aktif <span class="req">*</span></label>
-                                <input type="text" name="phone" value="<?php echo e($profile['phone'] ?? ''); ?>" required placeholder="Contoh: 08123456789">
+                                <input type="text" name="phone" value="<?php echo e($profile['phone'] ?? $seekerProfile['phone'] ?? ''); ?>" required placeholder="Contoh: 08123456789">
                             </div>
                             <div class="field">
                                 <label>Nomor WhatsApp <span class="req">*</span></label>
-                                <input type="text" name="whatsapp" value="<?php echo e($profile['whatsapp'] ?? ''); ?>" required placeholder="Contoh: 08123456789">
+                                <input type="text" name="whatsapp" value="<?php echo e($profile['whatsapp'] ?? $profile['phone'] ?? $seekerProfile['phone'] ?? ''); ?>" required placeholder="Contoh: 08123456789">
                             </div>
                             <div class="field">
                                 <label>Jenis Profesi / Usaha Individu <span class="req">*</span></label>
@@ -2499,65 +2500,55 @@
                         <div class="section-title">3. Wilayah Administratif Domisili</div>
                         <div style="margin-bottom:12px;">
                             <label style="font-size:13px; font-weight:700; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
-                                <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" <?php echo ($profile['same_location_siapkerja'] ?? 1) ? 'checked' : ''; ?> onchange="document.getElementById('locationFieldsGrid').style.display = this.checked ? 'none' : 'grid';">
+                                <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" <?php echo !empty($profile['same_location_siapkerja']) ? 'checked' : ''; ?> onchange="document.getElementById('locationFieldsGrid').style.display = this.checked ? 'none' : 'grid';">
                                 <span>Sama seperti lokasi domisili di SIAPkerja?</span>
                             </label>
                         </div>
-                        <div class="field-grid" id="locationFieldsGrid" style="<?php echo ($profile['same_location_siapkerja'] ?? 1) ? 'display:none;' : 'display:grid;'; ?>">
+                        <div class="field-grid" id="locationFieldsGrid" style="<?php echo !empty($profile['same_location_siapkerja']) ? 'display:none;' : 'display:grid;'; ?>">
                             <div class="field">
                                 <label>Provinsi <span class="req">*</span></label>
-                                <select name="province" id="selectProvince">
-                                    <option value="Jawa Barat" <?php echo ($profile['province'] ?? 'Jawa Barat') === 'Jawa Barat' ? 'selected' : ''; ?>>Jawa Barat</option>
-                                    <option value="DKI Jakarta" <?php echo ($profile['province'] ?? '') === 'DKI Jakarta' ? 'selected' : ''; ?>>DKI Jakarta</option>
-                                    <option value="Jawa Tengah" <?php echo ($profile['province'] ?? '') === 'Jawa Tengah' ? 'selected' : ''; ?>>Jawa Tengah</option>
-                                    <option value="Jawa Timur" <?php echo ($profile['province'] ?? '') === 'Jawa Timur' ? 'selected' : ''; ?>>Jawa Timur</option>
+                                <select name="province" id="selectProvince" data-saved="<?php echo e($profile['province'] ?? ''); ?>">
+                                    <option value="">Pilih Provinsi</option>
                                 </select>
                             </div>
                             <div class="field">
                                 <label>Kabupaten / Kota <span class="req">*</span></label>
-                                <select name="city" id="selectCity">
-                                    <option value="Kota Bekasi" <?php echo ($profile['city'] ?? 'Kota Bekasi') === 'Kota Bekasi' ? 'selected' : ''; ?>>Kota Bekasi</option>
-                                    <option value="Kabupaten Bekasi" <?php echo ($profile['city'] ?? '') === 'Kabupaten Bekasi' ? 'selected' : ''; ?>>Kabupaten Bekasi</option>
-                                    <option value="Jakarta Selatan" <?php echo ($profile['city'] ?? '') === 'Jakarta Selatan' ? 'selected' : ''; ?>>Jakarta Selatan</option>
-                                    <option value="Bandung" <?php echo ($profile['city'] ?? '') === 'Bandung' ? 'selected' : ''; ?>>Bandung</option>
+                                <select name="city" id="selectCity" data-saved="<?php echo e($profile['city'] ?? ''); ?>">
+                                    <option value="">Pilih Kabupaten / Kota</option>
                                 </select>
                             </div>
                             <div class="field">
                                 <label>Kecamatan <span class="req">*</span></label>
-                                <select name="district" id="selectDistrict">
-                                    <option value="Bekasi Selatan" <?php echo ($profile['district'] ?? 'Bekasi Selatan') === 'Bekasi Selatan' ? 'selected' : ''; ?>>Bekasi Selatan</option>
-                                    <option value="Bekasi Timur" <?php echo ($profile['district'] ?? '') === 'Bekasi Timur' ? 'selected' : ''; ?>>Bekasi Timur</option>
-                                    <option value="Bekasi Barat" <?php echo ($profile['district'] ?? '') === 'Bekasi Barat' ? 'selected' : ''; ?>>Bekasi Barat</option>
+                                <select name="district" id="selectDistrict" data-saved="<?php echo e($profile['district'] ?? ''); ?>">
+                                    <option value="">Pilih Kecamatan</option>
                                 </select>
                             </div>
                             <div class="field">
                                 <label>Kelurahan / Desa <span class="req">*</span></label>
-                                <select name="village" id="selectVillage">
-                                    <option value="Pekayon Jaya" <?php echo ($profile['village'] ?? 'Pekayon Jaya') === 'Pekayon Jaya' ? 'selected' : ''; ?>>Pekayon Jaya</option>
-                                    <option value="Jatibening" <?php echo ($profile['village'] ?? '') === 'Jatibening' ? 'selected' : ''; ?>>Jatibening</option>
-                                    <option value="Margahayu" <?php echo ($profile['village'] ?? '') === 'Margahayu' ? 'selected' : ''; ?>>Margahayu</option>
+                                <select name="village" id="selectVillage" data-saved="<?php echo e($profile['village'] ?? ''); ?>">
+                                    <option value="">Pilih Kelurahan / Desa</option>
                                 </select>
                             </div>
                             <div class="field">
                                 <label>Kode Pos</label>
-                                <input type="text" name="postal_code" id="inputPostalCode" value="<?php echo e($profile['postal_code'] ?? '17148'); ?>" placeholder="Contoh: 17148">
+                                <input type="text" name="postal_code" id="inputPostalCode" value="<?php echo e($profile['postal_code'] ?? ''); ?>" placeholder="Contoh: 17148">
                             </div>
                         </div>
                     </div>
 
-                    <!-- ALAMAT LENGKAP & PETA READ-ONLY (SECTION E) -->
+                    <!-- ALAMAT LENGKAP, DOKUMEN & PETA READ-ONLY (SECTION E) -->
                     <div class="modal-section">
-                        <div class="section-title">4. Alamat Lengkap & Peta Tempat Kerja</div>
+                        <div class="section-title">4. Alamat Lengkap, Dokumen & Peta Tempat Kerja</div>
                         <div style="margin-bottom:12px;">
                             <label style="font-size:13px; font-weight:700; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
-                                <input type="checkbox" name="same_address_siapkerja" id="cbSameAddress" value="1" <?php echo ($profile['same_address_siapkerja'] ?? 1) ? 'checked' : ''; ?> onchange="document.getElementById('addressFieldsGroup').style.display = this.checked ? 'none' : 'block';">
+                                <input type="checkbox" name="same_address_siapkerja" id="cbSameAddress" value="1" <?php echo !empty($profile['same_address_siapkerja']) ? 'checked' : ''; ?> onchange="document.getElementById('addressFieldsGroup').style.display = this.checked ? 'none' : 'block';">
                                 <span>Sama seperti alamat lengkap domisili di SIAPkerja?</span>
                             </label>
                         </div>
-                        <div id="addressFieldsGroup" style="<?php echo ($profile['same_address_siapkerja'] ?? 1) ? 'display:none;' : 'display:block;'; ?>">
+                        <div id="addressFieldsGroup" style="<?php echo !empty($profile['same_address_siapkerja']) ? 'display:none;' : 'display:block;'; ?>">
                             <div class="field" style="margin-bottom:10px;">
                                 <label>Alamat Lengkap Tempat Kerja <span class="req">*</span></label>
-                                <input type="text" name="address" id="inputAddress" value="<?php echo e($profile['address'] ?? 'Jl. Ahmad Yani No. 12'); ?>" placeholder="Nama Jalan, No. Rumah, RT/RW">
+                                <input type="text" name="address" id="inputAddress" value="<?php echo e($profile['address'] ?? ($seekerProfile['domicile_address'] ?? $seekerProfile['ktp_address'] ?? '')); ?>" placeholder="Nama Jalan, No. Rumah, RT/RW">
                             </div>
                             <div class="field" style="margin-bottom:12px;">
                                 <label>Detail Alamat / Patokan (Opsional)</label>
@@ -2565,24 +2556,49 @@
                             </div>
                         </div>
 
+                        <!-- UPLOAD DOKUMEN PENDUKUNG & FOTO LOKASI -->
+                        <div class="field-grid" style="margin-top:12px;">
+                            <div class="field">
+                                <label>Dokumen Pendukung / Surat Izin (Opsional)</label>
+                                <input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png">
+                                <?php if (!empty($profile['permit_document']) || !empty($profile['doc_permission'])): ?>
+                                    <?php $dPath = $profile['permit_document'] ?? $profile['doc_permission']; ?>
+                                    <div class="tiny" style="margin-top:4px; color:#0284c7;">
+                                        <i class="fa-solid fa-file-circle-check"></i> Dokumen terunggah: <a href="<?php echo e($dPath); ?>" target="_blank" style="color:#0284c7; text-decoration:underline;"><?php echo e(basename($dPath)); ?></a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="field">
+                                <label>Foto Lokasi / Tempat Kerja (Opsional)</label>
+                                <input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp">
+                                <?php if (!empty($profile['workplace_photo']) || !empty($profile['doc_location_photo'])): ?>
+                                    <?php $pPath = $profile['workplace_photo'] ?? $profile['doc_location_photo']; ?>
+                                    <div class="tiny" style="margin-top:4px; color:#0284c7;">
+                                        <i class="fa-solid fa-image"></i> Foto terunggah: <a href="<?php echo e($pPath); ?>" target="_blank" style="color:#0284c7; text-decoration:underline;"><?php echo e(basename($pPath)); ?></a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
                         <!-- HIDDEN KOORDINAT (TIDAK TAMPILKAN INPUT LAT/LNG VISIBLE) -->
-                        <input type="hidden" name="latitude" id="inputLat" value="<?php echo e($profile['latitude'] ?: '-6.241586'); ?>">
-                        <input type="hidden" name="longitude" id="inputLng" value="<?php echo e($profile['longitude'] ?: '106.992416'); ?>">
+                        <input type="hidden" name="latitude" id="inputLat" value="<?php echo e($profile['latitude'] ?? ''); ?>">
+                        <input type="hidden" name="longitude" id="inputLng" value="<?php echo e($profile['longitude'] ?? ''); ?>">
 
                         <!-- PETA READ-ONLY PREVIEW CONTAINER -->
-                        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:14px; padding:16px; margin-top:12px;">
+                        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:14px; padding:16px; margin-top:14px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                 <div style="font-size:13px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-map-location-dot" style="color:#0284c7;"></i> Peta Lokasi (Marker Read-Only)</div>
-                                <a href="https://maps.google.com/?q=<?php echo urlencode(($profile['latitude'] ?: '-6.241586') . ',' . ($profile['longitude'] ?: '106.992416')); ?>" target="_blank" class="ghost-btn" style="height:28px; padding:0 10px; font-size:11px; background:#fff; border-color:#cbd5e1; text-decoration:none;">
+                                <a id="btnOpenMap" href="#" target="_blank" class="ghost-btn" style="height:28px; padding:0 10px; font-size:11px; background:#fff; border-color:#cbd5e1; text-decoration:none; display:none;">
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Peta
                                 </a>
                             </div>
-                            <div id="pkiMapContainer" style="height:180px; width:100%; border-radius:10px; background:#e2e8f0; display:grid; place-items:center; color:#475569; font-size:12px;">
-                                <div style="text-align:center; padding:16px;">
-                                    <i class="fa-solid fa-location-dot" style="font-size:28px; color:#ef4444; margin-bottom:6px;"></i>
-                                    <div style="font-weight:700; color:#0f172a;">Koordinat Otomatis Terikat: <?php echo e($profile['latitude'] ?: '-6.241586'); ?>, <?php echo e($profile['longitude'] ?: '106.992416'); ?></div>
-                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Marker Read-Only (Marker tidak draggable & klik tidak mengubah posisi. Pan/Zoom diizinkan).</div>
+                            <div id="pkiMapContainer" style="height:200px; width:100%; border-radius:10px; background:#f1f5f9; position:relative; overflow:hidden;">
+                                <div id="mapEmptyState" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#64748b; font-size:12px; text-align:center; padding:16px;">
+                                    <i class="fa-solid fa-map-location-dot" style="font-size:28px; color:#94a3b8; margin-bottom:6px;"></i>
+                                    <div style="font-weight:700; color:#334155;">Pratinjau peta tidak tersedia</div>
+                                    <div style="font-size:11px; color:#94a3b8; margin-top:2px;">Pilih wilayah atau isi alamat tempat kerja untuk memuat peta.</div>
                                 </div>
+                                <div id="leafletMap" style="height:100%; width:100%; display:none;"></div>
                             </div>
                         </div>
                     </div>
@@ -2592,7 +2608,7 @@
                         <div class="section-title">5. Pernyataan Persetujuan (Consent Wajib)</div>
                         <div class="field">
                             <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer;">
-                                <input type="checkbox" name="user_consent" value="1" required checked style="margin-top:2px;">
+                                <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="margin-top:2px;">
                                 <span>Saya menyatakan bahwa seluruh data yang diisikan adalah benar, sah, dan valid sesuai hukum yang berlaku. <span class="req">*</span></span>
                             </label>
                         </div>
@@ -2770,6 +2786,7 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="assets/app.js"></script>
     <script>
     window.testCloseJob = function(jobId, sisaKuota) {
