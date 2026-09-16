@@ -1447,349 +1447,532 @@
 </head>
 
 <body data-default-page="dashboard">
-    <div class="app-shell">
-        <!-- SIDEBAR PEMBERI KERJA INDIVIDU (REUSE & REF ACTORED PER SECTION B) -->
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-mark"><i class="fa-solid fa-sparkles"></i></div>
-                <div class="brand-text">
-                    <h1>Karirhub</h1>
-                    <p>Pemberi Kerja Individu</p>
-                </div>
+    <div class="app-layout-wrapper">
+        <!-- NARROW SIDEBAR RAIL (60px) (SCREENSHOT 1) -->
+        <aside class="sidebar-rail">
+            <!-- Top Logo Icon (Karirhub glyph) -->
+            <div class="sidebar-rail-logo" title="Karirhub" data-nav="dashboard">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;">
+                    <circle cx="73" cy="22" r="13" fill="#2590F9" />
+                    <path d="M22 32 C15.37 32 10 37.37 10 44 C10 50.63 15.37 56 22 56 H42 C44.2 56 46 57.8 46 60 V76 C46 82.63 51.37 88 58 88 C64.63 88 70 82.63 70 76 V50 C70 40.06 61.94 32 52 32 H22 Z" fill="#2590F9" />
+                </svg>
             </div>
 
-            <!-- MENU UTAMA PER SECTION B (HAPUS TRANSFER PENGELOLA) -->
-            <div class="menu-list" id="menuList">
-                <button type="button" class="menu-item active" data-page="dashboard">
-                    <i class="fa-regular fa-chart-bar"></i>
-                    <span class="menu-label"><strong>Dasbor</strong><span>Ringkasan akun</span></span>
+            <!-- Hamburger Toggle Button -->
+            <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <!-- Navigation Icons -->
+            <div class="sidebar-rail-nav">
+                <button type="button" class="rail-btn active" data-page="dashboard" title="Dasbor">
+                    <i class="fa-solid fa-chart-line"></i>
                 </button>
-                <button type="button" class="menu-item" data-page="lowongan">
+                <button type="button" class="rail-btn" data-page="lowongan" title="Lowongan">
                     <i class="fa-solid fa-briefcase"></i>
-                    <span class="menu-label"><strong>Lowongan</strong><span>Kelola posting</span></span>
                 </button>
-                <button type="button" class="menu-item" data-page="jadwal">
-                    <i class="fa-regular fa-calendar-days"></i>
-                    <span class="menu-label"><strong>Jadwal Wawancara</strong><span>Agenda kandidat</span></span>
+                <button type="button" class="rail-btn" data-page="jadwal" title="Jadwal Wawancara">
+                    <i class="fa-regular fa-calendar-check"></i>
                 </button>
-                <button type="button" class="menu-item" data-page="profil">
-                    <i class="fa-regular fa-id-card"></i>
-                    <span class="menu-label"><strong>Profil Pemberi Kerja</strong><span>Informasi individu</span></span>
+                <button type="button" class="rail-btn" data-page="transfer" title="Transfer Pengelola">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                </button>
+                <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi kerja">
+                    <i class="fa-regular fa-building"></i>
                 </button>
             </div>
 
-            <div class="sidebar-spacer"></div>
+            <div class="rail-spacer"></div>
 
-            <!-- BAGIAN BAWAH SIDEBAR: TEMA TAMPILAN & AKUN PENGGUNA (SECTION B) -->
-            <div style="padding: 0 4px; display:grid; gap:10px;">
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:11px; font-weight:700; color:#64748b; padding-left:4px;"><i class="fa-solid fa-circle-half-stroke"></i> Tema</span>
-                    <div style="display:flex; gap:4px;">
-                        <button type="button" onclick="setTheme('light')" data-theme-option="light" class="ghost-btn" style="height:28px; padding:0 8px; font-size:11px; border-radius:8px;">Terang</button>
-                        <button type="button" onclick="setTheme('dark')" data-theme-option="dark" class="ghost-btn" style="height:28px; padding:0 8px; font-size:11px; border-radius:8px;">Gelap</button>
-                        <button type="button" onclick="setTheme('system')" data-theme-option="system" class="ghost-btn" style="height:28px; padding:0 8px; font-size:11px; border-radius:8px;">Sistem</button>
-                    </div>
-                </div>
-
-                <div class="profile-card" data-open-modal="modal-user-account" style="cursor:pointer;" title="Pengaturan Akun Pengguna">
-                    <div class="profile-avatar" id="sidebarAvatar">
-                        <?php echo mb_strtoupper(mb_substr($profile['owner_name'] ?? $user['name'], 0, 2)); ?>
-                    </div>
-                    <div style="flex:1; min-width:0;">
-                        <strong id="sidebarName" style="display:block; font-size:12px; line-height:1.2; font-weight:700; color:var(--text-color, #0f172a); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo e($profile['owner_name'] ?? $user['name']); ?></strong>
-                        <span id="sidebarEmail" style="display:block; font-size:11px; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo e($user['email']); ?></span>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#cbd5e1; font-size:11px;"></i>
-                </div>
+            <!-- Bottom Theme & Account Avatar -->
+            <div class="rail-bottom">
+                <button type="button" class="rail-btn" id="themeToggleBtn" title="Ganti Tema Tampilan" onclick="toggleThemeCycle()">
+                    <i class="fa-solid fa-display"></i>
+                </button>
+                <button type="button" class="rail-avatar-btn" data-open-modal="modal-user-account" id="sidebarAvatar" title="Akun Pengguna">
+                    <?php echo mb_strtoupper(mb_substr($profile['owner_name'] ?? $user['name'], 0, 2)); ?>
+                </button>
             </div>
         </aside>
 
-        <div class="main">
-            <!-- TOPBAR (SECTION B) -->
-            <header class="topbar">
-                <button id="sidebarToggle" style="background:none; border:none; font-size:18px; color:#475569; cursor:pointer; margin-right:8px;">
+        <!-- FLYOUT / EXPANDED NAVIGATION DRAWER (SCREENSHOT 3) -->
+        <div class="nav-drawer-backdrop" id="drawerBackdrop"></div>
+        <div class="nav-drawer" id="navDrawer">
+            <div class="drawer-header">
+                <div class="drawer-brand-logo">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:32px;height:32px;">
+                        <circle cx="73" cy="22" r="13" fill="#2590F9" />
+                        <path d="M22 32 C15.37 32 10 37.37 10 44 C10 50.63 15.37 56 22 56 H42 C44.2 56 46 57.8 46 60 V76 C46 82.63 51.37 88 58 88 C64.63 88 70 82.63 70 76 V50 C70 40.06 61.94 32 52 32 H22 Z" fill="#2590F9" />
+                    </svg>
+                </div>
+                <div class="drawer-brand-text">
+                    <h3>Karirhub</h3>
+                    <p>Pemberi Kerja</p>
+                </div>
+                <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup">
                     <i class="fa-solid fa-bars"></i>
                 </button>
+            </div>
 
-                <div class="crumbs" id="crumbs">
+            <div class="drawer-menu-list">
+                <button type="button" class="drawer-menu-item active" data-page="dashboard">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Dasbor</span>
+                </button>
+                <button type="button" class="drawer-menu-item" data-page="lowongan">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span>Lowongan</span>
+                </button>
+                <button type="button" class="drawer-menu-item" data-page="jadwal">
+                    <i class="fa-regular fa-calendar-check"></i>
+                    <span>Jadwal Wawancara</span>
+                </button>
+                <button type="button" class="drawer-menu-item" data-page="transfer">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                    <span>Transfer Pengelola</span>
+                </button>
+                <button type="button" class="drawer-menu-item" data-page="profil">
+                    <i class="fa-regular fa-building"></i>
+                    <span>Profil Pemberi kerja</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="main" style="flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden;">
+            <!-- TOPBAR (SCREENSHOT 1) -->
+            <header class="new-topbar">
+                <div class="topbar-nav-arrows">
+                    <button type="button" class="topbar-arrow-btn" onclick="history.back()" title="Kembali"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button type="button" class="topbar-arrow-btn" onclick="history.forward()" title="Maju"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+
+                <div class="topbar-crumbs" id="crumbs">
                     <span>Beranda</span>
-                    <span>&gt;</span>
+                    <span class="sep">&gt;</span>
                     <strong id="crumbCurrent" data-current-crumb>Dasbor</strong>
                 </div>
 
-                <div class="search-bar">
+                <div class="topbar-search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" placeholder="Cari lowongan, pelamar, atau KBJI...">
+                    <input type="text" id="topbarSearchInput" placeholder="Cari lowongan pekerjaan dan pelamar...">
                 </div>
 
-                <div class="top-actions">
-                    <!-- NOTIFIKASI LONCENG PKI (SECTION B) -->
-                    <div class="notif" data-open-modal="modal-notifications" style="cursor:pointer;" title="Notifikasi System PKI">
-                        <i class="fa-regular fa-bell"></i>
-                    </div>
-
-                    <div class="company-chip">
-                        <div>
-                            <strong><?php echo e($profile['owner_name'] ?? $user['name']); ?></strong>
-                            <span><?php echo e($profile['profession'] ?: 'Individu'); ?></span>
+                <div class="topbar-right-actions">
+                    <div class="company-profile-pill" data-open-modal="modal-user-account" title="Pengaturan Akun / Profil">
+                        <div class="company-pill-avatar" id="topbarAvatar"><?php echo mb_strtoupper(mb_substr($profile['owner_name'] ?? $user['name'], 0, 2)); ?></div>
+                        <div class="company-pill-text">
+                            <strong id="topbarCompName"><?php echo e($profile['owner_name'] ?? $user['name']); ?></strong>
+                            <span id="topbarCompType"><?php echo !empty($profile['profession']) ? e($profile['profession']) : 'Perusahaan'; ?></span>
                         </div>
+                        <i class="fa-solid fa-chevron-right company-pill-arrow"></i>
                     </div>
 
                     <?php if ($verificationStatus === 'APPROVED' || $verificationStatus === 'ACTIVE_VERIFIED'): ?>
-                        <button class="action-chip" data-open-modal="job-create" style="background:#0284c7; color:#fff; border:none;"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>
+                        <button type="button" class="topbar-add-btn" data-open-modal="job-create">
+                            <i class="fa-solid fa-plus"></i> Tambah
+                        </button>
                     <?php else: ?>
-                        <button class="action-chip" disabled style="opacity:0.5; cursor:not-allowed;" title="Fungsi terkunci hingga profil terverifikasi"><i class="fa-solid fa-lock"></i> Terkunci</button>
+                        <button type="button" class="topbar-add-btn" data-open-modal="modal-employer-profile">
+                            <i class="fa-solid fa-plus"></i> Tambah
+                        </button>
                     <?php endif; ?>
                 </div>
             </header>
 
-            <div class="content">
+            <div class="content" style="flex:1; overflow-y:auto; background:#f8fafc;">
                 <!-- FLASH TOAST NOTIFICATION -->
                 <?php if ($flashData && $flashData['type'] !== 'pending_popup'): ?>
-                    <div class="alert-box <?php echo $flashData['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
+                    <div class="alert-box <?php echo $flashData['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin:16px 24px 0;">
                         <i class="fa-solid <?php echo $flashData['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
                         <?php echo e($flashData['message']); ?>
                     </div>
                 <?php endif; ?>
 
-                <!-- SECTION C: DASBOR PEMBERI KERJA INDIVIDU -->
+                <!-- SECTION C: DASBOR PEMBERI KERJA INDIVIDU (SCREENSHOT 1) -->
                 <section class="page active" data-page="dashboard" id="page-dashboard">
-                    <div class="page-header hero">
-                        <div>
-                            <h2>Halo, <?php echo e($profile['owner_name'] ?? $user['name']); ?></h2>
-                            <div class="hero-subrow">
-                                <div class="status-pill <?php echo strtolower($verificationStatus); ?>">
-                                    <i class="fa-solid fa-shield"></i> Status: <?php echo e($verificationStatus); ?>
+                    <div class="dash-container">
+                        <h1 class="dash-heading" id="dashGreeting">Halo <?php echo e($profile['owner_name'] ?? $user['name']); ?></h1>
 
-                                </div>
-                                <?php if (($verificationStatus === 'APPROVED' || $verificationStatus === 'ACTIVE_VERIFIED') && $activeUntil): ?>
-                                    <div class="cycle-info">
-                                        <i class="fa-regular fa-calendar-days" style="color:var(--muted)"></i>
-                                        <div>
-                                            <strong>Sisa <?php echo max(0, $daysRemaining); ?> hari</strong>
-                                            <span>Masa Aktif 3 Bulan</span>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- BANNERS & ACCORDING TO ACCOUNT LIFECYCLE (SECTION C, E, N, O) -->
-                    <?php if ($verificationStatus === 'APPROVED' || $verificationStatus === 'ACTIVE_VERIFIED'): ?>
-                        <div class="alert" style="background:#ecfdf5; border-color:#a7f3d0; color:#065f46;">
-                            <i class="fa-solid fa-circle-check" style="color:#059669; font-size:18px;"></i>
-                            <div>
-                                Akun Anda telah aktif dan berlaku selama 3 bulan.<br>
-                                Anda kini dapat mempublikasikan lowongan kerja.<br><br>
-                                <strong>Catatan penting: Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan/posisi yang berbeda. Namun, Anda tidak dapat membuat lowongan baru untuk jabatan/posisi yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.</strong>
-                            </div>
-                        </div>
-                    <?php elseif ($verificationStatus === 'PENDING'): ?>
-                        <div class="alert" style="background:#fff7ed; border-color:#ffedd5; color:#c2410c;">
-                            <i class="fa-solid fa-clock" style="color:#ea580c; font-size:18px;"></i>
-                            <div>
-                                <strong>Status Profil: Menunggu Verifikasi</strong><br>
-                                Profil Pemberi Kerja Individu Anda sedang dalam tahap peninjauan oleh Admin Disnaker. Seluruh fungsi operasional rekrutmen terkunci sementara hingga verifikasi selesai.
-                            </div>
-                        </div>
-                    <?php elseif ($verificationStatus === 'NEEDS_REVISION'): ?>
-                        <div class="alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; display:flex; gap:14px; align-items:flex-start;">
-                            <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:22px; margin-top:2px;"></i>
-                            <div style="flex:1;">
-                                <strong style="font-size:15px; display:block; margin-bottom:4px;">Profil Perlu Diperbaiki</strong>
-                                <div>Catatan Verifikator: <strong><?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi dokumen/data lokasi Anda.'); ?></strong></div>
-                                <?php if (!empty($profile['verification_checklist'])): ?>
-                                    <div style="font-size:12px; margin-top:4px; opacity:0.9;">Checklist: <?php echo e($profile['verification_checklist']); ?></div>
-                                <?php endif; ?>
-
-                                <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px;">
-                                    <!-- CTA 1: LIHAT HASIL VERIFIKASI -->
-                                    <button type="button" class="ghost-btn" style="height:32px; padding:0 12px; font-size:12px; border-color:#dc2626; color:#dc2626; background:#fff;" data-open-modal="modal-verification-result">
-                                        <i class="fa-solid fa-file-circle-exclamation"></i> Lihat Hasil Verifikasi
-                                    </button>
-                                    <!-- CTA 2: PERBAIKI PROFIL -->
-                                    <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#dc2626;" data-open-modal="modal-employer-profile">
-                                        <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil
-                                    </button>
-                                    <!-- CTA 3: AJUKAN KEMBALI -->
-                                    <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#0284c7;" data-open-modal="modal-employer-profile">
-                                        <i class="fa-solid fa-paper-plane"></i> Ajukan Kembali
-                                    </button>
+                        <!-- BANNERS ACCORDING TO ACCOUNT LIFECYCLE IF ANY NEEDED -->
+                        <?php if ($verificationStatus === 'PENDING'): ?>
+                            <div class="alert" style="background:#fff7ed; border-color:#ffedd5; color:#c2410c;">
+                                <i class="fa-solid fa-clock" style="color:#ea580c; font-size:18px;"></i>
+                                <div>
+                                    <strong>Status Profil: Menunggu Verifikasi</strong><br>
+                                    Profil Pemberi Kerja Anda sedang dalam tahap peninjauan oleh Admin Disnaker.
                                 </div>
                             </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- H-7 REMINDER BANNER FOR ACTIVE_VERIFIED -->
-                    <?php if (($verificationStatus === 'APPROVED' || $verificationStatus === 'ACTIVE_VERIFIED') && $daysRemaining <= 7 && $daysRemaining > 0): ?>
-                        <div class="alert" style="background:#fffbeb; border-color:#fde68a; color:#92400e; display:flex; gap:12px; align-items:center; margin-bottom:14px;">
-                            <i class="fa-solid fa-clock-rotate-left" style="color:#d97706; font-size:20px;"></i>
-                            <div style="flex:1;">
-                                <strong>Masa Aktif Akun Akan Berakhir dalam <?php echo (int)$daysRemaining; ?> Hari</strong><br>
-                                <span style="font-size:12px;">Masa aktif 3 bulan Anda hampir selesai (dihitung sejak persetujuan Admin). Harap persiapkan penyelesaian proses rekrutmen Anda.</span>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if ($verificationStatus === 'TRANSITION_LIMITED'): ?>
-                        <div class="alert" style="background:#fffbeb; border-color:#fde68a; color:#92400e; display:flex; gap:14px; align-items:flex-start; margin-bottom:14px;">
-                            <i class="fa-solid fa-hourglass-half" style="color:#d97706; font-size:20px; margin-top:2px;"></i>
-                            <div style="flex:1;">
-                                <strong style="font-size:14px; color:#78350f;">Masa Transisi (Akses Dibatasi — Sisa <?php echo max(0, 7 + $daysRemaining); ?> Hari)</strong><br>
-                                <div style="font-size:12px; margin-top:4px;">
-                                    Masa aktif 3 bulan Anda telah berakhir. Selama masa transisi 7 hari ini:
-                                    <ul style="margin:4px 0 4px 16px; padding:0;">
-                                        <li>❌ <strong>Dibatasi:</strong> Tambah Lowongan baru, Kirim Lowongan baru, dan Posting Ulang Sisa Kuota.</li>
-                                        <li>✓ <strong>Diizinkan:</strong> Menyelesaikan proses rekrutmen kandidat existing (pelamar & wawancara).</li>
-                                    </ul>
-                                </div>
-                                <?php if (($profile['extension_requested'] ?? 0) == 0): ?>
-                                    <form method="post" action="dashboard.php" style="margin-top:10px;">
-                                        <input type="hidden" name="request_extension" value="1">
-                                        <button type="submit" class="ghost-btn" style="border-color:#b45309; color:#b45309; font-size:12px; height:32px; background:#ffffff;">
-                                            <i class="fa-solid fa-clock-rotate-left"></i> Ajukan Perpanjangan Waktu (1x)
-                                        </button>
-                                    </form>
-                                <?php else: ?>
-                                    <div style="margin-top:8px; font-size:12px; color:#d97706; font-weight:700;"><i class="fa-solid fa-info-circle"></i> Permohonan perpanjangan telah dikirim ke Admin Dinas (Menunggu Persetujuan).</div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php elseif ($verificationStatus === 'SUSPENDED'): ?>
-                        <div class="alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; display:flex; gap:14px; align-items:flex-start; margin-bottom:14px;">
-                            <i class="fa-solid fa-ban" style="color:#dc2626; font-size:20px; margin-top:2px;"></i>
-                            <div style="flex:1;">
-                                <strong style="font-size:14px; color:#991b1b;">Akun Ditangguhkan oleh Admin Dinas</strong><br>
-                                <div style="font-size:12px; margin-top:4px;">
-                                    Alasan Penangguhan: <strong><?php echo e($profile['suspension_reason'] ?: 'Aktivitas akun dibekukan sementara oleh petugas Disnaker.'); ?></strong>
-                                </div>
-                                <div style="margin-top:8px; font-size:11px; color:#7f1d1d; font-style:italic;">
-                                    Mohon hubungi kantor Dinas Tenaga Kerja setempat untuk penanganan lebih lanjut.
-                                </div>
-                            </div>
-                        </div>
-                    <?php elseif ($verificationStatus === 'FULL_DISABLED'): ?>
-                        <div class="alert" style="background:#f1f5f9; border-color:#cbd5e1; color:#334155; display:flex; gap:14px; align-items:flex-start; margin-bottom:14px;">
-                            <i class="fa-solid fa-lock" style="color:#475569; font-size:20px; margin-top:2px;"></i>
-                            <div style="flex:1;">
-                                <strong style="font-size:14px; color:#0f172a;">Akun Melewati Batas Masa Aktif (Terkunci)</strong><br>
-                                <div style="font-size:12px; margin-top:4px; color:#475569;">Masa aktif dan masa transisi akun Anda telah berakhir. Dasbor tetap dapat diakses dalam kondisi terkunci.</div>
-                                <?php if (!empty($isEligibleForReactivation)): ?>
-                                    <div style="margin-top:10px;">
-                                        <div style="font-size:12px; color:#0369a1; margin-bottom:8px;">
-                                            <i class="fa-solid fa-circle-check" style="color:#059669;"></i> Anda memenuhi syarat untuk mengaktifkan kembali akun secara daring karena telah memiliki minimal 1 kandidat Diterima pada siklus sebelumnya.
-                                        </div>
-                                        <button type="button" class="primary-btn" style="height:34px; padding:0 14px; font-size:12px; background:#0284c7;" data-open-modal="modal-employer-profile">
-                                            <i class="fa-solid fa-arrows-rotate"></i> Aktifkan Kembali Akun
+                        <?php elseif ($verificationStatus === 'NEEDS_REVISION'): ?>
+                            <div class="alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; display:flex; gap:14px; align-items:flex-start;">
+                                <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:22px; margin-top:2px;"></i>
+                                <div style="flex:1;">
+                                    <strong style="font-size:15px; display:block; margin-bottom:4px;">Profil Perlu Diperbaiki</strong>
+                                    <div>Catatan: <strong><?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi data profil.'); ?></strong></div>
+                                    <div style="margin-top:10px; display:flex; gap:8px;">
+                                        <button type="button" class="primary-btn" style="height:32px; padding:0 14px; font-size:12px; background:#dc2626;" data-open-modal="modal-employer-profile">
+                                            <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil
                                         </button>
                                     </div>
-                                <?php else: ?>
-                                    <div style="margin-top:10px; background:#ffffff; border:1px solid #e2e8f0; padding:12px; border-radius:10px;">
-                                        <div style="font-weight:700; color:#dc2626; font-size:13px; margin-bottom:4px;">
-                                            <i class="fa-solid fa-circle-exclamation"></i> Aktivasi Kembali Memerlukan Tindak Lanjut Dinas
-                                        </div>
-                                        <div style="font-size:12px; color:#64748b; margin-bottom:10px;">
-                                            Akun Anda belum memiliki kandidat yang diterima pada siklus sebelumnya sehingga aktivasi kembali memerlukan konsultasi tatap muka / verifikasi lanjutan dengan Dinas Tenaga Kerja.
-                                        </div>
-                                        <button type="button" class="secondary-btn" style="border:1px solid #cbd5e1; font-size:12px; padding:6px 14px; background:#f8fafc;" data-open-modal="modal-disnaker-instructions">
-                                            <i class="fa-solid fa-building-flag" style="color:#0284c7;"></i> Lihat Instruksi
-                                        </button>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- DASHBOARD METRIC CARDS REUSE -->
-                    <div class="cards4">
-                        <div class="card">
-                            <div class="mini-icon" style="background:#eefafc;color:#2aa9d7"><i class="fa-solid fa-briefcase"></i></div>
-                            <h3>Lowongan</h3>
-                            <div class="value"><?php echo count($jobs); ?></div>
-                            <div class="desc neutral">Total lowongan dibuat</div>
-                        </div>
-                        <div class="card">
-                            <div class="mini-icon" style="background:#eefaf3;color:#22a15c"><i class="fa-regular fa-user"></i></div>
-                            <h3>Pelamar</h3>
-                            <div class="value">3</div>
-                            <div class="desc">+3 pelamar terdaftar</div>
-                        </div>
-                        <div class="card">
-                            <div class="mini-icon" style="background:#f4edff;color:#8b5cf6"><i class="fa-regular fa-calendar-check"></i></div>
-                            <h3>Wawancara</h3>
-                            <div class="value">1</div>
-                            <div class="desc neutral">1 jadwal aktif</div>
-                        </div>
-                        <div class="card">
-                            <div class="mini-icon" style="background:#eef7ff;color:#3b82f6"><i class="fa-regular fa-circle-check"></i></div>
-                            <h3>Diterima</h3>
-                            <div class="value">1</div>
-                            <div class="desc neutral">Kandidat terpilih</div>
-                        </div>
-                    </div>
-
-                    <!-- RECRUITMENT FUNNEL & REUSE WIDGETS -->
-                    <div class="section-card">
-                        <div class="section-header">
-                            <h3><i class="fa-regular fa-file-lines"></i> Pengajuan & Verifikasi Lowongan PKI</h3>
-                        </div>
-                        <div class="section-caption">Ringkasan status lowongan perorangan yang Anda buat</div>
-                        <div class="list" style="margin-top:12px;">
-                            <?php if (!$jobs): ?>
-                                <div class="empty-state">
-                                    <i class="fa-solid fa-folder-open"></i>
-                                    <h4>Belum Ada Lowongan</h4>
-                                    <p>Klik tombol <strong>Tambah Lowongan</strong> di atas untuk membuat postingan pertama.</p>
                                 </div>
-                            <?php else: ?>
-                                <?php foreach ($jobs as $j): ?>
-                                    <div class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div>
-                                            <strong><?php echo e($j['title']); ?></strong>
-                                            <div class="tiny">KBJI: <?php echo e($j['kbji_code']); ?> | Tipe: <?php echo e($j['job_type']); ?> | Kuota: <?php echo $j['quota']; ?></div>
-                                        </div>
-                                        <span class="status-pill <?php echo strtolower($j['status']); ?>"><?php echo e($j['status']); ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- 4 STAT SUMMARY CARDS (SCREENSHOT 1) -->
+                        <div class="dash-stat-grid">
+                            <div class="dash-stat-card">
+                                <div class="dash-stat-top">
+                                    <span class="dash-stat-title">Lowongan</span>
+                                    <div class="dash-stat-icon-wrap teal"><i class="fa-solid fa-briefcase"></i></div>
+                                </div>
+                                <div class="dash-stat-value" id="statLowonganVal"><?php echo max(16, count($jobs)); ?></div>
+                                <div class="dash-stat-subtitle"><strong class="pos">+9</strong> dari bulan lalu</div>
+                            </div>
+                            <div class="dash-stat-card">
+                                <div class="dash-stat-top">
+                                    <span class="dash-stat-title">Pelamar</span>
+                                    <div class="dash-stat-icon-wrap green"><i class="fa-solid fa-users"></i></div>
+                                </div>
+                                <div class="dash-stat-value" id="statPelamarVal">0</div>
+                                <div class="dash-stat-subtitle"><strong class="neg">-87</strong> dari bulan lalu</div>
+                            </div>
+                            <div class="dash-stat-card">
+                                <div class="dash-stat-top">
+                                    <span class="dash-stat-title">Wawancara</span>
+                                    <div class="dash-stat-icon-wrap purple"><i class="fa-regular fa-calendar-check"></i></div>
+                                </div>
+                                <div class="dash-stat-value" id="statWawancaraVal">0</div>
+                                <div class="dash-stat-subtitle">Tidak ada perubahan dari bulan lalu</div>
+                            </div>
+                            <div class="dash-stat-card">
+                                <div class="dash-stat-top">
+                                    <span class="dash-stat-title">Diterima</span>
+                                    <div class="dash-stat-icon-wrap blue"><i class="fa-regular fa-circle-check"></i></div>
+                                </div>
+                                <div class="dash-stat-value" id="statDiterimaVal">0</div>
+                                <div class="dash-stat-subtitle"><strong class="neg">-1</strong> dari bulan lalu</div>
+                            </div>
+                        </div>
+
+                        <!-- CARD: PENGAJUAN & VERIFIKASI LOWONGAN (SCREENSHOT 1) -->
+                        <div class="dash-main-card">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title">
+                                    <i class="fa-regular fa-clipboard"></i>
+                                    <span>Pengajuan & Verifikasi Lowongan</span>
+                                </div>
+                                <button type="button" class="dash-outline-btn" data-nav="lowongan">
+                                    Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+                            <div class="dash-card-subtitle">Pengajuan 6 bulan terakhir - berdasarkan status saat ini</div>
+
+                            <div class="chart-breakdown-grid">
+                                <!-- Area Wave Spline Chart (Responsive SVG) -->
+                                <div class="chart-canvas-wrap">
+                                    <svg viewBox="0 0 540 200" style="width:100%;height:100%;overflow:visible;" preserveAspectRatio="none">
+                                        <defs>
+                                            <linearGradient id="areaGradDark" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#475569" stop-opacity="0.15" />
+                                                <stop offset="100%" stop-color="#475569" stop-opacity="0.0" />
+                                            </linearGradient>
+                                            <linearGradient id="areaGradRed" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.12" />
+                                                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Grid Lines -->
+                                        <line x1="20" y1="20" x2="520" y2="20" stroke="#f1f5f9" stroke-dasharray="3,3" />
+                                        <line x1="20" y1="60" x2="520" y2="60" stroke="#f1f5f9" stroke-dasharray="3,3" />
+                                        <line x1="20" y1="100" x2="520" y2="100" stroke="#f1f5f9" stroke-dasharray="3,3" />
+                                        <line x1="20" y1="140" x2="520" y2="140" stroke="#f1f5f9" stroke-dasharray="3,3" />
+                                        <line x1="20" y1="180" x2="520" y2="180" stroke="#e2e8f0" />
+
+                                        <!-- Y Labels -->
+                                        <text x="10" y="24" font-size="10" fill="#94a3b8" text-anchor="end">16</text>
+                                        <text x="10" y="64" font-size="10" fill="#94a3b8" text-anchor="end">12</text>
+                                        <text x="10" y="104" font-size="10" fill="#94a3b8" text-anchor="end">8</text>
+                                        <text x="10" y="144" font-size="10" fill="#94a3b8" text-anchor="end">4</text>
+                                        <text x="10" y="184" font-size="10" fill="#94a3b8" text-anchor="end">0</text>
+
+                                        <!-- X Labels -->
+                                        <text x="30" y="196" font-size="10" fill="#94a3b8">Apr</text>
+                                        <text x="130" y="196" font-size="10" fill="#94a3b8">May</text>
+                                        <text x="230" y="196" font-size="10" fill="#94a3b8">Jun</text>
+                                        <text x="330" y="196" fill="#94a3b8" font-size="10">Jul</text>
+                                        <text x="430" y="196" font-size="10" fill="#94a3b8">Aug</text>
+                                        <text x="510" y="196" font-size="10" fill="#94a3b8">Sep</text>
+
+                                        <!-- Filled Shaded Areas -->
+                                        <path d="M30 176 C 130 180, 230 174, 330 170 C 400 168, 460 70, 520 20 L 520 180 L 30 180 Z" fill="url(#areaGradDark)" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 178 C 420 176, 480 90, 520 40 L 520 180 L 30 180 Z" fill="url(#areaGradRed)" />
+
+                                        <!-- Multi-color Status Spline Curves -->
+                                        <path d="M30 176 C 130 180, 230 174, 330 170 C 400 168, 460 70, 520 20" fill="none" stroke="#334155" stroke-width="2" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 178 C 420 176, 480 90, 520 30" fill="none" stroke="#cbd5e1" stroke-width="1.8" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 178, 480 100, 520 38" fill="none" stroke="#9333ea" stroke-width="1.8" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 110, 520 46" fill="none" stroke="#0284c7" stroke-width="2" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 120, 520 54" fill="none" stroke="#22c55e" stroke-width="1.8" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 130, 520 62" fill="none" stroke="#78350f" stroke-width="1.8" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 140, 520 70" fill="none" stroke="#f97316" stroke-width="1.8" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 150, 520 78" fill="none" stroke="#dc2626" stroke-width="2" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 160, 520 86" fill="none" stroke="#f59e0b" stroke-width="2" />
+                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 170, 520 172" fill="none" stroke="#64748b" stroke-width="1.8" />
+                                    </svg>
+                                </div>
+
+                                <!-- Total Breakdown Legend -->
+                                <div class="chart-total-side">
+                                    <span class="chart-total-label">Total lowongan</span>
+                                    <div class="chart-total-val" id="totalJobPostsCount">174</div>
+                                    <div class="chart-status-list">
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#f59e0b;"></span><span>Menunggu Verifikasi</span></div><span class="chart-status-count" id="countStatusMenunggu">11</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#dc2626;"></span><span>Perlu Direvisi</span></div><span class="chart-status-count" id="countStatusRevisi">2</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#991b1b;"></span><span>Ditolak</span></div><span class="chart-status-count" id="countStatusDitolak">1</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#f97316;"></span><span>Ditangguhkan</span></div><span class="chart-status-count" id="countStatusDitangguhkan">0</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#78350f;"></span><span>Diblokir</span></div><span class="chart-status-count" id="countStatusDiblokir">3</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#22c55e;"></span><span>Terjadwal Tayang</span></div><span class="chart-status-count" id="countStatusTerjadwal">0</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#0284c7;"></span><span>Tayang</span></div><span class="chart-status-count" id="countStatusTayang">1</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#cbd5e1;"></span><span>Draft</span></div><span class="chart-status-count" id="countStatusDraft">1</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#9333ea;"></span><span>Kedaluwarsa</span></div><span class="chart-status-count" id="countStatusKedaluwarsa">7</span></div>
+                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#334155;"></span><span>Ditutup</span></div><span class="chart-status-count" id="countStatusDitutup">148</span></div>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="section-card">
-                        <div class="section-header">
-                            <h3><i class="fa-solid fa-filter"></i> Corong Rekrutmen</h3>
-                        </div>
-                            <!--FUNNEL_METRICS-->
-                    </div>
-
-                    <div class="widget-grid">
-                        <div class="widget-card">
-                            <div class="widget-header"><span>Pelamar siap diseleksi</span></div>
-                            <!--READY_APPLICANTS-->
-                        </div>
-
-                        <div class="widget-card">
-                            <div class="widget-header">
-                                <span><i class="fa-regular fa-clock chip-icon"></i> Aktivitas Lamaran</span>
-                                <i class="fa-regular fa-calendar chip-icon"></i>
+                                </div>
                             </div>
-                            <!--APPLICATION_ACTIVITY-->
+
+                            <div class="chart-warning-banner">
+                                <i class="fa-solid fa-triangle-exclamation" style="color:#d97706;font-size:14px;"></i>
+                                <span>11 lowongan menunggu verifikasi, 2 lowongan perlu direvisi, 1 lowongan ditolak dan 3 lowongan diblokir. Periksa agar lowongan dapat segera tayang.</span>
+                            </div>
                         </div>
 
-                        <div class="widget-card">
-                            <div class="widget-header">
-                                <span><i class="fa-regular fa-calendar-check chip-icon"></i> Wawancara Terdekat</span>
-                                <button class="btn-link" data-nav="jadwal">Kalender <i
-                                        class="fa-solid fa-arrow-right"></i></button>
+                        <!-- CARD: CORONG REKRUTMEN (SCREENSHOT 1) -->
+                        <div class="dash-main-card">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title">
+                                    <i class="fa-solid fa-filter" style="color:#0284c7;"></i>
+                                    <span>Corong Rekrutmen</span>
+                                </div>
                             </div>
-                            <div class="empty-state">
-                                <i class="fa-regular fa-calendar-xmark"></i>
-                                <p>Tidak ada jadwal wawancara dalam<br>14 hari ke depan.</p>
+
+                            <div class="funnel-layout-grid">
+                                <div class="funnel-bars-col">
+                                    <div class="funnel-tier funnel-tier-1">
+                                        <span>Pelamar Masuk</span>
+                                        <span style="font-size:13px;">8822</span>
+                                        <span style="font-weight:400;font-size:11px;">100%</span>
+                                    </div>
+                                    <div class="funnel-tier funnel-tier-2">
+                                        <span>Dipelajari</span>
+                                        <span style="font-size:13px;">23</span>
+                                        <span style="font-weight:400;font-size:11px;">0% lanjut</span>
+                                    </div>
+                                    <div class="funnel-tier funnel-tier-3">
+                                        <span>Wawancara</span>
+                                        <span style="font-size:13px;">4</span>
+                                        <span style="font-weight:400;font-size:11px;">17% lanjut</span>
+                                    </div>
+                                    <div class="funnel-tier funnel-tier-4">
+                                        <span>Diterima</span>
+                                        <span style="font-size:13px;">2</span>
+                                        <span style="font-weight:400;font-size:11px;">50% lanjut</span>
+                                    </div>
+                                </div>
+
+                                <div class="funnel-stats-col">
+                                    <div class="funnel-overall-label">Konversi keseluruhan</div>
+                                    <div class="funnel-overall-rate">0%</div>
+                                    <div class="funnel-overall-sub">dari pelamar masuk sampai diterima</div>
+
+                                    <div class="funnel-dropout-box">
+                                        <div class="funnel-dropout-title">Tidak berlanjut</div>
+                                        <div class="funnel-dropout-row">
+                                            <span>Ditolak</span>
+                                            <strong>18</strong>
+                                        </div>
+                                        <div class="funnel-dropout-row">
+                                            <span>Dibatalkan pelamar</span>
+                                            <strong>1404</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOTTOM 3-COLUMN GRID (SCREENSHOT 1) -->
+                        <div class="dash-bottom-3col">
+                            <!-- Col 1: Pelamar siap diseleksi -->
+                            <div class="dash-bottom-card">
+                                <div class="dash-bottom-card-header">
+                                    <div class="dash-bottom-card-title">Pelamar siap diseleksi</div>
+                                </div>
+                                <div class="dash-applicant-list" id="readyApplicantList">
+                                    <div class="dash-applicant-item">
+                                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Erina Meliani</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item">
+                                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Amelia Yunita Putri</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item">
+                                        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Siti Fatimah</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item">
+                                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">SAUMI AWALIA AL BANJARI</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item">
+                                        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Gusti Sapriani</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
+                                        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Putri Rere Maulinda</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
+                                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Leni Maulina</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
+                                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Rezka Franeta Marlena Sari</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
+                                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Shella Oktavia Putri</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
+                                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
+                                        <div class="dash-applicant-info">
+                                            <div class="dash-applicant-name">Kezia Nauli</div>
+                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        </div>
+                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="dash-show-more-btn" id="btnToggleMoreApplicants" onclick="toggleMoreApplicants()">
+                                    <i class="fa-solid fa-chevron-down"></i> Tampilkan lebih banyak
+                                </button>
+                            </div>
+
+                            <!-- Col 2: Aktivitas Lamaran -->
+                            <div class="dash-bottom-card">
+                                <div class="dash-bottom-card-header">
+                                    <div class="dash-bottom-card-title">
+                                        <i class="fa-regular fa-clock" style="color:#0284c7;"></i>
+                                        <span>Aktivitas Lamaran</span>
+                                    </div>
+                                </div>
+                                <div class="dash-activity-timeline">
+                                    <div class="dash-activity-row">
+                                        <div class="dash-activity-badge blue"><i class="fa-regular fa-file-lines"></i></div>
+                                        <div class="dash-activity-text">
+                                            <div><strong>Lamaran dipelajari</strong> · Ajat Sudrajat — Sales Eksekutif</div>
+                                            <div class="dash-activity-meta">09 Sep 2026, 17:51 · oleh Pandu Isdiyanto, S.T., M.M.</div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-activity-row">
+                                        <div class="dash-activity-badge blue"><i class="fa-regular fa-file-lines"></i></div>
+                                        <div class="dash-activity-text">
+                                            <div><strong>Lamaran dipelajari</strong> · MUCHAMAD SODIKIN — Sales Eksekutif</div>
+                                            <div class="dash-activity-meta">09 Sep 2026, 17:48 · oleh Pandu Isdiyanto, S.T., M.M.</div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-activity-row">
+                                        <div class="dash-activity-badge green"><i class="fa-regular fa-circle-check"></i></div>
+                                        <div class="dash-activity-text">
+                                            <div><strong>Lamaran diterima</strong> · Alvin Vigo Pratama — Testing</div>
+                                            <div class="dash-activity-meta">24 Agt 2026, 14:00 · oleh Pandu Isdiyanto, S.T., M.M.</div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-activity-row">
+                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
+                                        <div class="dash-activity-text">
+                                            <div><strong>Melamar posisi ini</strong> · Muhammad Arsyi Haykal — Testing Dummy</div>
+                                            <div class="dash-activity-meta">19 Agt 2026, 14:41 · oleh Muhammad Arsyi Haykal</div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-activity-row">
+                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
+                                        <div class="dash-activity-text">
+                                            <div><strong>Melamar posisi ini</strong> · DIRGA RISKIYAGA UTAMA — Testing Dummy</div>
+                                            <div class="dash-activity-meta">19 Agt 2026, 14:41 · oleh DIRGA RISKIYAGA UTAMA</div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-activity-row">
+                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
+                                        <div class="dash-activity-text">
+                                            <div><strong>Melamar posisi ini</strong> · MIRA KHAFIDHOTUR ROHMAH — Testing Dummy</div>
+                                            <div class="dash-activity-meta">19 Agt 2026, 14:37 · oleh MIRA KHAFIDHOTUR ROHMAH</div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-activity-row">
+                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
+                                        <div class="dash-activity-text">
+                                            <div><strong>Melamar posisi ini</strong> · Alvin Vigo Pratama — Testing</div>
+                                            <div class="dash-activity-meta">19 Agt 2026, 14:32 · oleh Alvin Vigo Pratama</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Col 3: Wawancara Terdekat -->
+                            <div class="dash-bottom-card">
+                                <div class="dash-bottom-card-header">
+                                    <div class="dash-bottom-card-title">
+                                        <i class="fa-regular fa-calendar-check" style="color:#0284c7;"></i>
+                                        <span>Wawancara Terdekat</span>
+                                    </div>
+                                    <button type="button" class="dash-outline-btn" data-nav="jadwal" style="padding:4px 10px; font-size:11px;">
+                                        Kalender <i class="fa-solid fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                                <div class="dash-empty-calendar">
+                                    <i class="fa-regular fa-calendar-xmark"></i>
+                                    <p>Tidak ada jadwal wawancara dalam 14 hari ke depan.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
+
 
                 <section class="page" data-page="lowongan" id="page-lowongan">
                     <div class="page-title-row">
@@ -2420,8 +2603,50 @@
                 </div>
             </section>
 
-                <!-- SECTION M: PROFIL PEMBERI KERJA VIEW -->
-                <section class="page" data-page="profil" id="page-profil">
+            <!-- SECTION: TRANSFER PENGELOLA -->
+            <section class="page" data-page="transfer" id="page-transfer">
+                <div class="dash-container">
+                    <div class="page-title-row">
+                        <div>
+                            <h2>Transfer Pengelola</h2>
+                            <div class="section-note">Kelola pemindahan atau pendelegasian kepemilikan akun pemberi kerja.</div>
+                        </div>
+                        <button type="button" class="primary-btn" onclick="alert('Fitur pengajuan transfer pengelola siap dikonfigurasi.')"><i class="fa-solid fa-arrow-right-arrow-left"></i> Ajukan Transfer</button>
+                    </div>
+
+                    <div class="dash-main-card">
+                        <div class="dash-card-header">
+                            <div class="dash-card-title">
+                                <i class="fa-solid fa-users-gear" style="color:#0284c7;"></i>
+                                <span>Daftar Pengelola Akun</span>
+                            </div>
+                        </div>
+                        <div style="margin-top:14px; font-size:13px; color:#475569; overflow-x:auto;">
+                            <table class="applicant-table" style="width:100%;">
+                                <thead>
+                                    <tr style="background:#f8fafc;">
+                                        <th style="padding:10px;">Nama Pengelola</th>
+                                        <th style="padding:10px;">Email</th>
+                                        <th style="padding:10px;">Peran</th>
+                                        <th style="padding:10px;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:12px 10px; font-weight:700; color:#0f172a;"><?php echo e($profile['owner_name'] ?? $user['name']); ?></td>
+                                        <td style="padding:12px 10px; color:#64748b;"><?php echo e($user['email']); ?></td>
+                                        <td style="padding:12px 10px;"><span class="badge ok" style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; font-weight:600;">Pemilik Utama (Owner)</span></td>
+                                        <td style="padding:12px 10px;"><span class="status-pill approved">Aktif</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION M: PROFIL PEMBERI KERJA VIEW -->
+            <section class="page" data-page="profil" id="page-profil">
                     <div class="page-title-row">
                         <div>
                             <h2>Profil Pemberi Kerja Individu</h2>
@@ -2852,121 +3077,178 @@
         const modal = document.querySelector("[data-modal='job-close']");
         if(modal) modal.classList.add("open");
     };
-        // Logika Toggle Sidebar Buka/Tutup
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebar = document.querySelector('.sidebar');
 
-        if (sidebarToggle && sidebar && sidebarToggle.dataset.bound !== 'true') {
-            sidebarToggle.dataset.bound = 'true';
-            sidebarToggle.addEventListener('click', function () {
-                sidebar.classList.toggle('collapsed');
-            });
+    // Toggle Flyout Drawer
+    const railToggleBtn = document.getElementById('railToggleBtn');
+    const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+    const navDrawer = document.getElementById('navDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+
+    function openDrawer() {
+        if (navDrawer) navDrawer.classList.add('open');
+        if (drawerBackdrop) drawerBackdrop.classList.add('open');
+    }
+
+    function closeDrawer() {
+        if (navDrawer) navDrawer.classList.remove('open');
+        if (drawerBackdrop) drawerBackdrop.classList.remove('open');
+    }
+
+    if (railToggleBtn) railToggleBtn.addEventListener('click', openDrawer);
+    if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
+    if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+
+    // Page Switching
+    const pages = Array.from(document.querySelectorAll('.page'));
+    const crumbCurrent = document.getElementById('crumbCurrent');
+    const pageTitles = {
+        dashboard: 'Dasbor',
+        lowongan: 'Lowongan',
+        jadwal: 'Jadwal Wawancara',
+        transfer: 'Transfer Pengelola',
+        profil: 'Profil Pemberi kerja'
+    };
+
+    function showPage(pageName) {
+        const targetPage = pageTitles[pageName] ? pageName : 'dashboard';
+        pages.forEach((p) => p.classList.toggle('active', p.dataset.page === targetPage || p.id === `page-${targetPage}`));
+
+        // Update rail buttons
+        document.querySelectorAll('.rail-btn[data-page]').forEach(b => {
+            b.classList.toggle('active', b.dataset.page === targetPage);
+        });
+
+        // Update drawer buttons
+        document.querySelectorAll('.drawer-menu-item[data-page]').forEach(b => {
+            b.classList.toggle('active', b.dataset.page === targetPage);
+        });
+
+        if (crumbCurrent) {
+            crumbCurrent.textContent = pageTitles[targetPage] || 'Dasbor';
         }
 
-        const menuItems = Array.from(document.querySelectorAll('.menu-item'));
-        const pages = Array.from(document.querySelectorAll('.page'));
-        const crumbCurrent = document.getElementById('crumbCurrent');
-        const pageTitles = {
-            dashboard: 'Dasbor',
-            lowongan: 'Lowongan',
-            jadwal: 'Jadwal Wawancara',
-            profil: 'Profil Pemberi Kerja'
-        };
-
-        function showPage(pageName) {
-            pages.forEach((page) => page.classList.toggle('active', page.id === `page-${pageName}`));
-            menuItems.forEach((item) => {
-                // Periksa apakah item di-disable. Jika ya, jangan set active
-                if (!item.hasAttribute('disabled')) {
-                    item.classList.toggle('active', item.dataset.page === pageName);
-                }
-            });
-            crumbCurrent.textContent = pageTitles[pageName] || 'Dasbor';
-            if (window.location.hash !== `#${pageName}`) {
-                window.location.hash = pageName;
-            }
-            window.scrollTo({ top: 0, behavior: 'auto' });
+        if (window.location.hash !== `#${targetPage}`) {
+            window.location.hash = targetPage;
         }
+        closeDrawer();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-        menuItems.forEach((item) => {
-            item.addEventListener('click', () => {
-                // Mencegah klik jika menu di-disable
-                if (!item.hasAttribute('disabled')) {
-                    showPage(item.dataset.page);
-                }
-            });
-        });
-
-        document.querySelectorAll('[data-nav]').forEach((button) => {
-            button.addEventListener('click', () => showPage(button.dataset.nav));
-        });
-
-        const initialPage = (window.location.hash || '#dashboard').slice(1);
-        showPage(pageTitles[initialPage] ? initialPage : 'dashboard');
-
-        window.addEventListener('hashchange', () => {
-            const nextPage = (window.location.hash || '#dashboard').slice(1);
-            if (pageTitles[nextPage]) {
-                showPage(nextPage);
+    // Bind all data-page and data-nav clickers
+    document.querySelectorAll('[data-page]').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (this.tagName === 'A' && this.getAttribute('href') && !this.getAttribute('href').startsWith('#')) return;
+            const p = this.dataset.page;
+            if (p) {
+                e.preventDefault();
+                showPage(p);
             }
         });
+    });
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const profileForm = document.querySelector('form[action="dashboard.php"] input[name="submit_profile"]')?.form;
-            if (profileForm) {
-                profileForm.addEventListener('submit', function(e) {
-                    const cbLoc = document.getElementById('cbSameLocation');
-                    const cbAddr = document.getElementById('cbSameAddress');
-                    const isManualLoc = cbLoc && !cbLoc.checked;
-                    const isManualAddr = cbAddr && !cbAddr.checked;
-                    if (isManualLoc || isManualAddr) {
-                        const ok = confirm('Domisili manual Anda berbeda dengan data di SIAPkerja. Apakah Anda yakin ingin memperbarui data lokasi tempat kerja ini?');
-                        if (!ok) {
-                            e.preventDefault();
-                            return false;
-                        }
+    document.querySelectorAll('[data-nav]').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showPage(this.dataset.nav);
+        });
+    });
+
+    const initialPage = (window.location.hash || '#dashboard').slice(1);
+    showPage(pageTitles[initialPage] ? initialPage : 'dashboard');
+
+    window.addEventListener('hashchange', () => {
+        const nextPage = (window.location.hash || '#dashboard').slice(1);
+        if (pageTitles[nextPage]) {
+            showPage(nextPage);
+        }
+    });
+
+    // Theme Switcher Cycle (Light -> Dark -> System)
+    function toggleThemeCycle() {
+        const current = localStorage.getItem('karirhub_theme') || 'light';
+        const next = current === 'light' ? 'dark' : (current === 'dark' ? 'system' : 'light');
+        if (typeof setTheme === 'function') {
+            setTheme(next);
+        } else {
+            localStorage.setItem('karirhub_theme', next);
+            document.documentElement.classList.toggle('dark-theme', next === 'dark');
+        }
+    }
+
+    // Toggle Applicants More/Less
+    let applicantsExpanded = false;
+    function toggleMoreApplicants() {
+        applicantsExpanded = !applicantsExpanded;
+        const extras = document.querySelectorAll('.extra-applicant');
+        extras.forEach(el => {
+            el.style.display = applicantsExpanded ? 'flex' : 'none';
+        });
+        const btn = document.getElementById('btnToggleMoreApplicants');
+        if (btn) {
+            btn.innerHTML = applicantsExpanded 
+                ? '<i class="fa-solid fa-chevron-up"></i> Tampilkan lebih sedikit' 
+                : '<i class="fa-solid fa-chevron-down"></i> Tampilkan lebih banyak';
+        }
+    }
+    window.toggleMoreApplicants = toggleMoreApplicants;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const profileForm = document.querySelector('form[action="dashboard.php"] input[name="submit_profile"]')?.form;
+        if (profileForm) {
+            profileForm.addEventListener('submit', function(e) {
+                const cbLoc = document.getElementById('cbSameLocation');
+                const cbAddr = document.getElementById('cbSameAddress');
+                const isManualLoc = cbLoc && !cbLoc.checked;
+                const isManualAddr = cbAddr && !cbAddr.checked;
+                if (isManualLoc || isManualAddr) {
+                    const ok = confirm('Domisili manual Anda berbeda dengan data di SIAPkerja. Apakah Anda yakin ingin memperbarui data lokasi tempat kerja ini?');
+                    if (!ok) {
+                        e.preventDefault();
+                        return false;
                     }
-                });
-            }
-        });
-        window.filterJobsTable = function() {
-            const searchVal = (document.getElementById('jobSearchInput')?.value || '').toLowerCase();
-            const statusVal = document.getElementById('jobStatusFilter')?.value || 'all';
-            const rows = document.querySelectorAll('tr[data-job-row]');
-
-            rows.forEach(row => {
-                const title = (row.dataset.title || '').toLowerCase();
-                const status = row.dataset.status || '';
-
-                let matchSearch = title.includes(searchVal);
-                let matchStatus = (statusVal === 'all') ||
-                    (statusVal === 'Draft' && status === 'Draft') ||
-                    (statusVal === 'Menunggu Verifikasi' && (status === 'Dikirim/Menunggu Verifikasi' || status === 'Menunggu Verifikasi')) ||
-                    (statusVal === 'Perlu Direvisi' && (status === 'Perlu Direvisi' || status === 'Perlu Revisi')) ||
-                    (statusVal === 'Tayang' && status === 'Tayang');
-
-                row.style.display = (matchSearch && matchStatus) ? '' : 'none';
-            });
-        };
-
-        window.sortJobsTable = function() {
-            const sortVal = document.getElementById('jobSortSelect')?.value || 'newest';
-            const tbody = document.getElementById('jobsTableBody');
-            if (!tbody) return;
-            const rows = Array.from(tbody.querySelectorAll('tr[data-job-row]'));
-
-            rows.sort((a, b) => {
-                if (sortVal === 'title') {
-                    return (a.dataset.title || '').localeCompare(b.dataset.title || '');
-                } else if (sortVal === 'oldest') {
-                    return (a.dataset.created || '').localeCompare(b.dataset.created || '');
-                } else { // newest
-                    return (b.dataset.created || '').localeCompare(a.dataset.created || '');
                 }
             });
+        }
+    });
 
-            rows.forEach(row => tbody.appendChild(row));
-        };
+    window.filterJobsTable = function() {
+        const searchVal = (document.getElementById('jobSearchInput')?.value || '').toLowerCase();
+        const statusVal = document.getElementById('jobStatusFilter')?.value || 'all';
+        const rows = document.querySelectorAll('tr[data-job-row]');
+
+        rows.forEach(row => {
+            const title = (row.dataset.title || '').toLowerCase();
+            const status = row.dataset.status || '';
+
+            let matchSearch = title.includes(searchVal);
+            let matchStatus = (statusVal === 'all') ||
+                (statusVal === 'Draft' && status === 'Draft') ||
+                (statusVal === 'Menunggu Verifikasi' && (status === 'Dikirim/Menunggu Verifikasi' || status === 'Menunggu Verifikasi')) ||
+                (statusVal === 'Perlu Direvisi' && (status === 'Perlu Direvisi' || status === 'Perlu Revisi')) ||
+                (statusVal === 'Tayang' && status === 'Tayang');
+
+            row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+        });
+    };
+
+    window.sortJobsTable = function() {
+        const sortVal = document.getElementById('jobSortSelect')?.value || 'newest';
+        const tbody = document.getElementById('jobsTableBody');
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr[data-job-row]'));
+
+        rows.sort((a, b) => {
+            if (sortVal === 'title') {
+                return (a.dataset.title || '').localeCompare(b.dataset.title || '');
+            } else if (sortVal === 'oldest') {
+                return (a.dataset.created || '').localeCompare(b.dataset.created || '');
+            } else { // newest
+                return (b.dataset.created || '').localeCompare(a.dataset.created || '');
+            }
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    };
     </script>
 </body>
-</html>
+</html>

@@ -594,17 +594,16 @@ if (str_contains($ownerName, ' ')) {
 $replacements = [
     'Karirhub - Pemberi Kerja Individu'   => 'Karirhub - ' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'Halo nama Pemberi Kerja Individu'    => 'Halo ' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
-    // Sidebar profile card
-    'id="sidebarName">Pemberi Kerja Individu' => 'id="sidebarName">' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
-    'id="sidebarProfession">Profesi: Kuliner'  => 'id="sidebarProfession">Profesi: ' . htmlspecialchars($profession, ENT_QUOTES, 'UTF-8'),
+    'Halo PT. Pandu Jaya'                 => 'Halo ' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    // Sidebar & Topbar
     'id="sidebarAvatar">PI'               => 'id="sidebarAvatar">' . $initials,
-    // Topbar chip
-    '<strong>Pemberi Kerja Individu</strong>' => '<strong>' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8') . '</strong>',
-    '<span>Profesi: Kuliner</span>'        => '<span>Profesi: ' . htmlspecialchars($profession, ENT_QUOTES, 'UTF-8') . '</span>',
+    'id="topbarAvatar">PI'                => 'id="topbarAvatar">' . $initials,
+    'id="topbarCompName">PT. Pandu Jaya'  => 'id="topbarCompName">' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    'id="topbarCompType">Perusahaan'      => 'id="topbarCompType">' . htmlspecialchars($profession, ENT_QUOTES, 'UTF-8'),
     // Profile page
-    'PT. Pandu Jaya'                       => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
-    'Kota Bekasi'                          => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
-    '<strong>Sisa 87 hari</strong>'        => '<strong>Sisa ' . max(0, $daysRemaining) . ' hari</strong>',
+    'PT. Pandu Jaya'                      => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    'Kota Bekasi'                         => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
+    '<strong>Sisa 87 hari</strong>'       => '<strong>Sisa ' . max(0, $daysRemaining) . ' hari</strong>',
 ];
 
 $html = str_replace(array_keys($replacements), array_values($replacements), $html);
