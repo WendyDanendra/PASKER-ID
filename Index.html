@@ -1474,9 +1474,6 @@
                 <button type="button" class="rail-btn" data-page="jadwal" title="Jadwal Wawancara">
                     <i class="fa-regular fa-calendar-check"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="transfer" title="Transfer Pengelola">
-                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                </button>
                 <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi kerja">
                     <i class="fa-regular fa-building"></i>
                 </button>
@@ -1526,10 +1523,6 @@
                 <button type="button" class="drawer-menu-item" data-page="jadwal">
                     <i class="fa-regular fa-calendar-check"></i>
                     <span>Jadwal Wawancara</span>
-                </button>
-                <button type="button" class="drawer-menu-item" data-page="transfer">
-                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                    <span>Transfer Pengelola</span>
                 </button>
                 <button type="button" class="drawer-menu-item" data-page="profil">
                     <i class="fa-regular fa-building"></i>
@@ -1653,105 +1646,16 @@
                             </div>
                         </div>
 
-                        <!-- CARD: PENGAJUAN & VERIFIKASI LOWONGAN (SCREENSHOT 1) -->
-                        <div class="dash-main-card">
-                            <div class="dash-card-header">
-                                <div class="dash-card-title">
-                                    <i class="fa-regular fa-clipboard"></i>
-                                    <span>Pengajuan & Verifikasi Lowongan</span>
-                                </div>
-                                <button type="button" class="dash-outline-btn" data-nav="lowongan">
-                                    Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
-                                </button>
-                            </div>
-                            <div class="dash-card-subtitle">Pengajuan 6 bulan terakhir - berdasarkan status saat ini</div>
-
-                            <div class="chart-breakdown-grid">
-                                <!-- Area Wave Spline Chart (Responsive SVG) -->
-                                <div class="chart-canvas-wrap">
-                                    <svg viewBox="0 0 540 200" style="width:100%;height:100%;overflow:visible;" preserveAspectRatio="none">
-                                        <defs>
-                                            <linearGradient id="areaGradDark" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stop-color="#475569" stop-opacity="0.15" />
-                                                <stop offset="100%" stop-color="#475569" stop-opacity="0.0" />
-                                            </linearGradient>
-                                            <linearGradient id="areaGradRed" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.12" />
-                                                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
-                                            </linearGradient>
-                                        </defs>
-                                        <!-- Grid Lines -->
-                                        <line x1="20" y1="20" x2="520" y2="20" stroke="#f1f5f9" stroke-dasharray="3,3" />
-                                        <line x1="20" y1="60" x2="520" y2="60" stroke="#f1f5f9" stroke-dasharray="3,3" />
-                                        <line x1="20" y1="100" x2="520" y2="100" stroke="#f1f5f9" stroke-dasharray="3,3" />
-                                        <line x1="20" y1="140" x2="520" y2="140" stroke="#f1f5f9" stroke-dasharray="3,3" />
-                                        <line x1="20" y1="180" x2="520" y2="180" stroke="#e2e8f0" />
-
-                                        <!-- Y Labels -->
-                                        <text x="10" y="24" font-size="10" fill="#94a3b8" text-anchor="end">16</text>
-                                        <text x="10" y="64" font-size="10" fill="#94a3b8" text-anchor="end">12</text>
-                                        <text x="10" y="104" font-size="10" fill="#94a3b8" text-anchor="end">8</text>
-                                        <text x="10" y="144" font-size="10" fill="#94a3b8" text-anchor="end">4</text>
-                                        <text x="10" y="184" font-size="10" fill="#94a3b8" text-anchor="end">0</text>
-
-                                        <!-- X Labels -->
-                                        <text x="30" y="196" font-size="10" fill="#94a3b8">Apr</text>
-                                        <text x="130" y="196" font-size="10" fill="#94a3b8">May</text>
-                                        <text x="230" y="196" font-size="10" fill="#94a3b8">Jun</text>
-                                        <text x="330" y="196" fill="#94a3b8" font-size="10">Jul</text>
-                                        <text x="430" y="196" font-size="10" fill="#94a3b8">Aug</text>
-                                        <text x="510" y="196" font-size="10" fill="#94a3b8">Sep</text>
-
-                                        <!-- Filled Shaded Areas -->
-                                        <path d="M30 176 C 130 180, 230 174, 330 170 C 400 168, 460 70, 520 20 L 520 180 L 30 180 Z" fill="url(#areaGradDark)" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 178 C 420 176, 480 90, 520 40 L 520 180 L 30 180 Z" fill="url(#areaGradRed)" />
-
-                                        <!-- Multi-color Status Spline Curves -->
-                                        <path d="M30 176 C 130 180, 230 174, 330 170 C 400 168, 460 70, 520 20" fill="none" stroke="#334155" stroke-width="2" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 178 C 420 176, 480 90, 520 30" fill="none" stroke="#cbd5e1" stroke-width="1.8" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 178, 480 100, 520 38" fill="none" stroke="#9333ea" stroke-width="1.8" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 110, 520 46" fill="none" stroke="#0284c7" stroke-width="2" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 120, 520 54" fill="none" stroke="#22c55e" stroke-width="1.8" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 130, 520 62" fill="none" stroke="#78350f" stroke-width="1.8" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 140, 520 70" fill="none" stroke="#f97316" stroke-width="1.8" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 150, 520 78" fill="none" stroke="#dc2626" stroke-width="2" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 160, 520 86" fill="none" stroke="#f59e0b" stroke-width="2" />
-                                        <path d="M30 180 C 130 180, 230 180, 330 180 C 430 180, 480 170, 520 172" fill="none" stroke="#64748b" stroke-width="1.8" />
-                                    </svg>
-                                </div>
-
-                                <!-- Total Breakdown Legend -->
-                                <div class="chart-total-side">
-                                    <span class="chart-total-label">Total lowongan</span>
-                                    <div class="chart-total-val" id="totalJobPostsCount">174</div>
-                                    <div class="chart-status-list">
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#f59e0b;"></span><span>Menunggu Verifikasi</span></div><span class="chart-status-count" id="countStatusMenunggu">11</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#dc2626;"></span><span>Perlu Direvisi</span></div><span class="chart-status-count" id="countStatusRevisi">2</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#991b1b;"></span><span>Ditolak</span></div><span class="chart-status-count" id="countStatusDitolak">1</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#f97316;"></span><span>Ditangguhkan</span></div><span class="chart-status-count" id="countStatusDitangguhkan">0</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#78350f;"></span><span>Diblokir</span></div><span class="chart-status-count" id="countStatusDiblokir">3</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#22c55e;"></span><span>Terjadwal Tayang</span></div><span class="chart-status-count" id="countStatusTerjadwal">0</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#0284c7;"></span><span>Tayang</span></div><span class="chart-status-count" id="countStatusTayang">1</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#cbd5e1;"></span><span>Draft</span></div><span class="chart-status-count" id="countStatusDraft">1</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#9333ea;"></span><span>Kedaluwarsa</span></div><span class="chart-status-count" id="countStatusKedaluwarsa">7</span></div>
-                                        <div class="chart-status-row"><div class="chart-status-name"><span class="status-dot" style="background:#334155;"></span><span>Ditutup</span></div><span class="chart-status-count" id="countStatusDitutup">148</span></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="chart-warning-banner">
-                                <i class="fa-solid fa-triangle-exclamation" style="color:#d97706;font-size:14px;"></i>
-                                <span>11 lowongan menunggu verifikasi, 2 lowongan perlu direvisi, 1 lowongan ditolak dan 3 lowongan diblokir. Periksa agar lowongan dapat segera tayang.</span>
-                            </div>
-                        </div>
-
-                        <!-- CARD: CORONG REKRUTMEN (SCREENSHOT 1) -->
+                        <!-- CARD: CORONG REKRUTMEN -->
                         <div class="dash-main-card">
                             <div class="dash-card-header">
                                 <div class="dash-card-title">
                                     <i class="fa-solid fa-filter" style="color:#0284c7;"></i>
                                     <span>Corong Rekrutmen</span>
                                 </div>
+                                <button type="button" class="dash-outline-btn" data-nav="lowongan">
+                                    Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
+                                </button>
                             </div>
 
                             <div class="funnel-layout-grid">
@@ -2603,47 +2507,7 @@
                 </div>
             </section>
 
-            <!-- SECTION: TRANSFER PENGELOLA -->
-            <section class="page" data-page="transfer" id="page-transfer">
-                <div class="dash-container">
-                    <div class="page-title-row">
-                        <div>
-                            <h2>Transfer Pengelola</h2>
-                            <div class="section-note">Kelola pemindahan atau pendelegasian kepemilikan akun pemberi kerja.</div>
-                        </div>
-                        <button type="button" class="primary-btn" onclick="alert('Fitur pengajuan transfer pengelola siap dikonfigurasi.')"><i class="fa-solid fa-arrow-right-arrow-left"></i> Ajukan Transfer</button>
-                    </div>
 
-                    <div class="dash-main-card">
-                        <div class="dash-card-header">
-                            <div class="dash-card-title">
-                                <i class="fa-solid fa-users-gear" style="color:#0284c7;"></i>
-                                <span>Daftar Pengelola Akun</span>
-                            </div>
-                        </div>
-                        <div style="margin-top:14px; font-size:13px; color:#475569; overflow-x:auto;">
-                            <table class="applicant-table" style="width:100%;">
-                                <thead>
-                                    <tr style="background:#f8fafc;">
-                                        <th style="padding:10px;">Nama Pengelola</th>
-                                        <th style="padding:10px;">Email</th>
-                                        <th style="padding:10px;">Peran</th>
-                                        <th style="padding:10px;">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td style="padding:12px 10px; font-weight:700; color:#0f172a;"><?php echo e($profile['owner_name'] ?? $user['name']); ?></td>
-                                        <td style="padding:12px 10px; color:#64748b;"><?php echo e($user['email']); ?></td>
-                                        <td style="padding:12px 10px;"><span class="badge ok" style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; font-weight:600;">Pemilik Utama (Owner)</span></td>
-                                        <td style="padding:12px 10px;"><span class="status-pill approved">Aktif</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <!-- SECTION M: PROFIL PEMBERI KERJA VIEW -->
             <section class="page" data-page="profil" id="page-profil">
@@ -3105,7 +2969,6 @@
         dashboard: 'Dasbor',
         lowongan: 'Lowongan',
         jadwal: 'Jadwal Wawancara',
-        transfer: 'Transfer Pengelola',
         profil: 'Profil Pemberi kerja'
     };
 
