@@ -1090,8 +1090,8 @@ if (empty($profile['verified']) || $isTransitionPeriod || $isFullDisable || $ver
 // Lock state logic
 $isDashboardLocked = in_array($verificationStatus, ['NOT_SUBMITTED', 'PENDING', 'SUSPENDED', 'FULL_DISABLED'], true);
 
-if (!str_contains($html, 'src="assets/app.js"')) {
-    $html = str_replace('</body>', '<script src="assets/app.js"></script>' . "\n</body>", $html);
+if (!str_contains($html, 'src="./assets/app.js"') && !str_contains($html, 'src="assets/app.js"')) {
+    $html = str_replace('</body>', '<script src="./assets/app.js"></script>' . "\n</body>", $html);
 }
 
 if (!str_contains($html, 'window.testCloseJob')) {
