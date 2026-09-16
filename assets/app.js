@@ -72,6 +72,7 @@ function setActivePage(pageName) {
 
 function bindPageSwitchers() {
     document.querySelectorAll('[data-page], [data-nav]').forEach((item) => {
+        if (item.classList.contains('page') || item.tagName === 'SECTION') return;
         item.addEventListener('click', (e) => {
             if (item.tagName === 'A' && item.getAttribute('href') && !item.getAttribute('href').startsWith('#')) {
                 return; // Let normal links work
@@ -79,7 +80,12 @@ function bindPageSwitchers() {
             const target = item.dataset.page || item.dataset.nav;
             if (target) {
                 e.preventDefault();
-                setActivePage(target);
+                e.stopPropagation();
+                if (typeof showPage === 'function') {
+                    showPage(target);
+                } else {
+                    setActivePage(target);
+                }
             }
         });
     });

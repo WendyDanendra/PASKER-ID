@@ -1653,7 +1653,7 @@
                                     <i class="fa-solid fa-filter" style="color:#0284c7;"></i>
                                     <span>Corong Rekrutmen</span>
                                 </div>
-                                <button type="button" class="dash-outline-btn" data-page="lowongan" data-nav="lowongan" onclick="if(typeof showPage==='function'){showPage('lowongan');}else if(typeof setActivePage==='function'){setActivePage('lowongan');}else{window.location.hash='#lowongan';}">
+                                <button type="button" class="dash-outline-btn" id="btnKelolaLowongan" onclick="if(typeof showPage==='function'){showPage('lowongan');}else if(typeof setActivePage==='function'){setActivePage('lowongan');}else{window.location.hash='#lowongan';}">
                                     Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
                                 </button>
                             </div>
@@ -3164,22 +3164,17 @@
     window.showPage = showPage;
     window.setActivePage = showPage;
 
-    // Bind all data-page and data-nav clickers
-    document.querySelectorAll('[data-page]').forEach(btn => {
+    // Bind all data-page and data-nav clickers (exclude page container sections)
+    document.querySelectorAll('[data-page], [data-nav]').forEach(btn => {
+        if (btn.classList.contains('page') || btn.tagName === 'SECTION') return;
         btn.addEventListener('click', function(e) {
             if (this.tagName === 'A' && this.getAttribute('href') && !this.getAttribute('href').startsWith('#')) return;
-            const p = this.dataset.page;
+            const p = this.dataset.page || this.dataset.nav;
             if (p) {
                 e.preventDefault();
+                e.stopPropagation();
                 showPage(p);
             }
-        });
-    });
-
-    document.querySelectorAll('[data-nav]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            showPage(this.dataset.nav);
         });
     });
 
