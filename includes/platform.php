@@ -736,3 +736,59 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
     ];
 }
 
+function record_audit_log(string $entityType, int $entityId, string $action, ?string $details = null, string $actorName = 'Admin Pusat', string $actorRole = 'admin'): void
+{
+    try {
+        $stmt = db()->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))');
+        $stmt->execute([$entityType, $entityId, $actorName, $actorRole, $action, $details]);
+    } catch (Throwable $e) {
+        try {
+            $stmt = db()->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+            $stmt->execute([$entityType, $entityId, $actorName, $actorRole, $action, $details]);
+        } catch (Throwable $ignored) {}
+    }
+}
+
+function fetch_audit_logs(string $entityType, int $entityId): array
+{
+    try {
+        $stmt = db()->prepare('SELECT * FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id ASC');
+        $stmt->execute([$entityType, $entityId]);
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function calculate_employer_consent_hash(array $p): string
+{
+    $fields = [
+        $p['owner_name'] ?? '',
+        $p['nik'] ?? '',
+        $p['profession'] ?? '',
+        $p['phone'] ?? '',
+        $p['whatsapp'] ?? '',
+        $p['npwp'] ?? '',
+        $p['province'] ?? '',
+        $p['city'] ?? '',
+        $p['district'] ?? '',
+        $p['village'] ?? '',
+        $p['postal_code'] ?? '',
+        $p['address'] ?? '',
+        $p['address_detail'] ?? '',
+        $p['description'] ?? '',
+    ];
+    return hash('sha256', implode('|#|', $fields));
+}
+
+function compliance_categories(): array
+{
+    return [
+        'Data tidak lengkap',
+        'Tidak sesuai substansi',
+        'Tidak sesuai dengan aturan',
+        'Tidak sesuai dengan aturan anti diskriminasi',
+    ];
+}
+
+

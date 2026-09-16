@@ -1,24 +1,63 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/platform.php';
 
 $user = require_role('admin');
 
 // Active Section & Filters
 $view = $_GET['view'] ?? 'directory_individual';
-$entity = $_GET['entity'] ?? 'Individu';
+$entity = $_GET['entity'] ?? 'Semua';
 $tab = $_GET['tab'] ?? 'all';
 $search = trim($_GET['q'] ?? '');
+$detailId = isset($_GET['detail_id']) ? (int)$_GET['detail_id'] : 0;
 
 // --- POST HANDLERS FOR ADMIN ACTIONS ---
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_action'])) {
     $action = $_POST['admin_action'];
+    $redirectUrl = $_POST['redirect_url'] ?? "admin.php?view={$view}&entity={$entity}&tab={$tab}" . ($detailId ? "&detail_id={$detailId}" : "");
 
-    // 1. Decision for Employer Verification Case
+    // 1. AMBIL CASE / ASSIGN PEMERIKSA (EMPLOYER)
+    if ($action === 'assign_employer_case') {
+        $targetUserId = (int)$_POST['user_id'];
+        $verifierName = trim($_POST['verifier_name'] ?? 'Admin Pusat');
+        $reason = trim($_POST['assignment_reason'] ?? '');
+        $isSelfAssign = !empty($_POST['self_assign']);
+
+        if (!$isSelfAssign && strlen($reason) < 10) {
+            flash('error', 'Alasan penugasan wajib diisi minimal 10 karakter.');
+        } else {
+            $reasonText = $isSelfAssign ? 'Pengambilan case mandiri oleh pemeriksa.' : $reason;
+            $stmt = db()->prepare('UPDATE employer_profiles SET assigned_to = ?, assigned_at = datetime("now"), assignment_reason = ? WHERE user_id = ?');
+            try {
+                $stmt->execute([$verifierName, $reasonText, $targetUserId]);
+            } catch (Throwable $e) {
+                $stmt = db()->prepare('UPDATE employer_profiles SET assigned_to = ?, assigned_at = NOW(), assignment_reason = ? WHERE user_id = ?');
+                $stmt->execute([$verifierName, $reasonText, $targetUserId]);
+            }
+            record_audit_log('employer', $targetUserId, 'CASE_ASSIGNED', "Case ditugaskan kepada: {$verifierName}. Alasan: {$reasonText}", $user['name']);
+            flash('success', "Case verifikasi berhasil ditugaskan ke {$verifierName}.");
+        }
+        redirect($redirectUrl);
+        exit;
+    }
+
+    // 2. KEPUTUSAN VERIFIKASI PEMBERI KERJA
     if ($action === 'verify_employer') {
         $targetUserId = (int)$_POST['user_id'];
         $decision = $_POST['decision']; // approve | revision | reject
         $notes = trim($_POST['verifier_notes'] ?? '');
         $checklist = isset($_POST['checklist']) ? implode(', ', $_POST['checklist']) : '';
+
+        // Check assigned first
+        $stmtEmp = db()->prepare('SELECT ep.*, u.name, u.email FROM employer_profiles ep JOIN users u ON u.id = ep.user_id WHERE ep.user_id = ? LIMIT 1');
+        $stmtEmp->execute([$targetUserId]);
+        $targetEmp = $stmtEmp->fetch();
+
+        if (!$targetEmp || empty($targetEmp['assigned_to'])) {
+            flash('error', 'Pemberi kerja harus memiliki penugasan aktif terlebih dahulu sebelum keputusan dapat diambil.');
+            redirect($redirectUrl);
+            exit;
+        }
 
         if (($decision === 'revision' || $decision === 'reject') && $notes === '') {
             flash('error', 'Catatan Verifikator wajib diisi untuk keputusan Revisi atau Tolak.');
@@ -32,22 +71,156 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
                 }
                 $stmt->execute([$notes, $checklist, $targetUserId]);
                 db()->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
+                record_audit_log('employer', $targetUserId, 'APPROVED', "Profil disetujui. Masa aktif berlaku 3 bulan. Catatan: {$notes}", $user['name']);
+                notify_user($targetUserId, 'Profil Disetujui', 'Selamat! Profil Pemberi Kerja Individu Anda telah disetujui dan aktif selama 3 bulan.', 'success');
                 flash('success', 'Profil Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 3 Bulan).');
             } elseif ($decision === 'revision') {
                 $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 $stmt->execute([$notes, $checklist, $targetUserId]);
+                record_audit_log('employer', $targetUserId, 'REVISION_REQUESTED', "Permintaan perbaikan data dikirim ke pemohon. Catatan: {$notes}", $user['name']);
+                notify_user($targetUserId, 'Perbaikan Profil Diperlukan', 'Verifikator meminta perbaikan profil: ' . $notes, 'warning');
                 flash('success', 'Profil dikembalikan ke pemohon untuk diperbaiki (Perlu Diperbaiki).');
             } elseif ($decision === 'reject') {
-                $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "REJECTED", rejection_count = rejection_count + 1, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
-                $stmt->execute([$notes, $checklist, $targetUserId]);
-                flash('success', 'Profil Pemberi Kerja Individu Ditolak.');
+                $newRejectionCount = (int)($targetEmp['rejection_count'] ?? 0) + 1;
+                if ($newRejectionCount >= 3) {
+                    // 3rd rejection triggers MANUAL_DINAS_REVIEW
+                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, manual_review_status = "MANUAL_DINAS_REVIEW", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt->execute([$newRejectionCount, $notes, $checklist, $targetUserId]);
+                    record_audit_log('employer', $targetUserId, 'REJECTED_MANUAL_DINAS', "Penolakan ke-3 dicapai. Akun dialihkan ke Jalur Manual Dinas. Catatan: {$notes}", $user['name']);
+                    notify_user($targetUserId, 'Penolakan ke-3: Dialihkan ke Manual Dinas', 'Profil Anda telah ditolak 3 kali. Verifikasi dialihkan ke Jalur Manual Dinas untuk pendampingan petugas.', 'error');
+                    flash('warning', 'Penolakan ke-3 telah dicapai. Profil dialihkan ke Jalur Manual Dinas.');
+                } else {
+                    // 1st or 2nd rejection gives chance to fix (NEEDS_REVISION)
+                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt->execute([$newRejectionCount, $notes, $checklist, $targetUserId]);
+                    record_audit_log('employer', $targetUserId, 'REJECTED', "Profil ditolak (Penolakan ke-{$newRejectionCount}). Kesempatan perbaikan dibuka. Catatan: {$notes}", $user['name']);
+                    notify_user($targetUserId, "Profil Belum Disetujui (Penolakan {$newRejectionCount}/3)", 'Verifikator menolak profil: ' . $notes . '. Silahkan perbaiki data Anda.', 'error');
+                    flash('success', "Profil Pemberi Kerja Ditolak (Penolakan ke-{$newRejectionCount}/3). Kesempatan perbaikan dibuka.");
+                }
             }
         }
-        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        redirect($redirectUrl);
         exit;
     }
 
-    // 2. Tangguhkan Pemberi Kerja (Suspension)
+    // 3. JALUR MANUAL DINAS: CONTROLLED EDIT
+    if ($action === 'manual_dinas_edit') {
+        $targetUserId = (int)$_POST['user_id'];
+        $ownerName = trim($_POST['owner_name'] ?? '');
+        $profession = trim($_POST['profession'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $npwp = trim($_POST['npwp'] ?? '');
+        $province = trim($_POST['province'] ?? '');
+        $city = trim($_POST['city'] ?? '');
+        $district = trim($_POST['district'] ?? '');
+        $village = trim($_POST['village'] ?? '');
+        $postalCode = trim($_POST['postal_code'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $addressDetail = trim($_POST['address_detail'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+
+        // Fetch old profile to check if consent was previously given and is now invalidated
+        $stmtOld = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
+        $stmtOld->execute([$targetUserId]);
+        $oldProfile = $stmtOld->fetch();
+
+        $updateSql = <<<SQL
+            UPDATE employer_profiles SET
+                owner_name = ?, profession = ?, phone = ?, whatsapp = ?, npwp = ?,
+                province = ?, city = ?, district = ?, village = ?, postal_code = ?,
+                address = ?, address_detail = ?, description = ?
+            WHERE user_id = ?
+        SQL;
+        db()->prepare($updateSql)->execute([
+            $ownerName, $profession, $phone, $whatsapp, $npwp,
+            $province, $city, $district, $village, $postalCode,
+            $address, $addressDetail, $description, $targetUserId
+        ]);
+
+        // Check if consent was invalidated
+        $newProfile = [
+            'owner_name' => $ownerName, 'nik' => $oldProfile['nik'] ?? '', 'profession' => $profession,
+            'phone' => $phone, 'whatsapp' => $whatsapp, 'npwp' => $npwp, 'province' => $province,
+            'city' => $city, 'district' => $district, 'village' => $village, 'postal_code' => $postalCode,
+            'address' => $address, 'address_detail' => $addressDetail, 'description' => $description
+        ];
+        $newHash = calculate_employer_consent_hash($newProfile);
+
+        if (!empty($oldProfile['consent_data_hash']) && $oldProfile['consent_data_hash'] !== $newHash) {
+            // Invalidate consent!
+            db()->prepare('UPDATE employer_profiles SET manual_review_status = "INVALID", consent_agreed = 0, consent_data_hash = NULL WHERE user_id = ?')->execute([$targetUserId]);
+            record_audit_log('employer', $targetUserId, 'CONSENT_INVALIDATED', "Data profil diubah oleh Admin setelah persetujuan pemohon. Consent sebelumnya otomatis INVALID.", $user['name']);
+            flash('warning', 'Data profil berhasil diperbarui oleh Admin. PERINGATAN: Karena data berubah, persetujuan (consent) pemohon sebelumnya menjadi INVALID. Silahkan ajukan consent ulang.');
+        } else {
+            record_audit_log('employer', $targetUserId, 'CONTROLLED_EDIT', "Admin melakukan controlled edit pada data profil.", $user['name']);
+            flash('success', 'Data profil berhasil diperbarui melalui Controlled Edit.');
+        }
+
+        redirect($redirectUrl);
+        exit;
+    }
+
+    // 4. JALUR MANUAL DINAS: AJUKAN CONSENT KE USER
+    if ($action === 'manual_dinas_request_consent') {
+        $targetUserId = (int)$_POST['user_id'];
+        $stmtEmp = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
+        $stmtEmp->execute([$targetUserId]);
+        $emp = $stmtEmp->fetch();
+
+        if ($emp) {
+            $hash = calculate_employer_consent_hash($emp);
+            $stmt = db()->prepare('UPDATE employer_profiles SET manual_review_status = "CONSENT_PENDING", consent_data_hash = ?, consent_agreed = 0 WHERE user_id = ?');
+            $stmt->execute([$hash, $targetUserId]);
+            record_audit_log('employer', $targetUserId, 'CONSENT_REQUESTED', "Admin mengajukan permintaan persetujuan (Consent) ke pemohon (Hash: " . substr($hash, 0, 10) . "...).", $user['name']);
+            notify_user($targetUserId, 'Persetujuan Data Diperlukan (Jalur Dinas)', 'Petugas Dinas telah menyiapkan data perbaikan profil Anda. Silakan tinjau dan berikan persetujuan (Consent) di Dashboard Anda.', 'warning');
+            flash('success', 'Permintaan persetujuan (Consent) berhasil diajukan ke pemohon.');
+        }
+        redirect($redirectUrl);
+        exit;
+    }
+
+    // 5. JALUR MANUAL DINAS: SETUJUI & AKTIFKAN (PERNYATAAN PETUGAS)
+    if ($action === 'manual_dinas_approve_activate') {
+        $targetUserId = (int)$_POST['user_id'];
+        $officerName = trim($_POST['officer_name'] ?? $user['name']);
+        $officerStatement = trim($_POST['officer_statement'] ?? '');
+        $statementCheck = !empty($_POST['statement_confirmed']);
+
+        if (!$statementCheck || $officerStatement === '') {
+            flash('error', 'Pernyataan Petugas dan konfirmasi checklist wajib diisi.');
+            redirect($redirectUrl);
+            exit;
+        }
+
+        // Verify consent is valid
+        $stmtEmp = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
+        $stmtEmp->execute([$targetUserId]);
+        $emp = $stmtEmp->fetch();
+
+        $currentHash = calculate_employer_consent_hash($emp);
+        if ($emp['manual_review_status'] !== 'CONSENT_GIVEN' || empty($emp['consent_data_hash']) || $emp['consent_data_hash'] !== $currentHash) {
+            flash('error', 'Persetujuan pemohon tidak valid atau data telah berubah setelah consent. Setujui & Aktifkan dibatalkan.');
+            redirect($redirectUrl);
+            exit;
+        }
+
+        $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
+        } else {
+            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
+        }
+        $stmt->execute([$officerName, $officerStatement, $targetUserId]);
+        db()->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
+        record_audit_log('employer', $targetUserId, 'APPROVED_MANUAL_DINAS', "Profil disetujui & diaktifkan melalui Jalur Manual Dinas oleh petugas: {$officerName}. Pernyataan: {$officerStatement}", $user['name']);
+        notify_user($targetUserId, 'Profil Aktif (Jalur Dinas)', 'Selamat! Akun Pemberi Kerja Individu Anda telah disetujui dan diaktifkan oleh Dinas Tenaga Kerja selama 3 bulan.', 'success');
+        flash('success', 'Akun Pemberi Kerja Individu berhasil Disetujui & Diaktifkan melalui Jalur Manual Dinas.');
+        redirect($redirectUrl);
+        exit;
+    }
+
+    // 6. TANGGUHKAN / BATALKAN PENANGGUHAN (SUSPENSION)
     if ($action === 'suspend_employer') {
         $targetUserId = (int)$_POST['user_id'];
         $reason = trim($_POST['suspension_reason'] ?? '');
@@ -57,23 +230,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         } else {
             $stmt = db()->prepare('UPDATE employer_profiles SET verification_status = "SUSPENDED", suspension_reason = ? WHERE user_id = ?');
             $stmt->execute([$reason, $targetUserId]);
+            record_audit_log('employer', $targetUserId, 'SUSPENDED', "Pemberi kerja ditangguhkan. Alasan: {$reason}", $user['name']);
             flash('success', 'Pemberi kerja berhasil ditangguhkan.');
         }
-        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        redirect($redirectUrl);
         exit;
     }
 
-    // 3. Batalkan Penangguhan
     if ($action === 'unsuspend_employer') {
         $targetUserId = (int)$_POST['user_id'];
         $stmt = db()->prepare('UPDATE employer_profiles SET verification_status = "APPROVED", suspension_reason = NULL WHERE user_id = ?');
         $stmt->execute([$targetUserId]);
+        record_audit_log('employer', $targetUserId, 'UNSUSPENDED', "Penangguhan pemberi kerja dibatalkan.", $user['name']);
         flash('success', 'Penangguhan pemberi kerja berhasil dibatalkan.');
-        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        redirect($redirectUrl);
         exit;
     }
 
-    // 3b. Setujui Perpanjangan Masa Aktif (Admin Memilih Durasi 1-3 Hari)
+    // 7. PERPANJANGAN MASA AKTIF TRANSISI (1, 2, ATAU 3 HARI)
     if ($action === 'approve_extension') {
         $targetUserId = (int)$_POST['user_id'];
         $extDays = isset($_POST['extension_days']) ? max(1, min(3, (int)$_POST['extension_days'])) : 3;
@@ -84,66 +258,117 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             $stmt = db()->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', active_until = DATE_ADD(GREATEST(COALESCE(active_until, NOW()), NOW()), INTERVAL {$extDays} DAY) WHERE user_id = ?");
         }
         $stmt->execute([$targetUserId]);
+        record_audit_log('employer', $targetUserId, 'EXTENSION_APPROVED', "Perpanjangan masa transisi disetujui selama {$extDays} hari.", $user['name']);
         flash('success', "Permohonan perpanjangan masa aktif ({$extDays} hari) berhasil Disetujui.");
-        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        redirect($redirectUrl);
         exit;
     }
 
-    // 3c. Tolak Perpanjangan Masa Aktif
     if ($action === 'reject_extension') {
         $targetUserId = (int)$_POST['user_id'];
         $stmt = db()->prepare('UPDATE employer_profiles SET extension_status = "REJECTED" WHERE user_id = ?');
         $stmt->execute([$targetUserId]);
+        record_audit_log('employer', $targetUserId, 'EXTENSION_REJECTED', "Permohonan perpanjangan masa transisi ditolak.", $user['name']);
         flash('success', 'Permohonan perpanjangan masa aktif Ditolak.');
-        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        redirect($redirectUrl);
         exit;
     }
 
-    // 4. Decision for Job Verification Case
+    // 8. AMBIL CASE / ASSIGN PEMERIKSA LOWONGAN
+    if ($action === 'assign_job_case') {
+        $jobId = (int)$_POST['job_id'];
+        $verifierName = trim($_POST['verifier_name'] ?? 'Admin Pusat');
+        $reason = trim($_POST['assignment_reason'] ?? '');
+        $isSelfAssign = !empty($_POST['self_assign']);
+
+        if (!$isSelfAssign && strlen($reason) < 10) {
+            flash('error', 'Alasan penugasan lowongan wajib diisi minimal 10 karakter.');
+        } else {
+            $reasonText = $isSelfAssign ? 'Pengambilan case lowongan mandiri oleh pemeriksa.' : $reason;
+            $stmt = db()->prepare('UPDATE job_posts SET assigned_to = ?, assigned_at = datetime("now"), assignment_reason = ? WHERE id = ?');
+            try {
+                $stmt->execute([$verifierName, $reasonText, $jobId]);
+            } catch (Throwable $e) {
+                $stmt = db()->prepare('UPDATE job_posts SET assigned_to = ?, assigned_at = NOW(), assignment_reason = ? WHERE id = ?');
+                $stmt->execute([$verifierName, $reasonText, $jobId]);
+            }
+            record_audit_log('job', $jobId, 'CASE_ASSIGNED', "Case lowongan ditugaskan kepada: {$verifierName}. Alasan: {$reasonText}", $user['name']);
+            flash('success', "Case verifikasi lowongan berhasil ditugaskan ke {$verifierName}.");
+        }
+        redirect($redirectUrl);
+        exit;
+    }
+
+    // 9. KEPUTUSAN VERIFIKASI LOWONGAN (CHECKLIST 4 KATEGORI)
     if ($action === 'verify_job') {
         $jobId = (int)$_POST['job_id'];
         $decision = $_POST['decision']; // approve | revision | reject
         $notes = trim($_POST['verifier_notes'] ?? '');
-        $checklist = isset($_POST['checklist']) ? $_POST['checklist'] : [];
-        $checklistStr = implode(', ', $checklist);
 
-        if (!empty($checklist) && $notes === '') {
-            flash('error', 'CATATAN VERIFIKATOR wajib diisi jika checklist pelanggaran dipilih.');
-        } else {
-            if ($decision === 'approve') {
-                $stmt = db()->prepare('UPDATE job_posts SET status = "Tayang", published_at = CURRENT_TIMESTAMP, verifier_notes = ?, verification_checklist = ? WHERE id = ?');
-                $stmt->execute([$notes, $checklistStr, $jobId]);
-                try {
-                    db()->prepare('UPDATE job_verifications SET status = "APPROVED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
-                } catch (Throwable $ignored) {}
-                flash('success', 'Lowongan berhasil disetujui dan Tayang.');
-            } elseif ($decision === 'revision') {
-                $stmt = db()->prepare('UPDATE job_posts SET status = "Perlu Direvisi", admin_notes = ?, verifier_notes = ?, verification_checklist = ? WHERE id = ?');
-                $stmt->execute([$notes, $notes, $checklistStr, $jobId]);
-                try {
-                    db()->prepare('UPDATE job_verifications SET status = "NEEDS_REVISION", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
-                } catch (Throwable $ignored) {}
-                flash('success', 'Lowongan dikembalikan ke pemberi kerja (Perlu Direvisi).');
-            } elseif ($decision === 'reject') {
-                $stmt = db()->prepare('UPDATE job_posts SET status = "Ditolak", admin_notes = ?, verifier_notes = ?, verification_checklist = ? WHERE id = ?');
-                $stmt->execute([$notes, $notes, $checklistStr, $jobId]);
-                try {
-                    db()->prepare('UPDATE job_verifications SET status = "REJECTED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
-                } catch (Throwable $ignored) {}
-                flash('success', 'Lowongan Ditolak.');
+        // Parse 4 Compliance Categories
+        $categories = compliance_categories();
+        $checklistData = [];
+        $hasViolation = false;
+        $missingViolationNote = false;
+
+        foreach ($categories as $cat) {
+            $slug = 'cat_' . md5($cat);
+            $status = $_POST[$slug . '_status'] ?? 'Patuh';
+            $catNote = trim($_POST[$slug . '_note'] ?? '');
+
+            if ($status === 'Tidak Patuh') {
+                $hasViolation = true;
+                if ($catNote === '') {
+                    $missingViolationNote = true;
+                }
             }
+            $checklistData[$cat] = [
+                'status' => $status,
+                'note' => $catNote,
+            ];
         }
-        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
-        exit;
-    }
 
-    // 5. Toggle Blacklist Lowongan
-    if ($action === 'toggle_blacklist') {
-        $jobId = (int)$_POST['job_id'];
-        $stmt = db()->prepare('UPDATE job_posts SET is_blacklisted = IF(is_blacklisted = 1, 0, 1) WHERE id = ?');
-        $stmt->execute([$jobId]);
-        flash('success', 'Status blacklist lowongan diperbarui.');
-        redirect("admin.php?view={$view}&entity={$entity}&tab={$tab}");
+        if ($missingViolationNote) {
+            flash('error', 'Catatan item wajib diisi untuk setiap kategori yang dinyatakan "Tidak Patuh".');
+            redirect($redirectUrl);
+            exit;
+        }
+
+        if ($decision === 'approve' && $hasViolation) {
+            flash('error', 'Keputusan "Setujui" TIDAK VALID karena masih terdapat kategori checklist yang "Tidak Patuh". Hanya keputusan Revisi atau Tolak yang diperbolehkan.');
+            redirect($redirectUrl);
+            exit;
+        }
+
+        $checklistJson = json_encode($checklistData, JSON_UNESCAPED_UNICODE);
+
+        if ($decision === 'approve') {
+            $stmt = db()->prepare('UPDATE job_posts SET status = "Tayang", published_at = CURRENT_TIMESTAMP, verifier_notes = ?, compliance_checklist = ? WHERE id = ?');
+            $stmt->execute([$notes, $checklistJson, $jobId]);
+            try {
+                db()->prepare('UPDATE job_verifications SET status = "APPROVED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
+            } catch (Throwable $ignored) {}
+            record_audit_log('job', $jobId, 'APPROVED', "Lowongan disetujui dan Tayang. Semua kategori patuh. Catatan: {$notes}", $user['name']);
+            flash('success', 'Lowongan berhasil disetujui dan Tayang.');
+        } elseif ($decision === 'revision') {
+            $stmt = db()->prepare('UPDATE job_posts SET status = "Perlu Direvisi", admin_notes = ?, verifier_notes = ?, compliance_checklist = ? WHERE id = ?');
+            $stmt->execute([$notes, $notes, $checklistJson, $jobId]);
+            try {
+                db()->prepare('UPDATE job_verifications SET status = "NEEDS_REVISION", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
+            } catch (Throwable $ignored) {}
+            record_audit_log('job', $jobId, 'REVISION_REQUESTED', "Lowongan dikembalikan ke pemohon untuk diperbaiki (Perlu Direvisi). Catatan: {$notes}", $user['name']);
+            flash('success', 'Lowongan dikembalikan ke pemberi kerja (Perlu Direvisi).');
+        } elseif ($decision === 'reject') {
+            $stmt = db()->prepare('UPDATE job_posts SET status = "Ditolak", admin_notes = ?, verifier_notes = ?, compliance_checklist = ? WHERE id = ?');
+            $stmt->execute([$notes, $notes, $checklistJson, $jobId]);
+            try {
+                db()->prepare('UPDATE job_verifications SET status = "REJECTED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
+            } catch (Throwable $ignored) {}
+            record_audit_log('job', $jobId, 'REJECTED', "Lowongan Ditolak secara permanen. Catatan: {$notes}", $user['name']);
+            flash('success', 'Lowongan Ditolak.');
+        }
+
+        redirect($redirectUrl);
         exit;
     }
 }
@@ -152,18 +377,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 if ($view === 'directory_individual') {
     $query = <<<SQL
         SELECT u.id as user_id, u.name, u.email, u.created_at, u.profile_complete,
-               ep.owner_name, ep.phone, ep.whatsapp, ep.npwp, ep.profession, ep.address, ep.city, ep.province, ep.district, ep.village,
-               ep.verified, ep.verification_status, ep.suspension_reason, ep.extension_status, ep.verifier_notes, ep.verification_checklist
+               ep.id as profile_id, ep.owner_name, ep.nik, ep.phone, ep.whatsapp, ep.npwp, ep.profession, ep.address, ep.address_detail,
+               ep.city, ep.province, ep.district, ep.village, ep.postal_code, ep.latitude, ep.longitude, ep.description,
+               ep.verified, ep.verification_status, ep.suspension_reason, ep.extension_status, ep.verifier_notes, ep.verification_checklist,
+               ep.manual_review_status, ep.assigned_to, ep.assigned_at, ep.rejection_count, ep.entity_type
         FROM users u
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
         WHERE u.role = 'employer'
     SQL;
     $params = [];
 
+    if ($entity === 'Individu') {
+        $query .= ' AND (ep.entity_type = "Individu" OR ep.entity_type IS NULL)';
+    } elseif ($entity === 'Perusahaan') {
+        $query .= ' AND ep.entity_type = "Perusahaan"';
+    }
+
     if ($search !== '') {
         $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
         $like = '%' . $search . '%';
-        $params = [$like, $like, $like, $like, $like, $like];
+        $params = array_merge($params, [$like, $like, $like, $like, $like, $like]);
     }
 
     if ($tab === 'verified') {
@@ -178,6 +411,18 @@ if ($view === 'directory_individual') {
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $individualList = $stmt->fetchAll() ?: [];
+
+    // If detail_id is requested, find that employer
+    $selectedEmployer = null;
+    $auditLogs = [];
+    if ($detailId > 0) {
+        $stmtSel = db()->prepare('SELECT u.id as user_id, u.name, u.email, u.created_at, u.profile_complete, ep.* FROM employer_profiles ep JOIN users u ON u.id = ep.user_id WHERE ep.user_id = ? LIMIT 1');
+        $stmtSel->execute([$detailId]);
+        $selectedEmployer = $stmtSel->fetch();
+        if ($selectedEmployer) {
+            $auditLogs = fetch_audit_logs('employer', $detailId);
+        }
+    }
 }
 
 // --- FETCH DATA FOR VERIFIKASI PEMBERI KERJA ---
@@ -186,21 +431,29 @@ if ($view === 'verifikasi_employer') {
         SELECT u.id as user_id, u.name, u.email, u.created_at,
                ep.id as profile_id, ep.owner_name, ep.nik, ep.profession, ep.phone, ep.whatsapp, ep.npwp,
                ep.province, ep.city, ep.district, ep.village, ep.postal_code, ep.address, ep.address_detail,
-               ep.verified, ep.verification_status, ep.verifier_notes, ep.verification_checklist
+               ep.latitude, ep.longitude, ep.description, ep.verified, ep.verification_status, ep.verifier_notes,
+               ep.verification_checklist, ep.assigned_to, ep.assigned_at, ep.assignment_reason, ep.rejection_count,
+               ep.manual_review_status, ep.consent_data_hash, ep.consent_given_at, ep.officer_statement, ep.officer_name, ep.entity_type
         FROM employer_profiles ep
         JOIN users u ON u.id = ep.user_id
     SQL;
     $params = [];
 
     if ($entity === 'Individu') {
-        $query .= ' WHERE (ep.profession IS NOT NULL OR ep.owner_name IS NOT NULL)';
+        $query .= ' WHERE (ep.entity_type = "Individu" OR ep.entity_type IS NULL)';
     } elseif ($entity === 'Perusahaan') {
-        $query .= ' WHERE (ep.profession IS NULL AND ep.owner_name IS NULL)';
+        $query .= ' WHERE ep.entity_type = "Perusahaan"';
     } else {
         $query .= ' WHERE 1=1';
     }
 
-    if ($tab === 'process' || $tab === 'all') {
+    if ($search !== '') {
+        $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
+        $like = '%' . $search . '%';
+        $params = array_merge($params, [$like, $like, $like, $like, $like, $like]);
+    }
+
+    if ($tab === 'process') {
         $query .= ' AND ep.verification_status = "PENDING"';
     } elseif ($tab === 'approved') {
         $query .= ' AND ep.verification_status = "APPROVED"';
@@ -214,6 +467,18 @@ if ($view === 'verifikasi_employer') {
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $verificationEmployers = $stmt->fetchAll() ?: [];
+
+    // If detail_id is requested
+    $selectedEmployer = null;
+    $auditLogs = [];
+    if ($detailId > 0) {
+        $stmtSel = db()->prepare('SELECT u.id as user_id, u.name, u.email, u.created_at, ep.* FROM employer_profiles ep JOIN users u ON u.id = ep.user_id WHERE ep.user_id = ? LIMIT 1');
+        $stmtSel->execute([$detailId]);
+        $selectedEmployer = $stmtSel->fetch();
+        if ($selectedEmployer) {
+            $auditLogs = fetch_audit_logs('employer', $detailId);
+        }
+    }
 }
 
 // --- FETCH DATA FOR VERIFIKASI LOWONGAN ---
@@ -234,6 +499,12 @@ if ($view === 'verifikasi_job') {
         $query .= ' WHERE 1=1';
     }
 
+    if ($search !== '') {
+        $query .= ' AND (j.title LIKE ? OR j.location LIKE ? OR j.kbji_code LIKE ? OR u.name LIKE ?)';
+        $like = '%' . $search . '%';
+        $params = array_merge($params, [$like, $like, $like, $like]);
+    }
+
     if ($tab === 'process') {
         $query .= ' AND j.status = "Menunggu Verifikasi"';
     } elseif ($tab === 'approved') {
@@ -248,8 +519,19 @@ if ($view === 'verifikasi_job') {
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $verificationJobs = $stmt->fetchAll() ?: [];
-}
 
+    // If detail_id is requested for job
+    $selectedJob = null;
+    $auditLogs = [];
+    if ($detailId > 0) {
+        $stmtSel = db()->prepare('SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, ep.phone, ep.address, u.name as user_name, u.email as user_email FROM job_posts j JOIN users u ON u.id = j.user_id LEFT JOIN employer_profiles ep ON ep.user_id = u.id WHERE j.id = ? LIMIT 1');
+        $stmtSel->execute([$detailId]);
+        $selectedJob = $stmtSel->fetch();
+        if ($selectedJob) {
+            $auditLogs = fetch_audit_logs('job', $detailId);
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -261,232 +543,792 @@ if ($view === 'verifikasi_job') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/app.css">
     <style>
-        .admin-layout { display: flex; min-height: 100vh; background: #f8fafc; }
-        .admin-sidebar { width: 260px; background: #0f172a; color: #94a3b8; display: flex; flex-direction: column; flex-shrink: 0; }
-        .admin-sidebar .brand { padding: 20px; font-size: 18px; font-weight: 800; color: #38bdf8; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; }
-        .admin-sidebar .menu-group { padding: 16px 12px 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; }
-        .admin-sidebar .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 12px; color: #cbd5e1; text-decoration: none; font-size: 13px; font-weight: 600; transition: all 0.2s; margin: 2px 10px; }
-        .admin-sidebar .nav-item:hover, .admin-sidebar .nav-item.active { background: #1e293b; color: #38bdf8; }
-        .admin-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .admin-topbar { height: 64px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
-        .admin-container { padding: 24px; flex: 1; overflow-y: auto; }
+        :root {
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --sidebar-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-page); color: var(--text-dark); margin: 0; }
+        .console-layout { display: flex; min-height: 100vh; }
         
-        .entity-selector { display: inline-flex; background: #e2e8f0; border-radius: 12px; padding: 3px; gap: 3px; margin-bottom: 16px; }
-        .entity-btn { padding: 6px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #475569; text-decoration: none; transition: all 0.2s; }
-        .entity-btn.active { background: #fff; color: #0284c7; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+        /* SIDEBAR ALIGNED WITH SCREENSHOT BASELINE */
+        .console-sidebar {
+            width: 68px;
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            flex-shrink: 0;
+            z-index: 50;
+        }
+        .console-sidebar .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 20px;
+            margin-bottom: 24px;
+        }
+        .console-sidebar .nav-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            align-items: center;
+        }
+        .console-sidebar .nav-item {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+        .console-sidebar .nav-item:hover, .console-sidebar .nav-item.active {
+            background: #f0f9ff;
+            color: #0284c7;
+        }
+        .console-sidebar .bottom-nav {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .console-sidebar .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #e0f2fe;
+            color: #0284c7;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-        .admin-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 16px rgba(15,23,42,0.04); overflow: hidden; }
-        .admin-card-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-        .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        .admin-table th { background: #f8fafc; padding: 12px 16px; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; }
-        .admin-table td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+        /* TOPBAR ALIGNED WITH SCREENSHOT */
+        .console-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .console-topbar {
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .nav-arrows { display: flex; gap: 8px; color: #94a3b8; font-size: 14px; cursor: pointer; }
+        .nav-arrows i:hover { color: #0f172a; }
+        .breadcrumb-trail { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b; }
+        .breadcrumb-trail a { color: #64748b; text-decoration: none; font-weight: 500; }
+        .breadcrumb-trail a:hover { color: #0284c7; }
+        .breadcrumb-trail .current { color: #0f172a; font-weight: 600; }
         
-        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
-        .badge.ok { background: #ecfdf5; color: #047857; }
-        .badge.pending { background: #fff7ed; color: #c2410c; }
-        .badge.revision { background: #fef2f2; color: #b91c1c; }
-        .badge.suspended { background: #fef2f2; color: #991b1b; }
+        .topbar-center { flex: 1; max-width: 480px; margin: 0 24px; }
+        .search-pill-input {
+            width: 100%;
+            height: 38px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            padding: 0 16px 0 38px;
+            font-size: 13px;
+            outline: none;
+            color: #334155;
+            position: relative;
+        }
+        .search-pill-wrapper { position: relative; width: 100%; }
+        .search-pill-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
+
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .admin-user-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+        .admin-user-pill .icon-box {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #e0f2fe;
+            color: #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .admin-user-pill .name-role { display: flex; flex-direction: column; text-align: left; }
+        .admin-user-pill .name { font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.1; }
+        .admin-user-pill .role { font-size: 10px; color: #64748b; line-height: 1.1; }
+
+        /* BODY CONTAINER */
+        .console-container { padding: 28px; flex: 1; overflow-y: auto; }
+        
+        /* TABS & FILTER BAR */
+        .tab-filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
+        .status-tab-list { display: flex; gap: 24px; border-bottom: 2px solid transparent; }
+        .status-tab-item {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            padding-bottom: 8px;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .status-tab-item:hover { color: #0284c7; }
+        .status-tab-item.active { color: #0284c7; font-weight: 700; }
+        .status-tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #0284c7;
+            border-radius: 2px;
+        }
+
+        .filter-controls { display: flex; align-items: center; gap: 12px; }
+        .filter-search-box {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0 12px;
+            height: 38px;
+            width: 260px;
+        }
+        .filter-search-box input { border: none; outline: none; width: 100%; font-size: 13px; margin-left: 8px; }
+        .filter-btn {
+            height: 38px;
+            padding: 0 16px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .filter-btn:hover { background: #f8fafc; }
+
+        .entity-selector-pill {
+            display: inline-flex;
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 3px;
+            gap: 3px;
+        }
+        .entity-selector-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .entity-selector-btn.active {
+            background: #ffffff;
+            color: #0284c7;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        /* CONSOLE DATA TABLE */
+        .console-table-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+        .console-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        .console-table th {
+            background: #ffffff;
+            padding: 14px 18px;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .console-table td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            vertical-align: middle;
+        }
+        .console-table tbody tr:hover { background: #fbfcfe; }
+
+        .item-avatar-box {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+            color: #475569;
+            flex-shrink: 0;
+        }
+
+        /* PILL BADGES */
+        .pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .pill-badge.verified, .pill-badge.approved, .pill-badge.safe { background: #ecfdf5; color: #059669; }
+        .pill-badge.process, .pill-badge.assigned { background: #f0f9ff; color: #0284c7; }
+        .pill-badge.pending { background: #fff7ed; color: #ea580c; }
+        .pill-badge.revision { background: #fef2f2; color: #dc2626; }
+        .pill-badge.rejected, .pill-badge.danger { background: #fef2f2; color: #dc2626; }
+        .pill-badge.suspended { background: #fef2f2; color: #991b1b; }
+
+        .btn-lihat-detail {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .btn-lihat-detail:hover { background: #f8fafc; border-color: #94a3b8; }
+
+        /* DETAIL LAYOUT (STACKED CARDS + TIMELINE) */
+        .detail-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .detail-grid-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 1024px) {
+            .detail-grid-container { grid-template-columns: 1fr; }
+        }
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .section-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .key-val-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 24px;
+            font-size: 13px;
+        }
+        .key-val-item .label { font-size: 12px; color: #64748b; margin-bottom: 3px; }
+        .key-val-item .value { font-weight: 600; color: #0f172a; }
+
+        /* TIMELINE AUDIT LOG */
+        .timeline-list { position: relative; padding-left: 20px; margin-top: 10px; }
+        .timeline-list::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        .timeline-item { position: relative; margin-bottom: 18px; }
+        .timeline-dot {
+            position: absolute;
+            left: -19px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #0284c7;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 0 2px #bae6fd;
+        }
+        .timeline-time { font-size: 11px; color: #94a3b8; margin-bottom: 2px; }
+        .timeline-title { font-size: 12px; font-weight: 700; color: #1e293b; }
+        .timeline-desc { font-size: 12px; color: #475569; margin-top: 2px; line-height: 1.4; }
+
+        /* DATA COMPARISON TABLE (OSS / SIAPKERJA) */
+        .compare-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .compare-table th { background: #f8fafc; padding: 10px 12px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+        .compare-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+        
+        .map-box-placeholder {
+            height: 160px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 12px;
+            border: 1px dashed #cbd5e1;
+        }
     </style>
 </head>
 <body>
-<div class="admin-layout">
-    <!-- REUSE EXISTING CONSOLE SIDEBAR -->
-    <aside class="admin-sidebar">
-        <div class="brand">
-            <i class="fa-solid fa-shield-halved"></i> Karirhub Console
+<div class="console-layout">
+    <!-- NARROW ICON SIDEBAR (ALIGNED WITH VISUAL BASELINE) -->
+    <aside class="console-sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-cloud"></i>
         </div>
-        <div class="menu-group">Pemberi Kerja</div>
-        <a href="admin.php?view=directory_individual" class="nav-item <?php echo $view === 'directory_individual' ? 'active' : ''; ?>">
-            <i class="fa-solid fa-users"></i> Individual (Direktori)
-        </a>
-
-        <div class="menu-group">Verifikasi</div>
-        <a href="admin.php?view=verifikasi_employer&entity=Individu" class="nav-item <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>">
-            <i class="fa-solid fa-id-card"></i> Verifikasi Pemberi Kerja
-        </a>
-        <a href="admin.php?view=verifikasi_job&entity=Individu" class="nav-item <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>">
-            <i class="fa-solid fa-file-circle-check"></i> Verifikasi Lowongan
-        </a>
-
-        <div style="margin-top:auto; padding:20px;">
-            <a href="logout.php" class="nav-item" style="color:#ef4444; background:rgba(239,68,68,0.1);"><i class="fa-solid fa-right-from-bracket"></i> Logout Admin</a>
+        <div class="nav-list">
+            <a href="admin.php?view=directory_individual" class="nav-item <?php echo $view === 'directory_individual' ? 'active' : ''; ?>" title="Direktori Pemberi Kerja">
+                <i class="fa-solid fa-building"></i>
+            </a>
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="nav-item <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>" title="Verifikasi Pemberi Kerja">
+                <i class="fa-solid fa-id-card"></i>
+            </a>
+            <a href="admin.php?view=verifikasi_job&entity=Individu" class="nav-item <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>" title="Verifikasi Lowongan">
+                <i class="fa-solid fa-briefcase"></i>
+            </a>
+            <a href="#" class="nav-item" title="Pengaturan"><i class="fa-solid fa-gear"></i></a>
+        </div>
+        <div class="bottom-nav">
+            <a href="logout.php" class="nav-item" title="Logout" style="color:#ef4444;"><i class="fa-solid fa-right-from-bracket"></i></a>
+            <div class="user-avatar" title="<?php echo e($user['name']); ?>">PI</div>
         </div>
     </aside>
 
-    <main class="admin-main">
-        <header class="admin-topbar">
-            <div style="font-weight:700; font-size:15px; color:#0f172a;">
-                <?php 
-                    if ($view === 'directory_individual') echo 'Direktori Pemberi Kerja Individu (Read-Only)';
-                    elseif ($view === 'verifikasi_employer') echo 'Verifikasi Pemberi Kerja';
-                    else echo 'Verifikasi Lowongan';
-                ?>
+    <!-- MAIN CONSOLE CONTENT -->
+    <main class="console-main">
+        <!-- TOPBAR (ALIGNED WITH VISUAL BASELINE) -->
+        <header class="console-topbar">
+            <div class="topbar-left">
+                <div class="nav-arrows">
+                    <i class="fa-solid fa-chevron-left" onclick="history.back()"></i>
+                    <i class="fa-solid fa-chevron-right" onclick="history.forward()"></i>
+                </div>
+                <div class="breadcrumb-trail">
+                    <a href="admin.php">Beranda</a>
+                    <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
+                    <?php if ($view === 'directory_individual'): ?>
+                        <a href="admin.php?view=directory_individual">Perusahaan / Pemberi Kerja</a>
+                        <?php if ($selectedEmployer): ?>
+                            <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
+                            <span class="current">#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></span>
+                        <?php endif; ?>
+                    <?php elseif ($view === 'verifikasi_employer'): ?>
+                        <a href="admin.php?view=verifikasi_employer">Verifikasi Pemberi Kerja</a>
+                        <?php if ($selectedEmployer): ?>
+                            <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
+                            <span class="current">#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></span>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <a href="admin.php?view=verifikasi_job">Verifikasi Lowongan</a>
+                        <?php if ($selectedJob): ?>
+                            <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
+                            <span class="current">#<?php echo substr(md5($selectedJob['id']), 0, 8); ?></span>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
             </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <span class="badge ok"><i class="fa-solid fa-user-shield"></i> Admin Pusat</span>
+
+            <div class="topbar-center">
+                <form method="get" action="admin.php">
+                    <input type="hidden" name="view" value="<?php echo e($view); ?>">
+                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
+                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                    <div class="search-pill-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" name="q" value="<?php echo e($search); ?>" class="search-pill-input" placeholder="Cari lowongan, pemberi kerja, pencari kerja, ata">
+                    </div>
+                </form>
+            </div>
+
+            <div class="topbar-right">
+                <div class="admin-user-pill">
+                    <div class="icon-box"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="name-role">
+                        <span class="name">Admin</span>
+                        <span class="role">Admin pusat</span>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <div class="admin-container">
+        <div class="console-container">
             <?php if ($flash = get_flash()): ?>
-                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
+                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:20px;">
                     <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
                     <?php echo e($flash['message']); ?>
                 </div>
             <?php endif; ?>
 
-            <!-- 1. DIREKTORI INDIVIDUAL (SECTION P) -->
+            <!-- ========================================== -->
+            <!-- 1. DIREKTORI INDIVIDUAL (READ-ONLY DIRECTORY) -->
+            <!-- ========================================== -->
             <?php if ($view === 'directory_individual'): ?>
-                <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                    <h2 style="font-size:20px; font-weight:800; color:#0f172a;">Direktori Pemberi Kerja Individu</h2>
-                    <div style="font-size:12px; color:#64748b;"><i class="fa-solid fa-info-circle"></i> Tampilan direktori bersifat Read-Only. Keputusan verifikasi dilakukan di menu Verifikasi.</div>
-                </div>
-
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <div class="tab-row" style="border:none; margin:0;">
-                            <a class="<?php echo $tab === 'all' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=all">Semua</a>
-                            <a class="<?php echo $tab === 'verified' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=verified">Terverifikasi</a>
-                            <a class="<?php echo $tab === 'process' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=process">Dalam Proses</a>
-                            <a class="<?php echo $tab === 'rejected' ? 'active' : ''; ?>" href="admin.php?view=directory_individual&tab=rejected">Ditolak</a>
-                        </div>
-                        <form method="get" action="admin.php" style="display:flex; gap:8px;">
-                            <input type="hidden" name="view" value="directory_individual">
-                            <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
-                            <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari nama, email, NPWP..." style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px;">
-                            <button class="primary-btn" type="submit" style="height:32px; padding:0 12px; font-size:12px;">Cari</button>
-                        </form>
+                <?php if ($selectedEmployer): ?>
+                    <!-- DETAIL VIEW FOR DIRECTORY (STRICTLY READ-ONLY) -->
+                    <div style="margin-bottom:16px;">
+                        <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail">
+                            <i class="fa-solid fa-arrow-left"></i> Kembali
+                        </a>
                     </div>
-                    <div class="table-shell">
-                        <table class="admin-table">
+
+                    <div class="detail-header-bar">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <div class="item-avatar-box" style="width:52px; height:52px; font-size:18px;">
+                                <?php echo strtoupper(substr($selectedEmployer['owner_name'] ?: $selectedEmployer['name'], 0, 2)); ?>
+                            </div>
+                            <div>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <h1 style="font-size:20px; font-weight:800; margin:0;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></h1>
+                                    <span class="pill-badge <?php echo $selectedEmployer['verification_status'] === 'APPROVED' ? 'verified' : ($selectedEmployer['verification_status'] === 'SUSPENDED' ? 'suspended' : 'pending'); ?>">
+                                        ● <?php echo e($selectedEmployer['verification_status'] === 'APPROVED' ? 'Terverifikasi' : $selectedEmployer['verification_status']); ?>
+                                    </span>
+                                </div>
+                                <div style="font-size:12px; color:#64748b; margin-top:4px;">
+                                    Slug: <code><?php echo strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $selectedEmployer['owner_name'] ?: $selectedEmployer['name'])); ?></code> • 
+                                    Didaftarkan: <?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?> • 
+                                    <?php echo e($selectedEmployer['city'] ?: 'Kota Belum Diisi'); ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px;">
+                            <button type="button" class="btn-lihat-detail" data-open-modal="modal-ver-info">
+                                <i class="fa-solid fa-shield-halved"></i> Lihat Rincian Verifikasi
+                            </button>
+                            <?php if ($selectedEmployer['verification_status'] === 'APPROVED'): ?>
+                                <button type="button" class="btn-lihat-detail" style="color:#dc2626; border-color:#fca5a5;" data-open-modal="modal-suspend">
+                                    <i class="fa-solid fa-ban"></i> Tangguhkan
+                                </button>
+                            <?php elseif ($selectedEmployer['verification_status'] === 'SUSPENDED'): ?>
+                                <form method="post" action="admin.php?view=directory_individual&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                    <input type="hidden" name="admin_action" value="unsuspend_employer">
+                                    <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                    <button type="submit" class="btn-lihat-detail" style="color:#059669; border-color:#a7f3d0;">
+                                        <i class="fa-solid fa-rotate-left"></i> Batalkan Penangguhan
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="detail-grid-container">
+                        <!-- LEFT COLUMN: CARDS -->
+                        <div>
+                            <!-- RINGKASAN & INFORMASI UMUM -->
+                            <div class="section-card">
+                                <div class="section-card-title">Informasi Umum</div>
+                                <div class="key-val-grid">
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-user"></i> Nama Lengkap</div>
+                                        <div class="value"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-envelope"></i> Email</div>
+                                        <div class="value"><?php echo e($selectedEmployer['email']); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-phone"></i> Telepon / WhatsApp</div>
+                                        <div class="value"><?php echo e($selectedEmployer['phone'] ?: '-'); ?> / <?php echo e($selectedEmployer['whatsapp'] ?: '-'); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-briefcase"></i> Jenis Usaha / Profesi</div>
+                                        <div class="value"><?php echo e($selectedEmployer['profession'] ?: '-'); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-calendar"></i> Tanggal Daftar</div>
+                                        <div class="value"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-clock"></i> Masa Aktif Hingga</div>
+                                        <div class="value"><?php echo !empty($selectedEmployer['active_until']) ? date('d M Y, H:i', strtotime($selectedEmployer['active_until'])) : '-'; ?></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LOKASI -->
+                            <div class="section-card">
+                                <div class="section-card-title">Lokasi</div>
+                                <div class="key-val-grid">
+                                    <div class="key-val-item" style="grid-column: span 2;">
+                                        <div class="label"><i class="fa-solid fa-location-dot"></i> Alamat Lengkap</div>
+                                        <div class="value"><?php echo e($selectedEmployer['address'] ?: '-'); ?> <?php echo !empty($selectedEmployer['address_detail']) ? '(' . e($selectedEmployer['address_detail']) . ')' : ''; ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-map"></i> Wilayah Administratif</div>
+                                        <div class="value"><?php echo e(implode(', ', array_filter([$selectedEmployer['village'], $selectedEmployer['district'], $selectedEmployer['city'], $selectedEmployer['province']])) ?: '-'); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-compass"></i> Koordinat</div>
+                                        <div class="value"><?php echo e($selectedEmployer['latitude'] ?: '-'); ?>, <?php echo e($selectedEmployer['longitude'] ?: '-'); ?></div>
+                                    </div>
+                                </div>
+                                <div class="map-box-placeholder">
+                                    <i class="fa-solid fa-map-location-dot" style="font-size:24px; margin-right:8px;"></i>
+                                    Peta Lokasi: <?php echo e($selectedEmployer['latitude'] ?: '-6.241586'); ?>, <?php echo e($selectedEmployer['longitude'] ?: '106.992416'); ?>
+                                </div>
+                            </div>
+
+                            <!-- INFORMASI USAHA & NPWP -->
+                            <div class="section-card">
+                                <div class="section-card-title">Informasi Usaha & Legalitas</div>
+                                <div class="key-val-grid">
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-id-card"></i> NIK (SIAPkerja)</div>
+                                        <div class="value"><code><?php echo e($selectedEmployer['nik'] ?: '-'); ?></code></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-file-invoice"></i> NPWP</div>
+                                        <div class="value"><code><?php echo e($selectedEmployer['npwp'] ?: '-'); ?></code></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DESKRIPSI -->
+                            <div class="section-card">
+                                <div class="section-card-title">Deskripsi Usaha / Profil</div>
+                                <div style="font-size:13px; color:#334155; line-height:1.6;">
+                                    <?php echo nl2br(e($selectedEmployer['description'] ?: 'Tidak ada deskripsi yang dicantumkan.')); ?>
+                                </div>
+                            </div>
+
+                            <!-- PERPANJANGAN MASA AKTIF MODAL / EXTENSION IF REQUESTED -->
+                            <?php if (($selectedEmployer['extension_status'] ?? '') === 'REQUESTED'): ?>
+                                <div class="section-card" style="border:1px solid #fde68a; background:#fffbeb;">
+                                    <div class="section-card-title" style="color:#92400e;">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> Permohonan Perpanjangan Masa Transisi
+                                    </div>
+                                    <p style="font-size:13px; color:#78350f; margin-bottom:12px;">
+                                        Pemberi kerja ini mengajukan perpanjangan masa transisi (1x per siklus). Silakan tentukan durasi yang disetujui (1, 2, atau 3 hari):
+                                    </p>
+                                    <form method="post" action="admin.php?view=directory_individual&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="display:flex; gap:12px; align-items:center;">
+                                        <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                        <label style="font-size:13px; font-weight:700; color:#78350f;">Durasi:</label>
+                                        <select name="extension_days" style="height:36px; padding:0 12px; border-radius:8px; border:1px solid #fcd34d; font-size:13px;">
+                                            <option value="1">1 Hari</option>
+                                            <option value="2">2 Hari</option>
+                                            <option value="3" selected>3 Hari</option>
+                                        </select>
+                                        <button type="submit" name="admin_action" value="approve_extension" class="primary-btn" style="background:#059669; height:36px; padding:0 16px; font-size:12px;">
+                                            <i class="fa-solid fa-check"></i> Setujui
+                                        </button>
+                                        <button type="submit" name="admin_action" value="reject_extension" class="ghost-btn" style="color:#dc2626; border-color:#fecaca; height:36px; padding:0 16px; font-size:12px;">
+                                            <i class="fa-solid fa-xmark"></i> Tolak
+                                        </button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- RIGHT COLUMN: AUDIT LOG TIMELINE -->
+                        <div>
+                            <div class="section-card">
+                                <div class="section-card-title">Aktivitas & Audit Log</div>
+                                <div class="timeline-list">
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                        <div class="timeline-title">Pemberi kerja mendaftar di platform.</div>
+                                    </div>
+                                    <?php foreach ($auditLogs as $log): ?>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></div>
+                                            <div class="timeline-title"><?php echo e($log['action']); ?> <small style="color:#64748b;">(oleh <?php echo e($log['actor_name']); ?>)</small></div>
+                                            <div class="timeline-desc"><?php echo e($log['details']); ?></div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL RINCIAN VERIFIKASI -->
+                    <div class="modal-backdrop" data-modal="modal-ver-info">
+                        <div class="modal-panel" style="width:min(540px, 90vw);">
+                            <div class="modal-header">
+                                <div class="modal-title">Rincian Verifikasi Pemberi Kerja</div>
+                                <div class="modal-subtitle"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                            </div>
+                            <div class="modal-body">
+                                <div style="background:#f8fafc; padding:14px; border-radius:10px; margin-bottom:14px; font-size:13px;">
+                                    <div><strong>Status Verifikasi:</strong> <?php echo e($selectedEmployer['verification_status']); ?></div>
+                                    <div style="margin-top:4px;"><strong>Pemeriksa:</strong> <?php echo e($selectedEmployer['assigned_to'] ?: 'Belum ditugaskan'); ?></div>
+                                    <div style="margin-top:4px;"><strong>Catatan Verifikator:</strong> <?php echo e($selectedEmployer['verifier_notes'] ?: 'Belum ada catatan verifikasi.'); ?></div>
+                                    <?php if (!empty($selectedEmployer['verification_checklist'])): ?>
+                                        <div style="margin-top:4px;"><strong>Hasil Checklist:</strong> <?php echo e($selectedEmployer['verification_checklist']); ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="ghost-btn" data-close-modal="modal-ver-info">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL SUSPEND -->
+                    <div class="modal-backdrop" data-modal="modal-suspend">
+                        <div class="modal-panel" style="width:min(500px, 90vw);">
+                            <div class="modal-header">
+                                <div class="modal-title" style="color:#dc2626;">Tangguhkan Pemberi Kerja</div>
+                                <div class="modal-subtitle"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                            </div>
+                            <form method="post" action="admin.php?view=directory_individual&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="admin_action" value="suspend_employer">
+                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                <div class="modal-body">
+                                    <div style="font-size:13px; color:#475569; margin-bottom:12px;">
+                                        Penangguhan akun akan menonaktifkan seluruh lowongan yang sedang tayang dan membatasi akses pemberi kerja. Masukkan alasan penangguhan:
+                                    </div>
+                                    <textarea name="suspension_reason" required placeholder="Alasan penangguhan wajib diisi..." style="width:100%; min-height:80px; padding:10px; border-radius:8px; border:1px solid #fca5a5; font-size:13px;"></textarea>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="ghost-btn" data-close-modal="modal-suspend">Batal</button>
+                                    <button type="submit" class="primary-btn" style="background:#dc2626;">Tangguhkan Sekarang</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                <?php else: ?>
+                    <!-- DIRECTORY TABLE VIEW (MATCHING VISUAL SCREENSHOT BASELINE) -->
+                    <div style="margin-bottom:20px;">
+                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0;">Perusahaan / Pemberi Kerja</h1>
+                        <div class="tab-filter-bar">
+                            <div class="status-tab-list">
+                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=all" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
+                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=verified" class="status-tab-item <?php echo $tab === 'verified' ? 'active' : ''; ?>">Terverifikasi</a>
+                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=process" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Dalam Proses</a>
+                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
+                            </div>
+
+                            <div class="filter-controls">
+                                <div class="entity-selector-pill">
+                                    <a href="admin.php?view=directory_individual&entity=Semua&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
+                                    <a href="admin.php?view=directory_individual&entity=Perusahaan&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
+                                    <a href="admin.php?view=directory_individual&entity=Individu&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
+                                </div>
+                                <form method="get" action="admin.php" style="display:flex; gap:8px;">
+                                    <input type="hidden" name="view" value="directory_individual">
+                                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
+                                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                                    <div class="filter-search-box">
+                                        <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i>
+                                        <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari perusahaan...">
+                                    </div>
+                                    <button type="submit" class="filter-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="console-table-card">
+                        <table class="console-table">
                             <thead>
                                 <tr>
-                                    <th>Nama</th>
+                                    <th>Nama Perusahaan / Pemberi Kerja</th>
                                     <th>Email</th>
                                     <th>Telepon</th>
-                                    <th>NPWP</th>
-                                    <th>Alamat & Lokasi</th>
+                                    <th>NIB / NPWP</th>
+                                    <th>PIC</th>
+                                    <th>Lokasi</th>
                                     <th>Status</th>
                                     <th>Tanggal Daftar</th>
-                                    <th>Aksi (Read-Only)</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!$individualList): ?>
-                                    <tr><td colspan="8" style="text-align:center; padding:30px; color:#64748b;">Tidak ada data pemberi kerja individu.</td></tr>
+                                    <tr><td colspan="9" style="text-align:center; padding:40px; color:#64748b;">Tidak ada data pemberi kerja ditemukan.</td></tr>
                                 <?php else: ?>
                                     <?php foreach ($individualList as $emp): ?>
                                         <tr>
-                                            <td><strong><?php echo e($emp['owner_name'] ?: $emp['name']); ?></strong></td>
-                                            <td><?php echo e($emp['email']); ?></td>
-                                            <td><?php echo e($emp['phone'] ?: '-'); ?></td>
-                                            <td><code><?php echo e($emp['npwp'] ?: '-'); ?></code></td>
-                                            <td><?php echo e(trim(($emp['address'] ?: '-') . ', ' . ($emp['city'] ?: '-'))); ?></td>
                                             <td>
-                                                <?php if ($emp['verification_status'] === 'APPROVED'): ?>
-                                                    <span class="badge ok">Terverifikasi</span>
-                                                <?php elseif ($emp['verification_status'] === 'PENDING'): ?>
-                                                    <span class="badge pending">Menunggu Verifikasi</span>
-                                                <?php elseif ($emp['verification_status'] === 'SUSPENDED'): ?>
-                                                    <span class="badge suspended">Ditangguhkan</span>
-                                                <?php else: ?>
-                                                    <span class="badge revision"><?php echo e($emp['verification_status']); ?></span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><?php echo date('d M Y', strtotime($emp['created_at'])); ?></td>
-                                            <td>
-                                                <div style="display:flex; gap:6px;">
-                                                    <button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11px;" data-open-drawer="detail-emp-<?php echo $emp['user_id']; ?>">
-                                                        <i class="fa-solid fa-eye"></i> Lihat Detail
-                                                    </button>
-                                                    <button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11px; color:#0284c7; border-color:#bae6fd;" data-open-drawer="detail-emp-<?php echo $emp['user_id']; ?>">
-                                                        <i class="fa-solid fa-clipboard-check"></i> Rincian Verifikasi
-                                                    </button>
-                                                </div>
-
-                                                <!-- DRAWER DETAIL INDIVIDUAL READ-ONLY -->
-                                                <div class="drawer-backdrop" data-drawer="detail-emp-<?php echo $emp['user_id']; ?>">
-                                                    <div class="drawer-panel">
-                                                        <div class="drawer-header">
-                                                            <div class="drawer-title">Detail & Rincian Verifikasi</div>
-                                                            <button type="button" class="ghost-btn" data-close-drawer="detail-emp-<?php echo $emp['user_id']; ?>">×</button>
-                                                        </div>
-                                                        <div class="drawer-body">
-                                                            <div style="background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px;">
-                                                                <h3 style="font-size:16px; font-weight:800;"><?php echo e($emp['owner_name']); ?></h3>
-                                                                <p style="font-size:12px; color:#64748b;"><?php echo e($emp['profession']); ?></p>
-                                                                <span class="badge <?php echo $emp['verification_status'] === 'APPROVED' ? 'ok' : 'pending'; ?>" style="margin-top:8px;">
-                                                                    Status: <?php echo e($emp['verification_status']); ?>
-                                                                </span>
-                                                            </div>
-                                                            <div style="display:grid; gap:12px; font-size:13px;">
-                                                                <div><strong>Email:</strong> <?php echo e($emp['email']); ?></div>
-                                                                <div><strong>Telepon / WA:</strong> <?php echo e($emp['phone']); ?> / <?php echo e($emp['whatsapp']); ?></div>
-                                                                <div><strong>NPWP:</strong> <?php echo e($emp['npwp']); ?></div>
-                                                                <div><strong>Wilayah:</strong> <?php echo e($emp['village']); ?>, <?php echo e($emp['district']); ?>, <?php echo e($emp['city']); ?>, <?php echo e($emp['province']); ?></div>
-                                                                <div><strong>Alamat Lengkap:</strong> <?php echo e($emp['address']); ?></div>
-                                                            </div>
-
-                                                            <!-- RINCIAN VERIFIKASI READ-ONLY -->
-                                                            <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
-                                                            <div style="background:#f0f9ff; border:1px solid #bae6fd; padding:14px; border-radius:10px; margin-bottom:16px;">
-                                                                <div style="font-weight:700; color:#0369a1; font-size:13px; margin-bottom:6px;">
-                                                                    <i class="fa-solid fa-shield-halved"></i> Rincian Verifikasi Dinas
-                                                                </div>
-                                                                <div style="font-size:12px; color:#0c4a6e;">
-                                                                    <div><strong>Catatan Verifikator:</strong> <?php echo e($emp['verifier_notes'] ?: 'Belum ada catatan verifikasi.'); ?></div>
-                                                                    <?php if (!empty($emp['verification_checklist'])): ?>
-                                                                        <div style="margin-top:6px;"><strong>Checklist Hasil Pemeriksaan:</strong> <?php echo e($emp['verification_checklist']); ?></div>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                            </div>
-
-                                                            <?php if (($emp['extension_status'] ?? '') === 'REQUESTED'): ?>
-                                                                <div style="background:#fffbeb; border:1px solid #fde68a; padding:12px; border-radius:8px; margin-bottom:12px;">
-                                                                    <strong style="color:#b45309; font-size:13px;"><i class="fa-solid fa-clock-rotate-left"></i> Permohonan Perpanjangan Masa Transisi</strong>
-                                                                    <div style="font-size:12px; color:#92400e; margin-top:4px;">Pemohon mengajukan permohonan perpanjangan waktu masa transisi (1x). Pilih durasi yang disetujui (1–3 hari):</div>
-                                                                    <form method="post" action="admin.php?view=directory_individual" style="margin-top:10px;">
-                                                                        <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
-                                                                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                                                            <label style="font-size:12px; font-weight:700; color:#451a03;">Durasi:</label>
-                                                                            <select name="extension_days" style="flex:1; height:32px; font-size:12px; border:1px solid #fde68a; border-radius:6px; background:#fff; padding:0 8px;">
-                                                                                <option value="1">1 Hari</option>
-                                                                                <option value="2">2 Hari</option>
-                                                                                <option value="3" selected>3 Hari</option>
-                                                                            </select>
-                                                                        </div>
-                                                                        <div style="display:flex; gap:8px;">
-                                                                            <button type="submit" name="admin_action" value="approve_extension" class="primary-btn" style="background:#059669; flex:1; height:32px; font-size:11px;">
-                                                                                <i class="fa-solid fa-check"></i> Setujui Perpanjangan
-                                                                            </button>
-                                                                            <button type="submit" name="admin_action" value="reject_extension" class="ghost-btn" style="color:#dc2626; border-color:#fecaca; flex:1; height:32px; font-size:11px;">
-                                                                                <i class="fa-solid fa-xmark"></i> Tolak
-                                                                            </button>
-                                                                        </div>
-                                                                    </form>
-                                                                </div>
-                                                            <?php endif; ?>
-
-                                                            <?php if ($emp['verification_status'] === 'APPROVED'): ?>
-                                                                <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
-                                                                <form method="post" action="admin.php?view=directory_individual">
-                                                                    <input type="hidden" name="admin_action" value="suspend_employer">
-                                                                    <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
-                                                                    <div style="font-weight:700; color:#991b1b; margin-bottom:6px;">Tangguhkan Pemberi Kerja</div>
-                                                                    <textarea name="suspension_reason" placeholder="Alasan penangguhan wajib diisi..." required style="width:100%; padding:8px; font-size:12px; border:1px solid #fca5a5; border-radius:8px; min-height:60px; margin-bottom:10px;"></textarea>
-                                                                    <button type="submit" class="primary-btn" style="background:#dc2626; width:100%; height:36px; font-size:12px;">Tangguhkan Akun</button>
-                                                                </form>
-                                                            <?php elseif ($emp['verification_status'] === 'SUSPENDED'): ?>
-                                                                <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
-                                                                <form method="post" action="admin.php?view=directory_individual">
-                                                                    <input type="hidden" name="admin_action" value="unsuspend_employer">
-                                                                    <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
-                                                                    <button type="submit" class="primary-btn" style="background:#059669; width:100%; height:36px; font-size:12px;">Batalkan Penangguhan Akun</button>
-                                                                </form>
-                                                            <?php endif; ?>
-                                                        </div>
+                                                <div style="display:flex; align-items:center; gap:12px;">
+                                                    <div class="item-avatar-box">
+                                                        <?php echo strtoupper(substr($emp['owner_name'] ?: $emp['name'], 0, 2)); ?>
+                                                    </div>
+                                                    <div>
+                                                        <strong><?php echo e($emp['owner_name'] ?: $emp['name']); ?></strong><br>
+                                                        <small style="color:#94a3b8; font-size:11px;"><?php echo strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $emp['owner_name'] ?: $emp['name'])); ?></small>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td><?php echo e($emp['email']); ?></td>
+                                            <td><?php echo e($emp['phone'] ?: '0'); ?></td>
+                                            <td><code><?php echo e($emp['npwp'] ?: '-'); ?></code></td>
+                                            <td>-</td>
+                                            <td><?php echo e($emp['city'] ?: '-'); ?>, <?php echo e($emp['province'] ?: '-'); ?></td>
+                                            <td>
+                                                <?php if ($emp['verification_status'] === 'APPROVED'): ?>
+                                                    <span class="pill-badge verified">● Terverifikasi</span>
+                                                <?php elseif ($emp['verification_status'] === 'PENDING'): ?>
+                                                    <span class="pill-badge pending">● Menunggu</span>
+                                                <?php elseif ($emp['verification_status'] === 'SUSPENDED'): ?>
+                                                    <span class="pill-badge suspended">● Ditangguhkan</span>
+                                                <?php else: ?>
+                                                    <span class="pill-badge revision">● <?php echo e($emp['verification_status']); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo date('d M Y, H:i', strtotime($emp['created_at'])); ?></td>
+                                            <td>
+                                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $emp['user_id']; ?>" class="btn-lihat-detail">
+                                                    Lihat Detail
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -494,107 +1336,529 @@ if ($view === 'verifikasi_job') {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                <?php endif; ?>
             <?php endif; ?>
 
-            <!-- 2. VERIFIKASI PEMBERI KERJA (SECTION P) -->
+            <!-- ========================================== -->
+            <!-- 2. VERIFIKASI PEMBERI KERJA (VERIFICATION WORKFLOW) -->
+            <!-- ========================================== -->
             <?php if ($view === 'verifikasi_employer'): ?>
-                <div class="entity-selector">
-                    <a href="admin.php?view=verifikasi_employer&entity=Semua" class="entity-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
-                    <a href="admin.php?view=verifikasi_employer&entity=Perusahaan" class="entity-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
-                    <a href="admin.php?view=verifikasi_employer&entity=Individu" class="entity-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
-                </div>
+                <?php if ($selectedEmployer): ?>
+                    <!-- DETAIL VIEW FOR VERIFIKASI PEMBERI KERJA -->
+                    <div style="margin-bottom:16px;">
+                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail">
+                            <i class="fa-solid fa-arrow-left"></i> Kembali
+                        </a>
+                    </div>
 
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <div class="tab-row" style="border:none; margin:0;">
-                            <a class="<?php echo $tab === 'process' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_employer&entity=<?php echo $entity; ?>&tab=process">Menunggu Verifikasi</a>
-                            <a class="<?php echo $tab === 'approved' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_employer&entity=<?php echo $entity; ?>&tab=approved">Disetujui</a>
-                            <a class="<?php echo $tab === 'revision' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_employer&entity=<?php echo $entity; ?>&tab=revision">Perlu Diperbaiki</a>
-                            <a class="<?php echo $tab === 'rejected' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_employer&entity=<?php echo $entity; ?>&tab=rejected">Ditolak</a>
+                    <div class="detail-header-bar">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <div class="item-avatar-box" style="width:52px; height:52px; font-size:18px;">
+                                <?php echo strtoupper(substr($selectedEmployer['owner_name'] ?: $selectedEmployer['name'], 0, 2)); ?>
+                            </div>
+                            <div>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <h1 style="font-size:20px; font-weight:800; margin:0;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></h1>
+                                    <span class="pill-badge <?php echo $selectedEmployer['verification_status'] === 'APPROVED' ? 'verified' : ($selectedEmployer['verification_status'] === 'SUSPENDED' ? 'suspended' : 'pending'); ?>">
+                                        ● <?php echo e($selectedEmployer['verification_status'] === 'APPROVED' ? 'Terverifikasi' : $selectedEmployer['verification_status']); ?>
+                                    </span>
+                                </div>
+                                <div style="font-size:12px; color:#64748b; margin-top:4px;">
+                                    Slug: <code><?php echo strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $selectedEmployer['owner_name'] ?: $selectedEmployer['name'])); ?></code> • 
+                                    <?php echo e($selectedEmployer['entity_type'] ?? 'Individu'); ?> • 
+                                    Didaftarkan: <?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?> • 
+                                    <?php echo e($selectedEmployer['city'] ?: '-'); ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px;">
+                            <?php if (empty($selectedEmployer['assigned_to'])): ?>
+                                <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                    <input type="hidden" name="admin_action" value="assign_employer_case">
+                                    <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                    <input type="hidden" name="self_assign" value="1">
+                                    <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
+                                    <button type="submit" class="primary-btn" style="height:36px; padding:0 16px; font-size:12px;">
+                                        <i class="fa-solid fa-hand-holding-hand"></i> Ambil Case
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <button type="button" class="btn-lihat-detail" data-open-modal="modal-assign-pemeriksa">
+                                    <i class="fa-solid fa-user-gear"></i> Ubah Pemeriksa
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
 
-                    <div class="table-shell">
-                        <table class="admin-table">
+                    <div class="detail-grid-container">
+                        <!-- LEFT COLUMN: VERIFICATION CARDS -->
+                        <div>
+                            <!-- RINGKASAN PENGAJUAN -->
+                            <div class="section-card">
+                                <div class="section-card-title">Ringkasan Pengajuan</div>
+                                <div class="key-val-grid">
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-database"></i> Sumber Data</div>
+                                        <div class="value">Registrasi Platform (SIAPkerja)</div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-calendar"></i> Tanggal Pengajuan</div>
+                                        <div class="value"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-shapes"></i> Tipe</div>
+                                        <div class="value"><?php echo e($selectedEmployer['entity_type'] ?? 'Individu'); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-hourglass-half"></i> Deadline</div>
+                                        <div class="value">-</div>
+                                    </div>
+                                    <div class="key-val-item" style="grid-column: span 2;">
+                                        <div class="label"><i class="fa-solid fa-location-dot"></i> Wilayah</div>
+                                        <div class="value"><?php echo e($selectedEmployer['city'] ?: '-'); ?>, <?php echo e($selectedEmployer['province'] ?: '-'); ?></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- INFORMASI PENUGASAN DAN VERIFIKATOR -->
+                            <div class="section-card">
+                                <div class="section-card-title">Informasi Penugasan dan Verifikator</div>
+                                <div class="key-val-grid">
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-user-shield"></i> Pemeriksa</div>
+                                        <div class="value"><?php echo e($selectedEmployer['assigned_to'] ?: 'Belum ditugaskan'); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label"><i class="fa-solid fa-circle-check"></i> Status Penugasan</div>
+                                        <div class="value">
+                                            <?php if (!empty($selectedEmployer['assigned_to'])): ?>
+                                                <span class="pill-badge assigned">● Ditugaskan</span>
+                                            <?php else: ?>
+                                                <span style="color:#94a3b8;">-</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div class="key-val-item" style="grid-column: span 2;">
+                                        <div class="label"><i class="fa-solid fa-clock"></i> Ditugaskan Pada</div>
+                                        <div class="value"><?php echo !empty($selectedEmployer['assigned_at']) ? date('d M Y, H:i', strtotime($selectedEmployer['assigned_at'])) : '-'; ?></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PERBANDINGAN DATA PEMBERI KERJA DAN OSS / SIAPKERJA -->
+                            <div class="section-card">
+                                <div class="section-card-title">Perbandingan Data Pemberi Kerja dan OSS / SIAPkerja</div>
+                                <p style="font-size:12px; color:#64748b; margin-top:-8px; margin-bottom:12px;">Data referensi diambil otomatis berdasarkan NIK/NPWP pemohon.</p>
+                                <table class="compare-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Variabel</th>
+                                            <th>Data Pemberi Kerja</th>
+                                            <th>Data OSS / SIAPkerja</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Nama Lengkap / Pemilik</strong></td>
+                                            <td><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></td>
+                                            <td><?php echo e($selectedEmployer['name']); ?></td>
+                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>NIK</strong></td>
+                                            <td><code><?php echo e($selectedEmployer['nik'] ?: '-'); ?></code></td>
+                                            <td><code><?php echo e($selectedEmployer['nik'] ?: '-'); ?></code></td>
+                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>NPWP</strong></td>
+                                            <td><code><?php echo e($selectedEmployer['npwp'] ?: '-'); ?></code></td>
+                                            <td><code><?php echo e($selectedEmployer['npwp'] ?: '-'); ?></code></td>
+                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email</strong></td>
+                                            <td><?php echo e($selectedEmployer['email']); ?></td>
+                                            <td><?php echo e($selectedEmployer['email']); ?></td>
+                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Telepon / WhatsApp</strong></td>
+                                            <td><?php echo e($selectedEmployer['phone']); ?> / <?php echo e($selectedEmployer['whatsapp']); ?></td>
+                                            <td><?php echo e($selectedEmployer['phone']); ?></td>
+                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Wilayah</strong></td>
+                                            <td><?php echo e($selectedEmployer['city']); ?>, <?php echo e($selectedEmployer['province']); ?></td>
+                                            <td><?php echo e($selectedEmployer['city']); ?>, <?php echo e($selectedEmployer['province']); ?></td>
+                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- INFORMASI PEMBERI KERJA DETAIL & MAP -->
+                            <div class="section-card">
+                                <div class="section-card-title">Informasi Pemberi Kerja</div>
+                                <div class="key-val-grid">
+                                    <div class="key-val-item">
+                                        <div class="label">Alamat</div>
+                                        <div class="value"><?php echo e($selectedEmployer['address'] ?: '-'); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label">Kode Pos</div>
+                                        <div class="value"><?php echo e($selectedEmployer['postal_code'] ?: '-'); ?></div>
+                                    </div>
+                                </div>
+                                <div class="map-box-placeholder">
+                                    <i class="fa-solid fa-map-location-dot" style="font-size:24px; margin-right:8px;"></i>
+                                    Peta Lokasi: <?php echo e($selectedEmployer['latitude'] ?: '-6.241586'); ?>, <?php echo e($selectedEmployer['longitude'] ?: '106.992416'); ?>
+                                </div>
+                                <div style="margin-top:14px; font-size:13px;">
+                                    <strong>Deskripsi:</strong><br>
+                                    <span style="color:#475569;"><?php echo nl2br(e($selectedEmployer['description'] ?: '-')); ?></span>
+                                </div>
+                            </div>
+
+                            <!-- ========================================== -->
+                            <!-- JALUR MANUAL DINAS SECTION (IF TRIGGERED) -->
+                            <!-- ========================================== -->
+                            <?php if (in_array($selectedEmployer['manual_review_status'] ?? '', ['MANUAL_DINAS_REVIEW', 'CONSENT_PENDING', 'CONSENT_GIVEN', 'INVALID'])): ?>
+                                <div class="section-card" style="border:2px solid #0284c7; background:#f0f9ff;">
+                                    <div class="section-card-title" style="color:#0369a1;">
+                                        <i class="fa-solid fa-hands-holding-child"></i> Jalur Bantuan / Manual Dinas Tenaga Kerja
+                                    </div>
+                                    <p style="font-size:13px; color:#0c4a6e; line-height:1.5;">
+                                        Profil ini berada dalam <strong>Jalur Manual Dinas</strong> (Penolakan ke-3 atau pendampingan khusus). Petugas Dinas dapat melakukan Controlled Edit data, mengajukan persetujuan (Consent) ke pemohon, memvalidasi pernyataan petugas, dan mengaktifkan akun.
+                                    </p>
+
+                                    <!-- STEP STATUS BANNER -->
+                                    <div style="background:#ffffff; border:1px solid #bae6fd; border-radius:10px; padding:14px; margin:16px 0; font-size:13px;">
+                                        <strong>Status Persetujuan Pemohon:</strong>
+                                        <?php if ($selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN'): ?>
+                                            <span class="pill-badge verified" style="margin-left:8px;"><i class="fa-solid fa-check-circle"></i> Consent Telah Diberikan Pemohon</span>
+                                        <?php elseif ($selectedEmployer['manual_review_status'] === 'CONSENT_PENDING'): ?>
+                                            <span class="pill-badge pending" style="margin-left:8px;"><i class="fa-solid fa-clock"></i> Menunggu Persetujuan Pemohon</span>
+                                        <?php elseif ($selectedEmployer['manual_review_status'] === 'INVALID'): ?>
+                                            <span class="pill-badge danger" style="margin-left:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Consent INVALID (Data Berubah Setelah Persetujuan)</span>
+                                        <?php else: ?>
+                                            <span class="pill-badge process" style="margin-left:8px;">Belum Mengajukan Consent</span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <!-- 1. CONTROLLED EDIT FORM -->
+                                    <details style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:12px; margin-bottom:14px;" <?php echo $selectedEmployer['manual_review_status'] !== 'CONSENT_GIVEN' ? 'open' : ''; ?>>
+                                        <summary style="font-weight:700; color:#0f172a; cursor:pointer; font-size:13px;">
+                                            <i class="fa-solid fa-pen-to-square"></i> 1. Controlled Edit Data Profil oleh Admin
+                                        </summary>
+                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="margin-top:14px;">
+                                            <input type="hidden" name="admin_action" value="manual_dinas_edit">
+                                            <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:12px;">
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Nama Lengkap Pemilik:</label>
+                                                    <input type="text" name="owner_name" value="<?php echo e($selectedEmployer['owner_name']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Jenis Usaha / Profesi:</label>
+                                                    <input type="text" name="profession" value="<?php echo e($selectedEmployer['profession']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Telepon:</label>
+                                                    <input type="text" name="phone" value="<?php echo e($selectedEmployer['phone']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">WhatsApp:</label>
+                                                    <input type="text" name="whatsapp" value="<?php echo e($selectedEmployer['whatsapp']); ?>" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">NPWP:</label>
+                                                    <input type="text" name="npwp" value="<?php echo e($selectedEmployer['npwp']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Kota / Kabupaten:</label>
+                                                    <input type="text" name="city" value="<?php echo e($selectedEmployer['city']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                </div>
+                                                <div style="grid-column: span 2;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Alamat Lengkap:</label>
+                                                    <input type="text" name="address" value="<?php echo e($selectedEmployer['address']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                </div>
+                                                <div style="grid-column: span 2;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Deskripsi:</label>
+                                                    <textarea name="description" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; min-height:50px;"><?php echo e($selectedEmployer['description']); ?></textarea>
+                                                </div>
+                                            </div>
+                                            <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+                                                <button type="submit" class="primary-btn" style="height:34px; padding:0 14px; font-size:12px;">
+                                                    Simpan Controlled Edit
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </details>
+
+                                    <!-- 2. AJUKAN CONSENT -->
+                                    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:14px; margin-bottom:14px;">
+                                        <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
+                                            <i class="fa-solid fa-paper-plane"></i> 2. Ajukan Permintaan Consent ke Pemohon
+                                        </div>
+                                        <p style="font-size:12px; color:#64748b; margin-bottom:10px;">
+                                            Klik tombol berikut untuk mengunci data hash dan mengirimkan notifikasi persetujuan ke pemohon di dashboard mereka.
+                                        </p>
+                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                            <input type="hidden" name="admin_action" value="manual_dinas_request_consent">
+                                            <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                            <button type="submit" class="primary-btn" style="background:#0284c7; height:34px; padding:0 14px; font-size:12px;">
+                                                <i class="fa-solid fa-paper-plane"></i> Ajukan Consent ke Pemohon
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    <!-- 3. PERNYATAAN PETUGAS & SETUJUI AKTIFKAN -->
+                                    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:14px;">
+                                        <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
+                                            <i class="fa-solid fa-certificate"></i> 3. Pernyataan Petugas & Setujui & Aktifkan
+                                        </div>
+                                        <?php if ($selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN'): ?>
+                                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                                <input type="hidden" name="admin_action" value="manual_dinas_approve_activate">
+                                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                                <div style="margin-bottom:10px;">
+                                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Nama Petugas Dinas:</label>
+                                                    <input type="text" name="officer_name" value="<?php echo e($user['name']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+                                                </div>
+                                                <div style="margin-bottom:10px;">
+                                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Pernyataan Petugas:</label>
+                                                    <textarea name="officer_statement" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; min-height:50px;">Saya telah memvalidasi keabsahan data dan identitas pemberi kerja secara langsung melalui pendampingan dinas tenaga kerja.</textarea>
+                                                </div>
+                                                <div style="margin-bottom:14px;">
+                                                    <label style="font-size:12px; display:flex; align-items:center; gap:8px;">
+                                                        <input type="checkbox" name="statement_confirmed" value="1" required>
+                                                        Saya menyatakan bahwa proses verifikasi manual telah memenuhi seluruh ketentuan regulasi yang berlaku.
+                                                    </label>
+                                                </div>
+                                                <button type="submit" class="primary-btn" style="background:#059669; width:100%; height:38px; font-size:13px;">
+                                                    <i class="fa-solid fa-check-double"></i> Setujui & Aktifkan Akun (3 Bulan)
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <div style="background:#f8fafc; padding:12px; border-radius:8px; font-size:12px; color:#64748b;">
+                                                <i class="fa-solid fa-lock"></i> Tombol <strong>Setujui & Aktifkan</strong> akan aktif setelah pemohon membaca dan menyetujui Consent melalui Dashboard mereka.
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- ========================================== -->
+                            <!-- REGULAR DECISION PANEL (ASSIGNMENT MANDATORY) -->
+                            <!-- ========================================== -->
+                            <div class="section-card">
+                                <div class="section-card-title">Checklist & Keputusan Verifikasi Profil</div>
+
+                                <?php if (empty($selectedEmployer['assigned_to'])): ?>
+                                    <!-- WARNING IF UNASSIGNED -->
+                                    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px; font-size:13px; color:#92400e;">
+                                        <strong><i class="fa-solid fa-triangle-exclamation"></i> Perhatian:</strong><br>
+                                        Untuk mengambil keputusan verifikasi, case pemberi kerja harus memiliki penugasan aktif terlebih dahulu. Silahkan klik tombol <strong>"Ambil Case"</strong> di atas.
+                                    </div>
+                                <?php else: ?>
+                                    <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                        <input type="hidden" name="admin_action" value="verify_employer">
+                                        <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                        <input type="hidden" name="form_token" value="<?php echo time(); ?>">
+
+                                        <div style="margin-bottom:14px;">
+                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:8px;">Checklist Pemeriksaan Verifikator:</label>
+                                            <div style="display:grid; gap:8px; font-size:13px;">
+                                                <label style="display:flex; align-items:center; gap:8px;">
+                                                    <input type="checkbox" name="checklist[]" value="NPWP dan NIK valid" checked>
+                                                    NPWP dan NIK sesuai dengan database Kependudukan / DJP
+                                                </label>
+                                                <label style="display:flex; align-items:center; gap:8px;">
+                                                    <input type="checkbox" name="checklist[]" value="Lokasi tempat kerja terverifikasi" checked>
+                                                    Lokasi tempat usaha/rumah terverifikasi di wilayah kerja
+                                                </label>
+                                                <label style="display:flex; align-items:center; gap:8px;">
+                                                    <input type="checkbox" name="checklist[]" value="Dokumen pendukung sesuai" checked>
+                                                    Dokumen izin / identitas pendukung sesuai
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div style="margin-bottom:14px;">
+                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">
+                                                Catatan Verifikator <small style="color:#ef4444;">(Wajib diisi jika Revisi / Tolak)</small>:
+                                            </label>
+                                            <textarea name="verifier_notes" placeholder="Tuliskan catatan pemeriksaan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:70px;"><?php echo e($selectedEmployer['verifier_notes']); ?></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom:16px;">
+                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
+                                            <select name="decision" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;">
+                                                <option value="approve">Setujui (Profil Terverifikasi 3 Bulan)</option>
+                                                <option value="revision">Perlu Diperbaiki / Revisi (Membuka Kesempatan Perbaikan)</option>
+                                                <option value="reject">Tolak Profil (Penolakan ke-<?php echo ((int)$selectedEmployer['rejection_count'] + 1); ?>)</option>
+                                            </select>
+                                        </div>
+
+                                        <div style="display:flex; justify-content:flex-end; gap:10px;">
+                                            <button type="submit" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
+                                                Simpan Keputusan Final
+                                            </button>
+                                        </div>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: AUDIT LOG TIMELINE -->
+                        <div>
+                            <div class="section-card">
+                                <div class="section-card-title">Aktivitas & Audit Log</div>
+                                <div class="timeline-list">
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                        <div class="timeline-title">Pemberi kerja mendaftar di platform.</div>
+                                    </div>
+                                    <?php foreach ($auditLogs as $log): ?>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></div>
+                                            <div class="timeline-title"><?php echo e($log['action']); ?> <small style="color:#64748b;">(oleh <?php echo e($log['actor_name']); ?>)</small></div>
+                                            <div class="timeline-desc"><?php echo e($log['details']); ?></div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL ASSIGN PEMERIKSA -->
+                    <div class="modal-backdrop" data-modal="modal-assign-pemeriksa">
+                        <div class="modal-panel" style="width:min(500px, 90vw);">
+                            <div class="modal-header">
+                                <div class="modal-title">Assign Pemeriksa Verifikasi</div>
+                                <div class="modal-subtitle"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                            </div>
+                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="admin_action" value="assign_employer_case">
+                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                <div class="modal-body">
+                                    <div style="margin-bottom:12px;">
+                                        <label style="font-size:13px; font-weight:700; display:block; margin-bottom:4px;">Pemeriksa:</label>
+                                        <select name="verifier_name" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;">
+                                            <option value="Admin Pusat">Admin Pusat</option>
+                                            <option value="Petugas Pengawas Wilayah 1">Petugas Pengawas Wilayah 1</option>
+                                            <option value="Petugas Pengawas Wilayah 2">Petugas Pengawas Wilayah 2</option>
+                                        </select>
+                                    </div>
+                                    <div style="margin-bottom:12px;">
+                                        <label style="font-size:13px; font-weight:700; display:block; margin-bottom:4px;">Alasan Penugasan (Minimal 10 karakter):</label>
+                                        <textarea name="assignment_reason" required minlength="10" placeholder="Contoh: Penugasan verifikasi berkas permohonan baru wilayah Kota Bekasi..." style="width:100%; min-height:80px; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="ghost-btn" data-close-modal="modal-assign-pemeriksa">Batal</button>
+                                    <button type="submit" class="primary-btn">Simpan Penugasan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                <?php else: ?>
+                    <!-- VERIFIKASI PEMBERI KERJA TABLE VIEW -->
+                    <div style="margin-bottom:20px;">
+                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0;">Verifikasi Pemberi Kerja</h1>
+                        <div class="tab-filter-bar">
+                            <div class="status-tab-list">
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=all" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=process" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=revision" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=approved" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Terverifikasi</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
+                            </div>
+
+                            <div class="filter-controls">
+                                <div class="entity-selector-pill">
+                                    <a href="admin.php?view=verifikasi_employer&entity=Semua&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
+                                    <a href="admin.php?view=verifikasi_employer&entity=Perusahaan&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
+                                    <a href="admin.php?view=verifikasi_employer&entity=Individu&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
+                                </div>
+                                <form method="get" action="admin.php" style="display:flex; gap:8px;">
+                                    <input type="hidden" name="view" value="verifikasi_employer">
+                                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
+                                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                                    <div class="filter-search-box">
+                                        <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i>
+                                        <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari pemberi kerja...">
+                                    </div>
+                                    <button type="submit" class="filter-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="console-table-card">
+                        <table class="console-table">
                             <thead>
                                 <tr>
-                                    <th>Pemohon</th>
-                                    <th>NIK & NPWP</th>
-                                    <th>Profesi</th>
-                                    <th>Kota/Kab</th>
-                                    <th>Status Case</th>
-                                    <th>Aksi Decision</th>
+                                    <th>Nama Pemberi Kerja</th>
+                                    <th>Jenis Entitas</th>
+                                    <th>Lokasi</th>
+                                    <th>Telepon</th>
+                                    <th>Status</th>
+                                    <th>Deadline</th>
+                                    <th>Pemeriksa</th>
+                                    <th>Tanggal Daftar</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!$verificationEmployers): ?>
-                                    <tr><td colspan="6" style="text-align:center; padding:30px; color:#64748b;">Tidak ada antrean verifikasi pemberi kerja.</td></tr>
+                                    <tr><td colspan="9" style="text-align:center; padding:40px; color:#64748b;">Tidak ada antrean verifikasi pemberi kerja.</td></tr>
                                 <?php else: ?>
                                     <?php foreach ($verificationEmployers as $vEmp): ?>
                                         <tr>
                                             <td>
-                                                <strong><?php echo e($vEmp['owner_name']); ?></strong><br>
-                                                <small style="color:#64748b;"><?php echo e($vEmp['email']); ?></small>
-                                            </td>
-                                            <td>
-                                                NIK: <?php echo e($vEmp['nik'] ?: '-'); ?><br>
-                                                NPWP: <code><?php echo e($vEmp['npwp'] ?: '-'); ?></code>
-                                            </td>
-                                            <td><?php echo e($vEmp['profession']); ?></td>
-                                            <td><?php echo e($vEmp['city']); ?></td>
-                                            <td><span class="badge pending"><?php echo e($vEmp['verification_status']); ?></span></td>
-                                            <td>
-                                                <button class="primary-btn" style="height:32px; padding:0 12px; font-size:12px;" data-open-modal="modal-ver-emp-<?php echo $vEmp['user_id']; ?>">
-                                                    <i class="fa-solid fa-gavel"></i> Ambil Keputusan
-                                                </button>
-
-                                                <!-- MODAL KEPUTUSAN VERIFIKASI PROFIL -->
-                                                <div class="modal-backdrop" data-modal="modal-ver-emp-<?php echo $vEmp['user_id']; ?>">
-                                                    <div class="modal-panel" style="width:min(600px, 90vw);">
-                                                        <div class="modal-header">
-                                                            <div class="modal-title">Ambil Keputusan Verifikasi Profil</div>
-                                                            <div class="modal-subtitle"><?php echo e($vEmp['owner_name']); ?> (Pemberi Kerja Individu)</div>
-                                                        </div>
-                                                        <form method="post" action="admin.php?view=verifikasi_employer&entity=<?php echo $entity; ?>&tab=<?php echo $tab; ?>">
-                                                            <input type="hidden" name="admin_action" value="verify_employer">
-                                                            <input type="hidden" name="user_id" value="<?php echo $vEmp['user_id']; ?>">
-                                                            <div class="modal-body">
-                                                                <div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:14px; font-size:12px;">
-                                                                    <div><strong>NPWP:</strong> <?php echo e($vEmp['npwp']); ?> | <strong>NIK:</strong> <?php echo e($vEmp['nik']); ?></div>
-                                                                    <div><strong>Alamat:</strong> <?php echo e($vEmp['address']); ?>, <?php echo e($vEmp['city']); ?></div>
-                                                                </div>
-
-                                                                <div style="margin-bottom:14px;">
-                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Checklist Pemeriksaan:</label>
-                                                                    <div style="display:grid; gap:6px; font-size:12px;">
-                                                                        <label><input type="checkbox" name="checklist[]" value="NPWP dan NIK valid"> NPWP dan NIK valid</label>
-                                                                        <label><input type="checkbox" name="checklist[]" value="Lokasi tempat kerja terverifikasi"> Lokasi tempat kerja terverifikasi</label>
-                                                                        <label><input type="checkbox" name="checklist[]" value="Dokumen pendukung sesuai"> Dokumen pendukung sesuai</label>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div style="margin-bottom:14px;">
-                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Catatan Verifikator:</label>
-                                                                    <textarea name="verifier_notes" placeholder="Catatan wajib jika Revisi atau Tolak..."><?php echo e($vEmp['verifier_notes']); ?></textarea>
-                                                                </div>
-
-                                                                <div style="margin-bottom:14px;">
-                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
-                                                                    <select name="decision" required style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;">
-                                                                        <option value="approve">Setujui (Profil Terverifikasi 3 Bulan)</option>
-                                                                        <option value="revision">Perlu Diperbaiki (Minta Pemohon Melengkapi Data)</option>
-                                                                        <option value="reject">Tolak Profil</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="ghost-btn" data-close-modal="modal-ver-emp-<?php echo $vEmp['user_id']; ?>">Batal</button>
-                                                                <button type="submit" class="primary-btn">Simpan Keputusan</button>
-                                                            </div>
-                                                        </form>
+                                                <div style="display:flex; align-items:center; gap:12px;">
+                                                    <div class="item-avatar-box">
+                                                        <?php echo strtoupper(substr($vEmp['owner_name'] ?: $vEmp['name'], 0, 2)); ?>
+                                                    </div>
+                                                    <div>
+                                                        <strong><?php echo e($vEmp['owner_name'] ?: $vEmp['name']); ?></strong><br>
+                                                        <small style="color:#94a3b8; font-size:11px;"><?php echo e($vEmp['email']); ?></small>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td><span class="pill-badge verified"><?php echo e($vEmp['entity_type'] ?? 'Individu'); ?></span></td>
+                                            <td><?php echo e($vEmp['city'] ?: '-'); ?></td>
+                                            <td><?php echo e($vEmp['phone'] ?: '0'); ?></td>
+                                            <td>
+                                                <?php if ($vEmp['verification_status'] === 'APPROVED'): ?>
+                                                    <span class="pill-badge verified">● Terverifikasi</span>
+                                                <?php elseif ($vEmp['verification_status'] === 'PENDING'): ?>
+                                                    <span class="pill-badge pending">● Menunggu</span>
+                                                <?php else: ?>
+                                                    <span class="pill-badge revision">● <?php echo e($vEmp['verification_status']); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>-</td>
+                                            <td>
+                                                <?php if (!empty($vEmp['assigned_to'])): ?>
+                                                    <span style="font-weight:600; color:#0284c7;"><?php echo e($vEmp['assigned_to']); ?></span>
+                                                <?php else: ?>
+                                                    <span style="color:#94a3b8;">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo date('d M Y, H:i', strtotime($vEmp['created_at'])); ?></td>
+                                            <td>
+                                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $vEmp['user_id']; ?>" class="btn-lihat-detail">
+                                                    Lihat Detail
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -602,132 +1866,313 @@ if ($view === 'verifikasi_job') {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                <?php endif; ?>
             <?php endif; ?>
 
-            <!-- 3. VERIFIKASI LOWONGAN (SECTION P) -->
+            <!-- ========================================== -->
+            <!-- 3. VERIFIKASI LOWONGAN (COMPLIANCE MATRIX WORKFLOW) -->
+            <!-- ========================================== -->
             <?php if ($view === 'verifikasi_job'): ?>
-                <div class="entity-selector">
-                    <a href="admin.php?view=verifikasi_job&entity=Semua" class="entity-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
-                    <a href="admin.php?view=verifikasi_job&entity=Perusahaan" class="entity-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
-                    <a href="admin.php?view=verifikasi_job&entity=Individu" class="entity-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
-                </div>
+                <?php if ($selectedJob): ?>
+                    <!-- DETAIL VIEW FOR VERIFIKASI LOWONGAN -->
+                    <div style="margin-bottom:16px;">
+                        <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail">
+                            <i class="fa-solid fa-arrow-left"></i> Kembali
+                        </a>
+                    </div>
 
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <div class="tab-row" style="border:none; margin:0;">
-                            <a class="<?php echo $tab === 'process' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_job&entity=<?php echo $entity; ?>&tab=process">Menunggu Verifikasi</a>
-                            <a class="<?php echo $tab === 'approved' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_job&entity=<?php echo $entity; ?>&tab=approved">Tayang</a>
-                            <a class="<?php echo $tab === 'revision' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_job&entity=<?php echo $entity; ?>&tab=revision">Perlu Direvisi</a>
-                            <a class="<?php echo $tab === 'rejected' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_job&entity=<?php echo $entity; ?>&tab=rejected">Ditolak</a>
+                    <div class="detail-header-bar">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <div class="item-avatar-box" style="width:52px; height:52px; font-size:18px;">
+                                <?php echo strtoupper(substr($selectedJob['title'], 0, 2)); ?>
+                            </div>
+                            <div>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <h1 style="font-size:20px; font-weight:800; margin:0;"><?php echo e($selectedJob['title']); ?></h1>
+                                    <span class="pill-badge <?php echo $selectedJob['status'] === 'Tayang' ? 'verified' : ($selectedJob['status'] === 'Ditolak' ? 'danger' : 'pending'); ?>">
+                                        ● <?php echo e($selectedJob['status']); ?>
+                                    </span>
+                                </div>
+                                <div style="font-size:12px; color:#64748b; margin-top:4px;">
+                                    KBJI: <code><?php echo e($selectedJob['kbji_code']); ?></code> • 
+                                    Pemberi Kerja: <strong><?php echo e($selectedJob['owner_name'] ?: $selectedJob['user_name']); ?></strong> • 
+                                    Diajukan: <?php echo date('d M Y, H:i', strtotime($selectedJob['created_at'])); ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <?php if (empty($selectedJob['assigned_to'])): ?>
+                                <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>">
+                                    <input type="hidden" name="admin_action" value="assign_job_case">
+                                    <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
+                                    <input type="hidden" name="self_assign" value="1">
+                                    <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
+                                    <button type="submit" class="primary-btn" style="height:36px; padding:0 16px; font-size:12px;">
+                                        <i class="fa-solid fa-hand-holding-hand"></i> Ambil Case Lowongan
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <span class="pill-badge assigned">Pemeriksa: <?php echo e($selectedJob['assigned_to']); ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
-                    <div class="table-shell">
-                        <table class="admin-table">
+
+                    <div class="detail-grid-container">
+                        <!-- LEFT COLUMN: JOB DETAILS & COMPLIANCE MATRIX -->
+                        <div>
+                            <!-- RINGKASAN LOWONGAN -->
+                            <div class="section-card">
+                                <div class="section-card-title">Ringkasan Lowongan</div>
+                                <?php if (!empty($selectedJob['additional_doc_required'])): ?>
+                                    <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:14px;">
+                                        <strong>⚠️ PERINGATAN RULES ENGINE (LAYER 2):</strong><br>
+                                        Pengajuan ini merupakan publikasi ke-4+ untuk KBJI <code><?php echo e($selectedJob['kbji_code']); ?></code> pada bulan ini (<code>ADDITIONAL_DOCUMENT_PENDING</code>). Pastikan dokumen pendukung diperiksa.
+                                    </div>
+                                <?php endif; ?>
+                                <?php if (!empty($selectedJob['parent_job_id'])): ?>
+                                    <div style="background:#f0f9ff; border:1px solid #bae6fd; color:#0369a1; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:14px;">
+                                        <i class="fa-solid fa-arrows-rotate"></i> <strong>POSTING ULANG SISA KUOTA:</strong><br>
+                                        Lowongan ini merupakan kelanjutan dari lowongan #<?php echo (int)$selectedJob['parent_job_id']; ?>. Kuota diajukan: <?php echo (int)$selectedJob['quota']; ?> posisi.
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="key-val-grid">
+                                    <div class="key-val-item">
+                                        <div class="label">Jenis Entitas</div>
+                                        <div class="value"><?php echo e($selectedJob['entity_type']); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label">Tipe Pekerjaan</div>
+                                        <div class="value"><?php echo e($selectedJob['job_type']); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label">Lokasi Penempatan</div>
+                                        <div class="value"><?php echo e($selectedJob['location']); ?></div>
+                                    </div>
+                                    <div class="key-val-item">
+                                        <div class="label">Kuota Dibuka</div>
+                                        <div class="value"><?php echo (int)$selectedJob['quota']; ?> Orang</div>
+                                    </div>
+                                    <div class="key-val-item" style="grid-column: span 2;">
+                                        <div class="label">Deskripsi & Kualifikasi</div>
+                                        <div class="value" style="font-weight:normal; line-height:1.6;"><?php echo nl2br(e($selectedJob['description'])); ?></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- COMPLIANCE CHECKLIST MATRIX (4 CATEGORIES) -->
+                            <div class="section-card">
+                                <div class="section-card-title">
+                                    <span>Matriks Kepatuhan Verifikasi Lowongan</span>
+                                    <small style="font-size:11px; font-weight:normal; color:#64748b;">(4 Kategori Wajib FSD)</small>
+                                </div>
+
+                                <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>" id="jobVerificationForm">
+                                    <input type="hidden" name="admin_action" value="verify_job">
+                                    <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
+
+                                    <?php 
+                                        $savedChecklist = json_decode($selectedJob['compliance_checklist'] ?? '{}', true) ?: [];
+                                        $categories = compliance_categories();
+                                    ?>
+
+                                    <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
+                                        <?php foreach ($categories as $index => $cat): ?>
+                                            <?php 
+                                                $slug = 'cat_' . md5($cat);
+                                                $catData = $savedChecklist[$cat] ?? ['status' => 'Patuh', 'note' => ''];
+                                                $isNonCompliant = $catData['status'] === 'Tidak Patuh';
+                                            ?>
+                                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+                                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                                    <span style="font-weight:700; font-size:13px; color:#1e293b;">
+                                                        <?php echo ($index + 1) . '. ' . e($cat); ?>
+                                                    </span>
+                                                    <div style="display:flex; gap:12px; font-size:12px; font-weight:600;">
+                                                        <label style="display:flex; align-items:center; gap:4px; color:#059669; cursor:pointer;">
+                                                            <input type="radio" name="<?php echo $slug; ?>_status" value="Patuh" <?php echo !$isNonCompliant ? 'checked' : ''; ?> onchange="updateJobCompliance()"> Patuh
+                                                        </label>
+                                                        <label style="display:flex; align-items:center; gap:4px; color:#dc2626; cursor:pointer;">
+                                                            <input type="radio" name="<?php echo $slug; ?>_status" value="Tidak Patuh" <?php echo $isNonCompliant ? 'checked' : ''; ?> onchange="updateJobCompliance()"> Tidak Patuh
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="note-box-wrapper">
+                                                    <input type="text" name="<?php echo $slug; ?>_note" value="<?php echo e($catData['note']); ?>" placeholder="Catatan item (Wajib jika Tidak Patuh)..." style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px;" oninput="updateJobCompliance()">
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+
+                                    <div style="margin-bottom:14px;">
+                                        <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Catatan Umum Verifikator:</label>
+                                        <textarea name="verifier_notes" placeholder="Berikan catatan detail keputusan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:60px;"><?php echo e($selectedJob['verifier_notes']); ?></textarea>
+                                    </div>
+
+                                    <div style="margin-bottom:16px;">
+                                        <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
+                                        <select name="decision" id="decisionSelect" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;" onchange="updateJobCompliance()">
+                                            <option value="approve" id="optApprove">Setujui (Tayang)</option>
+                                            <option value="revision">Revisi (Kembalikan ke Pemberi Kerja)</option>
+                                            <option value="reject">Tolak Lowongan</option>
+                                        </select>
+                                        <div id="approvalWarningNotice" style="display:none; color:#dc2626; font-size:12px; margin-top:6px; font-weight:600;">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> Terdapat kategori yang "Tidak Patuh". Keputusan "Setujui" tidak valid. Silakan pilih "Revisi" atau "Tolak".
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex; justify-content:flex-end;">
+                                        <button type="submit" id="btnSubmitJobDecision" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
+                                            Simpan Keputusan Verifikasi
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: AUDIT LOG TIMELINE -->
+                        <div>
+                            <div class="section-card">
+                                <div class="section-card-title">Aktivitas & Audit Log</div>
+                                <div class="timeline-list">
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedJob['created_at'])); ?></div>
+                                        <div class="timeline-title">Lowongan diajukan oleh pemberi kerja.</div>
+                                    </div>
+                                    <?php foreach ($auditLogs as $log): ?>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></div>
+                                            <div class="timeline-title"><?php echo e($log['action']); ?> <small style="color:#64748b;">(oleh <?php echo e($log['actor_name']); ?>)</small></div>
+                                            <div class="timeline-desc"><?php echo e($log['details']); ?></div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                    function updateJobCompliance() {
+                        const form = document.getElementById('jobVerificationForm');
+                        if (!form) return;
+                        const radios = form.querySelectorAll('input[type="radio"]:checked');
+                        let hasViolation = false;
+                        radios.forEach(r => {
+                            if (r.value === 'Tidak Patuh') hasViolation = true;
+                        });
+
+                        const optApprove = document.getElementById('optApprove');
+                        const decisionSelect = document.getElementById('decisionSelect');
+                        const warningNotice = document.getElementById('approvalWarningNotice');
+                        const submitBtn = document.getElementById('btnSubmitJobDecision');
+
+                        if (hasViolation) {
+                            if (optApprove) optApprove.disabled = true;
+                            if (decisionSelect && decisionSelect.value === 'approve') {
+                                decisionSelect.value = 'revision';
+                            }
+                            if (warningNotice) warningNotice.style.display = 'block';
+                        } else {
+                            if (optApprove) optApprove.disabled = false;
+                            if (warningNotice) warningNotice.style.display = 'none';
+                        }
+                    }
+                    document.addEventListener('DOMContentLoaded', updateJobCompliance);
+                    </script>
+
+                <?php else: ?>
+                    <!-- VERIFIKASI LOWONGAN TABLE VIEW (ALIGNED WITH SCREENSHOT) -->
+                    <div style="margin-bottom:20px;">
+                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0;">Verifikasi Lowongan</h1>
+                        <div class="tab-filter-bar">
+                            <div class="status-tab-list">
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=all" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=process" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=revision" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=approved" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Disetujui</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
+                            </div>
+
+                            <div class="filter-controls">
+                                <div class="entity-selector-pill">
+                                    <a href="admin.php?view=verifikasi_job&entity=Semua&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
+                                    <a href="admin.php?view=verifikasi_job&entity=Perusahaan&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
+                                    <a href="admin.php?view=verifikasi_job&entity=Individu&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
+                                </div>
+                                <form method="get" action="admin.php" style="display:flex; gap:8px;">
+                                    <input type="hidden" name="view" value="verifikasi_job">
+                                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
+                                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                                    <div class="filter-search-box">
+                                        <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i>
+                                        <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan...">
+                                    </div>
+                                    <button type="submit" class="filter-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="console-table-card">
+                        <table class="console-table">
                             <thead>
                                 <tr>
                                     <th>Judul Lowongan</th>
                                     <th>Jenis Entitas</th>
-                                    <th>Pemberi Kerja</th>
                                     <th>Status</th>
                                     <th>Blacklist</th>
                                     <th>Tanggal Pengajuan</th>
-                                    <th>Lihat Detail & Keputusan</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!$verificationJobs): ?>
-                                    <tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">Tidak ada data lowongan dalam antrean.</td></tr>
+                                    <tr><td colspan="6" style="text-align:center; padding:40px; color:#64748b;">Tidak ada antrean verifikasi lowongan.</td></tr>
                                 <?php else: ?>
                                     <?php foreach ($verificationJobs as $vJob): ?>
                                         <tr>
                                             <td>
-                                                <strong><?php echo e($vJob['title']); ?></strong><br>
-                                                <small style="color:#64748b;">KBJI: <code><?php echo e($vJob['kbji_code']); ?></code></small>
-                                                <?php if (!empty($vJob['additional_doc_required'])): ?>
-                                                    <br><span class="badge warning" style="background:#fef3c7; color:#92400e; font-size:10px; padding:2px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⚠️ Dokumen Tambahan (Layer 2)</span>
-                                                <?php endif; ?>
-                                                <?php if (!empty($vJob['parent_job_id'])): ?>
-                                                    <br><span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10px; padding:2px 6px; border-radius:4px; margin-top:2px; display:inline-block;"><i class="fa-solid fa-arrows-rotate"></i> Repost (Parent #<?php echo (int)$vJob['parent_job_id']; ?>)</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><span class="badge ok"><?php echo e($vJob['entity_type']); ?></span></td>
-                                            <td><?php echo e($vJob['owner_name'] ?: $vJob['user_name']); ?></td>
-                                            <td><span class="badge pending"><?php echo e($vJob['status']); ?></span></td>
-                                            <td>
-                                                <form method="post" action="admin.php?view=verifikasi_job&entity=<?php echo $entity; ?>&tab=<?php echo $tab; ?>" style="display:inline;">
-                                                    <input type="hidden" name="admin_action" value="toggle_blacklist">
-                                                    <input type="hidden" name="job_id" value="<?php echo $vJob['id']; ?>">
-                                                    <button type="submit" class="badge <?php echo $vJob['is_blacklisted'] ? 'suspended' : 'ok'; ?>" style="border:none; cursor:pointer;">
-                                                        <?php echo $vJob['is_blacklisted'] ? 'Blacklisted' : 'Aman'; ?>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                            <td><?php echo date('d M Y', strtotime($vJob['created_at'])); ?></td>
-                                            <td>
-                                                <button class="primary-btn" style="height:32px; padding:0 12px; font-size:12px;" data-open-modal="modal-job-dec-<?php echo $vJob['id']; ?>">
-                                                    <i class="fa-solid fa-gavel"></i> Keputusan
-                                                </button>
-
-                                                <!-- MODAL KEPUTUSAN VERIFIKASI LOWONGAN -->
-                                                <div class="modal-backdrop" data-modal="modal-job-dec-<?php echo $vJob['id']; ?>">
-                                                    <div class="modal-panel" style="width:min(600px, 90vw);">
-                                                        <div class="modal-header">
-                                                            <div class="modal-title">Keputusan Verifikasi Lowongan</div>
-                                                            <div class="modal-subtitle"><?php echo e($vJob['title']); ?></div>
-                                                        </div>
-                                                        <form method="post" action="admin.php?view=verifikasi_job&entity=<?php echo $entity; ?>&tab=<?php echo $tab; ?>">
-                                                            <input type="hidden" name="admin_action" value="verify_job">
-                                                            <input type="hidden" name="job_id" value="<?php echo $vJob['id']; ?>">
-                                                            <div class="modal-body">
-                                                                <?php if (!empty($vJob['additional_doc_required'])): ?>
-                                                                    <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:12px;">
-                                                                        <strong>⚠️ PERINGATAN RULES ENGINE (LAYER 2):</strong><br>
-                                                                        Pengajuan lowongan ini merupakan pengajuan ke-4+ untuk KBJI <code><?php echo e($vJob['kbji_code']); ?></code> pada bulan ini (Status: <code>ADDITIONAL_DOCUMENT_PENDING</code>). Pastikan dokumen pendukung tambahan telah diperiksa sebelum menyetujui.
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                                <?php if (!empty($vJob['parent_job_id'])): ?>
-                                                                    <div style="background:#f0f9ff; border:1px solid #bae6fd; color:#0369a1; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:12px;">
-                                                                        <i class="fa-solid fa-arrows-rotate"></i> <strong>POSTING ULANG SISA KUOTA:</strong><br>
-                                                                        Lowongan ini merupakan kelanjutan dari lowongan awal <strong>#<?php echo (int)$vJob['parent_job_id']; ?></strong>. Kuota yang diajukan: <strong><?php echo (int)$vJob['quota']; ?> posisi</strong>.
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                                <div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:14px; font-size:12px;">
-                                                                    <div><strong>Lokasi:</strong> <?php echo e($vJob['location']); ?> | <strong>Tipe:</strong> <?php echo e($vJob['job_type']); ?> | <strong>Kuota:</strong> <?php echo (int)$vJob['quota']; ?> Posisi</div>
-                                                                    <div><strong>Deskripsi:</strong> <?php echo e($vJob['description']); ?></div>
-                                                                </div>
-
-                                                                <div style="margin-bottom:14px;">
-                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Checklist Pelanggaran (Jika Ada):</label>
-                                                                    <div style="display:grid; gap:6px; font-size:12px;">
-                                                                        <label><input type="checkbox" name="checklist[]" value="Data tidak lengkap"> Data tidak lengkap</label>
-                                                                        <label><input type="checkbox" name="checklist[]" value="Tidak sesuai substansi"> Tidak sesuai substansi</label>
-                                                                        <label><input type="checkbox" name="checklist[]" value="Tidak sesuai dengan aturan"> Tidak sesuai dengan aturan</label>
-                                                                        <label><input type="checkbox" name="checklist[]" value="Tidak sesuai dengan aturan anti diskriminasi"> Tidak sesuai dengan aturan anti diskriminasi</label>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div style="margin-bottom:14px;">
-                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">CATATAN VERIFIKATOR <small style="color:#ef4444;">(Wajib diisi jika checklist aktif)</small>:</label>
-                                                                    <textarea name="verifier_notes" placeholder="Berikan catatan detail keputusan..."><?php echo e($vJob['verifier_notes']); ?></textarea>
-                                                                </div>
-
-                                                                <div style="margin-bottom:14px;">
-                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Ambil Keputusan:</label>
-                                                                    <select name="decision" required style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;">
-                                                                        <option value="approve">Setujui & Publikasikan (Tayang)</option>
-                                                                        <option value="revision">Revisi (Kembalikan ke Employer)</option>
-                                                                        <option value="reject">Tolak Lowongan</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="ghost-btn" data-close-modal="modal-job-dec-<?php echo $vJob['id']; ?>">Batal</button>
-                                                                <button type="submit" class="primary-btn">Simpan Keputusan</button>
-                                                            </div>
-                                                        </form>
+                                                <div style="display:flex; align-items:center; gap:12px;">
+                                                    <div class="item-avatar-box">
+                                                        <?php echo strtoupper(substr($vJob['title'], 0, 2)); ?>
+                                                    </div>
+                                                    <div>
+                                                        <strong><?php echo e($vJob['title']); ?></strong><br>
+                                                        <small style="color:#94a3b8; font-size:11px;"><?php echo e($vJob['owner_name'] ?: $vJob['user_name']); ?></small>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td><span class="pill-badge verified"><?php echo e($vJob['entity_type']); ?></span></td>
+                                            <td>
+                                                <?php if ($vJob['status'] === 'Tayang'): ?>
+                                                    <span class="pill-badge verified">● Disetujui</span>
+                                                <?php elseif ($vJob['status'] === 'Menunggu Verifikasi'): ?>
+                                                    <?php if (!empty($vJob['assigned_to'])): ?>
+                                                        <span class="pill-badge assigned">● Ditugaskan</span>
+                                                    <?php else: ?>
+                                                        <span class="pill-badge pending">● Menunggu</span>
+                                                    <?php endif; ?>
+                                                <?php elseif ($vJob['status'] === 'Perlu Direvisi'): ?>
+                                                    <span class="pill-badge revision">● Revisi</span>
+                                                <?php else: ?>
+                                                    <span class="pill-badge danger">● <?php echo e($vJob['status']); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if (!empty($vJob['is_blacklisted'])): ?>
+                                                    <span class="pill-badge danger" style="font-size:11px;">Terdeteksi</span>
+                                                <?php else: ?>
+                                                    <span class="pill-badge safe" style="font-size:11px;">Aman</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo date('d M Y, H:i', strtotime($vJob['created_at'])); ?></td>
+                                            <td>
+                                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $vJob['id']; ?>" class="btn-lihat-detail">
+                                                    Lihat Detail
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -735,11 +2180,12 @@ if ($view === 'verifikasi_job') {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </main>
 </div>
+
 <script src="assets/app.js"></script>
 </body>
 </html>

@@ -491,6 +491,29 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         redirect('dashboard.php#lowongan');
         exit;
     }
+
+    // 8. BERIKAN CONSENT (JALUR MANUAL DINAS)
+    if (isset($_POST['give_manual_dinas_consent'])) {
+        $stmtEmp = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
+        $stmtEmp->execute([$user['id']]);
+        $emp = $stmtEmp->fetch();
+
+        if ($emp && $emp['manual_review_status'] === 'CONSENT_PENDING') {
+            $stmt = db()->prepare('UPDATE employer_profiles SET manual_review_status = "CONSENT_GIVEN", consent_agreed = 1, consent_given_at = datetime("now") WHERE user_id = ?');
+            try {
+                $stmt->execute([$user['id']]);
+            } catch (Throwable $e) {
+                $stmt = db()->prepare('UPDATE employer_profiles SET manual_review_status = "CONSENT_GIVEN", consent_agreed = 1, consent_given_at = NOW() WHERE user_id = ?');
+                $stmt->execute([$user['id']]);
+            }
+            record_audit_log('employer', $user['id'], 'CONSENT_GIVEN', 'Pemohon telah membaca dan menyetujui perubahan data profil yang diajukan oleh Petugas Dinas.', $user['name'], 'employer');
+            flash('success', 'Terima kasih! Persetujuan (Consent) Anda telah berhasil diberikan. Petugas Dinas akan segera menyelesaikan verifikasi dan mengaktifkan akun Anda.');
+        } else {
+            flash('error', 'Status permohonan consent tidak valid atau telah diperbarui.');
+        }
+        redirect('dashboard.php');
+        exit;
+    }
 }
 
 $ownerName = $profile['owner_name'] ?? $user['name'];
@@ -533,6 +556,33 @@ $html = ob_get_clean();
 // Sisipkan flash toast ke dalam body
 if ($flashHtml) {
     $html = preg_replace('/(<body[^>]*>)/i', '$1' . "\n" . $flashHtml, $html, 1);
+}
+
+// Manual Dinas Consent Banner
+$dinasBannerHtml = '';
+if (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING') {
+    $dinasBannerHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(245,158,11,0.1);">'
+        . '<div>'
+        . '<div style="font-weight:800;color:#92400e;font-size:14px;"><i class="fa-solid fa-hands-holding-child"></i> Persetujuan Perbaikan Data (Jalur Dinas) Diperlukan</div>'
+        . '<div style="font-size:13px;color:#78350f;margin-top:4px;">Petugas Dinas Tenaga Kerja telah menyiapkan data perbaikan profil Anda. Silakan baca dan berikan persetujuan (Consent) agar akun Anda dapat diaktifkan.</div>'
+        . '</div>'
+        . '<form method="post" action="dashboard.php">'
+        . '<input type="hidden" name="give_manual_dinas_consent" value="1">'
+        . '<button type="submit" class="primary-btn" style="background:#059669;height:38px;padding:0 18px;font-size:13px;font-weight:700;"><i class="fa-solid fa-check"></i> Setuju & Berikan Consent</button>'
+        . '</form>'
+        . '</div>';
+} elseif (($profile['manual_review_status'] ?? '') === 'CONSENT_GIVEN') {
+    $dinasBannerHtml = '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:14px 20px;margin:16px 24px;font-size:13px;color:#065f46;box-shadow:0 4px 12px rgba(16,185,129,0.08);">'
+        . '<i class="fa-solid fa-circle-check"></i> <strong>Consent Diberikan:</strong> Anda telah menyetujui data perbaikan. Menunggu pengesahan dan pengaktifan akun oleh Petugas Dinas Tenaga Kerja.'
+        . '</div>';
+} elseif (($profile['manual_review_status'] ?? '') === 'INVALID') {
+    $dinasBannerHtml = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:14px 20px;margin:16px 24px;font-size:13px;color:#991b1b;box-shadow:0 4px 12px rgba(239,68,68,0.08);">'
+        . '<i class="fa-solid fa-triangle-exclamation"></i> <strong>Persetujuan Dibatalkan:</strong> Data profil telah diperbarui kembali oleh Admin. Menunggu pengajuan Consent ulang dari Petugas Dinas.'
+        . '</div>';
+}
+
+if ($dinasBannerHtml) {
+    $html = preg_replace('/(<div[^>]*class="[^"]*content[^"]*"[^>]*>)/i', '$1' . "\n" . $dinasBannerHtml, $html, 1);
 }
 
 $initials = mb_strtoupper(mb_substr($ownerName, 0, 1));

@@ -71,6 +71,17 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )');
 
+    $pdo->exec('CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity_type TEXT NOT NULL,
+        entity_id INTEGER NOT NULL,
+        actor_name TEXT NOT NULL,
+        actor_role TEXT NOT NULL,
+        action TEXT NOT NULL,
+        details TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )');
+
     try {
         $cols = array_column($pdo->query('PRAGMA table_info(employer_profiles)')->fetchAll(), 'name');
         if (!in_array('workplace_photo', $cols, true)) {
@@ -78,6 +89,39 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         }
         if (!in_array('permit_document', $cols, true)) {
             $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN permit_document TEXT');
+        }
+        if (!in_array('assigned_to', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assigned_to TEXT');
+        }
+        if (!in_array('assigned_at', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assigned_at DATETIME');
+        }
+        if (!in_array('assignment_reason', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assignment_reason TEXT');
+        }
+        if (!in_array('rejection_count', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN rejection_count INTEGER DEFAULT 0');
+        }
+        if (!in_array('manual_review_status', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN manual_review_status TEXT DEFAULT "NONE"');
+        }
+        if (!in_array('consent_data_hash', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_data_hash TEXT');
+        }
+        if (!in_array('consent_given_at', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_given_at DATETIME');
+        }
+        if (!in_array('officer_statement', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN officer_statement TEXT');
+        }
+        if (!in_array('officer_name', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN officer_name TEXT');
+        }
+        if (!in_array('entity_type', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN entity_type TEXT DEFAULT "Individu"');
+        }
+        if (!in_array('consent_agreed', $cols, true)) {
+            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_agreed INTEGER DEFAULT 0');
         }
     } catch (Throwable $ignored) {}
 
@@ -106,6 +150,18 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         }
         if (!in_array('additional_doc_required', $cols, true)) {
             $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_required INTEGER DEFAULT 0');
+        }
+        if (!in_array('assigned_to', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN assigned_to TEXT');
+        }
+        if (!in_array('assigned_at', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN assigned_at DATETIME');
+        }
+        if (!in_array('assignment_reason', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN assignment_reason TEXT');
+        }
+        if (!in_array('compliance_checklist', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN compliance_checklist TEXT');
         }
         // Migrate status to canonical strings
         $pdo->exec('UPDATE job_posts SET status = "Menunggu Verifikasi" WHERE status = "Dikirim/Menunggu Verifikasi" OR status = "Dikirim"');
