@@ -2159,7 +2159,7 @@ html, body {
 
 .rail-popover {
     position: fixed;
-    left: 56px;
+    left: 64px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 14px;
@@ -2186,7 +2186,7 @@ html, body {
 
 /* Theme Popover */
 .rail-theme-popover {
-    bottom: 56px;
+    bottom: 58px;
     width: 180px;
     padding: 12px 0 6px;
 }
@@ -3647,13 +3647,35 @@ html, body {
 
 /* ─── COMPREHENSIVE DARK THEME STYLES FOR NEW EMPLOYER DASHBOARD & RAIL ─── */
 html.dark-theme,
+html.dark-theme {
+    --bg: #0b132b;
+    --surface: #111c44;
+    --surface-soft: #0e1738;
+    --surface-tint: #162254;
+    --border: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --muted-2: #64748b;
+    --primary-soft: #1e293b;
+    --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
 html.dark-theme body {
     background-color: #0b132b !important;
+    background-image: none !important;
     color: #f1f5f9 !important;
 }
 
-html.dark-theme .main {
+html.dark-theme .app-layout-wrapper {
     background-color: #0b132b !important;
+}
+
+html.dark-theme .app-main-content,
+html.dark-theme .main,
+html.dark-theme .content {
+    background-color: #0b132b !important;
+    color: #f8fafc !important;
 }
 
 html.dark-theme .sidebar-rail {
@@ -3725,7 +3747,8 @@ html.dark-theme .drawer-menu-item.active {
     color: #ffffff !important;
 }
 
-html.dark-theme .new-topbar {
+html.dark-theme .new-topbar,
+html.dark-theme .topbar {
     background: #111c44 !important;
     border-bottom-color: #1e293b !important;
 }
@@ -3743,7 +3766,8 @@ html.dark-theme .topbar-crumbs {
     color: #94a3b8 !important;
 }
 
-html.dark-theme .topbar-crumbs strong {
+html.dark-theme .topbar-crumbs strong,
+html.dark-theme .topbar-crumbs a {
     color: #f8fafc !important;
 }
 
@@ -3755,6 +3779,29 @@ html.dark-theme .topbar-search-pill {
 html.dark-theme .topbar-search-pill input {
     background: transparent !important;
     color: #f8fafc !important;
+}
+
+html.dark-theme .company-profile-pill {
+    background: #0b132b !important;
+    border-color: #1e293b !important;
+}
+
+html.dark-theme .company-pill-text strong {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .company-pill-text span {
+    color: #94a3b8 !important;
+}
+
+html.dark-theme .company-pill-arrow {
+    color: #64748b !important;
+}
+
+html.dark-theme .topbar-add-btn {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0284c7 !important;
 }
 
 html.dark-theme .topbar-user-badge {
@@ -3917,10 +3964,67 @@ html.dark-theme .info-card,
 html.dark-theme .modal-card,
 html.dark-theme .table-wrap,
 html.dark-theme .filter-strip,
-html.dark-theme .tab-nav {
+html.dark-theme .tab-nav,
+html.dark-theme .card,
+html.dark-theme .section-card,
+html.dark-theme .profile-card {
     background: #111c44 !important;
     border-color: #1e293b !important;
     color: #f8fafc !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.dark-theme .cards4 .card h3,
+html.dark-theme .card h3,
+html.dark-theme .card .value {
+    color: #f8fafc !important;
+}
+
+html.dark-theme .card .desc {
+    color: #94a3b8 !important;
+}
+
+html.dark-theme .table-toolbar {
+    background: #0b132b !important;
+    border-bottom-color: #1e293b !important;
+}
+
+html.dark-theme .search-small {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+}
+
+html.dark-theme .search-small input {
+    color: #f8fafc !important;
+}
+
+html.dark-theme select#jobStatusFilter,
+html.dark-theme select#jobSortSelect {
+    background: #111c44 !important;
+    border-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+html.dark-theme table {
+    color: #f8fafc !important;
+}
+
+html.dark-theme table thead tr {
+    background: #0b132b !important;
+}
+
+html.dark-theme table th {
+    color: #94a3b8 !important;
+    border-bottom-color: #1e293b !important;
+}
+
+html.dark-theme table td {
+    color: #cbd5e1 !important;
+    border-bottom-color: #1e293b !important;
+}
+
+html.dark-theme table tbody tr:hover {
+    background: #1e293b !important;
 }
 
 html.dark-theme .kv dt {
@@ -3931,56 +4035,10 @@ html.dark-theme .kv dd {
     color: #f8fafc !important;
 }
 
-html.dark-theme .applicant-table thead tr {
-    background: #0b132b !important;
-}
-
-html.dark-theme .applicant-table th {
-    color: #94a3b8 !important;
-    border-bottom-color: #1e293b !important;
-}
-
-html.dark-theme .applicant-table td {
-    color: #cbd5e1 !important;
-    border-bottom-color: #1e293b !important;
-}
-
-html.dark-theme .applicant-table tbody tr:hover {
-    background: #1e293b !important;
-}
-
-html.dark-theme .calendar-grid {
-    background: #111c44 !important;
-    border-color: #1e293b !important;
-}
-
-html.dark-theme .day-cell {
-    border-color: #1e293b !important;
-    color: #cbd5e1 !important;
-}
-
-html.dark-theme .day-cell.other-month {
-    background: #0b132b !important;
-    color: #475569 !important;
-}
-
-html.dark-theme .day-header {
-    background: #0b132b !important;
-    color: #94a3b8 !important;
-    border-color: #1e293b !important;
-}
-
 html.dark-theme .modal {
     background: rgba(0, 0, 0, 0.7) !important;
 }
 
-html.dark-theme .modal-card {
-    background: #111c44 !important;
-    border-color: #1e293b !important;
-    color: #f8fafc !important;
-}
-
-html.dark-theme .modal-card h3,
 html.dark-theme .modal-header h3 {
     color: #f8fafc !important;
 }
@@ -4148,4 +4206,5 @@ html.dark-theme .rail-popover-item.item-logout i {
 html.dark-theme .rail-popover-item.item-logout:hover {
     background: rgba(239, 68, 68, 0.15) !important;
 }
+
 
