@@ -8,6 +8,9 @@ function ensure_platform_schema(): void
     }
     $done = true;
     $pdo = db();
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'mysql') {
+        return;
+    }
 
     $employerColumns = array_column($pdo->query('SHOW COLUMNS FROM employer_profiles')->fetchAll(), 'Field');
     $employerAdds = [

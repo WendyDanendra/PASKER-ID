@@ -361,66 +361,117 @@ function ensure_database_schema(PDO $pdo): void
     $schemaChecked = true;
 
     try {
-        // Alter employer_profiles columns if missing
-        $columns = $pdo->query("SHOW COLUMNS FROM employer_profiles")->fetchAll(PDO::FETCH_COLUMN);
-        
-        $addCols = [
-            'nik' => "VARCHAR(30) NULL AFTER owner_name",
-            'whatsapp' => "VARCHAR(30) NULL AFTER phone",
-            'npwp' => "VARCHAR(30) NULL AFTER whatsapp",
-            'linkedin' => "VARCHAR(255) NULL AFTER npwp",
-            'facebook' => "VARCHAR(255) NULL AFTER linkedin",
-            'instagram' => "VARCHAR(255) NULL AFTER facebook",
-            'same_location_siapkerja' => "TINYINT(1) DEFAULT 1 AFTER instagram",
-            'district' => "VARCHAR(120) NULL AFTER city",
-            'village' => "VARCHAR(120) NULL AFTER district",
-            'postal_code' => "VARCHAR(20) NULL AFTER village",
-            'same_address_siapkerja' => "TINYINT(1) DEFAULT 1 AFTER postal_code",
-            'address_detail' => "TEXT NULL AFTER address",
-            'latitude' => "VARCHAR(50) NULL AFTER address_detail",
-            'longitude' => "VARCHAR(50) NULL AFTER latitude",
-            'doc_permission' => "VARCHAR(255) NULL AFTER longitude",
-            'doc_location_photo' => "VARCHAR(255) NULL AFTER doc_permission",
-            'user_consent' => "TINYINT(1) DEFAULT 0 AFTER description",
-            'verification_status' => "ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED' AFTER verified",
-            'rejection_count' => "INT DEFAULT 0 AFTER verification_status",
-            'verifier_notes' => "TEXT NULL AFTER rejection_count",
-            'verification_checklist' => "TEXT NULL AFTER verifier_notes",
-            'suspension_reason' => "TEXT NULL AFTER verification_checklist",
-            'extension_status' => "ENUM('NONE', 'REQUESTED', 'APPROVED', 'REJECTED') DEFAULT 'NONE' AFTER extension_requested",
-        ];
+        if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
+            // Ensure audit_logs table exists
+            $pdo->exec('CREATE TABLE IF NOT EXISTS audit_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                entity_type VARCHAR(50) NOT NULL,
+                entity_id INT NOT NULL,
+                actor_name VARCHAR(120) NOT NULL,
+                actor_role VARCHAR(50) NOT NULL,
+                action VARCHAR(80) NOT NULL,
+                details TEXT,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )');
 
-        foreach ($addCols as $col => $definition) {
-            if (!in_array($col, $columns)) {
-                $pdo->exec("ALTER TABLE employer_profiles ADD COLUMN {$col} {$definition}");
+            // Ensure job_verifications table exists
+            $pdo->exec('CREATE TABLE IF NOT EXISTS job_verifications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                job_id INT NOT NULL,
+                user_id INT NOT NULL,
+                kbji_code VARCHAR(20) NOT NULL,
+                status VARCHAR(40) NOT NULL DEFAULT "PENDING",
+                verifier_notes TEXT NULL,
+                additional_doc_required TINYINT(1) DEFAULT 0,
+                layer_flags TEXT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )');
+
+            // Alter employer_profiles columns if missing
+            $columns = $pdo->query("SHOW COLUMNS FROM employer_profiles")->fetchAll(PDO::FETCH_COLUMN);
+            
+            $addCols = [
+                'nik' => "VARCHAR(30) NULL AFTER owner_name",
+                'whatsapp' => "VARCHAR(30) NULL AFTER phone",
+                'npwp' => "VARCHAR(30) NULL AFTER whatsapp",
+                'linkedin' => "VARCHAR(255) NULL AFTER npwp",
+                'facebook' => "VARCHAR(255) NULL AFTER linkedin",
+                'instagram' => "VARCHAR(255) NULL AFTER facebook",
+                'same_location_siapkerja' => "TINYINT(1) DEFAULT 1 AFTER instagram",
+                'district' => "VARCHAR(120) NULL AFTER city",
+                'village' => "VARCHAR(120) NULL AFTER district",
+                'postal_code' => "VARCHAR(20) NULL AFTER village",
+                'same_address_siapkerja' => "TINYINT(1) DEFAULT 1 AFTER postal_code",
+                'address_detail' => "TEXT NULL AFTER address",
+                'latitude' => "VARCHAR(50) NULL AFTER address_detail",
+                'longitude' => "VARCHAR(50) NULL AFTER latitude",
+                'doc_permission' => "VARCHAR(255) NULL AFTER longitude",
+                'doc_location_photo' => "VARCHAR(255) NULL AFTER doc_permission",
+                'permit_document' => "VARCHAR(255) NULL AFTER doc_location_photo",
+                'workplace_photo' => "VARCHAR(255) NULL AFTER permit_document",
+                'user_consent' => "TINYINT(1) DEFAULT 0 AFTER description",
+                'consent_accepted' => "TINYINT(1) NOT NULL DEFAULT 0 AFTER user_consent",
+                'consent_agreed' => "TINYINT(1) DEFAULT 0 AFTER consent_accepted",
+                'verification_status' => "ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED' AFTER verified",
+                'rejection_count' => "INT DEFAULT 0 AFTER verification_status",
+                'verifier_notes' => "TEXT NULL AFTER rejection_count",
+                'verification_checklist' => "TEXT NULL AFTER verifier_notes",
+                'suspension_reason' => "TEXT NULL AFTER verification_checklist",
+                'active_until' => "DATETIME NULL AFTER suspension_reason",
+                'extension_requested' => "TINYINT(1) NOT NULL DEFAULT 0 AFTER active_until",
+                'extension_status' => "ENUM('NONE', 'REQUESTED', 'APPROVED', 'REJECTED') DEFAULT 'NONE' AFTER extension_requested",
+                'manual_review_status' => "VARCHAR(50) DEFAULT 'NONE' AFTER extension_status",
+                'assigned_to' => "VARCHAR(120) NULL AFTER manual_review_status",
+                'assigned_at' => "DATETIME NULL AFTER assigned_to",
+                'assignment_reason' => "TEXT NULL AFTER assigned_at",
+                'consent_data_hash' => "TEXT NULL AFTER assignment_reason",
+                'consent_given_at' => "DATETIME NULL AFTER consent_data_hash",
+                'officer_statement' => "TEXT NULL AFTER consent_given_at",
+                'officer_name' => "VARCHAR(120) NULL AFTER officer_statement",
+                'entity_type' => "VARCHAR(50) DEFAULT 'Individu' AFTER officer_name",
+            ];
+
+            foreach ($addCols as $col => $definition) {
+                if (!in_array($col, $columns)) {
+                    $pdo->exec("ALTER TABLE employer_profiles ADD COLUMN {$col} {$definition}");
+                }
             }
-        }
 
-        // Alter job_posts columns if missing
-        $jobCols = $pdo->query("SHOW COLUMNS FROM job_posts")->fetchAll(PDO::FETCH_COLUMN);
-        $addJobCols = [
-            'entity_type' => "ENUM('Perusahaan', 'Individu') DEFAULT 'Individu' AFTER industry",
-            'accepted_count' => "INT NOT NULL DEFAULT 0 AFTER quota",
-            'parent_job_id' => "INT NULL AFTER kbji_code",
-            'published_at' => "DATETIME NULL AFTER created_at",
-            'unfulfilled_reason' => "TEXT NULL AFTER parent_job_id",
-            'verifier_notes' => "TEXT NULL AFTER unfulfilled_reason",
-            'verification_checklist' => "TEXT NULL AFTER verifier_notes",
-            'is_blacklisted' => "TINYINT(1) DEFAULT 0 AFTER verification_checklist",
-            'additional_doc_required' => "TINYINT(1) DEFAULT 0 AFTER is_blacklisted",
-        ];
+            // Alter job_posts columns if missing
+            $jobCols = $pdo->query("SHOW COLUMNS FROM job_posts")->fetchAll(PDO::FETCH_COLUMN);
+            $addJobCols = [
+                'entity_type' => "ENUM('Perusahaan', 'Individu') DEFAULT 'Individu' AFTER industry",
+                'accepted_count' => "INT NOT NULL DEFAULT 0 AFTER quota",
+                'kbji_code' => "VARCHAR(20) NULL AFTER accepted_count",
+                'parent_job_id' => "INT NULL AFTER kbji_code",
+                'published_at' => "DATETIME NULL AFTER created_at",
+                'unfulfilled_reason' => "TEXT NULL AFTER parent_job_id",
+                'verifier_notes' => "TEXT NULL AFTER unfulfilled_reason",
+                'verification_checklist' => "TEXT NULL AFTER verifier_notes",
+                'is_blacklisted' => "TINYINT(1) DEFAULT 0 AFTER verification_checklist",
+                'additional_doc_required' => "TINYINT(1) DEFAULT 0 AFTER is_blacklisted",
+                'admin_notes' => "TEXT NULL AFTER additional_doc_required",
+                'details' => "TEXT NULL AFTER admin_notes",
+                'min_education' => "VARCHAR(80) NULL AFTER details",
+                'min_experience' => "VARCHAR(80) NULL AFTER min_education",
+                'assigned_to' => "VARCHAR(120) NULL AFTER min_experience",
+                'assigned_at' => "DATETIME NULL AFTER assigned_to",
+                'assignment_reason' => "TEXT NULL AFTER assigned_at",
+                'compliance_checklist' => "TEXT NULL AFTER assignment_reason",
+                'revision_opened_at' => "DATETIME NULL AFTER compliance_checklist",
+            ];
 
-        foreach ($addJobCols as $col => $definition) {
-            if (!in_array($col, $jobCols)) {
-                $pdo->exec("ALTER TABLE job_posts ADD COLUMN {$col} {$definition}");
+            foreach ($addJobCols as $col => $definition) {
+                if (!in_array($col, $jobCols)) {
+                    $pdo->exec("ALTER TABLE job_posts ADD COLUMN {$col} {$definition}");
+                }
             }
+
+            // Modify status ENUM in job_posts to canonical statuses
+            $pdo->exec("UPDATE job_posts SET status = 'Menunggu Verifikasi' WHERE status IN ('Dikirim/Menunggu Verifikasi', 'Dikirim')");
+            $pdo->exec("UPDATE job_posts SET status = 'Perlu Direvisi' WHERE status = 'Perlu Revisi'");
+            $pdo->exec("ALTER TABLE job_posts MODIFY COLUMN status ENUM('Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft'");
         }
-
-        // Modify status ENUM in job_posts to canonical statuses
-        $pdo->exec("UPDATE job_posts SET status = 'Menunggu Verifikasi' WHERE status IN ('Dikirim/Menunggu Verifikasi', 'Dikirim')");
-        $pdo->exec("UPDATE job_posts SET status = 'Perlu Direvisi' WHERE status = 'Perlu Revisi'");
-        $pdo->exec("ALTER TABLE job_posts MODIFY COLUMN status ENUM('Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft'");
-
     } catch (Exception $e) {
         // Silently handle if table structures already match
     }
