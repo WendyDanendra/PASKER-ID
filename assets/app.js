@@ -1241,25 +1241,40 @@ function initSeekerJobFilters() {
 }
 
 function initNotifications() {
-    const wrap = document.querySelector('.notif-wrap');
-    if (!wrap) {
+    const wraps = document.querySelectorAll('.notif-wrap');
+    if (!wraps.length) {
         return;
     }
-    const button = wrap.querySelector('[data-notif-toggle]');
-    const panel = wrap.querySelector('.notif-panel');
-    if (!button || !panel) {
-        return;
-    }
-    button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        panel.hidden = !panel.hidden;
-        if (!panel.hidden) {
-            fetch('notif-read.php').catch(() => {});
-            button.classList.remove('has-unread');
+    wraps.forEach((wrap) => {
+        const button = wrap.querySelector('[data-notif-toggle], .notif');
+        const panel = wrap.querySelector('.notif-panel');
+        if (!button || !panel) {
+            return;
         }
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const isCurrentlyHidden = panel.hidden;
+            // Close other open panels first
+            document.querySelectorAll('.notif-panel').forEach(p => { if (p !== panel) p.hidden = true; });
+            panel.hidden = !isCurrentlyHidden;
+            if (!panel.hidden) {
+                fetch('dashboard.php?read_notif=1').catch(() => {});
+                fetch('notif-read.php').catch(() => {});
+                button.classList.remove('has-unread');
+            }
+        });
+        panel.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
     });
+
     document.addEventListener('click', () => {
-        panel.hidden = true;
+        document.querySelectorAll('.notif-panel').forEach(p => p.hidden = true);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.notif-panel').forEach(p => p.hidden = true);
+        }
     });
 }
 

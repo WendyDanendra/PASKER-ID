@@ -1603,6 +1603,8 @@
                 </div>
 
                 <div class="topbar-right-actions">
+                    <div class="notif"><i class="fa-regular fa-bell"></i></div>
+
                     <div class="company-profile-pill" data-open-modal="modal-user-account" title="Pengaturan Akun / Profil">
                         <div class="company-pill-avatar" id="topbarAvatar"><?php echo mb_strtoupper(mb_substr($profile['owner_name'] ?? $user['name'], 0, 2)); ?></div>
                         <div class="company-pill-text">
@@ -1611,16 +1613,6 @@
                         </div>
                         <i class="fa-solid fa-chevron-right company-pill-arrow"></i>
                     </div>
-
-                    <?php if ($verificationStatus === 'APPROVED' || $verificationStatus === 'ACTIVE_VERIFIED'): ?>
-                        <button type="button" class="topbar-add-btn" data-open-modal="job-create">
-                            <i class="fa-solid fa-plus"></i> Tambah
-                        </button>
-                    <?php else: ?>
-                        <button type="button" class="topbar-add-btn" data-open-modal="modal-employer-profile">
-                            <i class="fa-solid fa-plus"></i> Tambah
-                        </button>
-                    <?php endif; ?>
                 </div>
             </header>
 
