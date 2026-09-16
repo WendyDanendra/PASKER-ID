@@ -3332,9 +3332,93 @@
                 : '<i class="fa-solid fa-chevron-down"></i> Tampilkan lebih banyak';
         }
     }
-    window.toggleMoreApplicants = toggleMoreApplicants;
+    // Jadwal Wawancara Switcher & Interactivity
+    let currentScheduleView = 'bulanan';
+    let currentSchedulePeriodOffset = 0;
+
+    function setScheduleView(mode) {
+        currentScheduleView = mode;
+        
+        document.querySelectorAll('.sched-pill[data-sched-pill]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.schedPill === mode);
+        });
+
+        const paneBulanan = document.getElementById('schedViewBulanan');
+        const paneMingguan = document.getElementById('schedViewMingguan');
+        const paneHarian = document.getElementById('schedViewHarian');
+
+        if (paneBulanan) paneBulanan.style.display = (mode === 'bulanan') ? 'block' : 'none';
+        if (paneMingguan) paneMingguan.style.display = (mode === 'mingguan') ? 'block' : 'none';
+        if (paneHarian) paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
+
+        updateSchedulePeriodTitle();
+    }
+    window.setScheduleView = setScheduleView;
+
+    function updateSchedulePeriodTitle() {
+        const titleEl = document.getElementById('schedPeriodTitle');
+        if (!titleEl) return;
+
+        if (currentScheduleView === 'bulanan') {
+            const months = ['Agustus 2026', 'September 2026', 'Oktober 2026', 'November 2026'];
+            const baseIdx = 1;
+            const targetIdx = Math.max(0, Math.min(months.length - 1, baseIdx + currentSchedulePeriodOffset));
+            titleEl.textContent = months[targetIdx];
+        } else if (currentScheduleView === 'mingguan') {
+            titleEl.textContent = currentSchedulePeriodOffset === 0 ? '14 Sep – 20 Sep 2026' : (currentSchedulePeriodOffset > 0 ? '21 Sep – 27 Sep 2026' : '7 Sep – 13 Sep 2026');
+        } else if (currentScheduleView === 'harian') {
+            titleEl.textContent = currentSchedulePeriodOffset === 0 ? 'Senin, 14 September 2026' : (currentSchedulePeriodOffset > 0 ? 'Selasa, 15 September 2026' : 'Minggu, 13 September 2026');
+        }
+    }
+
+    function navigateSchedule(delta) {
+        currentSchedulePeriodOffset += delta;
+        updateSchedulePeriodTitle();
+    }
+    window.navigateSchedule = navigateSchedule;
+
+    function resetScheduleToday() {
+        currentSchedulePeriodOffset = 0;
+        updateSchedulePeriodTitle();
+    }
+    window.resetScheduleToday = resetScheduleToday;
+
+    function toggleScheduleFilter(event) {
+        if (event) event.stopPropagation();
+        const popover = document.getElementById('schedFilterPopover');
+        const btn = document.getElementById('schedFilterBtn');
+        if (!popover) return;
+        
+        const isOpen = popover.classList.contains('open');
+        popover.classList.toggle('open', !isOpen);
+        if (btn) btn.classList.toggle('active', !isOpen);
+    }
+    window.toggleScheduleFilter = toggleScheduleFilter;
+
+    function toggleFilterOption(itemEl, type) {
+        if (!itemEl) return;
+        itemEl.classList.toggle('active');
+    }
+    window.toggleFilterOption = toggleFilterOption;
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Date selection clicks
+        document.querySelectorAll('.month-day-cell:not(.other-month)').forEach(cell => {
+            cell.addEventListener('click', () => {
+                document.querySelectorAll('.month-day-cell .day-num').forEach(d => d.classList.remove('today-badge'));
+                const numEl = cell.querySelector('.day-num');
+                if (numEl) numEl.classList.add('today-badge');
+            });
+        });
+
+        document.querySelectorAll('.week-head-cell').forEach(cell => {
+            cell.addEventListener('click', () => {
+                document.querySelectorAll('.week-head-cell .week-head-num').forEach(d => d.classList.remove('today-badge'));
+                const numEl = cell.querySelector('.week-head-num');
+                if (numEl) numEl.classList.add('today-badge');
+            });
+        });
+    });
         const profileForm = document.querySelector('form[action="dashboard.php"] input[name="submit_profile"]')?.form;
         if (profileForm) {
             profileForm.addEventListener('submit', function(e) {

@@ -1446,6 +1446,11 @@ document.addEventListener('click', (e) => {
     const popover = document.getElementById('schedFilterPopover');
     const btn = document.getElementById('schedFilterBtn');
     if (popover && wrap && !wrap.contains(e.target)) {
+        popover.classList.remove('open');
+        if (btn) btn.classList.remove('active');
+    }
+});
+
 // Sidebar Rail Popovers (Tema Tampilan & Akun Pengguna)
 function toggleThemeMenu(event) {
     if (event) event.stopPropagation();
@@ -1494,6 +1499,25 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// Interactive date selection for schedule month & week views
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.month-day-cell:not(.other-month)').forEach(cell => {
+        cell.addEventListener('click', () => {
+            document.querySelectorAll('.month-day-cell .day-num').forEach(d => d.classList.remove('today-badge'));
+            const numEl = cell.querySelector('.day-num');
+            if (numEl) numEl.classList.add('today-badge');
+        });
+    });
+
+    document.querySelectorAll('.week-head-cell').forEach(cell => {
+        cell.addEventListener('click', () => {
+            document.querySelectorAll('.week-head-cell .week-head-num').forEach(d => d.classList.remove('today-badge'));
+            const numEl = cell.querySelector('.week-head-num');
+            if (numEl) numEl.classList.add('today-badge');
+        });
+    });
+});
+
 window.setScheduleView = setScheduleView;
 window.navigateSchedule = navigateSchedule;
 window.resetScheduleToday = resetScheduleToday;
@@ -1503,6 +1527,7 @@ window.toggleThemeMenu = toggleThemeMenu;
 window.toggleAccountMenu = toggleAccountMenu;
 window.closeRailPopovers = closeRailPopovers;
 window.selectThemeOption = selectThemeOption;
+
 
 
 
