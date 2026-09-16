@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrasi - <?php echo APP_NAME; ?></title>
+    <title>Simulasi Onboarding - <?php echo APP_NAME; ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/app.css">
@@ -52,19 +52,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="auth-brand">
                 <div class="brand-mark"><i class="fa-solid fa-user-plus"></i></div>
                 <div>
-                    <h1>Buat akun demo</h1>
-                    <p>Registrasi untuk role pemberi kerja individu atau pencari kerja</p>
+                    <h1>Simulasi Akses PKI</h1>
+                    <p>Shortcut simulasi onboarding akun SIAPkerja untuk layanan Pemberi Kerja Individu</p>
                 </div>
             </div>
             <div class="auth-copy">
-                <p><strong>Perhatian:</strong> admin tidak dibuka dari registrasi. Akun admin disiapkan langsung dari database seed.</p>
-                <p style="margin-top:12px;">Setelah daftar, sistem akan mengarahkan ke form profil yang sesuai supaya alur demo terlihat nyata.</p>
+                <p><strong>Konteks SIAPkerja:</strong> Pada implementasi sebenarnya, pengguna telah memiliki akun SIAPkerja sebelum mengakses Karirhub dan memilih layanan Pemberi Kerja Individu.</p>
+                <p style="margin-top:12px;">Halaman ini difungsikan khusus sebagai shortcut pengujian alur registrasi / onboarding awal ke formulir profil PKI.</p>
             </div>
         </div>
         <div class="auth-panel">
             <div class="auth-card">
-                <h2>Registrasi</h2>
-                <p>Buat akun baru untuk demo web pasker-id.</p>
+                <h2>Simulasi Onboarding</h2>
+                <p>Mulai simulasi akses akun SIAPkerja baru untuk pengujian prototype.</p>
 
                 <?php if ($error): ?>
                     <div class="alert-box alert-error"><?php echo e($error); ?></div>
@@ -72,11 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <form method="post">
                     <div class="field">
-                        <label>Nama</label>
-                        <input type="text" name="name" placeholder="Nama lengkap" required>
+                        <label>Nama Pemilik Akun</label>
+                        <input type="text" name="name" placeholder="Nama lengkap sesuai SIAPkerja" required>
                     </div>
                     <div class="field">
-                        <label>Email</label>
+                        <label>Email Akun SIAPkerja</label>
                         <input type="email" name="email" placeholder="nama@email.com" required>
                     </div>
                     <div class="field">
@@ -84,20 +84,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="password" name="password" placeholder="Minimal 6 karakter" required>
                     </div>
                     <div class="field">
-                        <label>Role</label>
+                        <label>Layanan yang Diakses</label>
                         <select name="role" required>
-                            <option value="employer">Pemberi Kerja Individu</option>
-                            <option value="seeker">Pencari Kerja</option>
+                            <option value="employer">Layanan Pemberi Kerja Individu (PKI)</option>
+                            <option value="seeker">Layanan Pencari Kerja</option>
                         </select>
                     </div>
                     <div class="auth-actions">
-                        <button class="primary-btn" type="submit">Daftar</button>
+                        <button class="primary-btn" type="submit">Mulai Simulasi</button>
                         <a class="ghost-btn" href="login.php">Masuk</a>
                     </div>
                 </form>
 
                 <div class="switch-row">
-                    Sudah punya akun? <a href="login.php">Login</a>
+                    Sudah memiliki akun simulasi? <a href="login.php">Masuk</a>
                 </div>
             </div>
         </div>

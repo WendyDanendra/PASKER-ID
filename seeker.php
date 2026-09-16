@@ -206,9 +206,6 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                 <strong><?php echo $page === 'job' ? 'Detail Lowongan' : ($page === 'employer' ? 'Profil Pemberi Kerja' : ($page === 'jobs' ? 'Lowongan Kerja' : 'Dasbor')); ?></strong>
             </div>
             <div class="top-actions">
-                <a class="action-chip" href="dashboard.php" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;" title="Beralih ke Pemberi Kerja Individu">
-                    <i class="fa-solid fa-briefcase"></i> Beralih ke Pemberi Kerja
-                </a>
                 <?php echo render_notif_dropdown($notifications, $unread); ?>
                 <div class="company-chip">
                     <div><strong><?php echo e($user['name']); ?></strong><span>Pencari kerja</span></div>

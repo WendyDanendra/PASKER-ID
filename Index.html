@@ -1523,11 +1523,6 @@
                 </div>
 
                 <div class="top-actions">
-                    <!-- CONTEXT SWITCHER TO SEEKER (SECTION Q) -->
-                    <a href="dashboard.php?switch_context=seeker" class="action-chip" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; font-size:12px;" title="Beralih ke konteks Pencari Kerja">
-                        <i class="fa-solid fa-repeat"></i> Beralih ke Pencari Kerja
-                    </a>
-
                     <!-- NOTIFIKASI LONCENG PKI (SECTION B) -->
                     <div class="notif" data-open-modal="modal-notifications" style="cursor:pointer;" title="Notifikasi System PKI">
                         <i class="fa-regular fa-bell"></i>
@@ -2615,8 +2610,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <!-- BATALKAN -> KEMBALI KE KONTEKS PENCARI KERJA (TANPA LOGOUT) -->
-                    <a href="dashboard.php?switch_context=seeker" class="ghost-btn" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i> Batalkan</a>
+                    <button type="button" class="ghost-btn" data-close-modal="modal-employer-profile">Batalkan</button>
                     <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> <?php echo $verificationStatus === 'NEEDS_REVISION' ? 'Ajukan Kembali' : 'Ajukan Profil'; ?></button>
                 </div>
             </form>

@@ -5,12 +5,6 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 $user = require_role('employer');
 
-// Handle context switch request
-if (isset($_GET['switch_context']) && $_GET['switch_context'] === 'seeker') {
-    set_active_context('seeker');
-    redirect('seeker.php');
-}
-
 // Fetch Employer Profile
 $profileStatement = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
 $profileStatement->execute([$user['id']]);

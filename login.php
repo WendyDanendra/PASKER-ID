@@ -45,29 +45,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="auth-visual">
             <div class="auth-brand">
                 <div class="brand-pill">
-                    <i class="fa-solid fa-sparkles"></i>
-                    Platform Karier Modern
+                    <i class="fa-solid fa-id-card"></i>
+                    Akses Akun SIAPkerja
                 </div>
                 <div>
-                    <h1 class="auth-gradient-title">Karirhub</h1>
-                    <p class="auth-subtitle">Temukan peluang terbaik dan kelola proses rekrutmen dalam satu dashboard yang elegan.</p>
+                    <h1 class="auth-gradient-title">Karirhub PKI</h1>
+                    <p class="auth-subtitle">Layanan Pemberi Kerja Individu terintegrasi dengan identitas akun SIAPkerja.</p>
                 </div>
             </div>
             <div class="auth-copy auth-copy-highlight">
-                <p><strong>Alur demo:</strong> pemberi kerja individu wajib melengkapi profil dulu sebelum masuk dashboard, pencari kerja akan diarahkan ke form biodata, dan admin langsung masuk ke daftar pemberi kerja individu.</p>
-                <p>Akun seed tersedia untuk demo, dan semua role sudah dipisah di database <strong>pasker-id</strong>.</p>
+                <p><strong>Simulasi Akses:</strong> Pemberi Kerja Individu menggunakan akun SIAPkerja yang sudah dimiliki untuk mengakses layanan Karirhub.</p>
+                <p>Login demo ini mensimulasikan otentikasi akun SIAPkerja yang berhasil untuk pengujian prototype.</p>
             </div>
             <div class="demo-card">
-                <p><strong>Demo Account</strong></p>
-                <div class="demo-row"><span>Admin</span><code>admin@pasker-id.test / admin123</code></div>
-                <div class="demo-row"><span>Perorangan</span><code>perorangan@pasker-id.test / demo123</code></div>
-                <div class="demo-row"><span>Pencari kerja</span><code>seeker@pasker-id.test / seeker123</code></div>
+                <p><strong>Akun Demo (Simulasi SIAPkerja)</strong></p>
+                <div class="demo-row"><span>Perorangan (PKI)</span><code>perorangan@pasker-id.test / demo123</code></div>
+                <div class="demo-row"><span>Pencari Kerja</span><code>seeker@pasker-id.test / seeker123</code></div>
+                <div class="demo-row"><span>Admin Dinas</span><code>admin@pasker-id.test / admin123</code></div>
             </div>
         </div>
         <div class="auth-panel">
             <div class="auth-card">
                 <h2>Masuk</h2>
-                <p>Silakan login untuk lanjut ke dashboard sesuai role kamu.</p>
+                <p>Masuk menggunakan akun SIAPkerja untuk melanjutkan ke layanan Pemberi Kerja Individu.</p>
 
                 <?php if ($error): ?>
                     <div class="alert-box alert-error"><?php echo e($error); ?></div>
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <form method="post">
                     <div class="field">
-                        <label>Email</label>
+                        <label>Email Akun SIAPkerja</label>
                         <div class="input-wrap">
                             <i class="fa-regular fa-envelope"></i>
                             <input type="email" name="email" placeholder="nama@email.com" required>
@@ -97,12 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <i class="fa-solid fa-arrow-right-to-bracket"></i>
                             Masuk
                         </button>
-                        <a class="ghost-btn" href="register.php">Daftar</a>
+                        <a class="ghost-btn" href="register.php">Simulasi Onboarding</a>
                     </div>
                 </form>
 
                 <div class="switch-row">
-                    Belum punya akun? <a href="register.php">Registrasi</a>
+                    Ingin simulasi onboarding akun baru? <a href="register.php">Simulasi Onboarding</a>
                 </div>
             </div>
         </div>
