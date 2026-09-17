@@ -113,7 +113,7 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         // Seed Admin Dinas Kota Bandung in SQLite if missing (Demo/Dev environment only)
         if (is_demo_env()) {
             try {
-                $stmtAdminCheck = $pdo->query("SELECT id FROM users WHERE email = 'admin.bandung@paskerid.test' OR email = 'admin.bandung@pasker-id.test' LIMIT 1");
+                $stmtAdminCheck = $pdo->query("SELECT id FROM users WHERE email = 'admin.bandung@paskerid.test' LIMIT 1");
                 if (!$stmtAdminCheck || !$stmtAdminCheck->fetch()) {
                     $pdo->exec("INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete) VALUES ('Admin Dinas Kota Bandung', 'admin.bandung@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin_dinas', 'Kota Bandung', 'Kota Bandung', 1)");
                 }
@@ -353,9 +353,9 @@ function init_sqlite_schema(PDO $pdo): void
             nama_jabatan TEXT NOT NULL
         )",
         "INSERT INTO users (name, email, password_hash, role, profile_complete) VALUES
-        ('Admin Pusat', 'admin@pasker-id.test', '\$2y\$10\$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', 1),
-        ('Perorangan Demo', 'perorangan@pasker-id.test', '\$2y\$10\$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', 1),
-        ('Pencari Kerja Demo', 'seeker@pasker-id.test', '\$2y\$10\$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', 1)",
+        ('Admin Pusat', 'admin@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin', 1),
+        ('Perorangan Demo', 'perorangan@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'employer', 1),
+        ('Pencari Kerja Demo', 'seeker@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'seeker', 1)",
         "INSERT INTO employer_profiles (
             user_id, owner_name, nik, profession, phone, whatsapp, npwp, linkedin, facebook, instagram,
             province, city, district, village, postal_code, address, address_detail, latitude, longitude,
@@ -427,10 +427,10 @@ function ensure_database_schema(PDO $pdo): void
                 $pdo->exec("ALTER TABLE users ADD COLUMN city VARCHAR(120) NULL AFTER domicile_city_id");
             }
 
-            // Seed/Fix Admin Dinas Kota Bandung in MySQL (Demo/Dev environment only)
+            // Seed/Fix Demo Accounts in MySQL (Demo/Dev environment only)
             if (is_demo_env()) {
                 $hash = '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm'; // Pusatpasarkerj4
-                $stmtAdminCheck = $pdo->query("SELECT id, role, email FROM users WHERE email = 'admin.bandung@paskerid.test' OR email = 'admin.bandung@pasker-id.test' LIMIT 1");
+                $stmtAdminCheck = $pdo->query("SELECT id, role, email FROM users WHERE email = 'admin.bandung@paskerid.test' LIMIT 1");
                 $existingAdmin = $stmtAdminCheck ? $stmtAdminCheck->fetch() : null;
                 if (!$existingAdmin) {
                     $stmtInsertAdmin = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())");
@@ -446,6 +446,16 @@ function ensure_database_schema(PDO $pdo): void
                     $pdo->prepare("UPDATE users SET email = 'admin.bandung@paskerid.test', role = 'admin_dinas', domicile_city_id = 'Kota Bandung', city = 'Kota Bandung', password_hash = ? WHERE id = ?")
                         ->execute([$hash, (int)$existingAdmin['id']]);
                 }
+
+                // Update old @pasker-id.test emails to @paskerid.test in MySQL
+                $pdo->exec("UPDATE users SET email = 'admin@paskerid.test' WHERE email = 'admin@pasker-id.test'");
+                $pdo->exec("UPDATE users SET email = 'perorangan@paskerid.test' WHERE email = 'perorangan@pasker-id.test'");
+                $pdo->exec("UPDATE users SET email = 'seeker@paskerid.test' WHERE email = 'seeker@pasker-id.test'");
+                $pdo->exec("UPDATE users SET email = 'admin.bandung@paskerid.test' WHERE email = 'admin.bandung@pasker-id.test'");
+
+                // Ensure all demo users in MySQL have the Pusatpasarkerj4 password hash
+                $pdo->prepare("UPDATE users SET password_hash = ? WHERE email IN ('admin@paskerid.test', 'admin.bandung@paskerid.test', 'perorangan@paskerid.test', 'seeker@paskerid.test')")
+                    ->execute([$hash]);
             }
 
             // Ensure audit_logs table exists

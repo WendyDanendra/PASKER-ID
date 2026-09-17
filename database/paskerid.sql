@@ -168,10 +168,10 @@ CREATE TABLE job_posts (
 );
 
 INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete) VALUES
-('Admin Pusat', 'admin@pasker-id.test', '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', NULL, NULL, 1),
+('Admin Pusat', 'admin@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin', NULL, NULL, 1),
 ('Admin Dinas Kota Bandung', 'admin.bandung@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin_dinas', 'Kota Bandung', 'Kota Bandung', 1),
-('Perorangan Demo', 'perorangan@pasker-id.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', NULL, NULL, 1),
-('Pencari Kerja Demo', 'seeker@pasker-id.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', NULL, NULL, 1);
+('Perorangan Demo', 'perorangan@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'employer', NULL, NULL, 1),
+('Pencari Kerja Demo', 'seeker@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'seeker', NULL, NULL, 1);
 
 INSERT INTO employer_profiles (
     user_id, owner_name, nik, profession, phone, whatsapp, npwp, linkedin, facebook, instagram,

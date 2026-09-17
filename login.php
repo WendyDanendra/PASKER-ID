@@ -60,9 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (is_demo_env()): ?>
             <div class="demo-card">
                 <p><strong>Akun Demo (Simulasi SIAPkerja)</strong></p>
-                <div class="demo-row"><span>Perorangan (PKI)</span><code>perorangan@pasker-id.test</code></div>
-                <div class="demo-row"><span>Pencari Kerja</span><code>seeker@pasker-id.test</code></div>
-                <div class="demo-row"><span>Admin Pusat</span><code>admin@pasker-id.test</code></div>
+                <div class="demo-row"><span>Perorangan (PKI)</span><code>perorangan@paskerid.test</code></div>
+                <div class="demo-row"><span>Pencari Kerja</span><code>seeker@paskerid.test</code></div>
+                <div class="demo-row"><span>Admin Pusat</span><code>admin@paskerid.test</code></div>
                 <div class="demo-row"><span>Admin Dinas (Bandung)</span><code>admin.bandung@paskerid.test</code></div>
             </div>
             <?php endif; ?>
