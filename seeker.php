@@ -190,7 +190,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             <a href="seeker.php?page=jobs" class="rail-btn <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>" title="Lowongan Kerja">
                 <i class="fa-solid fa-briefcase"></i>
             </a>
-            <a href="profile-seeker.php" class="rail-btn" title="Edit Profil">
+            <a href="seeker.php?page=profile" class="rail-btn <?php echo $page === 'profile' ? 'active' : ''; ?>" title="Profil Pencari Kerja">
                 <i class="fa-regular fa-user"></i>
             </a>
         </div>
@@ -231,8 +231,8 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                     </div>
                     <div class="rail-popover-divider"></div>
                     <div class="rail-popover-list">
-                        <a href="profile-seeker.php" class="rail-popover-item">
-                            <div class="rail-popover-item-left"><i class="fa-solid fa-user-pen"></i><span>Edit Profil</span></div>
+                        <a href="seeker.php?page=profile" class="rail-popover-item">
+                            <div class="rail-popover-item-left"><i class="fa-solid fa-user-pen"></i><span>Profil Pencari Kerja</span></div>
                         </a>
                         <a href="settings.php" class="rail-popover-item">
                             <div class="rail-popover-item-left"><i class="fa-solid fa-gear"></i><span>Pengaturan</span></div>
@@ -274,7 +274,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                 <i class="fa-solid fa-briefcase"></i>
                 <span>Lowongan</span>
             </a>
-            <a href="profile-seeker.php" class="drawer-menu-item">
+            <a href="seeker.php?page=profile" class="drawer-menu-item <?php echo $page === 'profile' ? 'active' : ''; ?>">
                 <i class="fa-regular fa-user"></i>
                 <span>Profil Pencari Kerja</span>
             </a>
@@ -293,7 +293,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             <div class="topbar-crumbs" id="crumbs">
                 <span>Beranda</span>
                 <span class="sep">&gt;</span>
-                <strong id="crumbCurrent"><?php echo $page === 'job' ? 'Detail Lowongan' : ($page === 'employer' ? 'Profil Pemberi Kerja' : ($page === 'jobs' ? 'Lowongan Kerja' : 'Dasbor')); ?></strong>
+                <strong id="crumbCurrent"><?php echo $page === 'job' ? 'Detail Lowongan' : ($page === 'employer' ? 'Profil Pemberi Kerja' : ($page === 'jobs' ? 'Lowongan Kerja' : ($page === 'profile' ? 'Profil Pencari Kerja' : 'Dasbor'))); ?></strong>
             </div>
 
             <div class="topbar-search-box">
@@ -703,6 +703,236 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                                 <?php else: foreach ($jobs as $job): ?>
                                     <?php echo render_seeker_job_card($job, $appliedIds); ?>
                                 <?php endforeach; endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php elseif ($page === 'profile'): ?>
+                    <!-- PROFILE HEADER & ACTION -->
+                    <div class="section-card" style="padding:24px;margin-bottom:20px;background:linear-gradient(135deg, #ffffff 0%, #f4fbfe 100%);border-color:#d5edf6;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+                            <div style="display:flex;align-items:center;gap:18px;">
+                                <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg, #0284c7, #0369a1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;box-shadow:0 8px 20px rgba(2,132,199,0.25);">
+                                    <?php echo e($initials); ?>
+                                </div>
+                                <div>
+                                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                        <h1 style="font-size:24px;font-weight:800;color:#0f172a;margin:0;"><?php echo e($user['name']); ?></h1>
+                                        <span class="pill-badge verified" style="font-size:12px;"><i class="fa-solid fa-circle-check"></i> Profil Aktif &amp; Lengkap</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:16px;margin-top:6px;font-size:13px;color:#64748b;flex-wrap:wrap;">
+                                        <span><i class="fa-solid fa-envelope" style="color:#0284c7;margin-right:4px;"></i> <?php echo e($user['email']); ?></span>
+                                        <span><i class="fa-solid fa-phone" style="color:#0284c7;margin-right:4px;"></i> <?php echo e($profile['phone'] ?? '-'); ?></span>
+                                        <span><i class="fa-solid fa-location-dot" style="color:#0284c7;margin-right:4px;"></i> <?php echo e($profile['domicile_address'] ?? 'Domisili belum diisi'); ?></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="profile-seeker.php" class="primary-btn" style="padding:10px 20px;font-size:13px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(2,132,199,0.25);">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit Profil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2-COLUMN PROFILE CONTENT -->
+                    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start;">
+                        <!-- LEFT COLUMN: BIODATA & PENDIDIKAN & PELATIHAN -->
+                        <div style="display:flex;flex-direction:column;gap:20px;">
+                            <!-- 1. BIODATA PRIBADI -->
+                            <div class="section-card" style="padding:22px;">
+                                <div class="section-header" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+                                    <h3 style="font-size:15px;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:8px;">
+                                        <i class="fa-solid fa-id-card" style="color:#0284c7;"></i> Biodata Pribadi
+                                    </h3>
+                                    <a href="profile-seeker.php" class="btn-link" style="font-size:12px;"><i class="fa-solid fa-pen"></i> Ubah</a>
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;font-size:13px;">
+                                    <div>
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">NIK</span>
+                                        <strong style="color:#0f172a;"><?php echo e($profile['nik'] ?? '-'); ?></strong>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">Nomor Telepon</span>
+                                        <strong style="color:#0f172a;"><?php echo e($profile['phone'] ?? '-'); ?></strong>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">Tempat, Tanggal Lahir</span>
+                                        <strong style="color:#0f172a;"><?php echo e(($profile['birth_place'] ?? '-') . ', ' . ($profile['birth_date'] ?? '-')); ?></strong>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">Jenis Kelamin</span>
+                                        <strong style="color:#0f172a;"><?php echo e($profile['gender'] ?? '-'); ?></strong>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">Status Pernikahan</span>
+                                        <strong style="color:#0f172a;"><?php echo e($profile['marital_status'] ?? '-'); ?></strong>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">Status Akun</span>
+                                        <span class="pill-badge verified" style="font-size:11px;">Siap Kerja</span>
+                                    </div>
+                                    <div style="grid-column:1/-1;">
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">Alamat Sesuai KTP</span>
+                                        <p style="margin:2px 0 0;color:#334155;line-height:1.4;"><?php echo e($profile['ktp_address'] ?? '-'); ?></p>
+                                    </div>
+                                    <div style="grid-column:1/-1;">
+                                        <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;display:block;margin-bottom:2px;">Alamat Domisili</span>
+                                        <p style="margin:2px 0 0;color:#334155;line-height:1.4;"><?php echo e($profile['domicile_address'] ?? '-'); ?></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. RIWAYAT PENDIDIKAN -->
+                            <div class="section-card" style="padding:22px;">
+                                <div class="section-header" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+                                    <h3 style="font-size:15px;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:8px;">
+                                        <i class="fa-solid fa-graduation-cap" style="color:#0284c7;"></i> Riwayat Pendidikan (<?php echo count($educationRows); ?>)
+                                    </h3>
+                                    <a href="profile-seeker.php" class="btn-link" style="font-size:12px;"><i class="fa-solid fa-pen"></i> Ubah</a>
+                                </div>
+                                <?php if (!$educationRows): ?>
+                                    <p style="color:#64748b;font-size:13px;margin:0;">Belum ada riwayat pendidikan yang dicantumkan.</p>
+                                <?php else: ?>
+                                    <div style="display:flex;flex-direction:column;gap:12px;">
+                                        <?php foreach ($educationRows as $edu): ?>
+                                            <div style="padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                                                <div>
+                                                    <div style="font-weight:700;font-size:13px;color:#0f172a;"><?php echo e($edu['school_name']); ?></div>
+                                                    <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                                                        <span class="pill-badge" style="background:#e0f2fe;color:#0284c7;font-size:11px;margin-right:6px;"><?php echo e($edu['level']); ?></span>
+                                                        <?php echo e($edu['major'] ?: 'Semua Jurusan'); ?>
+                                                    </div>
+                                                </div>
+                                                <div style="font-size:12px;font-weight:600;color:#64748b;">
+                                                    Lulus <?php echo e($edu['graduation_year'] ?: '-'); ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- 3. PELATIHAN & SERTIFIKASI -->
+                            <div class="section-card" style="padding:22px;">
+                                <div class="section-header" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+                                    <h3 style="font-size:15px;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:8px;">
+                                        <i class="fa-solid fa-certificate" style="color:#0284c7;"></i> Pelatihan &amp; Sertifikasi (<?php echo count($trainingRows); ?>)
+                                    </h3>
+                                    <a href="profile-seeker.php" class="btn-link" style="font-size:12px;"><i class="fa-solid fa-pen"></i> Ubah</a>
+                                </div>
+                                <?php if (!$trainingRows): ?>
+                                    <p style="color:#64748b;font-size:13px;margin:0;">Belum ada riwayat pelatihan &amp; sertifikasi.</p>
+                                <?php else: ?>
+                                    <div style="display:flex;flex-direction:column;gap:12px;">
+                                        <?php foreach ($trainingRows as $trn): ?>
+                                            <div style="padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                                                <div>
+                                                    <div style="font-weight:700;font-size:13px;color:#0f172a;"><?php echo e($trn['training_name']); ?></div>
+                                                    <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                                                        Penyelenggara: <strong><?php echo e($trn['organizer'] ?: '-'); ?></strong> · Tahun: <?php echo e($trn['year'] ?: '-'); ?>
+                                                    </div>
+                                                </div>
+                                                <?php if (!empty($trn['certificate'])): ?>
+                                                    <span class="pill-badge verified" style="font-size:11px;"><i class="fa-solid fa-certificate"></i> <?php echo e($trn['certificate']); ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: PENGALAMAN KERJA, SKILLS, BAHASA -->
+                        <div style="display:flex;flex-direction:column;gap:20px;">
+                            <!-- 4. PENGALAMAN KERJA -->
+                            <div class="section-card" style="padding:22px;">
+                                <div class="section-header" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+                                    <h3 style="font-size:15px;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:8px;">
+                                        <i class="fa-solid fa-briefcase" style="color:#0284c7;"></i> Pengalaman Kerja (<?php echo count($experienceRows); ?>)
+                                    </h3>
+                                    <a href="profile-seeker.php" class="btn-link" style="font-size:12px;"><i class="fa-solid fa-pen"></i> Ubah</a>
+                                </div>
+                                <?php if (!$experienceRows): ?>
+                                    <p style="color:#64748b;font-size:13px;margin:0;">Belum ada riwayat pengalaman kerja yang ditambahkan.</p>
+                                <?php else: ?>
+                                    <div style="display:flex;flex-direction:column;gap:12px;">
+                                        <?php foreach ($experienceRows as $exp): ?>
+                                            <div style="padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+                                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                                                    <div>
+                                                        <div style="font-weight:700;font-size:14px;color:#0f172a;"><?php echo e($exp['position']); ?></div>
+                                                        <div style="font-size:13px;color:#0284c7;font-weight:600;margin-top:2px;"><?php echo e($exp['company_name']); ?></div>
+                                                    </div>
+                                                    <span class="pill-badge" style="background:#e2e8f0;color:#334155;font-size:11px;"><?php echo e($exp['duration']); ?></span>
+                                                </div>
+                                                <?php if (!empty($exp['notes'])): ?>
+                                                    <div style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.4;border-top:1px dashed #cbd5e1;padding-top:6px;">
+                                                        <?php echo e($exp['notes']); ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- 5. KEAHLIAN & KOMPETENSI -->
+                            <div class="section-card" style="padding:22px;">
+                                <div class="section-header" style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+                                    <h3 style="font-size:15px;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:8px;">
+                                        <i class="fa-solid fa-star" style="color:#0284c7;"></i> Keterampilan &amp; Keahlian
+                                    </h3>
+                                    <a href="profile-seeker.php" class="btn-link" style="font-size:12px;"><i class="fa-solid fa-pen"></i> Ubah</a>
+                                </div>
+                                <?php if (!$skillRows): ?>
+                                    <p style="color:#64748b;font-size:13px;margin:0;">Belum ada keahlian yang tercantum.</p>
+                                <?php else: ?>
+                                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                                        <?php foreach ($skillRows as $sk): ?>
+                                            <span class="pill-badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+                                                <i class="fa-solid fa-check" style="color:#0284c7;"></i>
+                                                <strong><?php echo e($sk['skill_name']); ?></strong>
+                                                <?php if (!empty($sk['level'])): ?>
+                                                    <span style="color:#64748b;font-weight:400;">(<?php echo e($sk['level']); ?>)</span>
+                                                <?php endif; ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- 6. BAHASA -->
+                            <div class="section-card" style="padding:22px;">
+                                <div class="section-header" style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+                                    <h3 style="font-size:15px;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:8px;">
+                                        <i class="fa-solid fa-language" style="color:#0284c7;"></i> Penguasaan Bahasa
+                                    </h3>
+                                    <a href="profile-seeker.php" class="btn-link" style="font-size:12px;"><i class="fa-solid fa-pen"></i> Ubah</a>
+                                </div>
+                                <?php if (!$languageRows): ?>
+                                    <p style="color:#64748b;font-size:13px;margin:0;">Belum ada bahasa yang tercantum.</p>
+                                <?php else: ?>
+                                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                                        <?php foreach ($languageRows as $lang): ?>
+                                            <span class="pill-badge" style="background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+                                                <i class="fa-solid fa-comments"></i>
+                                                <strong><?php echo e($lang['language_name']); ?></strong>
+                                                <?php if (!empty($lang['proficiency'])): ?>
+                                                    <span style="color:#047857;font-weight:400;">· <?php echo e($lang['proficiency']); ?></span>
+                                                <?php endif; ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- CTA CARD TO EDIT -->
+                            <div class="section-card" style="padding:20px;background:#f8fafc;border:1px dashed #cbd5e1;text-align:center;">
+                                <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:4px;">Ingin memperbarui informasi profil Anda?</div>
+                                <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Pastikan data biodata dan riwayat pengalaman selalu terbaru untuk meningkatkan peluang diterima kerja.</div>
+                                <a href="profile-seeker.php" class="primary-btn" style="height:36px;padding:0 16px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                                    <i class="fa-solid fa-user-pen"></i> Buka Form Edit Profil
+                                </a>
                             </div>
                         </div>
                     </div>
