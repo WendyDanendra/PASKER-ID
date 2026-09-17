@@ -341,6 +341,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $decision = $_POST['decision']; // approve | revision | reject
         $notes = trim($_POST['verifier_notes'] ?? '');
 
+        $stmtStatusCheck = db()->prepare('SELECT status FROM job_posts WHERE id = ?');
+        $stmtStatusCheck->execute([$jobId]);
+        $currStatus = (string)($stmtStatusCheck->fetchColumn() ?? '');
+        if ($currStatus === 'Ditutup') {
+            flash('error', 'Lowongan ini berstatus Ditutup dan tidak dapat diverifikasi atau dibuka kembali.');
+            redirect($redirectUrl);
+            exit;
+        }
+
+        $childCheck = db()->prepare('SELECT COUNT(*) FROM job_posts WHERE parent_job_id = ?');
+        $childCheck->execute([$jobId]);
+        if ((int)$childCheck->fetchColumn() > 0) {
+            flash('error', 'Lowongan sumber ini sudah memiliki posting turunan sisa kuota dan tidak dapat diubah statusnya.');
+            redirect($redirectUrl);
+            exit;
+        }
+
         $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
         if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
             $stmtCheck = db()->prepare('SELECT ep.domicile_city_id FROM job_posts j JOIN employer_profiles ep ON ep.user_id = j.user_id WHERE j.id = ?');

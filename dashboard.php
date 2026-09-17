@@ -426,109 +426,156 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         exit;
     }
 
-    // 5. TUTUP LOWONGAN & POSTING ULANG SISA KUOTA
+    // 5. TUTUP LOWONGAN & POSTING ULANG SISA KUOTA (ATOMIC TRANSACTION)
     if (isset($_POST['close_job'])) {
         $jobId = (int)$_POST['job_id'];
         $repost = ($_POST['repost'] ?? '0') === '1';
         $reasons = $_POST['reasons'] ?? [];
         $lainnya = trim($_POST['reason_lainnya'] ?? '');
         
-        $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
-        $jobStmt->execute([$jobId, $user['id']]);
-        $oldJob = $jobStmt->fetch();
+        $pdo = db();
+        $pdo->beginTransaction();
 
-        if (!$oldJob) {
-            flash('error', 'Lowongan tidak ditemukan.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
+        try {
+            // Lock source row inside transaction with FOR UPDATE to prevent race conditions / concurrent requests
+            $jobStmt = $pdo->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? FOR UPDATE');
+            $jobStmt->execute([$jobId, $user['id']]);
+            $oldJob = $jobStmt->fetch();
 
-        // Calculate accepted_count and remaining_quota
-        $accStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
-        $accStmt->execute([$jobId]);
-        $acceptedCount = (int)$accStmt->fetchColumn();
-        $requestedQuota = (int)($oldJob['quota'] ?? 1);
-        $sisaKuota = max(0, $requestedQuota - $acceptedCount);
-
-        // Update accepted_count on source job
-        db()->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$acceptedCount, $jobId]);
-
-        // Scenario 1: remaining_quota == 0 -> Directly close without requiring reasons or reposting
-        if ($sisaKuota <= 0) {
-            $stmt = db()->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = "Kuota Terpenuhi" WHERE id = ? AND user_id = ?');
-            $stmt->execute([$jobId, $user['id']]);
-            flash('success', 'Lowongan telah berhasil Ditutup (Kuota Terpenuhi).');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-
-        // Scenario 2: remaining_quota > 0 -> Requires reasons & repost selection
-        if ($repost && ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED')) {
-            flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat memposting ulang sisa kuota.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-        
-        if (empty($reasons)) {
-            flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-
-        $validReasons = pki_close_reasons();
-        foreach ($reasons as $r) {
-            if (!in_array($r, $validReasons, true)) {
-                flash('error', 'Alasan penutupan tidak valid.');
+            if (!$oldJob) {
+                $pdo->rollBack();
+                flash('error', 'Lowongan tidak ditemukan.');
                 redirect('dashboard.php#lowongan');
                 exit;
             }
-        }
 
-        if (in_array('Lainnya', $reasons, true) && $lainnya === '') {
-            flash('error', 'Alasan "Lainnya" wajib diisi.');
+            if ($oldJob['status'] === 'Ditutup') {
+                $pdo->rollBack();
+                flash('error', 'Lowongan ini sudah berstatus Ditutup dan tidak dapat diproses ulang.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            // Check if source job already has a child repost (prevent double-submit creating multiple children)
+            $childCheck = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE parent_job_id = ?');
+            $childCheck->execute([$jobId]);
+            if ((int)$childCheck->fetchColumn() > 0) {
+                $pdo->rollBack();
+                flash('error', 'Lowongan sumber ini sudah memiliki posting turunan sisa kuota dan tidak dapat diproses ulang.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            // Calculate accepted_count and remaining_quota
+            $accStmt = $pdo->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
+            $accStmt->execute([$jobId]);
+            $acceptedCount = (int)$accStmt->fetchColumn();
+            $requestedQuota = (int)($oldJob['quota'] ?? 1);
+            $sisaKuota = max(0, $requestedQuota - $acceptedCount);
+
+            // Update accepted_count on source job
+            $pdo->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$acceptedCount, $jobId]);
+
+            // Scenario 1: remaining_quota == 0 -> Directly close without requiring reasons or reposting
+            if ($sisaKuota <= 0) {
+                $stmt = $pdo->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = "Kuota Terpenuhi" WHERE id = ? AND user_id = ?');
+                $stmt->execute([$jobId, $user['id']]);
+                $pdo->commit();
+                flash('success', 'Lowongan telah berhasil Ditutup (Kuota Terpenuhi).');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            // Scenario 2: remaining_quota > 0 -> Requires reasons & repost selection
+            if ($repost && ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED')) {
+                $pdo->rollBack();
+                flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat memposting ulang sisa kuota.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+            
+            if (empty($reasons)) {
+                $pdo->rollBack();
+                flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            $validReasons = pki_close_reasons();
+            foreach ($reasons as $r) {
+                if (!in_array($r, $validReasons, true)) {
+                    $pdo->rollBack();
+                    flash('error', 'Alasan penutupan tidak valid.');
+                    redirect('dashboard.php#lowongan');
+                    exit;
+                }
+            }
+
+            if (in_array('Lainnya', $reasons, true) && $lainnya === '') {
+                $pdo->rollBack();
+                flash('error', 'Alasan "Lainnya" wajib diisi.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            $reasonStr = implode(', ', $reasons);
+            if (in_array('Lainnya', $reasons, true)) {
+                $reasonStr .= ' - ' . $lainnya;
+            }
+
+            // Close original job with reason (Source job remains Ditutup)
+            $stmt = $pdo->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = ? WHERE id = ? AND user_id = ?');
+            $stmt->execute([$reasonStr, $jobId, $user['id']]);
+
+            if ($repost) {
+                // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi (no auto-publish), copying ONLY business fields (original title preserved without suffix).
+                // Verification state is RESET (compliance_checklist = NULL, additional_doc_* = NULL/0) so child enters verification as a clean case.
+                $insert = $pdo->prepare('INSERT INTO job_posts (
+                    user_id, title, description, location, job_type, industry, entity_type, status,
+                    salary_min, salary_max, quota, accepted_count, kbji_code, details, min_education, min_experience,
+                    additional_doc_required, additional_doc_file, additional_doc_notes, additional_doc_status,
+                    parent_job_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, "Menunggu Verifikasi", ?, ?, ?, 0, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, CURRENT_TIMESTAMP)');
+                $insert->execute([
+                    $user['id'], 
+                    $oldJob['title'], 
+                    $oldJob['description'], 
+                    $oldJob['location'], 
+                    $oldJob['job_type'], 
+                    $oldJob['industry'], 
+                    $oldJob['entity_type'] ?? 'Individu',
+                    $oldJob['salary_min'] ?? null,
+                    $oldJob['salary_max'] ?? null,
+                    $sisaKuota, 
+                    $oldJob['kbji_code'], 
+                    $oldJob['details'] ?? null,
+                    $oldJob['min_education'] ?? '', 
+                    $oldJob['min_experience'] ?? '', 
+                    $jobId
+                ]);
+                $childId = (int)$pdo->lastInsertId();
+
+                // Create Job Verification Case for child (WITHOUT catch ignore; exception will trigger transaction rollback!)
+                $caseStmt = $pdo->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, layer_flags, created_at) VALUES (?, ?, ?, "PENDING", "REPOST_CONTINUATION", CURRENT_TIMESTAMP)');
+                $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
+
+                $pdo->commit();
+                flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
+            } else {
+                $pdo->commit();
+                flash('success', 'Lowongan berhasil Ditutup.');
+            }
+
+            redirect('dashboard.php#lowongan');
+            exit;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal memproses penutupan/posting ulang lowongan: ' . $e->getMessage());
             redirect('dashboard.php#lowongan');
             exit;
         }
-
-        $reasonStr = implode(', ', $reasons);
-        if (in_array('Lainnya', $reasons, true)) {
-            $reasonStr .= ' - ' . $lainnya;
-        }
-
-        // Close original job with reason
-        $stmt = db()->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = ? WHERE id = ? AND user_id = ?');
-        $stmt->execute([$reasonStr, $jobId, $user['id']]);
-
-        if ($repost) {
-            // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi
-            $insert = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code, min_education, min_experience, parent_job_id, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Menunggu Verifikasi", ?, 0, ?, ?, ?, ?, CURRENT_TIMESTAMP)');
-            $insert->execute([
-                $user['id'], 
-                $oldJob['title'] . ' (Posting Ulang Sisa Kuota)', 
-                $oldJob['description'], 
-                $oldJob['location'], 
-                $oldJob['job_type'], 
-                $oldJob['industry'], 
-                $sisaKuota, 
-                $oldJob['kbji_code'], 
-                $oldJob['min_education'] ?? '', 
-                $oldJob['min_experience'] ?? '', 
-                $jobId
-            ]);
-            $childId = (int)db()->lastInsertId();
-
-            try {
-                $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, layer_flags) VALUES (?, ?, ?, "PENDING", "REPOST_CONTINUATION")');
-                $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
-            } catch (Throwable $ignored) {}
-
-            flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
-        } else {
-            flash('success', 'Lowongan berhasil Ditutup.');
-        }
-
-        redirect('dashboard.php#lowongan');
-        exit;
     }
 
     // 6. AJUKAN PERPANJANGAN WAKTU (1x)
