@@ -113,9 +113,9 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         // Seed Admin Dinas Kota Bandung in SQLite if missing (Demo/Dev environment only)
         if (is_demo_env()) {
             try {
-                $stmtAdminCheck = $pdo->query("SELECT id FROM users WHERE email = 'admin.bandung@pasker-id.test' OR email = 'admin.bandung@paskerid.test' LIMIT 1");
+                $stmtAdminCheck = $pdo->query("SELECT id FROM users WHERE email = 'admin.bandung@paskerid.test' OR email = 'admin.bandung@pasker-id.test' LIMIT 1");
                 if (!$stmtAdminCheck || !$stmtAdminCheck->fetch()) {
-                    $pdo->exec("INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete) VALUES ('Admin Dinas Kota Bandung', 'admin.bandung@pasker-id.test', '\$2y\$10\$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin_dinas', 'Kota Bandung', 'Kota Bandung', 1)");
+                    $pdo->exec("INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete) VALUES ('Admin Dinas Kota Bandung', 'admin.bandung@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin_dinas', 'Kota Bandung', 'Kota Bandung', 1)");
                 }
             } catch (Throwable $ignored) {}
         }
@@ -429,20 +429,22 @@ function ensure_database_schema(PDO $pdo): void
 
             // Seed/Fix Admin Dinas Kota Bandung in MySQL (Demo/Dev environment only)
             if (is_demo_env()) {
-                $stmtAdminCheck = $pdo->query("SELECT id, role FROM users WHERE email = 'admin.bandung@pasker-id.test' OR email = 'admin.bandung@paskerid.test' LIMIT 1");
+                $hash = '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm'; // Pusatpasarkerj4
+                $stmtAdminCheck = $pdo->query("SELECT id, role, email FROM users WHERE email = 'admin.bandung@paskerid.test' OR email = 'admin.bandung@pasker-id.test' LIMIT 1");
                 $existingAdmin = $stmtAdminCheck ? $stmtAdminCheck->fetch() : null;
                 if (!$existingAdmin) {
                     $stmtInsertAdmin = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())");
                     $stmtInsertAdmin->execute([
                         'Admin Dinas Kota Bandung',
-                        'admin.bandung@pasker-id.test',
-                        '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6',
+                        'admin.bandung@paskerid.test',
+                        $hash,
                         'admin_dinas',
                         'Kota Bandung',
                         'Kota Bandung'
                     ]);
-                } else if (($existingAdmin['role'] ?? '') !== 'admin_dinas') {
-                    $pdo->exec("UPDATE users SET role = 'admin_dinas', domicile_city_id = 'Kota Bandung', city = 'Kota Bandung' WHERE id = " . (int)$existingAdmin['id']);
+                } else {
+                    $pdo->prepare("UPDATE users SET email = 'admin.bandung@paskerid.test', role = 'admin_dinas', domicile_city_id = 'Kota Bandung', city = 'Kota Bandung', password_hash = ? WHERE id = ?")
+                        ->execute([$hash, (int)$existingAdmin['id']]);
                 }
             }
 

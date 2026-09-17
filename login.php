@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="demo-row"><span>Perorangan (PKI)</span><code>perorangan@pasker-id.test / demo123</code></div>
                 <div class="demo-row"><span>Pencari Kerja</span><code>seeker@pasker-id.test / seeker123</code></div>
                 <div class="demo-row"><span>Admin Pusat</span><code>admin@pasker-id.test / admin123</code></div>
-                <div class="demo-row"><span>Admin Dinas (Bandung)</span><code>admin.bandung@pasker-id.test / admin123</code></div>
+                <div class="demo-row"><span>Admin Dinas (Bandung)</span><code>admin.bandung@paskerid.test / Pusatpasarkerj4</code></div>
             </div>
             <?php endif; ?>
         </div>

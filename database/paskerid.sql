@@ -23,7 +23,9 @@ CREATE TABLE users (
     name VARCHAR(120) NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'employer', 'seeker') NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    domicile_city_id VARCHAR(120) NULL,
+    city VARCHAR(120) NULL,
     profile_complete TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
@@ -165,10 +167,11 @@ CREATE TABLE job_posts (
     CONSTRAINT fk_job_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-INSERT INTO users (name, email, password_hash, role, profile_complete) VALUES
-('Admin Pusat', 'admin@pasker-id.test', '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', 1),
-('Perorangan Demo', 'perorangan@pasker-id.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', 1),
-('Pencari Kerja Demo', 'seeker@pasker-id.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', 1);
+INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete) VALUES
+('Admin Pusat', 'admin@pasker-id.test', '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', NULL, NULL, 1),
+('Admin Dinas Kota Bandung', 'admin.bandung@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin_dinas', 'Kota Bandung', 'Kota Bandung', 1),
+('Perorangan Demo', 'perorangan@pasker-id.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', NULL, NULL, 1),
+('Pencari Kerja Demo', 'seeker@pasker-id.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', NULL, NULL, 1);
 
 INSERT INTO employer_profiles (
     user_id, owner_name, nik, profession, phone, whatsapp, npwp, linkedin, facebook, instagram,
