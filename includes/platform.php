@@ -741,16 +741,21 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
     ];
 }
 
-function record_audit_log(string $entityType, int $entityId, string $action, ?string $details = null, string $actorName = 'Admin Pusat', string $actorRole = 'admin'): void
+function record_audit_log(string $entityType, int $entityId, string $action, ?string $details = null, string $actorName = 'Admin Pusat', string $actorRole = 'admin', bool $strict = false): void
 {
     try {
-        $stmt = db()->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))');
+        $pdo = db();
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = $pdo->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))');
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+        }
         $stmt->execute([$entityType, $entityId, $actorName, $actorRole, $action, $details]);
     } catch (Throwable $e) {
-        try {
-            $stmt = db()->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
-            $stmt->execute([$entityType, $entityId, $actorName, $actorRole, $action, $details]);
-        } catch (Throwable $ignored) {}
+        if ($strict) {
+            throw $e;
+        }
     }
 }
 

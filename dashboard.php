@@ -259,7 +259,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     // 3. TAMBAH / UPDATE DRAFT LOWONGAN (SELALU Draft, TANPA Rules Engine)
     if (isset($_POST['save_job']) || isset($_POST['update_job'])) {
         if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
-            flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat membuat atau mengubah lowongan.');
+            flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi atau terkunci. Tidak dapat membuat atau mengubah lowongan.');
             redirect('dashboard.php#lowongan');
             exit;
         }
@@ -300,7 +300,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     // 4. KIRIM LOWONGAN (VALIDATION + RULES ENGINE 3 LAYERS)
     if (isset($_POST['send_job'])) {
         if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
-            flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat mengirim lowongan baru.');
+            flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi atau terkunci. Tidak dapat mengirim lowongan baru.');
             redirect('dashboard.php#lowongan');
             exit;
         }
@@ -489,7 +489,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             // Scenario 2: remaining_quota > 0 -> Requires reasons & repost selection
             if ($repost && ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED')) {
                 $pdo->rollBack();
-                flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat memposting ulang sisa kuota.');
+                flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi atau terkunci. Tidak dapat memposting ulang sisa kuota.');
                 redirect('dashboard.php#lowongan');
                 exit;
             }
@@ -578,17 +578,95 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
     }
 
-    // 6. AJUKAN PERPANJANGAN WAKTU (1x)
+    // 6. AJUKAN PERPANJANGAN HAK AKSES PEMBERI KERJA INDIVIDU (1x, 1-3 HARI)
     if (isset($_POST['request_extension'])) {
-        if (($profile['extension_requested'] ?? 0) == 0) {
-            $stmt = db()->prepare('UPDATE employer_profiles SET extension_requested = 1, extension_status = "REQUESTED" WHERE user_id = ?');
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        try {
+            // Refresh & lock employer profile row inside transaction
+            $profStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+            $profStmt->execute([$user['id']]);
+            $currProfile = $profStmt->fetch() ?: [];
+
+            if (empty($currProfile)) {
+                $pdo->rollBack();
+                flash('error', 'Profil Pemberi Kerja tidak ditemukan.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            // 1. Strict time-based eligibility: active_until < NOW <= active_until + 7 hari
+            $cActiveUntilRaw = $currProfile['active_until'] ?? null;
+            if (empty($cActiveUntilRaw)) {
+                $pdo->rollBack();
+                flash('error', 'Perpanjangan Hak Akses Pemberi Kerja Individu tidak dapat diajukan karena masa aktif belum ditentukan.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            $cNow = new DateTime();
+            $cActiveUntil = new DateTime($cActiveUntilRaw);
+            $activeUntilTs = $cActiveUntil->getTimestamp();
+            $nowTs = $cNow->getTimestamp();
+            $sevenDaysTs = $activeUntilTs + (7 * 86400);
+
+            if ($nowTs <= $activeUntilTs) {
+                $pdo->rollBack();
+                flash('error', 'Hak Akses Anda masih aktif. Perpanjangan hanya dapat diajukan saat masa aktif telah berakhir dan masuk Masa Transisi.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            if ($nowTs > $sevenDaysTs) {
+                $pdo->rollBack();
+                flash('error', 'Jendela Masa Transisi (7 hari) telah terlewati. Perpanjangan Hak Akses Pemberi Kerja Individu tidak dapat diajukan.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            // 2. Max 1x validation: Must not have requested previously
+            if (($currProfile['extension_requested'] ?? 0) != 0 || ($currProfile['extension_status'] ?? 'NONE') !== 'NONE') {
+                $pdo->rollBack();
+                flash('error', 'Pengajuan perpanjangan Hak Akses Pemberi Kerja Individu hanya dapat dilakukan maksimal 1 kali.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            // 3. Duration validation: 1 to 3 days
+            if (isset($_POST['extension_days']) || isset($_POST['requested_days'])) {
+                $rawDays = $_POST['extension_days'] ?? $_POST['requested_days'];
+                if (!is_numeric($rawDays) || (int)$rawDays < 1 || (int)$rawDays > 3 || (int)$rawDays != $rawDays) {
+                    $pdo->rollBack();
+                    flash('error', 'Durasi perpanjangan Hak Akses Pemberi Kerja Individu tidak valid. Pilihan durasi harus antara 1 sampai 3 hari.');
+                    redirect('dashboard.php');
+                    exit;
+                }
+                $reqDays = (int)$rawDays;
+            } else {
+                $reqDays = 3;
+            }
+
+            // 4. Update status without altering active_until (active_until will only be updated upon Admin Dinas/Pusat approval)
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET extension_requested = 1, extension_status = "REQUESTED" WHERE user_id = ?');
             $stmt->execute([$user['id']]);
-            flash('success', 'Permohonan perpanjangan masa aktif (1x) berhasil dikirim ke Admin Dinas. Silakan menunggu persetujuan.');
-        } else {
-            flash('error', 'Anda sudah pernah mengajukan perpanjangan masa aktif.');
+
+            // Record audit log INSIDE transaction before commit (strict mode for atomic rollback)
+            record_audit_log('employer', $user['id'], 'EXTENSION_REQUESTED', "Mengajukan permohonan perpanjangan Hak Akses Pemberi Kerja Individu selama {$reqDays} hari.", $user['name'], 'employer', true);
+
+            $pdo->commit();
+
+            flash('success', 'Permohonan perpanjangan Hak Akses Pemberi Kerja Individu berhasil diajukan dan sedang menunggu verifikasi.');
+            redirect('dashboard.php');
+            exit;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal mengajukan perpanjangan: ' . $e->getMessage());
+            redirect('dashboard.php');
+            exit;
         }
-        redirect('dashboard.php');
-        exit;
     }
 
     // 7. HAPUS DRAFT LOWONGAN
@@ -690,8 +768,49 @@ if (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING') {
         . '</div>';
 }
 
-if ($dinasBannerHtml) {
-    $html = preg_replace('/(<div[^>]*class="[^"]*content[^"]*"[^>]*>)/i', '$1' . "\n" . $dinasBannerHtml, $html, 1);
+// Transition & Extension Banner for Hak Akses Pemberi Kerja Individu
+$transitionBannerHtml = '';
+if ($isTransitionPeriod) {
+    $extStat = $profile['extension_status'] ?? 'NONE';
+    if ($extStat === 'REQUESTED') {
+        $transitionBannerHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(245,158,11,0.08);">'
+            . '<div>'
+            . '<div style="font-weight:800;color:#92400e;font-size:14px;"><i class="fa-solid fa-hourglass-half"></i> Permohonan Perpanjangan Hak Akses Sedang Ditinjau</div>'
+            . '<div style="font-size:13px;color:#78350f;margin-top:4px;">Hak Akses Pemberi Kerja Individu Anda saat ini berada dalam <strong>Masa Transisi (Akses Dibatasi)</strong>. Permohonan perpanjangan (1x) telah diajukan dan sedang menunggu verifikasi.</div>'
+            . '</div>'
+            . '<div style="font-size:12px;font-weight:700;color:#92400e;background:#fef3c7;padding:6px 14px;border-radius:9999px;border:1px solid #fcd34d;">Status: Menunggu Verifikasi</div>'
+            . '</div>';
+    } elseif ($extStat === 'REJECTED') {
+        $transitionBannerHtml = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(239,68,68,0.08);">'
+            . '<div>'
+            . '<div style="font-weight:800;color:#991b1b;font-size:14px;"><i class="fa-solid fa-triangle-exclamation"></i> Hak Akses Pemberi Kerja Individu Dalam Masa Transisi</div>'
+            . '<div style="font-size:13px;color:#7f1d1d;margin-top:4px;">Permohonan perpanjangan Hak Akses telah ditolak. Selesaikan proses rekrutmen pelamar yang ada sebelum masa transisi berakhir.</div>'
+            . '</div>'
+            . '<div style="font-size:12px;font-weight:700;color:#991b1b;background:#fee2e2;padding:6px 14px;border-radius:9999px;border:1px solid #fca5a5;">Perpanjangan Ditolak</div>'
+            . '</div>';
+    } elseif (empty($profile['extension_requested'])) {
+        $transitionBannerHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(245,158,11,0.1);">'
+            . '<div>'
+            . '<div style="font-weight:800;color:#92400e;font-size:14px;"><i class="fa-solid fa-clock-rotate-left"></i> Masa Aktif Berakhir — Masa Transisi (Akses Dibatasi)</div>'
+            . '<div style="font-size:13px;color:#78350f;margin-top:4px;">Masa aktif Hak Akses Pemberi Kerja Individu telah berakhir. Anda hanya dapat mengelola pelamar eksisting dan menutup lowongan. Anda berhak mengajukan perpanjangan hak akses <strong>maksimal 1 kali (1–3 hari)</strong>.</div>'
+            . '</div>'
+            . '<form method="post" action="dashboard.php" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+            . '<input type="hidden" name="request_extension" value="1">'
+            . '<label style="font-size:13px;font-weight:700;color:#78350f;">Pilih Durasi:</label>'
+            . '<select name="extension_days" style="height:38px;padding:0 12px;border-radius:8px;border:1px solid #fcd34d;font-size:13px;background:#fff;">'
+            . '<option value="1">1 Hari</option>'
+            . '<option value="2">2 Hari</option>'
+            . '<option value="3" selected>3 Hari</option>'
+            . '</select>'
+            . '<button type="submit" class="primary-btn" style="background:#d97706;height:38px;padding:0 18px;font-size:13px;font-weight:700;"><i class="fa-solid fa-paper-plane"></i> Ajukan Perpanjangan</button>'
+            . '</form>'
+            . '</div>';
+    }
+}
+
+$allBannersHtml = $dinasBannerHtml . $transitionBannerHtml;
+if ($allBannersHtml) {
+    $html = preg_replace('/(<div[^>]*class="[^"]*content[^"]*"[^>]*>)/i', '$1' . "\n" . $allBannersHtml, $html, 1);
 }
 
 $initials = mb_strtoupper(mb_substr($ownerName, 0, 1));

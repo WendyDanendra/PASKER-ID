@@ -270,31 +270,141 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         exit;
     }
 
-    // 7. PERPANJANGAN MASA AKTIF TRANSISI (1, 2, ATAU 3 HARI)
+    // 7. PERPANJANGAN HAK AKSES PEMBERI KERJA INDIVIDU (1, 2, ATAU 3 HARI)
     if ($action === 'approve_extension') {
         $targetUserId = (int)$_POST['user_id'];
-        $extDays = isset($_POST['extension_days']) ? max(1, min(3, (int)$_POST['extension_days'])) : 3;
-        $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
-        if ($driver === 'sqlite') {
-            $stmt = db()->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', active_until = datetime(CASE WHEN active_until < datetime('now') THEN datetime('now') ELSE active_until END, '+{$extDays} days') WHERE user_id = ?");
-        } else {
-            $stmt = db()->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', active_until = DATE_ADD(GREATEST(COALESCE(active_until, NOW()), NOW()), INTERVAL {$extDays} DAY) WHERE user_id = ?");
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        try {
+            // Lock employer profile row with FOR UPDATE
+            $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+            $empStmt->execute([$targetUserId]);
+            $targetEmp = $empStmt->fetch();
+
+            if (!$targetEmp) {
+                $pdo->rollBack();
+                flash('error', 'Pemberi Kerja tidak ditemukan.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            // Scope Check: Admin Dinas must match employer's domicile_city_id
+            $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+            if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+                $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+                if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                    $pdo->rollBack();
+                    flash('error', 'Akses ditolak: Pemberi Kerja ini di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+                    redirect($redirectUrl);
+                    exit;
+                }
+            }
+
+            if (($targetEmp['extension_status'] ?? '') !== 'REQUESTED') {
+                $pdo->rollBack();
+                flash('error', 'Tidak ada permohonan perpanjangan Hak Akses Pemberi Kerja Individu yang berstatus REQUESTED.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            if (!isset($_POST['extension_days']) || !is_numeric($_POST['extension_days'])) {
+                $pdo->rollBack();
+                flash('error', 'Durasi perpanjangan Hak Akses Pemberi Kerja Individu wajib diisi.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            $extDays = (int)$_POST['extension_days'];
+            if ($extDays < 1 || $extDays > 3) {
+                $pdo->rollBack();
+                flash('error', 'Durasi perpanjangan Hak Akses Pemberi Kerja Individu tidak valid. Harus antara 1 sampai 3 hari.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $stmt = $pdo->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', verification_status = 'APPROVED', verified = 1, active_until = datetime('now', '+{$extDays} days') WHERE user_id = ?");
+            } else {
+                $stmt = $pdo->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', verification_status = 'APPROVED', verified = 1, active_until = DATE_ADD(NOW(), INTERVAL {$extDays} DAY) WHERE user_id = ?");
+            }
+            $stmt->execute([$targetUserId]);
+
+            // Record audit log INSIDE transaction before commit (strict mode for atomic rollback)
+            record_audit_log('employer', $targetUserId, 'EXTENSION_APPROVED', "Perpanjangan Hak Akses Pemberi Kerja Individu disetujui selama {$extDays} hari. Hak Akses diaktifkan kembali.", $user['name'], $user['role'] ?? 'admin', true);
+
+            $pdo->commit();
+
+            flash('success', "Permohonan perpanjangan Hak Akses Pemberi Kerja Individu ({$extDays} hari) berhasil disetujui. Hak Akses telah aktif kembali.");
+            redirect($redirectUrl);
+            exit;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal memproses persetujuan perpanjangan: ' . $e->getMessage());
+            redirect($redirectUrl);
+            exit;
         }
-        $stmt->execute([$targetUserId]);
-        record_audit_log('employer', $targetUserId, 'EXTENSION_APPROVED', "Perpanjangan masa transisi disetujui selama {$extDays} hari.", $user['name']);
-        flash('success', "Permohonan perpanjangan masa aktif ({$extDays} hari) berhasil Disetujui.");
-        redirect($redirectUrl);
-        exit;
     }
 
     if ($action === 'reject_extension') {
         $targetUserId = (int)$_POST['user_id'];
-        $stmt = db()->prepare('UPDATE employer_profiles SET extension_status = "REJECTED" WHERE user_id = ?');
-        $stmt->execute([$targetUserId]);
-        record_audit_log('employer', $targetUserId, 'EXTENSION_REJECTED', "Permohonan perpanjangan masa transisi ditolak.", $user['name']);
-        flash('success', 'Permohonan perpanjangan masa aktif Ditolak.');
-        redirect($redirectUrl);
-        exit;
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        try {
+            // Lock employer profile row with FOR UPDATE
+            $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+            $empStmt->execute([$targetUserId]);
+            $targetEmp = $empStmt->fetch();
+
+            if (!$targetEmp) {
+                $pdo->rollBack();
+                flash('error', 'Pemberi Kerja tidak ditemukan.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            // Scope Check: Admin Dinas must match employer's domicile_city_id
+            $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+            if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+                $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+                if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                    $pdo->rollBack();
+                    flash('error', 'Akses ditolak: Pemberi Kerja ini di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+                    redirect($redirectUrl);
+                    exit;
+                }
+            }
+
+            if (($targetEmp['extension_status'] ?? '') !== 'REQUESTED') {
+                $pdo->rollBack();
+                flash('error', 'Tidak ada permohonan perpanjangan Hak Akses Pemberi Kerja Individu yang berstatus REQUESTED.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET extension_status = "REJECTED" WHERE user_id = ?');
+            $stmt->execute([$targetUserId]);
+
+            // Record audit log INSIDE transaction before commit (strict mode for atomic rollback)
+            record_audit_log('employer', $targetUserId, 'EXTENSION_REJECTED', "Permohonan perpanjangan Hak Akses Pemberi Kerja Individu ditolak.", $user['name'], $user['role'] ?? 'admin', true);
+
+            $pdo->commit();
+
+            flash('success', 'Permohonan perpanjangan Hak Akses Pemberi Kerja Individu ditolak.');
+            redirect($redirectUrl);
+            exit;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal memproses penolakan perpanjangan: ' . $e->getMessage());
+            redirect($redirectUrl);
+            exit;
+        }
     }
 
     // 8. AMBIL CASE / ASSIGN PEMERIKSA LOWONGAN
@@ -1322,14 +1432,14 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 </div>
                             </div>
 
-                            <!-- PERPANJANGAN MASA AKTIF MODAL / EXTENSION IF REQUESTED -->
+                            <!-- PERPANJANGAN HAK AKSES PEMBERI KERJA INDIVIDU IF REQUESTED -->
                             <?php if (($selectedEmployer['extension_status'] ?? '') === 'REQUESTED'): ?>
                                 <div class="section-card" style="border:1px solid #fde68a; background:#fffbeb;">
                                     <div class="section-card-title" style="color:#92400e;">
-                                        <i class="fa-solid fa-clock-rotate-left"></i> Permohonan Perpanjangan Masa Transisi
+                                        <i class="fa-solid fa-clock-rotate-left"></i> Permohonan Perpanjangan Hak Akses Pemberi Kerja Individu
                                     </div>
                                     <p style="font-size:13px; color:#78350f; margin-bottom:12px;">
-                                        Pemberi kerja ini mengajukan perpanjangan masa transisi (1x per siklus). Silakan tentukan durasi yang disetujui (1, 2, atau 3 hari):
+                                        Pemberi kerja ini mengajukan perpanjangan Hak Akses Pemberi Kerja Individu (maksimal 1x per siklus). Silakan tentukan durasi yang disetujui (1, 2, atau 3 hari):
                                     </p>
                                     <form method="post" action="admin.php?view=directory_individual&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="display:flex; gap:12px; align-items:center;">
                                         <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
