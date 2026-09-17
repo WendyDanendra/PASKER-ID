@@ -689,7 +689,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         </a>
 
         <!-- Hamburger Toggle Button -->
-        <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi" onclick="toggleDrawer(event)">
+        <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi">
             <i class="fa-solid fa-bars"></i>
         </button>
 
@@ -711,21 +711,21 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         <!-- Bottom Theme & Account Avatar -->
         <div class="rail-bottom">
             <div class="rail-popover-wrap">
-                <button type="button" class="rail-btn" id="themeToggleBtn" title="Tema Tampilan" onclick="toggleThemeMenu(event)">
+                <button type="button" class="rail-btn" id="themeToggleBtn" title="Tema Tampilan">
                     <i class="fa-solid fa-display"></i>
                 </button>
                 <div class="rail-popover rail-theme-popover" id="railThemePopover">
                     <div class="rail-popover-header">TEMA TAMPILAN</div>
                     <div class="rail-popover-list">
-                        <button type="button" class="rail-popover-item" data-theme-val="light" onclick="selectThemeOption('light')">
+                        <button type="button" class="rail-popover-item" data-theme-val="light">
                             <div class="rail-popover-item-left"><i class="fa-regular fa-sun"></i><span>Terang</span></div>
                             <i class="fa-solid fa-check rail-theme-check"></i>
                         </button>
-                        <button type="button" class="rail-popover-item" data-theme-val="dark" onclick="selectThemeOption('dark')">
+                        <button type="button" class="rail-popover-item" data-theme-val="dark">
                             <div class="rail-popover-item-left"><i class="fa-regular fa-moon"></i><span>Gelap</span></div>
                             <i class="fa-solid fa-check rail-theme-check"></i>
                         </button>
-                        <button type="button" class="rail-popover-item" data-theme-val="system" onclick="selectThemeOption('system')">
+                        <button type="button" class="rail-popover-item" data-theme-val="system">
                             <div class="rail-popover-item-left"><i class="fa-solid fa-display"></i><span>Sistem</span></div>
                             <i class="fa-solid fa-check rail-theme-check"></i>
                         </button>
@@ -734,7 +734,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
             </div>
 
             <div class="rail-popover-wrap">
-                <button type="button" class="rail-avatar-btn" id="sidebarAvatar" title="Akun Pengguna" onclick="toggleAccountMenu(event)"><?php echo e($adminInitial ?: 'AD'); ?></button>
+                <button type="button" class="rail-avatar-btn" id="sidebarAvatar" title="Akun Pengguna"><?php echo e($adminInitial ?: 'AD'); ?></button>
                 <div class="rail-popover rail-account-popover" id="railAccountPopover">
                     <div class="rail-account-info">
                         <div class="rail-account-name"><?php echo e($user['name']); ?></div>
@@ -755,7 +755,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
     </aside>
 
     <!-- FLYOUT / EXPANDED NAVIGATION DRAWER -->
-    <div class="nav-drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer(event)"></div>
+    <div class="nav-drawer-backdrop" id="drawerBackdrop"></div>
     <div class="nav-drawer" id="navDrawer">
         <div class="drawer-header">
             <div class="drawer-brand-logo">
@@ -768,7 +768,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                 <h3>Karirhub</h3>
                 <p>Admin Pusat</p>
             </div>
-            <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup" onclick="closeDrawer(event)">
+            <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup">
                 <i class="fa-solid fa-bars"></i>
             </button>
         </div>

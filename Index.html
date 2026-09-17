@@ -1459,22 +1459,22 @@
             </div>
 
             <!-- Hamburger Toggle Button -->
-            <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi" onclick="toggleDrawer(event)">
+            <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi">
                 <i class="fa-solid fa-bars"></i>
             </button>
 
             <!-- Navigation Icons -->
             <div class="sidebar-rail-nav">
-                <button type="button" class="rail-btn active" data-page="dashboard" title="Dasbor" onclick="showPage('dashboard')">
+                <button type="button" class="rail-btn active" data-page="dashboard" title="Dasbor">
                     <i class="fa-solid fa-chart-line"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="lowongan" title="Lowongan" onclick="showPage('lowongan')">
+                <button type="button" class="rail-btn" data-page="lowongan" title="Lowongan">
                     <i class="fa-solid fa-briefcase"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="jadwal" title="Jadwal Wawancara" onclick="showPage('jadwal')">
+                <button type="button" class="rail-btn" data-page="jadwal" title="Jadwal Wawancara">
                     <i class="fa-regular fa-calendar-check"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi kerja" onclick="showPage('profil')">
+                <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi kerja">
                     <i class="fa-regular fa-building"></i>
                 </button>
             </div>
@@ -1484,28 +1484,28 @@
             <!-- Bottom Theme & Account Avatar -->
             <div class="rail-bottom">
                 <div class="rail-popover-wrap">
-                    <button type="button" class="rail-btn" id="themeToggleBtn" title="Tema Tampilan" onclick="toggleThemeMenu(event)">
+                    <button type="button" class="rail-btn" id="themeToggleBtn" title="Tema Tampilan">
                         <i class="fa-solid fa-display"></i>
                     </button>
                     <!-- Popover Tema Tampilan (Screenshot 2) -->
                     <div class="rail-popover rail-theme-popover" id="railThemePopover">
                         <div class="rail-popover-header">TEMA TAMPILAN</div>
                         <div class="rail-popover-list">
-                            <button type="button" class="rail-popover-item" data-theme-val="light" onclick="selectThemeOption('light')">
+                            <button type="button" class="rail-popover-item" data-theme-val="light">
                                 <div class="rail-popover-item-left">
                                     <i class="fa-regular fa-sun"></i>
                                     <span>Terang</span>
                                 </div>
                                 <i class="fa-solid fa-check rail-theme-check"></i>
                             </button>
-                            <button type="button" class="rail-popover-item" data-theme-val="dark" onclick="selectThemeOption('dark')">
+                            <button type="button" class="rail-popover-item" data-theme-val="dark">
                                 <div class="rail-popover-item-left">
                                     <i class="fa-regular fa-moon"></i>
                                     <span>Gelap</span>
                                 </div>
                                 <i class="fa-solid fa-check rail-theme-check"></i>
                             </button>
-                            <button type="button" class="rail-popover-item" data-theme-val="system" onclick="selectThemeOption('system')">
+                            <button type="button" class="rail-popover-item" data-theme-val="system">
                                 <div class="rail-popover-item-left">
                                     <i class="fa-solid fa-display"></i>
                                     <span>Sistem</span>
@@ -1517,7 +1517,7 @@
                 </div>
 
                 <div class="rail-popover-wrap">
-                    <button type="button" class="rail-avatar-btn" id="sidebarAvatar" title="Akun Pengguna" onclick="toggleAccountMenu(event)">PI</button>
+                    <button type="button" class="rail-avatar-btn" id="sidebarAvatar" title="Akun Pengguna">PI</button>
                     <!-- Popover Akun Pengguna (Screenshot 1) -->
                     <div class="rail-popover rail-account-popover" id="railAccountPopover">
                         <div class="rail-account-info">
@@ -1545,7 +1545,7 @@
         </aside>
 
         <!-- FLYOUT / EXPANDED NAVIGATION DRAWER (SCREENSHOT 3) -->
-        <div class="nav-drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer(event)"></div>
+        <div class="nav-drawer-backdrop" id="drawerBackdrop"></div>
         <div class="nav-drawer" id="navDrawer">
             <div class="drawer-header">
                 <div class="drawer-brand-logo">
@@ -1558,25 +1558,25 @@
                     <h3>Karirhub</h3>
                     <p>Pemberi Kerja</p>
                 </div>
-                <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup" onclick="closeDrawer(event)">
+                <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
 
             <div class="drawer-menu-list">
-                <button type="button" class="drawer-menu-item active" data-page="dashboard" onclick="showPage('dashboard')">
+                <button type="button" class="drawer-menu-item active" data-page="dashboard">
                     <i class="fa-solid fa-chart-line"></i>
                     <span>Dasbor</span>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="lowongan" onclick="showPage('lowongan')">
+                <button type="button" class="drawer-menu-item" data-page="lowongan">
                     <i class="fa-solid fa-briefcase"></i>
                     <span>Lowongan</span>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="jadwal" onclick="showPage('jadwal')">
+                <button type="button" class="drawer-menu-item" data-page="jadwal">
                     <i class="fa-regular fa-calendar-check"></i>
                     <span>Jadwal Wawancara</span>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="profil" onclick="showPage('profil')">
+                <button type="button" class="drawer-menu-item" data-page="profil">
                     <i class="fa-regular fa-building"></i>
                     <span>Profil Pemberi kerja</span>
                 </button>
@@ -1702,7 +1702,7 @@
                                         Pengajuan 6 bulan terakhir · berdasarkan status saat ini
                                     </div>
                                 </div>
-                                <button type="button" class="dash-outline-btn" id="btnKelolaLowongan" onclick="if(typeof showPage==='function'){showPage('lowongan');}else if(typeof setActivePage==='function'){setActivePage('lowongan');}else{window.location.hash='#lowongan';}">
+                                <button type="button" class="dash-outline-btn" id="btnKelolaLowongan" data-page="lowongan" data-nav="lowongan">
                                     Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
                                 </button>
                             </div>
@@ -2074,7 +2074,7 @@
                                         <i class="fa-regular fa-calendar-check" style="color:#0284c7;"></i>
                                         <span>Wawancara Terdekat</span>
                                     </div>
-                                    <button type="button" class="dash-outline-btn" data-page="jadwal" data-nav="jadwal" onclick="if(typeof showPage==='function'){showPage('jadwal');}else if(typeof setActivePage==='function'){setActivePage('jadwal');}else{window.location.hash='#jadwal';}" style="padding:4px 10px; font-size:11px;">
+                                    <button type="button" class="dash-outline-btn" data-page="jadwal" data-nav="jadwal" style="padding:4px 10px; font-size:11px;">
                                         Kalender <i class="fa-solid fa-arrow-right"></i>
                                     </button>
                                 </div>
@@ -2665,9 +2665,9 @@
 
                         <div class="sched-ctrl-right">
                             <div class="sched-view-pills">
-                                <button type="button" class="sched-pill" data-sched-pill="harian" onclick="setScheduleView('harian')">Harian</button>
-                                <button type="button" class="sched-pill" data-sched-pill="mingguan" onclick="setScheduleView('mingguan')">Mingguan</button>
-                                <button type="button" class="sched-pill active" data-sched-pill="bulanan" onclick="setScheduleView('bulanan')">Bulanan</button>
+                                <button type="button" class="sched-pill" data-sched-pill="harian">Harian</button>
+                                <button type="button" class="sched-pill" data-sched-pill="mingguan">Mingguan</button>
+                                <button type="button" class="sched-pill active" data-sched-pill="bulanan">Bulanan</button>
                             </div>
 
                             <div class="sched-filter-wrap">
@@ -3389,6 +3389,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="assets/app.js"></script>
     <script>
+    // Feature-specific handler: Tutup Lowongan
     window.testCloseJob = function(jobId, sisaKuota) {
         document.getElementById("close_job_id").value = jobId;
         document.getElementById("close_sisa_kuota").value = sisaKuota;
@@ -3396,187 +3397,7 @@
         if(modal) modal.classList.add("open");
     };
 
-    // Toggle Flyout Drawer
-    function openDrawer(e) {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        const drawer = document.getElementById('navDrawer');
-        const backdrop = document.getElementById('drawerBackdrop');
-        if (drawer) drawer.classList.add('open');
-        if (backdrop) backdrop.classList.add('open');
-    }
-
-    function closeDrawer(e) {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        const drawer = document.getElementById('navDrawer');
-        const backdrop = document.getElementById('drawerBackdrop');
-        if (drawer) drawer.classList.remove('open');
-        if (backdrop) backdrop.classList.remove('open');
-    }
-
-    function toggleDrawer(e) {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        const drawer = document.getElementById('navDrawer');
-        if (drawer && drawer.classList.contains('open')) {
-            closeDrawer(e);
-        } else {
-            openDrawer(e);
-        }
-    }
-
-    window.openDrawer = openDrawer;
-    window.closeDrawer = closeDrawer;
-    window.toggleDrawer = toggleDrawer;
-    window.openNavDrawer = openDrawer;
-    window.closeNavDrawer = closeDrawer;
-    window.toggleNavDrawer = toggleDrawer;
-
-    const railToggleBtn = document.getElementById('railToggleBtn');
-    const drawerCloseBtn = document.getElementById('drawerCloseBtn');
-    const drawerBackdrop = document.getElementById('drawerBackdrop');
-
-    if (railToggleBtn) railToggleBtn.addEventListener('click', toggleDrawer);
-    if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
-    if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
-
-    // Page Switching
-    const pages = Array.from(document.querySelectorAll('.page'));
-    const crumbCurrent = document.getElementById('crumbCurrent');
-    const pageTitles = {
-        dashboard: 'Dasbor',
-        lowongan: 'Lowongan',
-        jadwal: 'Jadwal Wawancara',
-        profil: 'Profil Pemberi kerja'
-    };
-
-    function showPage(pageName) {
-        const targetPage = pageTitles[pageName] ? pageName : 'dashboard';
-        pages.forEach((p) => p.classList.toggle('active', p.dataset.page === targetPage || p.id === `page-${targetPage}`));
-
-        // Update rail buttons
-        document.querySelectorAll('.rail-btn[data-page]').forEach(b => {
-            b.classList.toggle('active', b.dataset.page === targetPage);
-        });
-
-        // Update drawer buttons
-        document.querySelectorAll('.drawer-menu-item[data-page]').forEach(b => {
-            b.classList.toggle('active', b.dataset.page === targetPage);
-        });
-
-        if (crumbCurrent) {
-            crumbCurrent.textContent = pageTitles[targetPage] || 'Dasbor';
-        }
-
-        if (window.location.hash !== `#${targetPage}`) {
-            window.location.hash = targetPage;
-        }
-        closeDrawer();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    window.showPage = showPage;
-    window.setActivePage = showPage;
-
-    // Bind all data-page and data-nav clickers (exclude page container sections)
-    document.querySelectorAll('[data-page], [data-nav]').forEach(btn => {
-        if (btn.classList.contains('page') || btn.tagName === 'SECTION') return;
-        btn.addEventListener('click', function(e) {
-            if (this.tagName === 'A' && this.getAttribute('href') && !this.getAttribute('href').startsWith('#')) return;
-            const p = this.dataset.page || this.dataset.nav;
-            if (p) {
-                e.preventDefault();
-                e.stopPropagation();
-                showPage(p);
-            }
-        });
-    });
-
-    const initialPage = (window.location.hash || '#dashboard').slice(1);
-    showPage(pageTitles[initialPage] ? initialPage : 'dashboard');
-
-    window.addEventListener('hashchange', () => {
-        const nextPage = (window.location.hash || '#dashboard').slice(1);
-        if (pageTitles[nextPage]) {
-            showPage(nextPage);
-        }
-    });
-
-    // Sidebar Rail Popovers (Tema Tampilan & Akun Pengguna)
-    function toggleThemeMenu(event) {
-        if (event) event.stopPropagation();
-        const popover = document.getElementById('railThemePopover');
-        const accountPopover = document.getElementById('railAccountPopover');
-        if (accountPopover) accountPopover.classList.remove('open');
-        if (popover) {
-            popover.classList.toggle('open');
-        }
-    }
-    window.toggleThemeMenu = toggleThemeMenu;
-
-    function toggleAccountMenu(event) {
-        if (event) event.stopPropagation();
-        const popover = document.getElementById('railAccountPopover');
-        const themePopover = document.getElementById('railThemePopover');
-        if (themePopover) themePopover.classList.remove('open');
-        if (popover) {
-            popover.classList.toggle('open');
-        }
-    }
-    window.toggleAccountMenu = toggleAccountMenu;
-
-    function closeRailPopovers() {
-        const themePopover = document.getElementById('railThemePopover');
-        const accountPopover = document.getElementById('railAccountPopover');
-        if (themePopover) themePopover.classList.remove('open');
-        if (accountPopover) accountPopover.classList.remove('open');
-    }
-    window.closeRailPopovers = closeRailPopovers;
-
-    function selectThemeOption(theme) {
-        if (typeof setTheme === 'function') {
-            setTheme(theme);
-        } else {
-            localStorage.setItem('karirhub_theme', theme);
-            let isDark = false;
-            if (theme === 'system') {
-                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            } else {
-                isDark = (theme === 'dark');
-            }
-            document.documentElement.classList.toggle('dark-theme', isDark);
-            if (document.body) document.body.classList.toggle('dark-theme', isDark);
-            const toggleBtn = document.getElementById('themeToggleBtn');
-            if (toggleBtn) {
-                toggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
-            }
-            document.querySelectorAll('[data-theme-val]').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.themeVal === theme);
-            });
-        }
-        closeRailPopovers();
-    }
-    window.selectThemeOption = selectThemeOption;
-
-    // Auto-init theme
-    (function() {
-        const savedTheme = localStorage.getItem('karirhub_theme') || 'system';
-        selectThemeOption(savedTheme);
-    })();
-
-    // Click outside handler for rail popovers
-    document.addEventListener('click', (e) => {
-        const wrapTheme = document.getElementById('railThemePopover');
-        const btnTheme = document.getElementById('themeToggleBtn');
-        const wrapAccount = document.getElementById('railAccountPopover');
-        const btnAccount = document.getElementById('sidebarAvatar');
-
-        if (wrapTheme && wrapTheme.classList.contains('open') && !wrapTheme.contains(e.target) && !btnTheme?.contains(e.target)) {
-            wrapTheme.classList.remove('open');
-        }
-        if (wrapAccount && wrapAccount.classList.contains('open') && !wrapAccount.contains(e.target) && !btnAccount?.contains(e.target)) {
-            wrapAccount.classList.remove('open');
-        }
-    });
-
-    // Toggle Applicants More/Less
+    // Feature-specific handler: Toggle More Applicants
     let applicantsExpanded = false;
     function toggleMoreApplicants() {
         applicantsExpanded = !applicantsExpanded;
@@ -3591,93 +3412,10 @@
                 : '<i class="fa-solid fa-chevron-down"></i> Tampilkan lebih banyak';
         }
     }
-    // Jadwal Wawancara Switcher & Interactivity
-    let currentScheduleView = 'bulanan';
-    let currentSchedulePeriodOffset = 0;
+    window.toggleMoreApplicants = toggleMoreApplicants;
 
-    function setScheduleView(mode) {
-        currentScheduleView = mode;
-        
-        document.querySelectorAll('.sched-pill[data-sched-pill]').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.schedPill === mode);
-        });
-
-        const paneBulanan = document.getElementById('schedViewBulanan');
-        const paneMingguan = document.getElementById('schedViewMingguan');
-        const paneHarian = document.getElementById('schedViewHarian');
-
-        if (paneBulanan) paneBulanan.style.display = (mode === 'bulanan') ? 'block' : 'none';
-        if (paneMingguan) paneMingguan.style.display = (mode === 'mingguan') ? 'block' : 'none';
-        if (paneHarian) paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
-
-        updateSchedulePeriodTitle();
-    }
-    window.setScheduleView = setScheduleView;
-
-    function updateSchedulePeriodTitle() {
-        const titleEl = document.getElementById('schedPeriodTitle');
-        if (!titleEl) return;
-
-        if (currentScheduleView === 'bulanan') {
-            const months = ['Agustus 2026', 'September 2026', 'Oktober 2026', 'November 2026'];
-            const baseIdx = 1;
-            const targetIdx = Math.max(0, Math.min(months.length - 1, baseIdx + currentSchedulePeriodOffset));
-            titleEl.textContent = months[targetIdx];
-        } else if (currentScheduleView === 'mingguan') {
-            titleEl.textContent = currentSchedulePeriodOffset === 0 ? '14 Sep – 20 Sep 2026' : (currentSchedulePeriodOffset > 0 ? '21 Sep – 27 Sep 2026' : '7 Sep – 13 Sep 2026');
-        } else if (currentScheduleView === 'harian') {
-            titleEl.textContent = currentSchedulePeriodOffset === 0 ? 'Senin, 14 September 2026' : (currentSchedulePeriodOffset > 0 ? 'Selasa, 15 September 2026' : 'Minggu, 13 September 2026');
-        }
-    }
-
-    function navigateSchedule(delta) {
-        currentSchedulePeriodOffset += delta;
-        updateSchedulePeriodTitle();
-    }
-    window.navigateSchedule = navigateSchedule;
-
-    function resetScheduleToday() {
-        currentSchedulePeriodOffset = 0;
-        updateSchedulePeriodTitle();
-    }
-    window.resetScheduleToday = resetScheduleToday;
-
-    function toggleScheduleFilter(event) {
-        if (event) event.stopPropagation();
-        const popover = document.getElementById('schedFilterPopover');
-        const btn = document.getElementById('schedFilterBtn');
-        if (!popover) return;
-        
-        const isOpen = popover.classList.contains('open');
-        popover.classList.toggle('open', !isOpen);
-        if (btn) btn.classList.toggle('active', !isOpen);
-    }
-    window.toggleScheduleFilter = toggleScheduleFilter;
-
-    function toggleFilterOption(itemEl, type) {
-        if (!itemEl) return;
-        itemEl.classList.toggle('active');
-    }
-    window.toggleFilterOption = toggleFilterOption;
-
+    // Feature-specific handler: Profile Consent Confirmation
     document.addEventListener('DOMContentLoaded', function() {
-        // Date selection clicks
-        document.querySelectorAll('.month-day-cell:not(.other-month)').forEach(cell => {
-            cell.addEventListener('click', () => {
-                document.querySelectorAll('.month-day-cell .day-num').forEach(d => d.classList.remove('today-badge'));
-                const numEl = cell.querySelector('.day-num');
-                if (numEl) numEl.classList.add('today-badge');
-            });
-        });
-
-        document.querySelectorAll('.week-head-cell').forEach(cell => {
-            cell.addEventListener('click', () => {
-                document.querySelectorAll('.week-head-cell .week-head-num').forEach(d => d.classList.remove('today-badge'));
-                const numEl = cell.querySelector('.week-head-num');
-                if (numEl) numEl.classList.add('today-badge');
-            });
-        });
-    });
         const profileForm = document.querySelector('form[action="dashboard.php"] input[name="submit_profile"]')?.form;
         if (profileForm) {
             profileForm.addEventListener('submit', function(e) {
@@ -3696,6 +3434,7 @@
         }
     });
 
+    // Feature-specific handler: Filter Lowongan Table
     window.filterJobsTable = function() {
         const searchVal = (document.getElementById('jobSearchInput')?.value || '').toLowerCase();
         const statusVal = document.getElementById('jobStatusFilter')?.value || 'all';
@@ -3716,6 +3455,7 @@
         });
     };
 
+    // Feature-specific handler: Sort Lowongan Table
     window.sortJobsTable = function() {
         const sortVal = document.getElementById('jobSortSelect')?.value || 'newest';
         const tbody = document.getElementById('jobsTableBody');

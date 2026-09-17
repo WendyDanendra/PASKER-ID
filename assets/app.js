@@ -45,18 +45,21 @@ function initTheme() {
 }
 
 function setActivePage(pageName) {
-    const dataPages = document.querySelectorAll('.page[data-page]');
+    const dataPages = document.querySelectorAll('.page[data-page], .page[id^="page-"]');
     if (dataPages.length === 0) {
         return;
     }
 
+    const targetPage = pageName || 'dashboard';
+
     dataPages.forEach((page) => {
-        page.classList.toggle('active', page.dataset.page === pageName);
+        const matches = page.dataset.page === targetPage || page.id === `page-${targetPage}`;
+        page.classList.toggle('active', matches);
     });
 
-    document.querySelectorAll('[data-page]').forEach((item) => {
-        if (item.classList.contains('page')) return;
-        item.classList.toggle('active', item.dataset.page === pageName);
+    document.querySelectorAll('[data-page]:not(.page):not(section), [data-nav]').forEach((item) => {
+        const p = item.dataset.page || item.dataset.nav;
+        item.classList.toggle('active', p === targetPage);
     });
 
     const navDrawer = document.getElementById('navDrawer');
@@ -64,26 +67,29 @@ function setActivePage(pageName) {
     if (navDrawer) navDrawer.classList.remove('open');
     if (drawerBackdrop) drawerBackdrop.classList.remove('open');
 
-    const currentCrumb = document.querySelector('[data-current-crumb]');
+    const currentCrumb = document.querySelector('[data-current-crumb]') || document.getElementById('crumbCurrent');
     const labelMap = {
         dashboard: 'Dasbor',
         lowongan: 'Lowongan',
         jadwal: 'Jadwal Wawancara',
-        profil: 'Profil Pemberi Kerja',
-        individual: 'Individual',
-        employerdashboard: 'Pemberi Kerja Individu',
-        seeker: 'Pencari Kerja',
-        admin: 'Admin'
+        profil: 'Profil Pemberi kerja',
+        jobs: 'Lowongan Kerja',
+        profile: 'Profil Pencari Kerja',
+        directory_individual: 'Direktori Profil',
+        verifikasi_employer: 'Verifikasi Profil',
+        verifikasi_job: 'Verifikasi Lowongan'
     };
 
     if (currentCrumb) {
-        currentCrumb.textContent = labelMap[pageName] || 'Dasbor';
+        currentCrumb.textContent = labelMap[targetPage] || 'Dasbor';
     }
 
-    if (window.location.hash !== `#${pageName}`) {
-        window.location.hash = pageName;
+    if (window.location.hash !== `#${targetPage}`) {
+        window.location.hash = targetPage;
     }
 }
+window.setActivePage = setActivePage;
+window.showPage = setActivePage;
 
 function bindPageSwitchers() {
     document.querySelectorAll('[data-page], [data-nav]').forEach((item) => {
@@ -1045,8 +1051,9 @@ function initJobCreateWizard() {
     setStep(1);
 }
 
-function initHashRouting(defaultPage) {
-    if (document.querySelectorAll('.page[data-page]').length === 0) {
+function initHashRouting(defaultPage = 'dashboard') {
+    const dataPages = document.querySelectorAll('.page[data-page], .page[id^="page-"]');
+    if (dataPages.length === 0) {
         return;
     }
     const initialPage = (window.location.hash || `#${defaultPage}`).slice(1);
@@ -1067,6 +1074,25 @@ function initSidebarToggle() {
             sidebar.classList.toggle('collapsed');
         });
     }
+
+    const railToggleBtn = document.getElementById('railToggleBtn');
+    if (railToggleBtn && railToggleBtn.dataset.bound !== 'true') {
+        railToggleBtn.dataset.bound = 'true';
+        railToggleBtn.addEventListener('click', toggleDrawer);
+    }
+
+    const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+    if (drawerCloseBtn && drawerCloseBtn.dataset.bound !== 'true') {
+        drawerCloseBtn.dataset.bound = 'true';
+        drawerCloseBtn.addEventListener('click', closeDrawer);
+    }
+
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    if (drawerBackdrop && drawerBackdrop.dataset.bound !== 'true') {
+        drawerBackdrop.dataset.bound = 'true';
+        drawerBackdrop.addEventListener('click', closeDrawer);
+    }
+}
 
 function openDrawer(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -1100,7 +1126,6 @@ window.toggleDrawer = toggleDrawer;
 window.openNavDrawer = openDrawer;
 window.closeNavDrawer = closeDrawer;
 window.toggleNavDrawer = toggleDrawer;
-}
 
 function bindAdminReviewForm(form) {
     if (!form || form.dataset.bound === 'true') {
@@ -1304,7 +1329,6 @@ function initNotifications() {
             document.querySelectorAll('.notif-panel').forEach(p => { if (p !== panel) p.hidden = true; });
             panel.hidden = !isCurrentlyHidden;
             if (!panel.hidden) {
-                fetch('dashboard.php?read_notif=1').catch(() => {});
                 fetch('notif-read.php').catch(() => {});
                 button.classList.remove('has-unread');
             }
@@ -1452,6 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initJobReviewDrawer();
     initSeekerJobFilters();
     initSidebarToggle();
+    initPopovers();
     initNotifications();
     initPengajuanVerifikasiChart();
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -1537,9 +1562,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (document.body.dataset.useAppJs === 'true' && document.body.dataset.defaultPage) {
-        initHashRouting(document.body.dataset.defaultPage);
-    }
 });
 
 // Schedule View Switcher (Bulanan, Mingguan, Harian)
@@ -1659,6 +1681,38 @@ function closeRailPopovers() {
 function selectThemeOption(theme) {
     setTheme(theme);
     closeRailPopovers();
+}
+
+function initPopovers() {
+    const themeBtn = document.getElementById('themeToggleBtn');
+    if (themeBtn && themeBtn.dataset.bound !== 'true') {
+        themeBtn.dataset.bound = 'true';
+        themeBtn.addEventListener('click', toggleThemeMenu);
+    }
+
+    const avatarBtn = document.getElementById('sidebarAvatar');
+    if (avatarBtn && avatarBtn.dataset.bound !== 'true') {
+        avatarBtn.dataset.bound = 'true';
+        avatarBtn.addEventListener('click', toggleAccountMenu);
+    }
+
+    document.querySelectorAll('[data-theme-val]').forEach(btn => {
+        if (btn.dataset.bound !== 'true') {
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', () => {
+                selectThemeOption(btn.dataset.themeVal);
+            });
+        }
+    });
+
+    document.querySelectorAll('.sched-pill[data-sched-pill]').forEach(btn => {
+        if (btn.dataset.bound !== 'true') {
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', () => {
+                setScheduleView(btn.dataset.schedPill);
+            });
+        }
+    });
 }
 
 // Global click outside listener for rail popovers & filter popover
