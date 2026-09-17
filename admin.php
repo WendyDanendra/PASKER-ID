@@ -23,6 +23,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $reason = trim($_POST['assignment_reason'] ?? '');
         $isSelfAssign = !empty($_POST['self_assign']);
 
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+            $stmtCheck = db()->prepare('SELECT domicile_city_id FROM employer_profiles WHERE user_id = ?');
+            $stmtCheck->execute([$targetUserId]);
+            $empRow = $stmtCheck->fetch();
+            $empDomicileCity = (string)($empRow['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                flash('error', 'Akses ditolak: Pemberi Kerja ini di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+                redirect($redirectUrl);
+                exit;
+            }
+        }
+
         if (!$isSelfAssign && strlen($reason) < 10) {
             flash('error', 'Alasan penugasan wajib diisi minimal 10 karakter.');
         } else {
@@ -57,6 +70,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             flash('error', 'Pemberi kerja harus memiliki penugasan aktif terlebih dahulu sebelum keputusan dapat diambil.');
             redirect($redirectUrl);
             exit;
+        }
+
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                flash('error', 'Akses ditolak: Pemberi Kerja ini di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+                redirect($redirectUrl);
+                exit;
+            }
         }
 
         if (($decision === 'revision' || $decision === 'reject') && $notes === '') {
@@ -281,6 +304,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $reason = trim($_POST['assignment_reason'] ?? '');
         $isSelfAssign = !empty($_POST['self_assign']);
 
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+            $stmtCheck = db()->prepare('SELECT ep.domicile_city_id FROM job_posts j JOIN employer_profiles ep ON ep.user_id = j.user_id WHERE j.id = ?');
+            $stmtCheck->execute([$jobId]);
+            $jobEmpRow = $stmtCheck->fetch();
+            $empDomicileCity = (string)($jobEmpRow['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                flash('error', 'Akses ditolak: Lowongan ini milik Pemberi Kerja di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+                redirect($redirectUrl);
+                exit;
+            }
+        }
+
         if (!$isSelfAssign && strlen($reason) < 10) {
             flash('error', 'Alasan penugasan lowongan wajib diisi minimal 10 karakter.');
         } else {
@@ -304,6 +340,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $jobId = (int)$_POST['job_id'];
         $decision = $_POST['decision']; // approve | revision | reject
         $notes = trim($_POST['verifier_notes'] ?? '');
+
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+            $stmtCheck = db()->prepare('SELECT ep.domicile_city_id FROM job_posts j JOIN employer_profiles ep ON ep.user_id = j.user_id WHERE j.id = ?');
+            $stmtCheck->execute([$jobId]);
+            $jobEmpRow = $stmtCheck->fetch();
+            $empDomicileCity = (string)($jobEmpRow['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                flash('error', 'Akses ditolak: Lowongan ini milik Pemberi Kerja di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+                redirect($redirectUrl);
+                exit;
+            }
+        }
 
         // Parse 4 Compliance Categories
         $categories = compliance_categories();
@@ -393,18 +442,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         }
 
         // 1. Check Scope: Admin Dinas scoping uses employer's domicile_city_id (NOT job location).
-        // In the current system, all admins have role='admin'. If a regional admin user has
-        // a domicile_city_id set in their session/profile, enforce it against the employer's
-        // domicile_city_id from employer_profiles. Admin Pusat (no domicile restriction) passes.
         $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
-        if ($adminDomicileCity !== '') {
-            // Employer's domicile city from employer_profiles.domicile_city_id
+        if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
             $employerDomicileCity = (string)($targetJob['emp_domicile_city_id'] ?? '');
-            if ($employerDomicileCity === '' || (
-                stripos($employerDomicileCity, $adminDomicileCity) === false &&
-                stripos($adminDomicileCity, $employerDomicileCity) === false
-            )) {
-                flash('error', 'Akses ditolak: Pemberi Kerja Individu ini berdomisili di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domisili_city_id Pemberi Kerja, bukan lokasi kerja.');
+            if ($employerDomicileCity === '' || $employerDomicileCity !== $adminDomicileCity) {
+                flash('error', 'Akses ditolak: Pemberi Kerja Individu ini berdomisili di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
                 redirect($redirectUrl . '&detail_id=' . $jobId);
                 exit;
             }
@@ -592,6 +634,15 @@ if ($view === 'directory_individual') {
         $query .= ' AND ep.verification_status IN ("REJECTED", "NEEDS_REVISION")';
     }
 
+    // Scope Admin Dinas Filter (exact domicile_city_id match)
+    if ($user['role'] === 'admin_dinas' || (!empty($user['domicile_city_id']) && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($adminDomicileCity !== '') {
+            $query .= ' AND ep.domicile_city_id = ?';
+            $params[] = $adminDomicileCity;
+        }
+    }
+
     $query .= ' ORDER BY u.created_at DESC';
     $stmt = db()->prepare($query);
     $stmt->execute($params);
@@ -605,7 +656,16 @@ if ($view === 'directory_individual') {
         $stmtSel->execute([$detailId]);
         $selectedEmployer = $stmtSel->fetch();
         if ($selectedEmployer) {
-            $auditLogs = fetch_audit_logs('employer', $detailId);
+            $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+            if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+                $empDomicileCity = (string)($selectedEmployer['domicile_city_id'] ?? '');
+                if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                    $selectedEmployer = null;
+                }
+            }
+            if ($selectedEmployer) {
+                $auditLogs = fetch_audit_logs('employer', $detailId);
+            }
         }
     }
 }
@@ -648,6 +708,15 @@ if ($view === 'verifikasi_employer') {
         $query .= ' AND ep.verification_status = "REJECTED"';
     }
 
+    // Scope Admin Dinas Filter (exact domicile_city_id match)
+    if ($user['role'] === 'admin_dinas' || (!empty($user['domicile_city_id']) && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($adminDomicileCity !== '') {
+            $query .= ' AND ep.domicile_city_id = ?';
+            $params[] = $adminDomicileCity;
+        }
+    }
+
     $query .= ' ORDER BY ep.created_at DESC';
     $stmt = db()->prepare($query);
     $stmt->execute($params);
@@ -661,7 +730,16 @@ if ($view === 'verifikasi_employer') {
         $stmtSel->execute([$detailId]);
         $selectedEmployer = $stmtSel->fetch();
         if ($selectedEmployer) {
-            $auditLogs = fetch_audit_logs('employer', $detailId);
+            $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+            if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+                $empDomicileCity = (string)($selectedEmployer['domicile_city_id'] ?? '');
+                if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                    $selectedEmployer = null;
+                }
+            }
+            if ($selectedEmployer) {
+                $auditLogs = fetch_audit_logs('employer', $detailId);
+            }
         }
     }
 }
@@ -702,13 +780,12 @@ if ($view === 'verifikasi_job') {
         $query .= ' AND (j.status = "Ditolak" OR j.status = "CANCELED")';
     }
 
-    // Admin Dinas Scope Filter (national scope for Admin Pusat)
+    // Admin Dinas Scope Filter (exact domicile_city_id match)
     if ($user['role'] === 'admin_dinas' || (!empty($user['domicile_city_id']) && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
-        $adminCity = $user['domicile_city_id'] ?: ($user['city'] ?? '');
-        if ($adminCity !== '') {
-            $query .= ' AND (ep.city LIKE ? OR j.location LIKE ?)';
-            $params[] = '%' . $adminCity . '%';
-            $params[] = '%' . $adminCity . '%';
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($adminDomicileCity !== '') {
+            $query .= ' AND ep.domicile_city_id = ?';
+            $params[] = $adminDomicileCity;
         }
     }
 
@@ -722,14 +799,23 @@ if ($view === 'verifikasi_job') {
     $auditLogs = [];
     $additionalDocCase = null;
     if ($detailId > 0) {
-        $stmtSel = db()->prepare('SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, ep.phone, ep.address, u.name as user_name, u.email as user_email FROM job_posts j JOIN users u ON u.id = j.user_id LEFT JOIN employer_profiles ep ON ep.user_id = u.id WHERE j.id = ? LIMIT 1');
+        $stmtSel = db()->prepare('SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, ep.domicile_city_id as emp_domicile_city_id, ep.phone, ep.address, u.name as user_name, u.email as user_email FROM job_posts j JOIN users u ON u.id = j.user_id LEFT JOIN employer_profiles ep ON ep.user_id = u.id WHERE j.id = ? LIMIT 1');
         $stmtSel->execute([$detailId]);
         $selectedJob = $stmtSel->fetch();
         if ($selectedJob) {
-            $auditLogs = fetch_audit_logs('job', $detailId);
-            $docStmt = db()->prepare('SELECT * FROM job_additional_documents WHERE job_id = ? ORDER BY id DESC LIMIT 1');
-            $docStmt->execute([$detailId]);
-            $additionalDocCase = $docStmt->fetch();
+            $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+            if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+                $empDomicileCity = (string)($selectedJob['emp_domicile_city_id'] ?? '');
+                if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                    $selectedJob = null;
+                }
+            }
+            if ($selectedJob) {
+                $auditLogs = fetch_audit_logs('job', $detailId);
+                $docStmt = db()->prepare('SELECT * FROM job_additional_documents WHERE job_id = ? ORDER BY id DESC LIMIT 1');
+                $docStmt->execute([$detailId]);
+                $additionalDocCase = $docStmt->fetch();
+            }
         }
     }
 }

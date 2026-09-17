@@ -100,46 +100,68 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
     )');
 
     try {
-        $cols = array_column($pdo->query('PRAGMA table_info(employer_profiles)')->fetchAll(), 'name');
-        if (!in_array('workplace_photo', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN workplace_photo TEXT');
+        try {
+            $userCols = array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(), 'name');
+            if (!in_array('domicile_city_id', $userCols, true)) {
+                $pdo->exec('ALTER TABLE users ADD COLUMN domicile_city_id TEXT');
+            }
+            if (!in_array('city', $userCols, true)) {
+                $pdo->exec('ALTER TABLE users ADD COLUMN city TEXT');
+            }
+        } catch (Throwable $ignored) {}
+
+        // Seed Admin Dinas Kota Bandung in SQLite if missing (Demo/Dev environment only)
+        if (is_demo_env()) {
+            try {
+                $stmtAdminCheck = $pdo->query("SELECT id FROM users WHERE email = 'admin.bandung@pasker-id.test' OR email = 'admin.bandung@paskerid.test' LIMIT 1");
+                if (!$stmtAdminCheck || !$stmtAdminCheck->fetch()) {
+                    $pdo->exec("INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete) VALUES ('Admin Dinas Kota Bandung', 'admin.bandung@pasker-id.test', '\$2y\$10\$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin_dinas', 'Kota Bandung', 'Kota Bandung', 1)");
+                }
+            } catch (Throwable $ignored) {}
         }
-        if (!in_array('permit_document', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN permit_document TEXT');
-        }
-        if (!in_array('assigned_to', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assigned_to TEXT');
-        }
-        if (!in_array('assigned_at', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assigned_at DATETIME');
-        }
-        if (!in_array('assignment_reason', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assignment_reason TEXT');
-        }
-        if (!in_array('rejection_count', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN rejection_count INTEGER DEFAULT 0');
-        }
-        if (!in_array('manual_review_status', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN manual_review_status TEXT DEFAULT "NONE"');
-        }
-        if (!in_array('consent_data_hash', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_data_hash TEXT');
-        }
-        if (!in_array('consent_given_at', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_given_at DATETIME');
-        }
-        if (!in_array('officer_statement', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN officer_statement TEXT');
-        }
-        if (!in_array('officer_name', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN officer_name TEXT');
-        }
-        if (!in_array('entity_type', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN entity_type TEXT DEFAULT "Individu"');
-        }
-        if (!in_array('consent_agreed', $cols, true)) {
-            $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_agreed INTEGER DEFAULT 0');
-        }
+
+        try {
+            $cols = array_column($pdo->query('PRAGMA table_info(employer_profiles)')->fetchAll(), 'name');
+            if (!in_array('workplace_photo', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN workplace_photo TEXT');
+            }
+            if (!in_array('permit_document', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN permit_document TEXT');
+            }
+            if (!in_array('assigned_to', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assigned_to TEXT');
+            }
+            if (!in_array('assigned_at', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assigned_at DATETIME');
+            }
+            if (!in_array('assignment_reason', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN assignment_reason TEXT');
+            }
+            if (!in_array('rejection_count', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN rejection_count INTEGER DEFAULT 0');
+            }
+            if (!in_array('manual_review_status', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN manual_review_status TEXT DEFAULT "NONE"');
+            }
+            if (!in_array('consent_data_hash', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_data_hash TEXT');
+            }
+            if (!in_array('consent_given_at', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_given_at DATETIME');
+            }
+            if (!in_array('officer_statement', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN officer_statement TEXT');
+            }
+            if (!in_array('officer_name', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN officer_name TEXT');
+            }
+            if (!in_array('entity_type', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN entity_type TEXT DEFAULT "Individu"');
+            }
+            if (!in_array('consent_agreed', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_agreed INTEGER DEFAULT 0');
+            }
+        } catch (Throwable $ignored) {}
     } catch (Throwable $ignored) {}
 
     try {
@@ -378,6 +400,12 @@ function init_sqlite_schema(PDO $pdo): void
     }
 }
 
+function is_demo_env(): bool
+{
+    $env = strtolower(defined('APP_ENV') ? APP_ENV : (getenv('APP_ENV') ?: 'demo'));
+    return in_array($env, ['demo', 'development', 'dev', 'local'], true);
+}
+
 function ensure_database_schema(PDO $pdo): void
 {
     static $schemaChecked = false;
@@ -386,6 +414,38 @@ function ensure_database_schema(PDO $pdo): void
 
     try {
         if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
+            // Alter users table columns & types if needed
+            try {
+                $pdo->exec("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL");
+            } catch (Throwable $e) {}
+
+            $userColumns = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('domicile_city_id', $userColumns, true)) {
+                $pdo->exec("ALTER TABLE users ADD COLUMN domicile_city_id VARCHAR(120) NULL AFTER role");
+            }
+            if (!in_array('city', $userColumns, true)) {
+                $pdo->exec("ALTER TABLE users ADD COLUMN city VARCHAR(120) NULL AFTER domicile_city_id");
+            }
+
+            // Seed/Fix Admin Dinas Kota Bandung in MySQL (Demo/Dev environment only)
+            if (is_demo_env()) {
+                $stmtAdminCheck = $pdo->query("SELECT id, role FROM users WHERE email = 'admin.bandung@pasker-id.test' OR email = 'admin.bandung@paskerid.test' LIMIT 1");
+                $existingAdmin = $stmtAdminCheck ? $stmtAdminCheck->fetch() : null;
+                if (!$existingAdmin) {
+                    $stmtInsertAdmin = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())");
+                    $stmtInsertAdmin->execute([
+                        'Admin Dinas Kota Bandung',
+                        'admin.bandung@pasker-id.test',
+                        '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6',
+                        'admin_dinas',
+                        'Kota Bandung',
+                        'Kota Bandung'
+                    ]);
+                } else if (($existingAdmin['role'] ?? '') !== 'admin_dinas') {
+                    $pdo->exec("UPDATE users SET role = 'admin_dinas', domicile_city_id = 'Kota Bandung', city = 'Kota Bandung' WHERE id = " . (int)$existingAdmin['id']);
+                }
+            }
+
             // Ensure audit_logs table exists
             $pdo->exec('CREATE TABLE IF NOT EXISTS audit_logs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -397,6 +457,7 @@ function ensure_database_schema(PDO $pdo): void
                 details TEXT,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             )');
+
 
             // Ensure job_verifications table exists
             $pdo->exec('CREATE TABLE IF NOT EXISTS job_verifications (
@@ -601,7 +662,7 @@ function require_login(): array
 function role_home(string $role): string
 {
     return match ($role) {
-        'admin' => 'admin.php',
+        'admin', 'admin_dinas', 'admin_pusat' => 'admin.php',
         'seeker' => 'seeker.php',
         default => 'dashboard.php',
     };
@@ -616,7 +677,11 @@ function require_role(string $role): array
 {
     $user = require_login();
 
-    if (($user['role'] ?? '') !== $role) {
+    if ($role === 'admin') {
+        if (!in_array($user['role'] ?? '', ['admin', 'admin_dinas', 'admin_pusat'], true)) {
+            redirect(role_home($user['role'] ?? ''));
+        }
+    } elseif (($user['role'] ?? '') !== $role) {
         redirect(role_home($user['role'] ?? ''));
     }
 

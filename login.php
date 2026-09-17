@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         login_user($user);
 
-        if (($user['role'] ?? '') === 'admin') {
+        if (in_array($user['role'] ?? '', ['admin', 'admin_dinas', 'admin_pusat'], true)) {
             redirect('admin.php');
         }
 
@@ -57,12 +57,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><strong>Simulasi Akses:</strong> Pemberi Kerja Individu menggunakan akun SIAPkerja yang sudah dimiliki untuk mengakses layanan Karirhub.</p>
                 <p>Login demo ini mensimulasikan otentikasi akun SIAPkerja yang berhasil untuk pengujian prototype.</p>
             </div>
+            <?php if (is_demo_env()): ?>
             <div class="demo-card">
                 <p><strong>Akun Demo (Simulasi SIAPkerja)</strong></p>
                 <div class="demo-row"><span>Perorangan (PKI)</span><code>perorangan@pasker-id.test / demo123</code></div>
                 <div class="demo-row"><span>Pencari Kerja</span><code>seeker@pasker-id.test / seeker123</code></div>
-                <div class="demo-row"><span>Admin Dinas</span><code>admin@pasker-id.test / admin123</code></div>
+                <div class="demo-row"><span>Admin Pusat</span><code>admin@pasker-id.test / admin123</code></div>
+                <div class="demo-row"><span>Admin Dinas (Bandung)</span><code>admin.bandung@pasker-id.test / admin123</code></div>
             </div>
+            <?php endif; ?>
         </div>
         <div class="auth-panel">
             <div class="auth-card">
