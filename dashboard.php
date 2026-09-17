@@ -453,6 +453,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         // Update accepted_count on source job
         db()->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$acceptedCount, $jobId]);
 
+        // Scenario 1: remaining_quota == 0 -> Directly close without requiring reasons or reposting
+        if ($sisaKuota <= 0) {
+            $stmt = db()->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = "Kuota Terpenuhi" WHERE id = ? AND user_id = ?');
+            $stmt->execute([$jobId, $user['id']]);
+            flash('success', 'Lowongan telah berhasil Ditutup (Kuota Terpenuhi).');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        // Scenario 2: remaining_quota > 0 -> Requires reasons & repost selection
         if ($repost && ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED')) {
             flash('error', 'Akun dalam Masa Transisi (Akses Dibatasi) atau terkunci. Tidak dapat memposting ulang sisa kuota.');
             redirect('dashboard.php#lowongan');
@@ -460,7 +470,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
         
         if (empty($reasons)) {
-            flash('error', 'Anda wajib memilih minimal 1 alasan mengapa lowongan diselesaikan / sisa kuota belum terpenuhi.');
+            flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');
             redirect('dashboard.php#lowongan');
             exit;
         }
@@ -485,11 +495,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $reasonStr .= ' - ' . $lainnya;
         }
 
-        // Close original job
+        // Close original job with reason
         $stmt = db()->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = ? WHERE id = ? AND user_id = ?');
         $stmt->execute([$reasonStr, $jobId, $user['id']]);
 
-        if ($repost && $sisaKuota > 0) {
+        if ($repost) {
             // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi
             $insert = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code, min_education, min_experience, parent_job_id, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Menunggu Verifikasi", ?, 0, ?, ?, ?, ?, CURRENT_TIMESTAMP)');
             $insert->execute([
@@ -1155,6 +1165,44 @@ if (!str_contains($html, 'window.testCloseJob')) {
     window.testCloseJob = function(jobId, sisaKuota) {
         document.getElementById("close_job_id").value = jobId;
         document.getElementById("close_sisa_kuota").value = sisaKuota;
+        if (parseInt(sisaKuota, 10) <= 0) {
+            let form = document.getElementById("direct_close_form");
+            if (!form) {
+                form = document.createElement("form");
+                form.id = "direct_close_form";
+                form.method = "POST";
+                form.action = "dashboard.php#lowongan";
+                
+                const inputClose = document.createElement("input");
+                inputClose.type = "hidden";
+                inputClose.name = "close_job";
+                inputClose.value = "1";
+                form.appendChild(inputClose);
+                
+                const inputJobId = document.createElement("input");
+                inputJobId.type = "hidden";
+                inputJobId.name = "job_id";
+                inputJobId.id = "direct_close_job_id";
+                form.appendChild(inputJobId);
+                
+                const inputSisa = document.createElement("input");
+                inputSisa.type = "hidden";
+                inputSisa.name = "sisa_kuota";
+                inputSisa.value = "0";
+                form.appendChild(inputSisa);
+
+                const inputRepost = document.createElement("input");
+                inputRepost.type = "hidden";
+                inputRepost.name = "repost";
+                inputRepost.value = "0";
+                form.appendChild(inputRepost);
+
+                document.body.appendChild(form);
+            }
+            document.getElementById("direct_close_job_id").value = jobId;
+            form.submit();
+            return;
+        }
         const modal = document.querySelector("[data-modal='job-close']");
         if (modal) modal.classList.add("open");
     };
