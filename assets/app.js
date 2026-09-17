@@ -1068,38 +1068,38 @@ function initSidebarToggle() {
         });
     }
 
-    const railToggle = document.getElementById('railToggleBtn');
-    const navDrawer = document.getElementById('navDrawer');
-    const drawerBackdrop = document.getElementById('drawerBackdrop');
-    const drawerClose = document.getElementById('drawerCloseBtn');
+function openDrawer(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const drawer = document.getElementById('navDrawer');
+    const backdrop = document.getElementById('drawerBackdrop');
+    if (drawer) drawer.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+}
 
-    if (railToggle && railToggle.dataset.bound !== 'true') {
-        railToggle.dataset.bound = 'true';
-        railToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (navDrawer) navDrawer.classList.toggle('open');
-            if (drawerBackdrop) drawerBackdrop.classList.toggle('open');
-        });
+function closeDrawer(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const drawer = document.getElementById('navDrawer');
+    const backdrop = document.getElementById('drawerBackdrop');
+    if (drawer) drawer.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+}
+
+function toggleDrawer(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const drawer = document.getElementById('navDrawer');
+    if (drawer && drawer.classList.contains('open')) {
+        closeDrawer(e);
+    } else {
+        openDrawer(e);
     }
-    if (drawerClose && drawerClose.dataset.bound !== 'true') {
-        drawerClose.dataset.bound = 'true';
-        drawerClose.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (navDrawer) navDrawer.classList.remove('open');
-            if (drawerBackdrop) drawerBackdrop.classList.remove('open');
-        });
-    }
-    if (drawerBackdrop && drawerBackdrop.dataset.bound !== 'true') {
-        drawerBackdrop.dataset.bound = 'true';
-        drawerBackdrop.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (navDrawer) navDrawer.classList.remove('open');
-            if (drawerBackdrop) drawerBackdrop.classList.remove('open');
-        });
-    }
+}
+
+window.openDrawer = openDrawer;
+window.closeDrawer = closeDrawer;
+window.toggleDrawer = toggleDrawer;
+window.openNavDrawer = openDrawer;
+window.closeNavDrawer = closeDrawer;
+window.toggleNavDrawer = toggleDrawer;
 }
 
 function bindAdminReviewForm(form) {

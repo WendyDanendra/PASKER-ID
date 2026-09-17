@@ -677,94 +677,177 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
     </style>
 </head>
 <body>
-<div class="app-shell" style="width:100%;height:100vh;display:flex;overflow:hidden;">
-    <!-- SIDEBAR 260px (COLLAPSIBLE) -->
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-mark"><i class="fa-solid fa-shield-halved"></i></div>
-            <div class="brand-text">
-                <h1>Karirhub</h1>
-                <p>Admin Pusat</p>
-            </div>
-        </div>
-        <div class="menu-list">
-            <a class="menu-item <?php echo $view === 'directory_individual' ? 'active' : ''; ?>" href="admin.php?view=directory_individual">
+<div class="app-layout-wrapper">
+    <!-- NARROW SIDEBAR RAIL (60px) -->
+    <aside class="sidebar-rail">
+        <!-- Top Logo Icon -->
+        <a href="admin.php" class="sidebar-rail-logo" title="Karirhub - Admin Pusat">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;">
+                <circle cx="73" cy="22" r="13" fill="#2590F9" />
+                <path d="M22 32 C15.37 32 10 37.37 10 44 C10 50.63 15.37 56 22 56 H42 C44.2 56 46 57.8 46 60 V76 C46 82.63 51.37 88 58 88 C64.63 88 70 82.63 70 76 V50 C70 40.06 61.94 32 52 32 H22 Z" fill="#2590F9" />
+            </svg>
+        </a>
+
+        <!-- Hamburger Toggle Button -->
+        <button type="button" class="sidebar-rail-toggle" id="railToggleBtn" title="Buka Menu Navigasi" onclick="toggleDrawer(event)">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <!-- Navigation Icons -->
+        <div class="sidebar-rail-nav">
+            <a href="admin.php?view=directory_individual" class="rail-btn <?php echo $view === 'directory_individual' ? 'active' : ''; ?>" title="Direktori Profil">
                 <i class="fa-solid fa-building-user"></i>
-                <span class="menu-label"><strong>Direktori Profil</strong><span>Pemberi kerja individu</span></span>
             </a>
-            <a class="menu-item <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_employer&entity=Individu">
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>" title="Verifikasi Profil">
                 <i class="fa-solid fa-id-card"></i>
-                <span class="menu-label"><strong>Verifikasi Profil</strong><span>Antrean verifikasi</span></span>
             </a>
-            <a class="menu-item <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_job&entity=Individu">
+            <a href="admin.php?view=verifikasi_job&entity=Individu" class="rail-btn <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>" title="Verifikasi Lowongan">
                 <i class="fa-solid fa-briefcase"></i>
-                <span class="menu-label"><strong>Verifikasi Lowongan</strong><span>Moderasi loker</span></span>
             </a>
         </div>
-        <div class="sidebar-spacer"></div>
-        <div style="padding:0 4px">
-            <div class="profile-card">
-                <div class="profile-avatar">AD</div>
-                <div style="overflow:hidden;text-overflow:ellipsis;">
-                    <strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo e($user['name']); ?></strong>
-                    <span>Admin Pusat</span>
+
+        <div class="rail-spacer"></div>
+
+        <!-- Bottom Theme & Account Avatar -->
+        <div class="rail-bottom">
+            <div class="rail-popover-wrap">
+                <button type="button" class="rail-btn" id="themeToggleBtn" title="Tema Tampilan" onclick="toggleThemeMenu(event)">
+                    <i class="fa-solid fa-display"></i>
+                </button>
+                <div class="rail-popover rail-theme-popover" id="railThemePopover">
+                    <div class="rail-popover-header">TEMA TAMPILAN</div>
+                    <div class="rail-popover-list">
+                        <button type="button" class="rail-popover-item" data-theme-val="light" onclick="selectThemeOption('light')">
+                            <div class="rail-popover-item-left"><i class="fa-regular fa-sun"></i><span>Terang</span></div>
+                            <i class="fa-solid fa-check rail-theme-check"></i>
+                        </button>
+                        <button type="button" class="rail-popover-item" data-theme-val="dark" onclick="selectThemeOption('dark')">
+                            <div class="rail-popover-item-left"><i class="fa-regular fa-moon"></i><span>Gelap</span></div>
+                            <i class="fa-solid fa-check rail-theme-check"></i>
+                        </button>
+                        <button type="button" class="rail-popover-item" data-theme-val="system" onclick="selectThemeOption('system')">
+                            <div class="rail-popover-item-left"><i class="fa-solid fa-display"></i><span>Sistem</span></div>
+                            <i class="fa-solid fa-check rail-theme-check"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <a href="logout.php" class="sidebar-logout"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
+
+            <div class="rail-popover-wrap">
+                <button type="button" class="rail-avatar-btn" id="sidebarAvatar" title="Akun Pengguna" onclick="toggleAccountMenu(event)"><?php echo e($adminInitial ?: 'AD'); ?></button>
+                <div class="rail-popover rail-account-popover" id="railAccountPopover">
+                    <div class="rail-account-info">
+                        <div class="rail-account-name"><?php echo e($user['name']); ?></div>
+                        <div class="rail-account-email"><?php echo e($user['email']); ?></div>
+                    </div>
+                    <div class="rail-popover-divider"></div>
+                    <div class="rail-popover-list">
+                        <a href="settings.php" class="rail-popover-item">
+                            <div class="rail-popover-item-left"><i class="fa-solid fa-gear"></i><span>Pengaturan</span></div>
+                        </a>
+                        <a href="logout.php" class="rail-popover-item item-logout">
+                            <div class="rail-popover-item-left"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Keluar</span></div>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </aside>
 
-    <!-- MAIN CONTAINER -->
-    <div class="main">
-        <!-- TOPBAR 68px -->
-        <header class="topbar">
-            <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Toggle Sidebar"><i class="fa-solid fa-bars"></i></button>
-            <div class="crumbs">
-                <span>Beranda</span><span>&gt;</span>
+    <!-- FLYOUT / EXPANDED NAVIGATION DRAWER -->
+    <div class="nav-drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer(event)"></div>
+    <div class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <div class="drawer-brand-logo">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:32px;height:32px;">
+                    <circle cx="73" cy="22" r="13" fill="#2590F9" />
+                    <path d="M22 32 C15.37 32 10 37.37 10 44 C10 50.63 15.37 56 22 56 H42 C44.2 56 46 57.8 46 60 V76 C46 82.63 51.37 88 58 88 C64.63 88 70 82.63 70 76 V50 C70 40.06 61.94 32 52 32 H22 Z" fill="#2590F9" />
+                </svg>
+            </div>
+            <div class="drawer-brand-text">
+                <h3>Karirhub</h3>
+                <p>Admin Pusat</p>
+            </div>
+            <button type="button" class="drawer-close-btn" id="drawerCloseBtn" title="Tutup" onclick="closeDrawer(event)">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="drawer-menu-list">
+            <a href="admin.php?view=directory_individual" class="drawer-menu-item <?php echo $view === 'directory_individual' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-building-user"></i>
+                <span>Direktori Profil</span>
+            </a>
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="drawer-menu-item <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-id-card"></i>
+                <span>Verifikasi Profil</span>
+            </a>
+            <a href="admin.php?view=verifikasi_job&entity=Individu" class="drawer-menu-item <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-briefcase"></i>
+                <span>Verifikasi Lowongan</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <div class="main" style="flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden;">
+        <!-- TOPBAR (MATCHING INDIVIDUAL EMPLOYER) -->
+        <header class="new-topbar">
+            <div class="topbar-nav-arrows">
+                <button type="button" class="topbar-arrow-btn" onclick="history.back()" title="Kembali"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="topbar-arrow-btn" onclick="history.forward()" title="Maju"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <div class="topbar-crumbs" id="crumbs">
+                <span>Beranda</span>
+                <span class="sep">&gt;</span>
                 <?php if ($view === 'directory_individual'): ?>
                     <a href="admin.php?view=directory_individual" style="color:inherit;text-decoration:none;">Direktori Pemberi Kerja</a>
                     <?php if ($selectedEmployer): ?>
-                        <span>&gt;</span>
-                        <strong>#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></strong>
+                        <span class="sep">&gt;</span>
+                        <strong id="crumbCurrent">#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></strong>
                     <?php endif; ?>
                 <?php elseif ($view === 'verifikasi_employer'): ?>
                     <a href="admin.php?view=verifikasi_employer" style="color:inherit;text-decoration:none;">Verifikasi Pemberi Kerja</a>
                     <?php if ($selectedEmployer): ?>
-                        <span>&gt;</span>
-                        <strong>#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></strong>
+                        <span class="sep">&gt;</span>
+                        <strong id="crumbCurrent">#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></strong>
                     <?php endif; ?>
                 <?php else: ?>
                     <a href="admin.php?view=verifikasi_job" style="color:inherit;text-decoration:none;">Verifikasi Lowongan</a>
                     <?php if ($selectedJob): ?>
-                        <span>&gt;</span>
-                        <strong>#<?php echo substr(md5($selectedJob['id']), 0, 8); ?></strong>
+                        <span class="sep">&gt;</span>
+                        <strong id="crumbCurrent">#<?php echo substr(md5($selectedJob['id']), 0, 8); ?></strong>
                     <?php endif; ?>
                 <?php endif; ?>
             </div>
 
-            <form method="get" action="admin.php" class="search-bar">
-                <input type="hidden" name="view" value="<?php echo e($view); ?>">
-                <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
-                <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+            <div class="topbar-search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan, pemberi kerja, nik, kota...">
-            </form>
+                <form method="get" action="admin.php" style="width:100%;margin:0;display:flex;">
+                    <input type="hidden" name="view" value="<?php echo e($view); ?>">
+                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
+                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                    <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan, pemberi kerja, nik, kota..." style="border:none;outline:none;width:100%;background:transparent;font-size:13px;color:var(--text-dark, #0f172a);">
+                </form>
+            </div>
 
-            <div class="top-actions">
+            <div class="topbar-right-actions">
                 <?php echo render_notif_dropdown($notifications, $unread); ?>
-                <div class="company-chip">
-                    <div class="profile-avatar" style="width:28px;height:28px;font-size:11px;">AD</div>
-                    <div>
+
+                <div class="company-profile-pill" onclick="toggleAccountMenu(event)" title="Pengaturan Akun Admin">
+                    <div class="company-pill-avatar" style="background:#0284c7;color:#ffffff;"><?php echo e($adminInitial ?: 'AD'); ?></div>
+                    <div class="company-pill-text">
                         <strong><?php echo e($user['name']); ?></strong>
                         <span>Admin Pusat</span>
                     </div>
+                    <i class="fa-solid fa-chevron-right company-pill-arrow"></i>
                 </div>
-                <a class="action-chip" href="logout.php">Logout</a>
             </div>
         </header>
 
         <!-- CONTENT AREA -->
-        <div class="content">
+        <div class="content" style="flex:1; overflow-y:auto; background:#f8fafc;">
             <div class="page active">
                 <?php if ($flash = get_flash()): ?>
                     <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
