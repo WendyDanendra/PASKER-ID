@@ -532,25 +532,11 @@ function current_user(): ?array
 function login_user(array $user): void
 {
     $_SESSION['user_id'] = (int) $user['id'];
-    $_SESSION['active_context'] = $user['role'];
 }
 
 function logout_user(): void
 {
     unset($_SESSION['user_id']);
-    unset($_SESSION['active_context']);
-}
-
-function get_active_context(): string
-{
-    $user = current_user();
-    if (!$user) return 'guest';
-    return $_SESSION['active_context'] ?? $user['role'];
-}
-
-function set_active_context(string $role): void
-{
-    $_SESSION['active_context'] = $role;
 }
 
 function require_login(): array
@@ -582,16 +568,8 @@ function require_role(string $role): array
 {
     $user = require_login();
 
-    if (($user['role'] ?? '') === 'admin') {
-        if ($role !== 'admin') {
-            redirect('admin.php');
-        }
-        return $user;
-    }
-
-    // Context switching for non-admin users (seeker <-> employer)
-    if ($role === 'employer' || $role === 'seeker') {
-        set_active_context($role);
+    if (($user['role'] ?? '') !== $role) {
+        redirect(role_home($user['role'] ?? ''));
     }
 
     return $user;
