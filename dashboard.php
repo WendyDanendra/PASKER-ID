@@ -43,13 +43,15 @@ if (in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LI
             $verificationStatus = 'ACTIVE_VERIFIED';
             $isExpired = false;
         } else {
-            $diff = $now->diff($activeUntil);
-            $daysPast = (int)$diff->days;
+            $nowTs = $now->getTimestamp();
+            $actUntilTs = $activeUntil->getTimestamp();
+            $diffSec = $nowTs - $actUntilTs;
             $isExpired = true;
+            $daysPast = (int)floor($diffSec / 86400);
             $daysRemaining = -$daysPast;
 
-            // 7 days transition period
-            if ($daysPast <= 7) {
+            // 7 days transition period (exact second math)
+            if ($diffSec <= (7 * 86400)) {
                 $verificationStatus = 'TRANSITION_LIMITED';
                 $isTransitionPeriod = true;
             } else {
@@ -62,10 +64,23 @@ if (in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LI
     }
 }
 
-// Reactivation eligibility: must have at least 1 candidate accepted in previous cycle
-$accCandidateStmt = db()->prepare('SELECT COUNT(*) FROM job_applications a JOIN job_posts j ON j.id = a.job_id WHERE j.user_id = ? AND a.status = "Diterima"');
-$accCandidateStmt->execute([$user['id']]);
-$isEligibleForReactivation = ((int)$accCandidateStmt->fetchColumn() > 0);
+// Reactivation eligibility: must have at least 1 candidate accepted in previous cycle (not whole history)
+$isEligibleForReactivation = false;
+if ($isFullDisable && !empty($profile['active_until'])) {
+    $cycleStart = !empty($profile['last_activated_at'])
+        ? $profile['last_activated_at']
+        : date('Y-m-d H:i:s', strtotime($profile['active_until'] . ' -3 months'));
+    $cycleEnd = date('Y-m-d H:i:s', strtotime($profile['active_until'] . ' +7 days'));
+
+    $accCandidateStmt = db()->prepare('
+        SELECT COUNT(*) FROM job_applications a
+        JOIN job_posts j ON j.id = a.job_id
+        WHERE j.user_id = ? AND a.status = "Diterima"
+          AND a.accepted_at BETWEEN ? AND ?
+    ');
+    $accCandidateStmt->execute([$user['id'], $cycleStart, $cycleEnd]);
+    $isEligibleForReactivation = ((int)$accCandidateStmt->fetchColumn() > 0);
+}
 
 // --- API / JSON HANDLERS ---
 if (isset($_GET['read_notif'])) {
@@ -147,7 +162,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        db()->prepare('UPDATE job_applications SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$nextStatus, $applicationId]);
+        if ($nextStatus === 'Diterima') {
+            db()->prepare('UPDATE job_applications SET status = ?, accepted_at = COALESCE(accepted_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$nextStatus, $applicationId]);
+        } else {
+            db()->prepare('UPDATE job_applications SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$nextStatus, $applicationId]);
+        }
 
         // Recalculate accepted_count for parent job
         $jobIdForApp = (int)$application['job_id'];
@@ -197,6 +216,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
+        // Check if user is in FULL_DISABLED state: must be eligible to submit reactivation online
+        if ($isFullDisable && !$isEligibleForReactivation) {
+            flash('error', 'Pengajuan reaktivasi online tidak tersedia karena tidak memenuhi syarat (minimal 1 pelamar diterima pada siklus sebelumnya). Silakan ikuti proses melalui Dinas Tenaga Kerja setempat.');
+            redirect('dashboard.php');
+            exit;
+        }
+
         $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
         $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
         $permitDoc = $permitDoc ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null);
@@ -208,6 +234,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
+        $isReactivation = ($isFullDisable || ($profile['verification_status'] ?? '') === 'FULL_DISABLED');
+
         if ($profile) {
             $stmt = db()->prepare('UPDATE employer_profiles SET 
                 owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
@@ -216,8 +244,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 same_address_siapkerja = ?, address = ?, address_detail = ?,
                 latitude = ?, longitude = ?, permit_document = ?, doc_permission = ?,
                 workplace_photo = ?, doc_location_photo = ?,
-                description = ?, user_consent = ?,
-                verification_status = "PENDING", verified = 0, active_until = NULL, updated_at = CURRENT_TIMESTAMP
+                description = ?, user_consent = ?, consent_accepted = ?,
+                verification_status = "PENDING", verified = 0, active_until = NULL,
+                extension_requested = 0, extension_status = "NONE",
+                assigned_to = NULL, assigned_at = NULL, verifier_notes = NULL, verification_checklist = NULL,
+                manual_review_status = NULL, rejection_count = 0, consent_data_hash = NULL, consent_agreed = 0,
+                updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?');
             $stmt->execute([
                 $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
@@ -226,7 +258,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc,
                 $workplacePhoto, $workplacePhoto,
-                $description, $consent,
+                $description, $consent, $consent,
                 $user['id']
             ]);
         } else {
@@ -236,22 +268,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 same_location_siapkerja, province, city, district, village, postal_code,
                 same_address_siapkerja, address, address_detail,
                 latitude, longitude, permit_document, doc_permission, workplace_photo, doc_location_photo,
-                description, user_consent,
-                verification_status, verified, active_until
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0, NULL)');
+                description, user_consent, consent_accepted,
+                verification_status, verified, active_until, extension_requested, extension_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0, NULL, 0, "NONE")');
             $stmt->execute([
                 $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
                 $sameLoc, $province, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
-                $description, $consent
+                $description, $consent, $consent
             ]);
         }
 
         db()->prepare('UPDATE users SET name = ?, profile_complete = 1 WHERE id = ?')->execute([$ownerName, $user['id']]);
 
-        flash('pending_popup', 'Profil Anda berhasil diajukan! Status Profil: Menunggu Verifikasi.');
+        if ($isReactivation) {
+            record_audit_log('employer', $user['id'], 'REACTIVATION_REQUESTED', 'Mengajukan permohonan reaktivasi Hak Akses Pemberi Kerja Individu secara online.', $user['name'], 'employer');
+            flash('pending_popup', 'Permohonan reaktivasi Hak Akses Pemberi Kerja Individu berhasil diajukan dan sedang menunggu verifikasi.');
+        } else {
+            flash('pending_popup', 'Profil Anda berhasil diajukan! Status Profil: Menunggu Verifikasi.');
+        }
         redirect('dashboard.php');
         exit;
     }
@@ -804,6 +841,25 @@ if ($isTransitionPeriod) {
             . '</select>'
             . '<button type="submit" class="primary-btn" style="background:#d97706;height:38px;padding:0 18px;font-size:13px;font-weight:700;"><i class="fa-solid fa-paper-plane"></i> Ajukan Perpanjangan</button>'
             . '</form>'
+            . '</div>';
+    }
+} elseif ($isFullDisable) {
+    if ($isEligibleForReactivation) {
+        $transitionBannerHtml = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(34,197,94,0.08);">'
+            . '<div>'
+            . '<div style="font-weight:800;color:#166534;font-size:14px;"><i class="fa-solid fa-arrows-rotate"></i> Hak Akses Berakhir — Memenuhi Syarat Reaktivasi Online</div>'
+            . '<div style="font-size:13px;color:#14532d;margin-top:4px;">Masa aktif dan masa transisi Hak Akses Anda telah berakhir. Karena Anda telah menerima minimal 1 pelamar (status <strong>Diterima</strong>) pada siklus sebelumnya, Anda dapat mengajukan reaktivasi secara online menggunakan profil yang ada.</div>'
+            . '</div>'
+            . '<a href="dashboard.php?open_profile=1" class="primary-btn" style="background:#16a34a;height:38px;padding:0 18px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:8px;text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i> Ajukan Reaktivasi Online</a>'
+            . '</div>';
+    } else {
+        $domicileName = !empty($profile['city']) ? $profile['city'] : 'Dinas Tenaga Kerja sesuai domisili Anda';
+        $transitionBannerHtml = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(239,68,68,0.08);">'
+            . '<div>'
+            . '<div style="font-weight:800;color:#991b1b;font-size:14px;"><i class="fa-solid fa-lock"></i> Hak Akses Berakhir — Reaktivasi Melalui Dinas Tenaga Kerja</div>'
+            . '<div style="font-size:13px;color:#7f1d1d;margin-top:4px;">Masa aktif dan masa transisi Anda telah selesai tanpa adanya pelamar berstatus <strong>Diterima</strong> pada siklus sebelumnya. Pengajuan reaktivasi online tidak tersedia. Silakan lakukan proses reaktivasi melalui Dinas Tenaga Kerja (' . htmlspecialchars($domicileName, ENT_QUOTES, 'UTF-8') . ').</div>'
+            . '</div>'
+            . '<button type="button" class="ghost-btn" data-open-modal="modal-disnaker-instructions" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;height:38px;padding:0 16px;font-size:13px;font-weight:700;"><i class="fa-solid fa-building-flag"></i> Info Dinas Domisili</button>'
             . '</div>';
     }
 }

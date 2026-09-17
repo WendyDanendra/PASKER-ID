@@ -26,6 +26,7 @@ function ensure_platform_schema(): void
         'workplace_photo' => 'VARCHAR(255) NULL',
         'consent_accepted' => 'TINYINT(1) NOT NULL DEFAULT 0',
         'active_until' => 'DATETIME NULL',
+        'last_activated_at' => 'DATETIME NULL',
         'extension_requested' => 'TINYINT(1) NOT NULL DEFAULT 0',
     ];
     foreach ($employerAdds as $name => $definition) {
@@ -77,10 +78,14 @@ function ensure_platform_schema(): void
     )');
 
     $appColumns = array_column($pdo->query('SHOW COLUMNS FROM job_applications')->fetchAll(), 'Field');
+    if (!in_array('accepted_at', $appColumns, true)) {
+        $pdo->exec('ALTER TABLE job_applications ADD COLUMN accepted_at DATETIME NULL AFTER status');
+    }
     if (!in_array('updated_at', $appColumns, true)) {
         $pdo->exec('ALTER TABLE job_applications ADD COLUMN updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP');
     }
     $pdo->exec("UPDATE job_applications SET status = 'Lamaran Masuk' WHERE status IN ('Dilamar', 'Applied', '')");
+    $pdo->exec("UPDATE job_applications SET accepted_at = COALESCE(updated_at, created_at) WHERE status = 'Diterima' AND accepted_at IS NULL");
 }
 
 function notify_user(int $userId, string $title, string $message, string $type = 'info', ?int $jobId = null): void

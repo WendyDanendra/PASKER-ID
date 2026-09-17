@@ -65,6 +65,7 @@ CREATE TABLE employer_profiles (
     verification_checklist TEXT NULL,
     suspension_reason TEXT NULL,
     active_until DATETIME NULL DEFAULT NULL,
+    last_activated_at DATETIME NULL DEFAULT NULL,
     extension_requested TINYINT(1) NOT NULL DEFAULT 0,
     extension_status ENUM('NONE', 'REQUESTED', 'APPROVED', 'REJECTED') DEFAULT 'NONE',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -226,7 +227,9 @@ CREATE TABLE IF NOT EXISTS job_applications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     job_id INT NOT NULL,
     seeker_id INT NOT NULL,
-    status VARCHAR(40) NOT NULL DEFAULT 'Dilamar',
+    status VARCHAR(40) NOT NULL DEFAULT 'Lamaran Masuk',
+    accepted_at DATETIME NULL DEFAULT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uniq_job_seeker (job_id, seeker_id)
 );

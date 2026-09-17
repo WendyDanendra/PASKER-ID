@@ -61,66 +61,111 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $notes = trim($_POST['verifier_notes'] ?? '');
         $checklist = isset($_POST['checklist']) ? implode(', ', $_POST['checklist']) : '';
 
-        // Check assigned first
-        $stmtEmp = db()->prepare('SELECT ep.*, u.name, u.email FROM employer_profiles ep JOIN users u ON u.id = ep.user_id WHERE ep.user_id = ? LIMIT 1');
-        $stmtEmp->execute([$targetUserId]);
-        $targetEmp = $stmtEmp->fetch();
+        $pdo = db();
+        $pdo->beginTransaction();
 
-        if (!$targetEmp || empty($targetEmp['assigned_to'])) {
-            flash('error', 'Pemberi kerja harus memiliki penugasan aktif terlebih dahulu sebelum keputusan dapat diambil.');
-            redirect($redirectUrl);
-            exit;
-        }
+        try {
+            // Lock row with FOR UPDATE
+            $stmtEmp = $pdo->prepare('SELECT ep.*, u.name, u.email FROM employer_profiles ep JOIN users u ON u.id = ep.user_id WHERE ep.user_id = ? FOR UPDATE');
+            $stmtEmp->execute([$targetUserId]);
+            $targetEmp = $stmtEmp->fetch();
 
-        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
-        if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
-            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
-            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
-                flash('error', 'Akses ditolak: Pemberi Kerja ini di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+            if (!$targetEmp) {
+                $pdo->rollBack();
+                flash('error', 'Pemberi Kerja tidak ditemukan.');
                 redirect($redirectUrl);
                 exit;
             }
-        }
 
-        if (($decision === 'revision' || $decision === 'reject') && $notes === '') {
-            flash('error', 'Catatan Verifikator wajib diisi untuk keputusan Revisi atau Tolak.');
-        } else {
+            $assignedTo = trim((string)($targetEmp['assigned_to'] ?? ''));
+            if ($assignedTo === '') {
+                $pdo->rollBack();
+                flash('error', 'Pemberi kerja harus memiliki penugasan aktif terlebih dahulu sebelum keputusan dapat diambil.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            // Verify current admin IS the assigned verifier (compare by name or email)
+            $currentAdminName  = trim((string)($user['name'] ?? ''));
+            $currentAdminEmail = trim((string)($user['email'] ?? ''));
+            if (strcasecmp($assignedTo, $currentAdminName) !== 0 && strcasecmp($assignedTo, $currentAdminEmail) !== 0) {
+                $pdo->rollBack();
+                flash('error', 'Akses ditolak: Anda bukan pemeriksa yang ditugaskan (assigned_to) untuk verifikasi profil ini. Hanya verifikator yang ditugaskan (' . e($assignedTo) . ') yang dapat mengambil keputusan. Silakan ambil alih penugasan case terlebih dahulu.');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            // Ensure verification state is still open
+            if (!in_array($targetEmp['verification_status'], ['PENDING', 'NEEDS_REVISION', 'NOT_SUBMITTED'], true)) {
+                $pdo->rollBack();
+                flash('error', 'Keputusan verifikasi tidak dapat diproses karena status profil sudah berubah (' . e($targetEmp['verification_status']) . ').');
+                redirect($redirectUrl);
+                exit;
+            }
+
+            $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+            if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+                $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+                if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                    $pdo->rollBack();
+                    flash('error', 'Akses ditolak: Pemberi Kerja ini di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.');
+                    redirect($redirectUrl);
+                    exit;
+                }
+            }
+
+            if (($decision === 'revision' || $decision === 'reject') && $notes === '') {
+                $pdo->rollBack();
+                flash('error', 'Catatan Verifikator wajib diisi untuk keputusan Revisi atau Tolak.');
+                redirect($redirectUrl);
+                exit;
+            }
+
             if ($decision === 'approve') {
-                $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
+                $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
                 if ($driver === 'sqlite') {
-                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 } else {
-                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 }
                 $stmt->execute([$notes, $checklist, $targetUserId]);
-                db()->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
-                record_audit_log('employer', $targetUserId, 'APPROVED', "Profil disetujui. Masa aktif berlaku 3 bulan. Catatan: {$notes}", $user['name']);
+                $pdo->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
+                record_audit_log('employer', $targetUserId, 'APPROVED', "Profil disetujui. Masa aktif berlaku 3 bulan. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
                 notify_user($targetUserId, 'Profil Disetujui', 'Selamat! Profil Pemberi Kerja Individu Anda telah disetujui dan aktif selama 3 bulan.', 'success');
+                $pdo->commit();
                 flash('success', 'Profil Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 3 Bulan).');
             } elseif ($decision === 'revision') {
-                $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 $stmt->execute([$notes, $checklist, $targetUserId]);
-                record_audit_log('employer', $targetUserId, 'REVISION_REQUESTED', "Permintaan perbaikan data dikirim ke pemohon. Catatan: {$notes}", $user['name']);
+                record_audit_log('employer', $targetUserId, 'REVISION_REQUESTED', "Permintaan perbaikan data dikirim ke pemohon. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
                 notify_user($targetUserId, 'Perbaikan Profil Diperlukan', 'Verifikator meminta perbaikan profil: ' . $notes, 'warning');
+                $pdo->commit();
                 flash('success', 'Profil dikembalikan ke pemohon untuk diperbaiki (Perlu Diperbaiki).');
             } elseif ($decision === 'reject') {
                 $newRejectionCount = (int)($targetEmp['rejection_count'] ?? 0) + 1;
                 if ($newRejectionCount >= 3) {
                     // 3rd rejection triggers MANUAL_DINAS_REVIEW
-                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, manual_review_status = "MANUAL_DINAS_REVIEW", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, manual_review_status = "MANUAL_DINAS_REVIEW", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                     $stmt->execute([$newRejectionCount, $notes, $checklist, $targetUserId]);
-                    record_audit_log('employer', $targetUserId, 'REJECTED_MANUAL_DINAS', "Penolakan ke-3 dicapai. Akun dialihkan ke Jalur Manual Dinas. Catatan: {$notes}", $user['name']);
+                    record_audit_log('employer', $targetUserId, 'REJECTED_MANUAL_DINAS', "Penolakan ke-3 dicapai. Akun dialihkan ke Jalur Manual Dinas. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
                     notify_user($targetUserId, 'Penolakan ke-3: Dialihkan ke Manual Dinas', 'Profil Anda telah ditolak 3 kali. Verifikasi dialihkan ke Jalur Manual Dinas untuk pendampingan petugas.', 'error');
+                    $pdo->commit();
                     flash('warning', 'Penolakan ke-3 telah dicapai. Profil dialihkan ke Jalur Manual Dinas.');
                 } else {
                     // 1st or 2nd rejection gives chance to fix (NEEDS_REVISION)
-                    $stmt = db()->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                     $stmt->execute([$newRejectionCount, $notes, $checklist, $targetUserId]);
-                    record_audit_log('employer', $targetUserId, 'REJECTED', "Profil ditolak (Penolakan ke-{$newRejectionCount}). Kesempatan perbaikan dibuka. Catatan: {$notes}", $user['name']);
+                    record_audit_log('employer', $targetUserId, 'REJECTED', "Profil ditolak (Penolakan ke-{$newRejectionCount}). Kesempatan perbaikan dibuka. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
                     notify_user($targetUserId, "Profil Belum Disetujui (Penolakan {$newRejectionCount}/3)", 'Verifikator menolak profil: ' . $notes . '. Silahkan perbaiki data Anda.', 'error');
+                    $pdo->commit();
                     flash('success', "Profil Pemberi Kerja Ditolak (Penolakan ke-{$newRejectionCount}/3). Kesempatan perbaikan dibuka.");
                 }
             }
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal memproses keputusan verifikasi: ' . $e->getMessage());
         }
         redirect($redirectUrl);
         exit;
@@ -230,9 +275,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
         $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
         if ($driver === 'sqlite') {
-            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
+            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
         } else {
-            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
+            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
         }
         $stmt->execute([$officerName, $officerStatement, $targetUserId]);
         db()->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
@@ -1670,6 +1715,17 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     </button>
                                 </form>
                             <?php else: ?>
+                                <?php if (strcasecmp((string)$selectedEmployer['assigned_to'], (string)$user['name']) !== 0 && strcasecmp((string)$selectedEmployer['assigned_to'], (string)($user['email'] ?? '')) !== 0): ?>
+                                    <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="display:inline;">
+                                        <input type="hidden" name="admin_action" value="assign_employer_case">
+                                        <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                        <input type="hidden" name="self_assign" value="1">
+                                        <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
+                                        <button type="submit" class="primary-btn" style="height:36px; padding:0 16px; font-size:12px; background:#d97706;">
+                                            <i class="fa-solid fa-hand-holding-hand"></i> Ambil Alih Case
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                                 <button type="button" class="btn-lihat-detail" data-open-modal="modal-assign-pemeriksa">
                                     <i class="fa-solid fa-user-gear"></i> Ubah Pemeriksa
                                 </button>
@@ -1950,6 +2006,12 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                         <strong><i class="fa-solid fa-triangle-exclamation"></i> Perhatian:</strong><br>
                                         Untuk mengambil keputusan verifikasi, case pemberi kerja harus memiliki penugasan aktif terlebih dahulu. Silahkan klik tombol <strong>"Ambil Case"</strong> di atas.
                                     </div>
+                                <?php elseif (strcasecmp((string)$selectedEmployer['assigned_to'], (string)$user['name']) !== 0 && strcasecmp((string)$selectedEmployer['assigned_to'], (string)($user['email'] ?? '')) !== 0): ?>
+                                    <!-- WARNING IF ASSIGNED TO SOMEONE ELSE -->
+                                    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px; font-size:13px; color:#991b1b;">
+                                        <strong><i class="fa-solid fa-lock"></i> Case Sedang Dipegang Pemeriksa Lain:</strong><br>
+                                        Case verifikasi ini saat ini ditugaskan kepada <strong><?php echo e($selectedEmployer['assigned_to']); ?></strong>. Keputusan verifikasi (Setujui, Revisi, Tolak) hanya dapat diambil oleh verifikator yang ditugaskan. Silakan gunakan tombol <strong>"Ambil Alih Case"</strong> atau <strong>"Ubah Pemeriksa"</strong> di atas terlebih dahulu jika Anda ingin memproses case ini.
+                                    </div>
                                 <?php else: ?>
                                     <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
                                         <input type="hidden" name="admin_action" value="verify_employer">
@@ -2037,7 +2099,10 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <div style="margin-bottom:12px;">
                                         <label style="font-size:13px; font-weight:700; display:block; margin-bottom:4px;">Pemeriksa:</label>
                                         <select name="verifier_name" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;">
-                                            <option value="Admin Pusat">Admin Pusat</option>
+                                            <option value="<?php echo e($user['name']); ?>"><?php echo e($user['name']); ?> (Saya)</option>
+                                            <?php if ($user['name'] !== 'Admin Pusat'): ?>
+                                                <option value="Admin Pusat">Admin Pusat</option>
+                                            <?php endif; ?>
                                             <option value="Petugas Pengawas Wilayah 1">Petugas Pengawas Wilayah 1</option>
                                             <option value="Petugas Pengawas Wilayah 2">Petugas Pengawas Wilayah 2</option>
                                         </select>
