@@ -353,23 +353,75 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
 
         $additionalDocRequired = !empty($rulesResult['additional_doc_required']) ? 1 : 0;
-        $layerFlag = $additionalDocRequired ? 'ADDITIONAL_DOCUMENT_PENDING' : ($isChildRepost ? 'REPOST_CONTINUATION' : null);
-
-        // Update to canonical status: Menunggu Verifikasi
-        $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_required = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
-        $update->execute([$additionalDocRequired, $jobId, $user['id']]);
-
-        // Create or update verification record
-        try {
-            $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, additional_doc_required, layer_flags) VALUES (?, ?, ?, "PENDING", ?, ?)');
-            $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code'], $additionalDocRequired, $layerFlag]);
-        } catch (Throwable $ignored) {}
 
         if ($additionalDocRequired) {
-            flash('warning', 'Lowongan berhasil dikirim dan Menunggu Verifikasi. Catatan: Pengajuan publikasi ini masuk kuota ke-4+ untuk KBJI ' . $targetJob['kbji_code'] . ' bulan ini (Status: ADDITIONAL_DOCUMENT_PENDING).');
+            // Lowongan ke-4+ KBJI sama: Jangan buat job_verifications case dulu, ubah status ke ADDITIONAL_DOCUMENT_PENDING
+            $update = db()->prepare('UPDATE job_posts SET status = "ADDITIONAL_DOCUMENT_PENDING", additional_doc_required = 1, additional_doc_status = "PENDING_UPLOAD", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+            $update->execute([$jobId, $user['id']]);
+
+            try {
+                $docStmt = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, status, doc_reviewed, field_visit, created_at) VALUES (?, ?, ?, "PENDING_UPLOAD", "Tidak", "Tidak", CURRENT_TIMESTAMP)');
+                $docStmt->execute([$jobId, $user['id'], $targetJob['kbji_code']]);
+            } catch (Throwable $ignored) {}
+
+            record_audit_log('job', $jobId, 'ADDITIONAL_DOC_REQUIRED', "Lowongan ke-4+ untuk KBJI {$targetJob['kbji_code']} bulan ini membutuhkan Dokumen/Keterangan Tambahan sebelum verifikasi lowongan.", $user['name']);
+
+            flash('warning', 'Pengajuan publikasi ini masuk kuota ke-4+ untuk KBJI ' . $targetJob['kbji_code'] . ' bulan ini (Status: ADDITIONAL_DOCUMENT_PENDING). Harap unggah Dokumen/Keterangan Tambahan untuk ditinjau oleh Admin.');
         } else {
+            $layerFlag = $isChildRepost ? 'REPOST_CONTINUATION' : null;
+            // Normal flow: update to Menunggu Verifikasi and create job_verifications case
+            $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_required = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+            $update->execute([$jobId, $user['id']]);
+
+            try {
+                $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, additional_doc_required, layer_flags) VALUES (?, ?, ?, "PENDING", 0, ?)');
+                $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code'], $layerFlag]);
+            } catch (Throwable $ignored) {}
+
+            record_audit_log('job', $jobId, 'SUBMITTED', "Lowongan diajukan untuk diverifikasi.", $user['name']);
             flash('success', 'Lowongan berhasil dikirim dan sedang Menunggu Verifikasi.');
         }
+        redirect('dashboard.php#lowongan');
+        exit;
+    }
+
+    // UPLOAD DOKUMEN TAMBAHAN UNTUK LOWONGAN KE-4+ KBJI SAMA
+    if (isset($_POST['upload_additional_doc'])) {
+        $jobId = (int)$_POST['job_id'];
+        $notes = trim($_POST['additional_notes'] ?? '');
+        
+        $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
+        $jobStmt->execute([$jobId, $user['id']]);
+        $targetJob = $jobStmt->fetch();
+
+        if (!$targetJob || $targetJob['status'] !== 'ADDITIONAL_DOCUMENT_PENDING') {
+            flash('error', 'Lowongan tidak valid untuk pengunggahan dokumen tambahan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        $filePath = null;
+        if (!empty($_FILES['additional_file']['name'])) {
+            $filePath = store_upload('additional_file', 'additional_docs', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
+        }
+
+        if (!$filePath && $notes === '') {
+            flash('error', 'Harap lampirkan berkas dokumen atau masukkan keterangan tambahan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        try {
+            $stmt = db()->prepare('UPDATE job_additional_documents SET document_file = COALESCE(?, document_file), description = ?, status = "SUBMITTED" WHERE job_id = ?');
+            $stmt->execute([$filePath, $notes, $jobId]);
+        } catch (Throwable $ignored) {}
+        
+        $upJob = db()->prepare('UPDATE job_posts SET additional_doc_file = COALESCE(?, additional_doc_file), additional_doc_notes = ?, additional_doc_status = "SUBMITTED", updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $upJob->execute([$filePath, $notes, $jobId]);
+
+        record_audit_log('job', $jobId, 'ADDITIONAL_DOC_SUBMITTED', "Pemberi kerja mengunggah dokumen/keterangan tambahan: {$notes}", $user['name']);
+
+        flash('success', 'Dokumen/keterangan tambahan berhasil dikirim dan sedang menunggu peninjauan oleh Admin.');
         redirect('dashboard.php#lowongan');
         exit;
     }
@@ -1118,6 +1170,7 @@ $employerJobs = $employerJobs->fetchAll();
 $jobCounts = [
     'Draft' => 0, 
     'Menunggu Verifikasi' => 0, 
+    'ADDITIONAL_DOCUMENT_PENDING' => 0,
     'Perlu Direvisi' => 0, 
     'Tayang' => 0,
     'Ditolak' => 0,
@@ -1131,6 +1184,7 @@ foreach ($employerJobs as $row) {
 }
 
 $jobRowsHtml = '';
+$additionalDocModalsHtml = '';
 if (!$employerJobs) {
     $jobRowsHtml = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:28px">Belum ada lowongan. Klik Tambah Lowongan untuk membuat postingan baru.</td></tr>';
 } else {
@@ -1139,19 +1193,62 @@ if (!$employerJobs) {
         $countStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
         $countStmt->execute([$row['id']]);
         $appCount = (int) $countStmt->fetchColumn();
-        $reviseBtn = in_array($row['status'], ['Perlu Direvisi', 'Perlu Revisi'], true)
-            ? '<button type="button" class="ghost-btn" data-revise-job="' . (int) $row['id'] . '">Revisi</button>'
-            : '-';
+        $actionBtn = '-';
+        if (in_array($row['status'], ['Perlu Direvisi', 'Perlu Revisi'], true)) {
+            $actionBtn = '<button type="button" class="ghost-btn" data-revise-job="' . (int) $row['id'] . '">Revisi</button>';
+        } elseif ($row['status'] === 'ADDITIONAL_DOCUMENT_PENDING') {
+            $hasSubmitted = !empty($row['additional_doc_file']) || !empty($row['additional_doc_notes']);
+            $btnText = $hasSubmitted ? 'Ubah Dokumen' : 'Unggah Dokumen';
+            $actionBtn = '<button type="button" class="ghost-btn" style="color:#0284c7;border-color:#bae6fd;background:#f0f9ff;" data-open-modal="modal-doc-' . (int)$row['id'] . '"><i class="fa-solid fa-upload"></i> ' . $btnText . '</button>';
+            
+            $additionalDocModalsHtml .= '
+            <div class="modal" data-modal="modal-doc-' . (int)$row['id'] . '">
+                <div class="modal-backdrop" data-close-modal="modal-doc-' . (int)$row['id'] . '"></div>
+                <div class="modal-panel" style="max-width:540px;">
+                    <div class="modal-header">
+                        <h3>Unggah Dokumen Tambahan</h3>
+                        <button type="button" class="icon-btn" data-close-modal="modal-doc-' . (int)$row['id'] . '"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form method="post" action="dashboard.php" enctype="multipart/form-data" style="padding:20px;">
+                        <input type="hidden" name="upload_additional_doc" value="1">
+                        <input type="hidden" name="job_id" value="' . (int)$row['id'] . '">
+                        <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:12px; border-radius:8px; font-size:13px; margin-bottom:16px;">
+                            <strong>Pengajuan Lowongan ke-4+ (KBJI: ' . e($row['kbji_code']) . ')</strong><br>
+                            Posisi: <strong>' . e($row['title']) . '</strong><br>
+                            Harap lampirkan berkas dokumen pendukung (Surat Izin/Keterangan Tempat Kerja/Justifikasi) atau catatan keterangan untuk ditinjau oleh Admin.
+                        </div>
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">Berkas Dokumen Pendukung (PDF/JPG/PNG):</label>
+                            <input type="file" name="additional_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;">
+                            ' . (!empty($row['additional_doc_file']) ? '<div class="tiny" style="color:#0284c7; margin-top:4px;">Berkas tersimpan: <a href="' . e($row['additional_doc_file']) . '" target="_blank" style="color:#0284c7; text-decoration:underline;">Lihat Berkas</a></div>' : '') . '
+                        </div>
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">Keterangan / Justifikasi Kebutuhan Tenaga Kerja:</label>
+                            <textarea name="additional_notes" rows="4" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;" placeholder="Jelaskan kebutuhan tenaga kerja tambahan untuk posisi ini...">' . e($row['additional_doc_notes'] ?? '') . '</textarea>
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; gap:10px;">
+                            <button type="button" class="secondary-btn" data-close-modal="modal-doc-' . (int)$row['id'] . '">Batal</button>
+                            <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Kirim Dokumen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>';
+        }
         $adminNoteHtml = '';
         if (in_array($row['status'], ['Perlu Direvisi', 'Perlu Revisi'], true) && trim((string) ($row['admin_notes'] ?? '')) !== '') {
             $adminNoteHtml = '<div class="tiny" style="color:#b45309">Catatan admin: ' . e($row['admin_notes']) . '</div>';
+        } elseif ($row['status'] === 'ADDITIONAL_DOCUMENT_PENDING') {
+            $hasSubmitted = !empty($row['additional_doc_file']) || !empty($row['additional_doc_notes']);
+            $adminNoteHtml = $hasSubmitted 
+                ? '<div class="tiny" style="color:#0284c7;">Dokumen tambahan telah dikirim · Menunggu peninjauan Admin</div>'
+                : '<div class="tiny" style="color:#b45309;">Silakan unggah dokumen tambahan agar dapat diproses Admin</div>';
         }
-        $jobRowsHtml .= '<tr><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div>' . $adminNoteHtml . '</td>'
+        $jobRowsHtml .= '<tr data-job-row data-title="' . e($row['title']) . '" data-status="' . e($meta['label']) . '" data-created="' . e($row['created_at']) . '"><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div>' . $adminNoteHtml . '</td>'
             . '<td>' . e($row['location']) . '</td>'
             . '<td>' . (int) $row['quota'] . ' orang</td>'
             . '<td>' . $appCount . ' pelamar</td>'
             . '<td><span class="status ' . e($meta['class']) . '">' . e($meta['label']) . '</span></td>'
-            . '<td>' . $reviseBtn . '</td></tr>';
+            . '<td>' . $actionBtn . '</td></tr>';
     }
 }
 
@@ -1235,5 +1332,6 @@ $html = preg_replace('/<h3>Lowongan<\/h3>\s*<div class="value">\d+<\/div>/', '<h
 $html = preg_replace('/<h3>Pelamar<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Pelamar</h3><div class="value">' . $totalApplicants . '</div>', $html, 1);
 $html = preg_replace('/<h3>Wawancara<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Wawancara</h3><div class="value">' . $stageCounts['Wawancara'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Diterima<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Diterima</h3><div class="value">' . $stageCounts['Diterima'] . '</div>', $html, 1);
+$html = str_replace('</body>', $additionalDocModalsHtml . "\n</body>", $html);
 
 echo $html;

@@ -73,6 +73,21 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )');
 
+    $pdo->exec('CREATE TABLE IF NOT EXISTS job_additional_documents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        kbji_code TEXT NOT NULL,
+        document_file TEXT,
+        description TEXT,
+        status TEXT DEFAULT "PENDING_UPLOAD",
+        doc_reviewed TEXT DEFAULT "Tidak",
+        field_visit TEXT DEFAULT "Tidak",
+        admin_notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at DATETIME
+    )');
+
     $pdo->exec('CREATE TABLE IF NOT EXISTS audit_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         entity_type TEXT NOT NULL,
@@ -164,6 +179,15 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         }
         if (!in_array('compliance_checklist', $cols, true)) {
             $pdo->exec('ALTER TABLE job_posts ADD COLUMN compliance_checklist TEXT');
+        }
+        if (!in_array('additional_doc_file', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_file TEXT');
+        }
+        if (!in_array('additional_doc_notes', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_notes TEXT');
+        }
+        if (!in_array('additional_doc_status', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_status TEXT');
         }
         // Migrate status to canonical strings
         $pdo->exec('UPDATE job_posts SET status = "Menunggu Verifikasi" WHERE status = "Dikirim/Menunggu Verifikasi" OR status = "Dikirim"');
@@ -399,7 +423,8 @@ function ensure_database_schema(PDO $pdo): void
                 'instagram' => "VARCHAR(255) NULL AFTER facebook",
                 'same_location_siapkerja' => "TINYINT(1) DEFAULT 1 AFTER instagram",
                 'district' => "VARCHAR(120) NULL AFTER city",
-                'village' => "VARCHAR(120) NULL AFTER district",
+                'domicile_city_id' => "VARCHAR(120) NULL AFTER district",
+                'village' => "VARCHAR(120) NULL AFTER domicile_city_id",
                 'postal_code' => "VARCHAR(20) NULL AFTER village",
                 'same_address_siapkerja' => "TINYINT(1) DEFAULT 1 AFTER postal_code",
                 'address_detail' => "TEXT NULL AFTER address",
@@ -437,6 +462,22 @@ function ensure_database_schema(PDO $pdo): void
                 }
             }
 
+            // Ensure job_additional_documents table exists
+            $pdo->exec('CREATE TABLE IF NOT EXISTS job_additional_documents (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                job_id INT NOT NULL,
+                user_id INT NOT NULL,
+                kbji_code VARCHAR(20) NOT NULL,
+                document_file VARCHAR(255) NULL,
+                description TEXT NULL,
+                status VARCHAR(40) NOT NULL DEFAULT "PENDING_UPLOAD",
+                doc_reviewed VARCHAR(10) NOT NULL DEFAULT "Tidak",
+                field_visit VARCHAR(10) NOT NULL DEFAULT "Tidak",
+                admin_notes TEXT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                reviewed_at DATETIME NULL
+            )');
+
             // Alter job_posts columns if missing
             $jobCols = $pdo->query("SHOW COLUMNS FROM job_posts")->fetchAll(PDO::FETCH_COLUMN);
             $addJobCols = [
@@ -450,7 +491,10 @@ function ensure_database_schema(PDO $pdo): void
                 'verification_checklist' => "TEXT NULL AFTER verifier_notes",
                 'is_blacklisted' => "TINYINT(1) DEFAULT 0 AFTER verification_checklist",
                 'additional_doc_required' => "TINYINT(1) DEFAULT 0 AFTER is_blacklisted",
-                'admin_notes' => "TEXT NULL AFTER additional_doc_required",
+                'additional_doc_file' => "VARCHAR(255) NULL AFTER additional_doc_required",
+                'additional_doc_notes' => "TEXT NULL AFTER additional_doc_file",
+                'additional_doc_status' => "VARCHAR(50) DEFAULT 'NONE' AFTER additional_doc_notes",
+                'admin_notes' => "TEXT NULL AFTER additional_doc_status",
                 'details' => "TEXT NULL AFTER admin_notes",
                 'min_education' => "VARCHAR(80) NULL AFTER details",
                 'min_experience' => "VARCHAR(80) NULL AFTER min_education",
@@ -463,14 +507,18 @@ function ensure_database_schema(PDO $pdo): void
 
             foreach ($addJobCols as $col => $definition) {
                 if (!in_array($col, $jobCols)) {
-                    $pdo->exec("ALTER TABLE job_posts ADD COLUMN {$col} {$definition}");
+                    try {
+                        $pdo->exec("ALTER TABLE job_posts ADD COLUMN {$col} {$definition}");
+                    } catch (Throwable $ignored) {}
                 }
             }
 
-            // Modify status ENUM in job_posts to canonical statuses
-            $pdo->exec("UPDATE job_posts SET status = 'Menunggu Verifikasi' WHERE status IN ('Dikirim/Menunggu Verifikasi', 'Dikirim')");
-            $pdo->exec("UPDATE job_posts SET status = 'Perlu Direvisi' WHERE status = 'Perlu Revisi'");
-            $pdo->exec("ALTER TABLE job_posts MODIFY COLUMN status ENUM('Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft'");
+            // Modify status ENUM in job_posts to include canonical statuses including ADDITIONAL_DOCUMENT_PENDING or use VARCHAR
+            try {
+                $pdo->exec("UPDATE job_posts SET status = 'Menunggu Verifikasi' WHERE status IN ('Dikirim/Menunggu Verifikasi', 'Dikirim')");
+                $pdo->exec("UPDATE job_posts SET status = 'Perlu Direvisi' WHERE status = 'Perlu Revisi'");
+                $pdo->exec("ALTER TABLE `job_posts` CHANGE `status` `status` VARCHAR(60) NOT NULL DEFAULT 'Draft'");
+            } catch (Throwable $ignored) {}
         }
     } catch (Exception $e) {
         // Silently handle if table structures already match

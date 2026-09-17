@@ -371,6 +371,191 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         redirect($redirectUrl);
         exit;
     }
+
+    // 10. KEPUTUSAN VERIFIKASI DOKUMEN TAMBAHAN LOWONGAN KE-4+ KBJI SAMA
+    if ($action === 'verify_additional_doc') {
+        $jobId = (int)($_POST['job_id'] ?? 0);
+        $decision = trim($_POST['decision'] ?? ''); // approve | reject
+        $docReviewed = trim($_POST['doc_reviewed'] ?? '');
+        $fieldVisit = trim($_POST['field_visit'] ?? '');
+        $notes = trim($_POST['verifier_notes'] ?? '');
+        $redirectUrl = 'admin.php?view=verifikasi_job&entity=' . urlencode($entity) . '&tab=' . urlencode($tab);
+
+        // Fetch job + employer domicile_city_id (scope: employer domicile, NOT job location)
+        $jobStmt = db()->prepare('SELECT j.*, ep.city as emp_city, ep.domicile_city_id as emp_domicile_city_id, u.name as user_name, u.email as user_email FROM job_posts j JOIN users u ON u.id = j.user_id LEFT JOIN employer_profiles ep ON ep.user_id = u.id WHERE j.id = ?');
+        $jobStmt->execute([$jobId]);
+        $targetJob = $jobStmt->fetch();
+
+        if (!$targetJob) {
+            flash('error', 'Lowongan tidak ditemukan.');
+            redirect($redirectUrl);
+            exit;
+        }
+
+        // 1. Check Scope: Admin Dinas scoping uses employer's domicile_city_id (NOT job location).
+        // In the current system, all admins have role='admin'. If a regional admin user has
+        // a domicile_city_id set in their session/profile, enforce it against the employer's
+        // domicile_city_id from employer_profiles. Admin Pusat (no domicile restriction) passes.
+        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
+        if ($adminDomicileCity !== '') {
+            // Employer's domicile city from employer_profiles.domicile_city_id
+            $employerDomicileCity = (string)($targetJob['emp_domicile_city_id'] ?? '');
+            if ($employerDomicileCity === '' || (
+                stripos($employerDomicileCity, $adminDomicileCity) === false &&
+                stripos($adminDomicileCity, $employerDomicileCity) === false
+            )) {
+                flash('error', 'Akses ditolak: Pemberi Kerja Individu ini berdomisili di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . '). Scope Admin Dinas mengikuti domisili_city_id Pemberi Kerja, bukan lokasi kerja.');
+                redirect($redirectUrl . '&detail_id=' . $jobId);
+                exit;
+            }
+        }
+
+        // 2. Check Assignment: current admin must be the assigned verifier (not just any admin).
+        $assignedTo = (string)($targetJob['assigned_to'] ?? '');
+        if ($assignedTo === '') {
+            flash('error', 'Lowongan harus memiliki penugasan (assignment) pemeriksa aktif terlebih dahulu sebelum keputusan Dokumen Tambahan dapat diambil.');
+            redirect($redirectUrl . '&detail_id=' . $jobId);
+            exit;
+        }
+        // Verify current admin IS the assigned verifier (compare by name or email)
+        $currentAdminName  = (string)($user['name'] ?? '');
+        $currentAdminEmail = (string)($user['email'] ?? '');
+        if ($assignedTo !== $currentAdminName && $assignedTo !== $currentAdminEmail) {
+            flash('error', 'Akses ditolak: Anda bukan pemeriksa yang ditugaskan (assigned_to) untuk lowongan ini. Hanya Admin yang ditugaskan (' . e($assignedTo) . ') yang dapat mengambil keputusan Dokumen Tambahan.');
+            redirect($redirectUrl . '&detail_id=' . $jobId);
+            exit;
+        }
+
+        // 3. Single-Final-Decision Locking Check (pre-transaction, fast guard)
+        $docStmt = db()->prepare('SELECT * FROM job_additional_documents WHERE job_id = ? ORDER BY id DESC LIMIT 1');
+        $docStmt->execute([$jobId]);
+        $currentDoc = $docStmt->fetch();
+
+        if ($targetJob['status'] !== 'ADDITIONAL_DOCUMENT_PENDING' || ($currentDoc && in_array($currentDoc['status'], ['APPROVED', 'CANCELED', 'REJECTED'], true))) {
+            flash('error', 'Keputusan untuk Dokumen Tambahan lowongan ini sudah final dan terkunci (single-final-decision locking). Perubahan keputusan tidak diizinkan.');
+            redirect($redirectUrl . '&detail_id=' . $jobId);
+            exit;
+        }
+
+        // 4. Validate Checklist Inputs (Berkas telah ditinjau = Ya, Kunjungan lapangan = Ya/Tidak)
+        if ($docReviewed !== 'Ya') {
+            flash('error', 'Pemeriksaan Dokumen Tambahan memerlukan konfirmasi bahwa "Berkas telah ditinjau = Ya".');
+            redirect($redirectUrl . '&detail_id=' . $jobId);
+            exit;
+        }
+
+        if (!in_array($fieldVisit, ['Ya', 'Tidak'], true)) {
+            flash('error', 'Pilihan "Kunjungan lapangan (Ya/Tidak)" wajib dipilih.');
+            redirect($redirectUrl . '&detail_id=' . $jobId);
+            exit;
+        }
+
+        // 5. Decision Processing — fully atomic DB transaction.
+        // All writes succeed together or rollback together. No Throwable swallowing.
+        // Race-condition locking via conditional UPDATE (WHERE status = "ADDITIONAL_DOCUMENT_PENDING").
+        try {
+            db()->beginTransaction();
+
+            if ($decision === 'reject') {
+                // Tolak → CANCELED (bukan REJECTED). Conditional update = locking.
+                $lockedRows = db()->prepare('UPDATE job_posts SET status = "CANCELED", additional_doc_status = "CANCELED", admin_notes = ?, verifier_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = "ADDITIONAL_DOCUMENT_PENDING"');
+                $lockedRows->execute([$notes, $notes, $jobId]);
+                if ($lockedRows->rowCount() === 0) {
+                    db()->rollBack();
+                    flash('error', 'Keputusan gagal: status lowongan sudah berubah oleh proses lain (race condition / concurrent decision). Silakan muat ulang halaman dan periksa kembali.');
+                    redirect($redirectUrl . '&detail_id=' . $jobId);
+                    exit;
+                }
+
+                db()->prepare('UPDATE job_additional_documents SET status = "CANCELED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = CURRENT_TIMESTAMP WHERE job_id = ?')
+                    ->execute([$docReviewed, $fieldVisit, $notes, $jobId]);
+
+                db()->commit();
+
+                record_audit_log('job', $jobId, 'ADDITIONAL_DOC_CANCELED', "Dokumen Tambahan Ditolak (Berkas ditinjau: {$docReviewed}, Kunjungan lapangan: {$fieldVisit}). Pengajuan lowongan diakhiri sebagai CANCELED. Catatan: {$notes}", $user['name']);
+                notify_user((int)$targetJob['user_id'], 'Pengajuan Lowongan Dibatalkan', "Dokumen tambahan untuk lowongan '{$targetJob['title']}' ditolak oleh Admin. Pengajuan lowongan telah diakhiri (CANCELED). Catatan: {$notes}", 'danger', $jobId);
+                flash('success', 'Dokumen Tambahan Ditolak. Pengajuan lowongan berhasil diakhiri sebagai Dibatalkan (CANCELED).');
+
+            } elseif ($decision === 'approve') {
+                // Setujui → Rules Engine Layer 3.
+                // HANYA menghitung lowongan yang benar-benar PUBLISHED (published_at IS NOT NULL).
+                // Tidak ada fallback ke created_at.
+                $startOfMonth = date('Y-m-01 00:00:00');
+                $endOfMonth   = date('Y-m-t 23:59:59');
+
+                $stmtL3 = db()->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND id != ?');
+                $stmtL3->execute([(int)$targetJob['user_id'], $startOfMonth, $endOfMonth, $jobId]);
+                $currentMonthlyPublishedQuota = (int)$stmtL3->fetchColumn();
+                $requestedQuota = max(1, (int)($targetJob['quota'] ?? 1));
+                $totalMonthlyQuota = $currentMonthlyPublishedQuota + $requestedQuota;
+
+                if ($totalMonthlyQuota > 10) {
+                    // Layer 3 melebihi batas → CANCELED
+                    $cancelReason = "Total kuota lowongan yang dipublikasikan bulan ini mencapai {$totalMonthlyQuota} posisi (melebihi batas maksimal 10 posisi). Pengajuan lowongan diakhiri sebagai CANCELED sesuai aturan Rules Engine Layer 3.";
+                    $fullNotes = $notes !== '' ? ($notes . ' | ' . $cancelReason) : $cancelReason;
+
+                    $lockedRows = db()->prepare('UPDATE job_posts SET status = "CANCELED", additional_doc_status = "CANCELED", admin_notes = ?, verifier_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = "ADDITIONAL_DOCUMENT_PENDING"');
+                    $lockedRows->execute([$fullNotes, $fullNotes, $jobId]);
+                    if ($lockedRows->rowCount() === 0) {
+                        db()->rollBack();
+                        flash('error', 'Keputusan gagal: status lowongan sudah berubah oleh proses lain (race condition). Silakan muat ulang halaman dan periksa kembali.');
+                        redirect($redirectUrl . '&detail_id=' . $jobId);
+                        exit;
+                    }
+
+                    db()->prepare('UPDATE job_additional_documents SET status = "CANCELED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = CURRENT_TIMESTAMP WHERE job_id = ?')
+                        ->execute([$docReviewed, $fieldVisit, $fullNotes, $jobId]);
+
+                    db()->commit();
+
+                    record_audit_log('job', $jobId, 'ADDITIONAL_DOC_CANCELED_LAYER3', "Dokumen Tambahan ditinjau, namun evaluasi Rules Engine Layer 3 melebihi batas kuota bulanan ({$totalMonthlyQuota}/10). Status lowongan diubah menjadi CANCELED.", $user['name']);
+                    notify_user((int)$targetJob['user_id'], 'Pengajuan Lowongan Dibatalkan (Batas Kuota Bulanan)', "Lowongan '{$targetJob['title']}' tidak dapat dilanjutkan karena total kuota lowongan bulan ini mencapai {$totalMonthlyQuota} (maksimal 10 posisi). Pengajuan diakhiri sebagai CANCELED.", 'danger', $jobId);
+                    flash('warning', "Dokumen Tambahan telah ditinjau, namun total kuota lowongan bulan berjalan mencapai {$totalMonthlyQuota} posisi (melebihi batas maksimal 10 posisi). Pengajuan lowongan diakhiri sebagai Dibatalkan (CANCELED).");
+
+                } else {
+                    // Layer 3 lolos → promosi ke Menunggu Verifikasi + buat job_verifications case
+                    $lockedRows = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_status = "APPROVED", verifier_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = "ADDITIONAL_DOCUMENT_PENDING"');
+                    $lockedRows->execute([$notes, $jobId]);
+                    if ($lockedRows->rowCount() === 0) {
+                        db()->rollBack();
+                        flash('error', 'Keputusan gagal: status lowongan sudah berubah oleh proses lain (race condition). Silakan muat ulang halaman dan periksa kembali.');
+                        redirect($redirectUrl . '&detail_id=' . $jobId);
+                        exit;
+                    }
+
+                    db()->prepare('UPDATE job_additional_documents SET status = "APPROVED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = CURRENT_TIMESTAMP WHERE job_id = ?')
+                        ->execute([$docReviewed, $fieldVisit, $notes, $jobId]);
+
+                    db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, additional_doc_required, layer_flags) VALUES (?, ?, ?, "PENDING", 1, "ADDITIONAL_DOC_APPROVED")')
+                        ->execute([$jobId, $targetJob['user_id'], $targetJob['kbji_code']]);
+
+                    db()->commit();
+
+                    record_audit_log('job', $jobId, 'ADDITIONAL_DOC_APPROVED', "Dokumen Tambahan disetujui (Berkas ditinjau: {$docReviewed}, Kunjungan lapangan: {$fieldVisit}). Evaluasi Rules Engine Layer 3 lolos (total kuota: {$totalMonthlyQuota}/10). Lowongan masuk ke antrean Verifikasi Lowongan reguler. Catatan: {$notes}", $user['name']);
+                    notify_user((int)$targetJob['user_id'], 'Dokumen Tambahan Disetujui', "Dokumen tambahan untuk lowongan '{$targetJob['title']}' telah disetujui Admin. Lowongan Anda sekarang sedang dalam antrean Verifikasi Lowongan.", 'success', $jobId);
+                    flash('success', "Dokumen Tambahan berhasil disetujui (Evaluasi Layer 3 lolos: total kuota {$totalMonthlyQuota}/10). Lowongan kini masuk ke antrean Verifikasi Lowongan normal.");
+                }
+
+            } else {
+                db()->rollBack();
+                flash('error', 'Keputusan tidak valid. Gunakan tombol Setujui atau Tolak.');
+                redirect($redirectUrl . '&detail_id=' . $jobId);
+                exit;
+            }
+
+        } catch (Throwable $e) {
+            if (db()->inTransaction()) {
+                db()->rollBack();
+            }
+            error_log('[verify_additional_doc] Transaction failed: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            flash('error', 'Terjadi kesalahan database saat memproses keputusan: ' . $e->getMessage() . '. Seluruh perubahan telah dibatalkan (rollback).');
+            redirect($redirectUrl . '&detail_id=' . $jobId);
+            exit;
+        }
+
+        redirect($redirectUrl);
+        exit;
+    }
 }
 
 // --- FETCH DATA FOR DIRECTORY INDIVIDUAL ---
@@ -505,14 +690,26 @@ if ($view === 'verifikasi_job') {
         $params = array_merge($params, [$like, $like, $like, $like]);
     }
 
-    if ($tab === 'process') {
+    if ($tab === 'additional_doc') {
+        $query .= ' AND j.status = "ADDITIONAL_DOCUMENT_PENDING"';
+    } elseif ($tab === 'process') {
         $query .= ' AND j.status = "Menunggu Verifikasi"';
     } elseif ($tab === 'approved') {
         $query .= ' AND j.status = "Tayang"';
     } elseif ($tab === 'revision') {
         $query .= ' AND j.status = "Perlu Direvisi"';
     } elseif ($tab === 'rejected') {
-        $query .= ' AND j.status = "Ditolak"';
+        $query .= ' AND (j.status = "Ditolak" OR j.status = "CANCELED")';
+    }
+
+    // Admin Dinas Scope Filter (national scope for Admin Pusat)
+    if ($user['role'] === 'admin_dinas' || (!empty($user['domicile_city_id']) && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
+        $adminCity = $user['domicile_city_id'] ?: ($user['city'] ?? '');
+        if ($adminCity !== '') {
+            $query .= ' AND (ep.city LIKE ? OR j.location LIKE ?)';
+            $params[] = '%' . $adminCity . '%';
+            $params[] = '%' . $adminCity . '%';
+        }
     }
 
     $query .= ' ORDER BY j.created_at DESC';
@@ -523,12 +720,16 @@ if ($view === 'verifikasi_job') {
     // If detail_id is requested for job
     $selectedJob = null;
     $auditLogs = [];
+    $additionalDocCase = null;
     if ($detailId > 0) {
         $stmtSel = db()->prepare('SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, ep.phone, ep.address, u.name as user_name, u.email as user_email FROM job_posts j JOIN users u ON u.id = j.user_id LEFT JOIN employer_profiles ep ON ep.user_id = u.id WHERE j.id = ? LIMIT 1');
         $stmtSel->execute([$detailId]);
         $selectedJob = $stmtSel->fetch();
         if ($selectedJob) {
             $auditLogs = fetch_audit_logs('job', $detailId);
+            $docStmt = db()->prepare('SELECT * FROM job_additional_documents WHERE job_id = ? ORDER BY id DESC LIMIT 1');
+            $docStmt->execute([$detailId]);
+            $additionalDocCase = $docStmt->fetch();
         }
     }
 }
@@ -1833,74 +2034,217 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 </div>
                             </div>
 
-                            <!-- COMPLIANCE CHECKLIST MATRIX (4 CATEGORIES) -->
-                            <div class="section-card">
-                                <div class="section-card-title">
-                                    <span>Matriks Kepatuhan Verifikasi Lowongan</span>
-                                    <small style="font-size:11px; font-weight:normal; color:#64748b;">(4 Kategori Wajib FSD)</small>
-                                </div>
+                            <!-- COMPLIANCE CHECKLIST MATRIX OR ADDITIONAL DOC REVIEW -->
+                            <?php if ($selectedJob['status'] === 'ADDITIONAL_DOCUMENT_PENDING'): ?>
+                                <div class="section-card">
+                                    <div class="section-card-title">
+                                        <span>Pemeriksaan Dokumen Tambahan</span>
+                                        <small style="font-size:11px; font-weight:normal; color:#d97706;">(Lowongan ke-4+ KBJI Sama)</small>
+                                    </div>
 
-                                <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>" id="jobVerificationForm">
-                                    <input type="hidden" name="admin_action" value="verify_job">
-                                    <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
+                                    <?php if (empty($selectedJob['assigned_to'])): ?>
+                                        <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px 16px; border-radius:8px; font-size:13px; margin-bottom:16px;">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Penugasan Diperlukan:</strong> Case ini belum diambil. Silakan klik tombol <strong>Ambil Case Lowongan</strong> di pojok kanan atas sebelum memberikan keputusan.
+                                        </div>
+                                    <?php endif; ?>
 
-                                    <?php 
-                                        $savedChecklist = json_decode($selectedJob['compliance_checklist'] ?? '{}', true) ?: [];
-                                        $categories = compliance_categories();
-                                    ?>
-
-                                    <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
-                                        <?php foreach ($categories as $index => $cat): ?>
+                                    <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:14px; border-radius:10px; font-size:13px; margin-bottom:18px;">
+                                        <strong><i class="fa-solid fa-triangle-exclamation"></i> Dokumen / Keterangan Tambahan dari Pemberi Kerja:</strong>
+                                        <div style="margin-top:8px; line-height:1.5;">
                                             <?php 
-                                                $slug = 'cat_' . md5($cat);
-                                                $catData = $savedChecklist[$cat] ?? ['status' => 'Patuh', 'note' => ''];
-                                                $isNonCompliant = $catData['status'] === 'Tidak Patuh';
+                                                $docFile = $selectedJob['additional_doc_file'] ?: ($additionalDocCase['document_file'] ?? '');
+                                                if (!empty($docFile)): 
                                             ?>
-                                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
-                                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                                    <span style="font-weight:700; font-size:13px; color:#1e293b;">
-                                                        <?php echo ($index + 1) . '. ' . e($cat); ?>
-                                                    </span>
-                                                    <div style="display:flex; gap:12px; font-size:12px; font-weight:600;">
-                                                        <label style="display:flex; align-items:center; gap:4px; color:#059669; cursor:pointer;">
-                                                            <input type="radio" name="<?php echo $slug; ?>_status" value="Patuh" <?php echo !$isNonCompliant ? 'checked' : ''; ?> onchange="updateJobCompliance()"> Patuh
-                                                        </label>
-                                                        <label style="display:flex; align-items:center; gap:4px; color:#dc2626; cursor:pointer;">
-                                                            <input type="radio" name="<?php echo $slug; ?>_status" value="Tidak Patuh" <?php echo $isNonCompliant ? 'checked' : ''; ?> onchange="updateJobCompliance()"> Tidak Patuh
-                                                        </label>
-                                                    </div>
+                                                <div style="margin-bottom:8px;">
+                                                    <i class="fa-solid fa-paperclip"></i> Berkas Lampiran: 
+                                                    <a href="<?php echo e($docFile); ?>" target="_blank" style="color:#0284c7; font-weight:700; text-decoration:underline;">Lihat/Unduh Berkas Lampiran</a>
                                                 </div>
-                                                <div class="note-box-wrapper">
-                                                    <input type="text" name="<?php echo $slug; ?>_note" value="<?php echo e($catData['note']); ?>" placeholder="Catatan item (Wajib jika Tidak Patuh)..." style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px;" oninput="updateJobCompliance()">
+                                            <?php else: ?>
+                                                <div style="color:#64748b; font-style:italic; margin-bottom:8px;">Belum ada file berkas yang diunggah.</div>
+                                            <?php endif; ?>
+
+                                            <div>
+                                                <strong>Keterangan / Justifikasi Kebutuhan:</strong><br>
+                                                <div style="background:#fff; border:1px solid #fcd34d; border-radius:6px; padding:10px; margin-top:4px; font-size:12px; color:#1e293b;">
+                                                    <?php 
+                                                        $notesTxt = $selectedJob['additional_doc_notes'] ?: ($additionalDocCase['description'] ?? '');
+                                                        echo $notesTxt !== '' ? nl2br(e($notesTxt)) : '<em style="color:#94a3b8;">Belum ada catatan keterangan dari pemberi kerja.</em>';
+                                                    ?>
                                                 </div>
                                             </div>
-                                        <?php endforeach; ?>
-                                    </div>
-
-                                    <div style="margin-bottom:14px;">
-                                        <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Catatan Umum Verifikator:</label>
-                                        <textarea name="verifier_notes" placeholder="Berikan catatan detail keputusan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:60px;"><?php echo e($selectedJob['verifier_notes']); ?></textarea>
-                                    </div>
-
-                                    <div style="margin-bottom:16px;">
-                                        <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
-                                        <select name="decision" id="decisionSelect" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;" onchange="updateJobCompliance()">
-                                            <option value="approve" id="optApprove">Setujui (Tayang)</option>
-                                            <option value="revision">Revisi (Kembalikan ke Pemberi Kerja)</option>
-                                            <option value="reject">Tolak Lowongan</option>
-                                        </select>
-                                        <div id="approvalWarningNotice" style="display:none; color:#dc2626; font-size:12px; margin-top:6px; font-weight:600;">
-                                            <i class="fa-solid fa-triangle-exclamation"></i> Terdapat kategori yang "Tidak Patuh". Keputusan "Setujui" tidak valid. Silakan pilih "Revisi" atau "Tolak".
                                         </div>
                                     </div>
 
-                                    <div style="display:flex; justify-content:flex-end;">
-                                        <button type="submit" id="btnSubmitJobDecision" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
-                                            Simpan Keputusan Verifikasi
-                                        </button>
+                                    <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>" id="additionalDocForm">
+                                        <input type="hidden" name="admin_action" value="verify_additional_doc">
+                                        <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
+
+                                        <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:18px;">
+                                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+                                                <div>
+                                                    <strong style="font-size:13px; color:#1e293b;">1. Berkas telah ditinjau</strong>
+                                                    <div class="tiny" style="color:#64748b;">Wajib "Ya" untuk mengaktifkan tombol keputusan</div>
+                                                </div>
+                                                <div style="display:flex; gap:16px; font-size:13px; font-weight:600;">
+                                                    <label style="display:flex; align-items:center; gap:4px; color:#059669; cursor:pointer;">
+                                                        <input type="radio" name="doc_reviewed" value="Ya" onchange="checkAddDocRadios()" required> Ya
+                                                    </label>
+                                                    <label style="display:flex; align-items:center; gap:4px; color:#dc2626; cursor:pointer;">
+                                                        <input type="radio" name="doc_reviewed" value="Tidak" onchange="checkAddDocRadios()"> Tidak
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+                                                <div>
+                                                    <strong style="font-size:13px; color:#1e293b;">2. Kunjungan lapangan</strong>
+                                                    <div class="tiny" style="color:#64748b;">Pemeriksaan verifikasi fisik lokasi (Pilihan "Tidak" tetap boleh disetujui)</div>
+                                                </div>
+                                                <div style="display:flex; gap:16px; font-size:13px; font-weight:600;">
+                                                    <label style="display:flex; align-items:center; gap:4px; color:#059669; cursor:pointer;">
+                                                        <input type="radio" name="field_visit" value="Ya" onchange="checkAddDocRadios()" required> Ya
+                                                    </label>
+                                                    <label style="display:flex; align-items:center; gap:4px; color:#64748b; cursor:pointer;">
+                                                        <input type="radio" name="field_visit" value="Tidak" onchange="checkAddDocRadios()"> Tidak
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="addDocValidationHint" style="font-size:12px; margin-bottom:14px; padding:8px 12px; background:#f1f5f9; border-radius:6px;">
+                                            <span style="color:#64748b;"><i class="fa-solid fa-circle-info"></i> Tombol Setujui dan Tolak hanya aktif jika <strong>Berkas telah ditinjau = Ya</strong> serta pilihan <strong>Kunjungan lapangan (Ya/Tidak)</strong> sudah diisi.</span>
+                                        </div>
+
+                                        <div style="margin-bottom:16px;">
+                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Catatan Hasil Peninjauan:</label>
+                                            <textarea name="verifier_notes" placeholder="Berikan catatan hasil peninjauan berkas / verifikasi dokumen..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:70px;"></textarea>
+                                        </div>
+
+                                        <div style="display:flex; justify-content:flex-end; gap:10px;">
+                                            <button type="submit" name="decision" value="reject" id="btnRejectAddDoc" class="danger-btn" style="background:#ef4444; color:#fff; border:none; padding:9px 18px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer;" disabled onclick="return confirm('Apakah Anda yakin ingin MENOLAK Dokumen Tambahan dan membatalkan pengajuan lowongan ini (CANCELED)?')">
+                                                <i class="fa-solid fa-xmark"></i> Tolak (CANCELED)
+                                            </button>
+                                            <button type="submit" name="decision" value="approve" id="btnApproveAddDoc" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;" disabled>
+                                                <i class="fa-solid fa-check"></i> Setujui Dokumen (Lanjut Layer 3)
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <script>
+                                    function checkAddDocRadios() {
+                                        const docRev = document.querySelector('input[name="doc_reviewed"]:checked');
+                                        const fldVis = document.querySelector('input[name="field_visit"]:checked');
+                                        const btnApp = document.getElementById('btnApproveAddDoc');
+                                        const btnRej = document.getElementById('btnRejectAddDoc');
+                                        const hint = document.getElementById('addDocValidationHint');
+                                        
+                                        const canDecide = (docRev && docRev.value === 'Ya') && (fldVis && (fldVis.value === 'Ya' || fldVis.value === 'Tidak'));
+                                        if (btnApp) btnApp.disabled = !canDecide;
+                                        if (btnRej) btnRej.disabled = !canDecide;
+                                        if (hint) {
+                                            if (canDecide) {
+                                                hint.innerHTML = '<span style="color:#059669; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Syarat peninjauan terpenuhi. Tombol Setujui dan Tolak telah aktif.</span>';
+                                            } else {
+                                                hint.innerHTML = '<span style="color:#64748b;"><i class="fa-solid fa-circle-info"></i> Tombol Setujui dan Tolak hanya aktif jika <strong>Berkas telah ditinjau = Ya</strong> serta pilihan <strong>Kunjungan lapangan (Ya/Tidak)</strong> sudah diisi.</span>';
+                                            }
+                                        }
+                                    }
+                                    document.addEventListener('DOMContentLoaded', checkAddDocRadios);
+                                    </script>
+                                </div>
+                            <?php else: ?>
+                                <?php if (!empty($selectedJob['additional_doc_required']) || $additionalDocCase): ?>
+                                    <div class="section-card" style="border-left:4px solid #0284c7;">
+                                        <div class="section-card-title">
+                                            <span>Pemeriksaan Dokumen Tambahan (Terkunci)</span>
+                                            <span class="pill-badge <?php echo ($additionalDocCase['status'] ?? '') === 'APPROVED' ? 'verified' : 'danger'; ?>">
+                                                ● Status: <?php echo e($additionalDocCase['status'] ?? $selectedJob['additional_doc_status'] ?? '-'); ?>
+                                            </span>
+                                        </div>
+                                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:13px; margin-bottom:12px;">
+                                            <div style="color:#0284c7; font-weight:700; margin-bottom:6px;">
+                                                <i class="fa-solid fa-lock"></i> Single-Final-Decision Locked: Keputusan untuk Dokumen Tambahan lowongan ini sudah final dan terkunci.
+                                            </div>
+                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+                                                <div><strong>Berkas Ditinjau:</strong> <?php echo e($additionalDocCase['doc_reviewed'] ?? 'Ya'); ?></div>
+                                                <div><strong>Kunjungan Lapangan:</strong> <?php echo e($additionalDocCase['field_visit'] ?? '-'); ?></div>
+                                                <div style="grid-column: span 2;"><strong>Catatan Admin:</strong> <?php echo e($additionalDocCase['admin_notes'] ?? '-'); ?></div>
+                                                <?php if (!empty($additionalDocCase['reviewed_at'])): ?>
+                                                    <div style="grid-column: span 2; font-size:11px; color:#64748b;">Ditinjau pada: <?php echo date('d M Y, H:i', strtotime($additionalDocCase['reviewed_at'])); ?></div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
                                     </div>
-                                </form>
-                            </div>
+                                <?php endif; ?>
+
+                                <div class="section-card">
+                                    <div class="section-card-title">
+                                        <span>Matriks Kepatuhan Verifikasi Lowongan</span>
+                                        <small style="font-size:11px; font-weight:normal; color:#64748b;">(4 Kategori Wajib FSD)</small>
+                                    </div>
+
+                                    <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>" id="jobVerificationForm">
+                                        <input type="hidden" name="admin_action" value="verify_job">
+                                        <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
+
+                                        <?php 
+                                            $savedChecklist = json_decode($selectedJob['compliance_checklist'] ?? '{}', true) ?: [];
+                                            $categories = compliance_categories();
+                                        ?>
+
+                                        <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
+                                            <?php foreach ($categories as $index => $cat): ?>
+                                                <?php 
+                                                    $slug = 'cat_' . md5($cat);
+                                                    $catData = $savedChecklist[$cat] ?? ['status' => 'Patuh', 'note' => ''];
+                                                    $isNonCompliant = $catData['status'] === 'Tidak Patuh';
+                                                ?>
+                                                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+                                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                                        <span style="font-weight:700; font-size:13px; color:#1e293b;">
+                                                            <?php echo ($index + 1) . '. ' . e($cat); ?>
+                                                        </span>
+                                                        <div style="display:flex; gap:12px; font-size:12px; font-weight:600;">
+                                                            <label style="display:flex; align-items:center; gap:4px; color:#059669; cursor:pointer;">
+                                                                <input type="radio" name="<?php echo $slug; ?>_status" value="Patuh" <?php echo !$isNonCompliant ? 'checked' : ''; ?> onchange="updateJobCompliance()"> Patuh
+                                                            </label>
+                                                            <label style="display:flex; align-items:center; gap:4px; color:#dc2626; cursor:pointer;">
+                                                                <input type="radio" name="<?php echo $slug; ?>_status" value="Tidak Patuh" <?php echo $isNonCompliant ? 'checked' : ''; ?> onchange="updateJobCompliance()"> Tidak Patuh
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="note-box-wrapper">
+                                                        <input type="text" name="<?php echo $slug; ?>_note" value="<?php echo e($catData['note']); ?>" placeholder="Catatan item (Wajib jika Tidak Patuh)..." style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px;" oninput="updateJobCompliance()">
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+
+                                        <div style="margin-bottom:14px;">
+                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Catatan Umum Verifikator:</label>
+                                            <textarea name="verifier_notes" placeholder="Berikan catatan detail keputusan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:60px;"><?php echo e($selectedJob['verifier_notes']); ?></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom:16px;">
+                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
+                                            <select name="decision" id="decisionSelect" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;" onchange="updateJobCompliance()">
+                                                <option value="approve" id="optApprove">Setujui (Tayang)</option>
+                                                <option value="revision">Revisi (Kembalikan ke Pemberi Kerja)</option>
+                                                <option value="reject">Tolak Lowongan</option>
+                                            </select>
+                                            <div id="approvalWarningNotice" style="display:none; color:#dc2626; font-size:12px; margin-top:6px; font-weight:600;">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Terdapat kategori yang "Tidak Patuh". Keputusan "Setujui" tidak valid. Silakan pilih "Revisi" atau "Tolak".
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex; justify-content:flex-end;">
+                                            <button type="submit" id="btnSubmitJobDecision" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
+                                                Simpan Keputusan Verifikasi
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <!-- RIGHT COLUMN: AUDIT LOG TIMELINE -->
@@ -1963,6 +2307,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                             <div class="status-tab-list">
                                 <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=all" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
                                 <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=process" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=additional_doc" class="status-tab-item <?php echo $tab === 'additional_doc' ? 'active' : ''; ?>">Dokumen Tambahan</a>
                                 <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=revision" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
                                 <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=approved" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Disetujui</a>
                                 <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>

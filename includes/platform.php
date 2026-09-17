@@ -50,9 +50,8 @@ function ensure_platform_schema(): void
     }
 
     try {
-        $pdo->exec("ALTER TABLE job_posts MODIFY status ENUM('Draft','Menunggu Verifikasi','Perlu Revisi','Tayang','Ditutup','Ditolak','Penuh') NOT NULL DEFAULT 'Draft'");
+        $pdo->exec("ALTER TABLE job_posts MODIFY status VARCHAR(60) NOT NULL DEFAULT 'Draft'");
     } catch (Throwable $ignored) {
-        // ENUM may already include the extra values.
     }
 
     $pdo->exec('CREATE TABLE IF NOT EXISTS notifications (
@@ -144,8 +143,10 @@ function canonical_job_statuses(): array
     return [
         'Draft',
         'Menunggu Verifikasi',
+        'ADDITIONAL_DOCUMENT_PENDING',
         'Perlu Direvisi',
         'Ditolak',
+        'CANCELED',
         'Terjadwal Tayang',
         'Tayang',
         'Ditangguhkan',
@@ -159,14 +160,17 @@ function normalize_job_status(string $status): string
 {
     $trimmed = trim($status);
     return match ($trimmed) {
-        'Dikirim/Menunggu Verifikasi', 'Dikirim', 'Menunggu Persetujuan' => 'Menunggu Verifikasi',
+        'Dikirim/Menunggu Verifikasi', 'Dikirim', 'Menunggu Persetujuan', 'PENDING_JOB_VERIFICATION' => 'Menunggu Verifikasi',
+        'ADDITIONAL_DOCUMENT_PENDING', 'Menunggu Dokumen Tambahan', 'Dokumen Tambahan Diperlukan', 'Dokumen Tambahan' => 'ADDITIONAL_DOCUMENT_PENDING',
         'Perlu Revisi', 'Revisi' => 'Perlu Direvisi',
         'Lowongan Aktif', 'Disetujui', 'Aktif' => 'Tayang',
         'Tutup' => 'Ditutup',
         'Expired' => 'Kedaluwarsa',
         'Suspended' => 'Ditangguhkan',
         'Blocked' => 'Diblokir',
+        'CANCELED', 'Dibatalkan', 'Batal' => 'CANCELED',
         'Draft' => 'Draft',
+        'Menunggu Verifikasi' => 'Menunggu Verifikasi',
         'Perlu Direvisi' => 'Perlu Direvisi',
         'Ditolak' => 'Ditolak',
         'Terjadwal Tayang' => 'Terjadwal Tayang',
@@ -185,8 +189,10 @@ function job_status_meta(string $status): array
     return match ($canonical) {
         'Draft' => ['label' => 'Draft', 'class' => 'draft'],
         'Menunggu Verifikasi' => ['label' => 'Menunggu Verifikasi', 'class' => 'pending'],
+        'ADDITIONAL_DOCUMENT_PENDING' => ['label' => 'Dokumen Tambahan Diperlukan', 'class' => 'warning'],
         'Perlu Direvisi' => ['label' => 'Perlu Direvisi', 'class' => 'revision'],
         'Ditolak' => ['label' => 'Ditolak', 'class' => 'rejected'],
+        'CANCELED' => ['label' => 'Dibatalkan (CANCELED)', 'class' => 'rejected'],
         'Terjadwal Tayang' => ['label' => 'Terjadwal Tayang', 'class' => 'scheduled'],
         'Tayang' => ['label' => 'Tayang', 'class' => 'live'],
         'Ditangguhkan' => ['label' => 'Ditangguhkan', 'class' => 'suspended'],
@@ -693,25 +699,21 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
     $endOfMonth = date('Y-m-t 23:59:59');
 
     // LAYER 2: Monthly publication frequency of same-KBJI (1-3: normal, 4+: ADDITIONAL_DOCUMENT_PENDING)
-    // Only count PUBLISHED jobs this month (Draft, Pending, Perlu Direvisi, Ditolak do not count)
-    // Child reposts (parent_job_id IS NOT NULL) do not count towards same-KBJI frequency
-    $stmtL2 = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE user_id = ? AND kbji_code = ? AND parent_job_id IS NULL AND (
-        (published_at IS NOT NULL AND published_at BETWEEN ? AND ?)
-        OR (published_at IS NULL AND status IN ("Tayang", "Ditutup", "Kedaluwarsa") AND created_at BETWEEN ? AND ?)
-    ) AND id != ?');
-    $stmtL2->execute([$userId, $kbjiCode, $startOfMonth, $endOfMonth, $startOfMonth, $endOfMonth, $jobId ?? 0]);
+    // Only count PUBLISHED jobs this month (Draft, Pending, Perlu Direvisi, Ditolak do not count).
+    // STRICTLY use published_at — no created_at fallback.
+    // Child reposts (parent_job_id IS NOT NULL) do not count towards same-KBJI frequency.
+    $stmtL2 = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE user_id = ? AND kbji_code = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND id != ?');
+    $stmtL2->execute([$userId, $kbjiCode, $startOfMonth, $endOfMonth, $jobId ?? 0]);
     $publishedSameKbjiCount = (int)$stmtL2->fetchColumn();
 
     $additionalDocRequired = ($publishedSameKbjiCount >= 3);
 
     // LAYER 3: Monthly total requested quota limit (max 10)
-    // Sum quota of original PUBLISHED jobs in current month + new requested quota
-    // Continuation reposts do not add to monthly quota counter
-    $stmtL3 = $pdo->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND (
-        (published_at IS NOT NULL AND published_at BETWEEN ? AND ?)
-        OR (published_at IS NULL AND status IN ("Tayang", "Ditutup", "Kedaluwarsa") AND created_at BETWEEN ? AND ?)
-    ) AND id != ?');
-    $stmtL3->execute([$userId, $startOfMonth, $endOfMonth, $startOfMonth, $endOfMonth, $jobId ?? 0]);
+    // Sum quota of original PUBLISHED jobs in current month + new requested quota.
+    // Continuation reposts do not add to monthly quota counter.
+    // STRICTLY use published_at — no created_at fallback.
+    $stmtL3 = $pdo->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND id != ?');
+    $stmtL3->execute([$userId, $startOfMonth, $endOfMonth, $jobId ?? 0]);
     $currentMonthlyPublishedQuota = (int)$stmtL3->fetchColumn();
 
     $totalQuota = $currentMonthlyPublishedQuota + $requestedQuota;
