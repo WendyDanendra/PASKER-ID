@@ -160,16 +160,17 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pencari Kerja - Karirhub</title>
+    <title>Karirhub - Pencari Kerja</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/app.css?v=seeker-jobs-1">
+    <link rel="stylesheet" href="assets/app.css?v=seeker-std-1">
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell" style="width:100%;height:100vh;display:flex;overflow:hidden;">
+    <!-- SIDEBAR 260px (COLLAPSIBLE) -->
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-mark"><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="brand-mark"><i class="fa-solid fa-briefcase"></i></div>
             <div class="brand-text">
                 <h1>Karirhub</h1>
                 <p>Pencari Kerja</p>
@@ -182,332 +183,448 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             </a>
             <a class="menu-item <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>" href="seeker.php?page=jobs">
                 <i class="fa-solid fa-briefcase"></i>
-                <span class="menu-label"><strong>Lowongan Kerja</strong><span>Cari & lamar</span></span>
+                <span class="menu-label"><strong>Lowongan Kerja</strong><span>Cari & lamar loker</span></span>
+            </a>
+            <a class="menu-item" href="profile-seeker.php">
+                <i class="fa-solid fa-user-pen"></i>
+                <span class="menu-label"><strong>Edit Profil</strong><span>Biodata & keahlian</span></span>
             </a>
         </div>
         <div class="sidebar-spacer"></div>
         <div style="padding:0 4px">
             <div class="profile-card">
                 <div class="profile-avatar"><?php echo e($initials); ?></div>
-                <div>
-                    <strong><?php echo e($user['name']); ?></strong>
-                    <span>Pencari kerja</span>
+                <div style="overflow:hidden;text-overflow:ellipsis;">
+                    <strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo e($user['name']); ?></strong>
+                    <span>Pencari Kerja</span>
                 </div>
             </div>
             <a href="logout.php" class="sidebar-logout"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
         </div>
     </aside>
 
+    <!-- MAIN CONTAINER -->
     <div class="main">
+        <!-- TOPBAR 68px -->
         <header class="topbar">
-            <button id="sidebarToggle" class="sidebar-toggle" type="button"><i class="fa-solid fa-bars"></i></button>
+            <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Toggle Sidebar"><i class="fa-solid fa-bars"></i></button>
             <div class="crumbs">
                 <span>Beranda</span><span>&gt;</span>
                 <strong><?php echo $page === 'job' ? 'Detail Lowongan' : ($page === 'employer' ? 'Profil Pemberi Kerja' : ($page === 'jobs' ? 'Lowongan Kerja' : 'Dasbor')); ?></strong>
             </div>
+            
+            <form method="get" action="seeker.php" class="search-bar">
+                <input type="hidden" name="page" value="jobs">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan pekerjaan, posisi, atau keahlian...">
+            </form>
+
             <div class="top-actions">
                 <?php echo render_notif_dropdown($notifications, $unread); ?>
                 <div class="company-chip">
-                    <div><strong><?php echo e($user['name']); ?></strong><span>Pencari kerja</span></div>
+                    <div class="profile-avatar" style="width:28px;height:28px;font-size:11px;"><?php echo e($initials); ?></div>
+                    <div>
+                        <strong><?php echo e($user['name']); ?></strong>
+                        <span>Pencari Kerja</span>
+                    </div>
                 </div>
                 <a class="action-chip" href="logout.php">Logout</a>
             </div>
         </header>
 
-        <div class="seeker-content">
-            <?php if ($flash = get_flash()): ?>
-                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>"><?php echo e($flash['message']); ?></div>
-            <?php endif; ?>
+        <!-- CONTENT AREA -->
+        <div class="content">
+            <div class="page active">
+                <?php if ($flash = get_flash()): ?>
+                    <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
+                        <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
+                        <?php echo e($flash['message']); ?>
+                    </div>
+                <?php endif; ?>
 
-            <?php if ($page === 'dashboard'): ?>
-                <div class="hero-card" style="padding:20px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-                    <div>
-                        <h1 style="font-size:28px;margin-bottom:6px">Halo, <?php echo e($user['name']); ?></h1>
-                        <p style="color:#64748b">Profil kamu sudah lengkap. Lamar lowongan yang sudah disetujui admin.</p>
-                    </div>
-                    <a class="primary-btn" href="profile-seeker.php"><i class="fa-solid fa-pen-to-square"></i> Edit Profil</a>
-                </div>
-                <div class="metric-grid" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px">
-                    <div class="section-card" style="padding:16px"><span>Biodata</span><strong style="display:block;font-size:24px">Lengkap</strong></div>
-                    <div class="section-card" style="padding:16px"><span>Pengalaman</span><strong style="display:block;font-size:24px"><?php echo $experienceCount; ?></strong></div>
-                    <div class="section-card" style="padding:16px"><span>Pelatihan</span><strong style="display:block;font-size:24px"><?php echo $trainingCount; ?></strong></div>
-                    <div class="section-card" style="padding:16px"><span>Pendidikan</span><strong style="display:block;font-size:24px"><?php echo $educationCount; ?></strong></div>
-                    <div class="section-card" style="padding:16px"><span>Keahlian</span><strong style="display:block;font-size:24px"><?php echo $skillCount + $languageCount; ?></strong></div>
-                </div>
-                <div class="section-card" style="padding:16px;margin-top:16px">
-                    <h3 style="margin-bottom:10px">Riwayat Profil</h3>
-                    <div class="tiny">NIK <?php echo e($profile['nik'] ?? '-'); ?> · <?php echo e($profile['phone'] ?? '-'); ?></div>
-                    <p style="margin-top:8px;font-size:13px;color:#475569"><?php echo e($profile['domicile_address'] ?? '-'); ?></p>
-                    <div style="margin-top:12px">
-                        <?php foreach ($skillRows as $row): ?>
-                            <span class="status-chip ok"><?php echo e($row['skill_name']); ?></span>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php elseif ($page === 'job' && $detailJob): ?>
-                <?php
-                    $applied = in_array((int) $detailJob['id'], $appliedIds, true);
-                    $employerName = job_employer_display_name($detailJob);
-                    $employerInitial = strtoupper(mb_substr($employerName, 0, 1));
-                    $photo = trim((string) ($detailJob['workplace_photo'] ?? ''));
-                    $descriptionHtml = job_rich_html($detailData['description']);
-                    $specialHtml = job_rich_html($detailData['special_requirements']);
-                    $genderText = $detailData['genders'] ? implode(' / ', $detailData['genders']) : 'Tidak ada preferensi';
-                    $maritalText = $detailData['marital_statuses'] ? implode(' / ', $detailData['marital_statuses']) : 'Tidak ada preferensi';
-                    $physicalText = $detailData['physical_conditions'] ? implode(' & ', $detailData['physical_conditions']) : '-';
-                ?>
-                <div class="job-detail-page">
-                    <a class="back-link" href="seeker.php?page=jobs"><i class="fa-solid fa-arrow-left"></i> Kembali ke lowongan</a>
-                    <section class="job-detail-hero">
-                        <div class="job-detail-hero-main">
-                            <div class="vacancy-logo lg"><?php echo $photo !== '' ? '<img src="' . e($photo) . '" alt="">' : e($employerInitial); ?></div>
+                <?php if ($page === 'dashboard'): ?>
+                    <!-- HERO HEADER -->
+                    <div class="section-card" style="padding:22px 24px;margin-bottom:16px;background:linear-gradient(135deg, #ffffff 0%, #f4fbfe 100%);border-color:#d5edf6;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
                             <div>
-                                <h1><?php echo e($detailJob['title']); ?></h1>
-                                <p class="job-detail-meta"><i class="fa-solid fa-location-dot"></i> <?php echo e(job_placement_address($detailJob)); ?></p>
-                                <p class="job-detail-meta"><i class="fa-regular fa-clock"></i> Diposting <?php echo e(time_ago_id($detailJob['created_at'] ?? null)); ?> · Jumlah lowongan: <?php echo (int) $detailJob['quota']; ?></p>
-                                <p class="job-detail-meta"><i class="fa-regular fa-calendar"></i> Batas waktu lamaran <?php echo e(job_apply_deadline($detailJob)); ?></p>
+                                <h1 style="font-size:26px;font-weight:800;color:#0f172a;margin-bottom:6px;">Halo, <?php echo e($user['name']); ?> 👋</h1>
+                                <div class="hero-subrow">
+                                    <span class="status-pill"><i class="fa-solid fa-circle-check"></i> Profil Siap Melamar</span>
+                                    <span class="cycle-info">
+                                        <strong>NIK: <?php echo e($profile['nik'] ?? '-'); ?></strong>
+                                        <span><?php echo e($profile['domicile_address'] ?? 'Domisili belum diisi'); ?></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <a class="primary-btn" href="seeker.php?page=jobs" style="padding:10px 18px;font-size:13px;"><i class="fa-solid fa-magnifying-glass"></i> Cari Lowongan</a>
+                                <a class="ghost-btn" href="profile-seeker.php" style="padding:10px 18px;font-size:13px;"><i class="fa-solid fa-pen-to-square"></i> Edit Profil</a>
                             </div>
                         </div>
-                        <?php if ($applied): ?>
-                            <button class="vacancy-apply is-disabled" type="button" disabled>Sudah Dilamar</button>
-                        <?php else: ?>
-                            <form method="post">
-                                <input type="hidden" name="apply_job_id" value="<?php echo (int) $detailJob['id']; ?>">
-                                <input type="hidden" name="return_to" value="job">
-                                <button class="vacancy-apply" type="submit">Lamar Sekarang</button>
-                            </form>
-                        <?php endif; ?>
-                    </section>
-
-                    <div class="job-facts">
-                        <div><span>Bidang pekerjaan</span><strong><?php echo e($detailData['job_field'] ?: $detailJob['industry'] ?: '-'); ?></strong></div>
-                        <div><span>Jenis pekerjaan</span><strong><?php echo e($detailJob['job_type'] ?: '-'); ?></strong></div>
-                        <div><span>Tipe pekerjaan</span><strong>Lowongan dalam negeri</strong></div>
-                        <div><span>Jenis kelamin</span><strong><?php echo e($genderText); ?></strong></div>
-                        <div><span>Rentang gaji</span><strong><?php echo e(job_public_salary($detailJob)); ?></strong></div>
-                        <div><span>Remote</span><strong><?php echo e(!empty($detailData['is_remote']) ? 'Ya' : 'Tidak'); ?></strong></div>
                     </div>
 
-                    <div class="job-detail-layout">
-                        <div class="job-detail-main">
-                            <section class="job-detail-block">
-                                <h2>Deskripsi Pekerjaan</h2>
-                                <?php if ($descriptionHtml !== ''): ?>
-                                    <div class="job-review-prose"><?php echo $descriptionHtml; ?></div>
-                                <?php else: ?>
-                                    <p class="job-review-empty">Belum ada deskripsi.</p>
-                                <?php endif; ?>
-                            </section>
-                            <section class="job-detail-block">
-                                <h2>Persyaratan Khusus</h2>
-                                <ul class="job-spec-list">
-                                    <li>Pendidikan: <?php echo e($detailData['education_required'] ?: 'Tidak ditentukan'); ?></li>
-                                    <li>Pengalaman: <?php echo e($detailData['experience_required'] ?: 'Tidak ditentukan'); ?></li>
-                                    <?php if ($detailData['skills']): ?>
-                                        <li>Keahlian: <?php echo e(implode(', ', $detailData['skills'])); ?></li>
-                                    <?php endif; ?>
-                                    <?php if ($detailData['age_min'] !== '' || $detailData['age_max'] !== ''): ?>
-                                        <li>Usia: <?php echo e(trim(($detailData['age_min'] !== '' ? $detailData['age_min'] . ' th' : '') . ' – ' . ($detailData['age_max'] !== '' ? $detailData['age_max'] . ' th' : ''), ' –')); ?></li>
-                                    <?php endif; ?>
-                                </ul>
-                                <?php if ($specialHtml !== ''): ?>
-                                    <div class="job-review-prose" style="margin-top:12px"><?php echo $specialHtml; ?></div>
-                                <?php endif; ?>
-                            </section>
-                            <section class="job-detail-block">
-                                <h2>Persyaratan Umum</h2>
-                                <div class="job-general-grid">
-                                    <div><span>Minimal pendidikan</span><strong><?php echo e($detailData['education_required'] ?: 'Tidak ditentukan'); ?></strong></div>
-                                    <div><span>Status pernikahan</span><strong><?php echo e($maritalText); ?></strong></div>
-                                    <div><span>Minimal pengalaman</span><strong><?php echo e($detailData['experience_required'] ?: 'Tidak ditentukan'); ?></strong></div>
-                                    <div><span>Kondisi fisik</span><strong><?php echo e($physicalText); ?></strong></div>
-                                </div>
-                            </section>
+                    <!-- 5 METRIC CARDS -->
+                    <div class="cards5">
+                        <div class="card">
+                            <div class="mini-icon" style="background:#e0f2fe;color:#0284c7;"><i class="fa-solid fa-id-card"></i></div>
+                            <h3>Biodata</h3>
+                            <div class="value" style="font-size:20px;color:#059669;"><i class="fa-solid fa-check-circle" style="font-size:18px;"></i> Lengkap</div>
+                            <div class="desc neutral">Terverifikasi sistem</div>
                         </div>
-                        <aside class="job-detail-side">
-                            <div class="employer-side-card">
-                                <h3><?php echo e($employerName); ?></h3>
+                        <div class="card">
+                            <div class="mini-icon" style="background:#ecfdf5;color:#059669;"><i class="fa-solid fa-briefcase"></i></div>
+                            <h3>Pengalaman</h3>
+                            <div class="value"><?php echo $experienceCount; ?></div>
+                            <div class="desc neutral">Riwayat kerja tercatat</div>
+                        </div>
+                        <div class="card">
+                            <div class="mini-icon" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-certificate"></i></div>
+                            <h3>Pelatihan</h3>
+                            <div class="value"><?php echo $trainingCount; ?></div>
+                            <div class="desc neutral">Sertifikasi & kursus</div>
+                        </div>
+                        <div class="card">
+                            <div class="mini-icon" style="background:#f3e8ff;color:#9333ea;"><i class="fa-solid fa-graduation-cap"></i></div>
+                            <h3>Pendidikan</h3>
+                            <div class="value"><?php echo $educationCount; ?></div>
+                            <div class="desc neutral">Riwayat akademis</div>
+                        </div>
+                        <div class="card">
+                            <div class="mini-icon" style="background:#ffe4e6;color:#e11d48;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <h3>Keahlian</h3>
+                            <div class="value"><?php echo $skillCount + $languageCount; ?></div>
+                            <div class="desc neutral">Skill & kemampuan bahasa</div>
+                        </div>
+                    </div>
+
+                    <!-- PROFILE DETAILS TWO-COLUMN SECTION -->
+                    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;">
+                        <div class="section-card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:14px;">
+                                <h3><i class="fa-solid fa-user"></i> Ringkasan Biodata Diri</h3>
+                                <a href="profile-seeker.php" class="btn-link"><i class="fa-solid fa-pen"></i> Ubah</a>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;">
+                                <div>
+                                    <span style="color:#64748b;display:block;font-size:11px;font-weight:600;text-transform:uppercase;">NIK</span>
+                                    <strong style="color:#0f172a;"><?php echo e($profile['nik'] ?? '-'); ?></strong>
+                                </div>
+                                <div>
+                                    <span style="color:#64748b;display:block;font-size:11px;font-weight:600;text-transform:uppercase;">Nomor Telepon</span>
+                                    <strong style="color:#0f172a;"><?php echo e($profile['phone'] ?? '-'); ?></strong>
+                                </div>
+                                <div>
+                                    <span style="color:#64748b;display:block;font-size:11px;font-weight:600;text-transform:uppercase;">Tempat, Tgl Lahir</span>
+                                    <strong style="color:#0f172a;"><?php echo e(($profile['birth_place'] ?? '-') . ', ' . ($profile['birth_date'] ?? '-')); ?></strong>
+                                </div>
+                                <div>
+                                    <span style="color:#64748b;display:block;font-size:11px;font-weight:600;text-transform:uppercase;">Jenis Kelamin & Status</span>
+                                    <strong style="color:#0f172a;"><?php echo e(($profile['gender'] ?? '-') . ' / ' . ($profile['marital_status'] ?? '-')); ?></strong>
+                                </div>
+                                <div style="grid-column:1/-1;">
+                                    <span style="color:#64748b;display:block;font-size:11px;font-weight:600;text-transform:uppercase;">Alamat Domisili</span>
+                                    <p style="margin:4px 0 0;color:#334155;"><?php echo e($profile['domicile_address'] ?? '-'); ?></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:14px;">
+                                <h3><i class="fa-solid fa-bolt"></i> Keahlian & Kompetensi</h3>
+                                <a href="profile-seeker.php" class="btn-link"><i class="fa-solid fa-pen"></i> Ubah</a>
+                            </div>
+                            <?php if ($skillRows): ?>
+                                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                                    <?php foreach ($skillRows as $row): ?>
+                                        <span class="pill-badge process"><i class="fa-solid fa-check"></i> <?php echo e($row['skill_name']); ?></span>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <p style="color:#64748b;font-size:13px;margin:10px 0;">Belum ada keahlian yang ditambahkan. Silakan perbarui profil Anda.</p>
+                            <?php endif; ?>
+                            
+                            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e8ebf2;">
+                                <h4 style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;"><i class="fa-solid fa-briefcase"></i> Cari Pekerjaan Terbaru</h4>
+                                <p style="font-size:12px;color:#64748b;margin-bottom:12px;">Temukan ratusan lowongan kerja dari pemberi kerja perorangan terverifikasi.</p>
+                                <a href="seeker.php?page=jobs" class="primary-btn" style="width:100%;height:38px;font-size:13px;">Jelajahi Lowongan Kerja</a>
+                            </div>
+                        </div>
+                    </div>
+
+                <?php elseif ($page === 'job' && $detailJob): ?>
+                    <?php
+                        $applied = in_array((int) $detailJob['id'], $appliedIds, true);
+                        $employerName = job_employer_display_name($detailJob);
+                        $employerInitial = strtoupper(mb_substr($employerName, 0, 1));
+                        $photo = trim((string) ($detailJob['workplace_photo'] ?? ''));
+                        $descriptionHtml = job_rich_html($detailData['description']);
+                        $specialHtml = job_rich_html($detailData['special_requirements']);
+                        $genderText = $detailData['genders'] ? implode(' / ', $detailData['genders']) : 'Tidak ada preferensi';
+                        $maritalText = $detailData['marital_statuses'] ? implode(' / ', $detailData['marital_statuses']) : 'Tidak ada preferensi';
+                        $physicalText = $detailData['physical_conditions'] ? implode(' & ', $detailData['physical_conditions']) : '-';
+                    ?>
+                    <div class="job-detail-page">
+                        <a class="back-link" href="seeker.php?page=jobs"><i class="fa-solid fa-arrow-left"></i> Kembali ke daftar lowongan</a>
+                        
+                        <section class="job-detail-hero" style="border-radius:18px;border:1px solid #e8ebf2;background:#fff;box-shadow:var(--shadow-soft);">
+                            <div class="job-detail-hero-main">
+                                <div class="vacancy-logo lg"><?php echo $photo !== '' ? '<img src="' . e($photo) . '" alt="">' : e($employerInitial); ?></div>
+                                <div>
+                                    <h1 style="font-size:24px;font-weight:800;color:#0f172a;"><?php echo e($detailJob['title']); ?></h1>
+                                    <p class="job-detail-meta"><i class="fa-solid fa-location-dot"></i> <?php echo e(job_placement_address($detailJob)); ?></p>
+                                    <p class="job-detail-meta"><i class="fa-regular fa-clock"></i> Diposting <?php echo e(time_ago_id($detailJob['created_at'] ?? null)); ?> · Kuota: <?php echo (int) $detailJob['quota']; ?> orang</p>
+                                    <p class="job-detail-meta"><i class="fa-regular fa-calendar"></i> Batas waktu lamaran <?php echo e(job_apply_deadline($detailJob)); ?></p>
+                                </div>
+                            </div>
+                            <?php if ($applied): ?>
+                                <button class="vacancy-apply is-disabled" type="button" disabled style="border-radius:12px;"><i class="fa-solid fa-check"></i> Sudah Dilamar</button>
+                            <?php else: ?>
+                                <form method="post">
+                                    <input type="hidden" name="apply_job_id" value="<?php echo (int) $detailJob['id']; ?>">
+                                    <input type="hidden" name="return_to" value="job">
+                                    <button class="vacancy-apply" type="submit" style="border-radius:12px;"><i class="fa-solid fa-paper-plane"></i> Lamar Sekarang</button>
+                                </form>
+                            <?php endif; ?>
+                        </section>
+
+                        <div class="job-facts" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                            <div><span>Bidang pekerjaan</span><strong><?php echo e($detailData['job_field'] ?: $detailJob['industry'] ?: '-'); ?></strong></div>
+                            <div><span>Jenis pekerjaan</span><strong><?php echo e($detailJob['job_type'] ?: '-'); ?></strong></div>
+                            <div><span>Tipe lowongan</span><strong>Dalam negeri</strong></div>
+                            <div><span>Jenis kelamin</span><strong><?php echo e($genderText); ?></strong></div>
+                            <div><span>Rentang gaji</span><strong style="color:#059669;"><?php echo e(job_public_salary($detailJob)); ?></strong></div>
+                            <div><span>Remote</span><strong><?php echo e(!empty($detailData['is_remote']) ? 'Ya' : 'Tidak'); ?></strong></div>
+                        </div>
+
+                        <div class="job-detail-layout">
+                            <div class="job-detail-main">
+                                <section class="job-detail-block" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                                    <h2>Deskripsi Pekerjaan</h2>
+                                    <?php if ($descriptionHtml !== ''): ?>
+                                        <div class="job-review-prose"><?php echo $descriptionHtml; ?></div>
+                                    <?php else: ?>
+                                        <p class="job-review-empty">Belum ada deskripsi spesifik.</p>
+                                    <?php endif; ?>
+                                </section>
+                                
+                                <section class="job-detail-block" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                                    <h2>Persyaratan Khusus</h2>
+                                    <ul class="job-spec-list">
+                                        <li>Pendidikan: <?php echo e($detailData['education_required'] ?: 'Tidak ditentukan'); ?></li>
+                                        <li>Pengalaman: <?php echo e($detailData['experience_required'] ?: 'Tidak ditentukan'); ?></li>
+                                        <?php if ($detailData['skills']): ?>
+                                            <li>Keahlian: <?php echo e(implode(', ', $detailData['skills'])); ?></li>
+                                        <?php endif; ?>
+                                        <?php if ($detailData['age_min'] !== '' || $detailData['age_max'] !== ''): ?>
+                                            <li>Usia: <?php echo e(trim(($detailData['age_min'] !== '' ? $detailData['age_min'] . ' th' : '') . ' – ' . ($detailData['age_max'] !== '' ? $detailData['age_max'] . ' th' : ''), ' –')); ?></li>
+                                        <?php endif; ?>
+                                    </ul>
+                                    <?php if ($specialHtml !== ''): ?>
+                                        <div class="job-review-prose" style="margin-top:12px"><?php echo $specialHtml; ?></div>
+                                    <?php endif; ?>
+                                </section>
+                                
+                                <section class="job-detail-block" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                                    <h2>Persyaratan Umum</h2>
+                                    <div class="job-general-grid">
+                                        <div><span>Minimal pendidikan</span><strong><?php echo e($detailData['education_required'] ?: 'Tidak ditentukan'); ?></strong></div>
+                                        <div><span>Status pernikahan</span><strong><?php echo e($maritalText); ?></strong></div>
+                                        <div><span>Minimal pengalaman</span><strong><?php echo e($detailData['experience_required'] ?: 'Tidak ditentukan'); ?></strong></div>
+                                        <div><span>Kondisi fisik</span><strong><?php echo e($physicalText); ?></strong></div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <aside class="job-detail-side">
+                                <div class="employer-side-card" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                                    <h3><?php echo e($employerName); ?></h3>
+                                    <div class="employer-side-tags">
+                                        <span class="perorangan-badge">Perorangan</span>
+                                        <?php if (!empty($detailJob['verified'])): ?>
+                                            <span class="verified-badge"><i class="fa-solid fa-circle-check"></i> Terverifikasi</span>
+                                        <?php endif; ?>
+                                        <?php if (!empty($detailJob['profession'])): ?>
+                                            <span class="soft-pill"><?php echo e($detailJob['profession']); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <a class="employer-profile-link" href="seeker.php?page=employer&id=<?php echo (int) $detailJob['user_id']; ?>">Lihat Profil Lengkap</a>
+                                    <div class="employer-side-meta">
+                                        <div><span>Alamat penempatan</span><strong><?php echo e(job_placement_address($detailJob)); ?></strong></div>
+                                        <div><span>Email kontak</span><strong><?php echo e($detailJob['employer_email'] ?? '-'); ?></strong></div>
+                                        <div><span>Kontak langsung</span><strong><?php echo e(job_employer_contact($detailJob)); ?></strong></div>
+                                    </div>
+                                </div>
+                                
+                                <?php if ($relatedJobs): ?>
+                                <div class="employer-side-card" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                                    <h3>Lowongan lain dari pemberi kerja ini</h3>
+                                    <div class="related-job-list">
+                                        <?php foreach ($relatedJobs as $related): ?>
+                                            <a class="related-job-item" href="seeker.php?page=job&id=<?php echo (int) $related['id']; ?>">
+                                                <strong><?php echo e($related['title']); ?></strong>
+                                                <span><?php echo e($related['location']); ?> · <?php echo e(job_public_salary($related)); ?></span>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </aside>
+                        </div>
+                    </div>
+
+                <?php elseif ($page === 'employer' && $employerProfile): ?>
+                    <?php
+                        $empName = trim((string) ($employerProfile['owner_name'] ?? '')) ?: (string) $employerProfile['name'];
+                        $empInitial = strtoupper(mb_substr($empName, 0, 1));
+                        $empPhoto = trim((string) ($employerProfile['workplace_photo'] ?? ''));
+                        $empAddress = implode(', ', array_filter([
+                            $employerProfile['address'] ?? '',
+                            $employerProfile['city'] ?? '',
+                            $employerProfile['province'] ?? '',
+                        ]));
+                        $empPhone = trim((string) (($employerProfile['whatsapp'] ?? '') ?: ($employerProfile['phone'] ?? '')));
+                    ?>
+                    <div class="job-detail-page">
+                        <a class="back-link" href="seeker.php?page=jobs"><i class="fa-solid fa-arrow-left"></i> Kembali ke daftar lowongan</a>
+                        <section class="employer-profile-hero" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                            <div class="vacancy-logo lg"><?php echo $empPhoto !== '' ? '<img src="' . e($empPhoto) . '" alt="">' : e($empInitial); ?></div>
+                            <div>
+                                <h1 style="font-size:24px;font-weight:800;color:#0f172a;"><?php echo e($empName); ?></h1>
                                 <div class="employer-side-tags">
                                     <span class="perorangan-badge">Perorangan</span>
-                                    <?php if (!empty($detailJob['verified'])): ?>
+                                    <?php if (!empty($employerProfile['verified'])): ?>
                                         <span class="verified-badge"><i class="fa-solid fa-circle-check"></i> Terverifikasi</span>
                                     <?php endif; ?>
-                                    <?php if (!empty($detailJob['profession'])): ?>
-                                        <span class="soft-pill"><?php echo e($detailJob['profession']); ?></span>
+                                    <?php if (!empty($employerProfile['profession'])): ?>
+                                        <span class="soft-pill"><?php echo e($employerProfile['profession']); ?></span>
                                     <?php endif; ?>
                                 </div>
-                                <a class="employer-profile-link" href="seeker.php?page=employer&id=<?php echo (int) $detailJob['user_id']; ?>">Lihat Profil Pemberi Kerja</a>
-                                <div class="employer-side-meta">
-                                    <div><span>Alamat lengkap</span><strong><?php echo e(job_placement_address($detailJob)); ?></strong></div>
-                                    <div><span>Email</span><strong><?php echo e($detailJob['employer_email'] ?? '-'); ?></strong></div>
-                                    <div><span>Kontak langsung</span><strong><?php echo e(job_employer_contact($detailJob)); ?></strong></div>
-                                </div>
-                            </div>
-                            <?php if ($relatedJobs): ?>
-                            <div class="employer-side-card">
-                                <h3>Lowongan lain pemberi kerja ini</h3>
-                                <div class="related-job-list">
-                                    <?php foreach ($relatedJobs as $related): ?>
-                                        <a class="related-job-item" href="seeker.php?page=job&id=<?php echo (int) $related['id']; ?>">
-                                            <strong><?php echo e($related['title']); ?></strong>
-                                            <span><?php echo e($related['location']); ?> · <?php echo e(job_public_salary($related)); ?></span>
-                                        </a>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                        </aside>
-                    </div>
-                </div>
-
-            <?php elseif ($page === 'employer' && $employerProfile): ?>
-                <?php
-                    $empName = trim((string) ($employerProfile['owner_name'] ?? '')) ?: (string) $employerProfile['name'];
-                    $empInitial = strtoupper(mb_substr($empName, 0, 1));
-                    $empPhoto = trim((string) ($employerProfile['workplace_photo'] ?? ''));
-                    $empAddress = implode(', ', array_filter([
-                        $employerProfile['address'] ?? '',
-                        $employerProfile['city'] ?? '',
-                        $employerProfile['province'] ?? '',
-                    ]));
-                    $empPhone = trim((string) (($employerProfile['whatsapp'] ?? '') ?: ($employerProfile['phone'] ?? '')));
-                ?>
-                <div class="job-detail-page">
-                    <a class="back-link" href="seeker.php?page=jobs"><i class="fa-solid fa-arrow-left"></i> Kembali ke lowongan</a>
-                    <section class="employer-profile-hero">
-                        <div class="vacancy-logo lg"><?php echo $empPhoto !== '' ? '<img src="' . e($empPhoto) . '" alt="">' : e($empInitial); ?></div>
-                        <div>
-                            <h1><?php echo e($empName); ?></h1>
-                            <div class="employer-side-tags">
-                                <span class="perorangan-badge">Perorangan</span>
-                                <?php if (!empty($employerProfile['verified'])): ?>
-                                    <span class="verified-badge"><i class="fa-solid fa-circle-check"></i> Terverifikasi</span>
-                                <?php endif; ?>
-                                <?php if (!empty($employerProfile['profession'])): ?>
-                                    <span class="soft-pill"><?php echo e($employerProfile['profession']); ?></span>
+                                <?php if (!empty($employerProfile['employer_bio']) || !empty($employerProfile['description'])): ?>
+                                    <p class="employer-about"><?php echo e($employerProfile['employer_bio'] ?? $employerProfile['description'] ?? ''); ?></p>
                                 <?php endif; ?>
                             </div>
-                            <?php if (!empty($employerProfile['employer_bio']) || !empty($employerProfile['description'])): ?>
-                                <p class="employer-about"><?php echo e($employerProfile['employer_bio'] ?? $employerProfile['description'] ?? ''); ?></p>
-                            <?php endif; ?>
+                        </section>
+                        <div class="job-facts" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                            <div><span>Email</span><strong><?php echo e($employerProfile['email'] ?? '-'); ?></strong></div>
+                            <div><span>Kontak langsung</span><strong><?php echo e($empPhone !== '' ? $empPhone : '-'); ?></strong></div>
+                            <div><span>Alamat lengkap</span><strong><?php echo e($empAddress !== '' ? $empAddress : '-'); ?></strong></div>
                         </div>
-                    </section>
-                    <div class="job-facts">
-                        <div><span>Email</span><strong><?php echo e($employerProfile['email'] ?? '-'); ?></strong></div>
-                        <div><span>Kontak langsung</span><strong><?php echo e($empPhone !== '' ? $empPhone : '-'); ?></strong></div>
-                        <div><span>Alamat lengkap</span><strong><?php echo e($empAddress !== '' ? $empAddress : '-'); ?></strong></div>
-                    </div>
-                    <h2 class="jobs-section-title">Lowongan pekerjaan pemberi kerja</h2>
-                    <div class="vacancy-grid">
-                        <?php if (!$employerJobs): ?>
-                            <div class="section-card" style="padding:24px">Belum ada lowongan tayang dari pemberi kerja ini.</div>
-                        <?php else: foreach ($employerJobs as $job): ?>
-                            <?php echo render_seeker_job_card($job, $appliedIds); ?>
-                        <?php endforeach; endif; ?>
-                    </div>
-                </div>
-
-            <?php elseif ($page === 'jobs'): ?>
-                <div class="jobs-page-head">
-                    <div>
-                        <div class="jobs-kicker">Lowongan Dalam Negeri</div>
-                        <h1>Lowongan Kerja Perorangan</h1>
-                        <p><?php echo count($jobs); ?> lowongan disetujui siap dilamar</p>
-                    </div>
-                    <form method="get" class="jobs-search">
-                        <input type="hidden" name="page" value="jobs">
-                        <?php if ($filterJobType !== ''): ?><input type="hidden" name="job_type" value="<?php echo e($filterJobType); ?>"><?php endif; ?>
-                        <?php foreach ($filterLocations as $loc): ?>
-                            <input type="hidden" name="location[]" value="<?php echo e($loc); ?>">
-                        <?php endforeach; ?>
-                        <div class="search-small"><i class="fa-solid fa-magnifying-glass"></i><input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan yang kamu inginkan"></div>
-                        <button class="primary-btn" type="submit">Cari</button>
-                    </form>
-                </div>
-                <div class="jobs-layout">
-                    <aside class="jobs-filter">
-                        <form method="get">
-                            <input type="hidden" name="page" value="jobs">
-                            <input type="hidden" name="q" value="<?php echo e($search); ?>">
-                            <div class="filter-head">
-                                <strong>Filter</strong>
-                                <a href="seeker.php?page=jobs">Reset</a>
-                            </div>
-                            <details class="filter-group" open>
-                                <summary>Lokasi</summary>
-                                <div class="filter-search"><input type="search" data-filter-location placeholder="Cari lokasi"></div>
-                                <div class="filter-options" data-location-options>
-                                    <?php foreach ($filterCityOptions as $index => $cityName): ?>
-                                        <label class="filter-check" <?php echo $index > 7 ? 'data-extra-location hidden' : ''; ?>>
-                                            <input type="checkbox" name="location[]" value="<?php echo e($cityName); ?>" <?php echo in_array($cityName, $filterLocations, true) ? 'checked' : ''; ?>>
-                                            <span><?php echo e($cityName); ?></span>
-                                            <?php if (!empty($locationCounts[$cityName])): ?>
-                                                <em><?php echo (int) $locationCounts[$cityName]; ?></em>
-                                            <?php endif; ?>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php if (count($filterCityOptions) > 8): ?>
-                                    <button type="button" class="filter-more" data-toggle-locations>Lihat lebih banyak</button>
-                                <?php endif; ?>
-                            </details>
-                            <details class="filter-group" open>
-                                <summary>Tipe Pekerjaan</summary>
-                                <div class="filter-options">
-                                    <label class="filter-check">
-                                        <input type="radio" name="job_type" value="" <?php echo $filterJobType === '' ? 'checked' : ''; ?>>
-                                        <span>Semua</span>
-                                    </label>
-                                    <?php foreach (seeker_job_type_options() as $typeName): ?>
-                                        <label class="filter-check">
-                                            <input type="radio" name="job_type" value="<?php echo e($typeName); ?>" <?php echo $filterJobType === $typeName ? 'checked' : ''; ?>>
-                                            <span><?php echo e($typeName); ?></span>
-                                            <?php if (!empty($typeCounts[$typeName])): ?>
-                                                <em><?php echo (int) $typeCounts[$typeName]; ?></em>
-                                            <?php endif; ?>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </details>
-                            <details class="filter-group">
-                                <summary>Pendidikan</summary>
-                                <div class="filter-options">
-                                    <?php foreach (['SMA / SMK', 'D3', 'D4 / S1', 'S2'] as $edu): ?>
-                                        <label class="filter-check">
-                                            <input type="radio" name="education" value="<?php echo e($edu); ?>" <?php echo $filterEducation === $edu ? 'checked' : ''; ?>>
-                                            <span><?php echo e($edu); ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </details>
-                            <details class="filter-group">
-                                <summary>Bidang Pekerjaan</summary>
-                                <div class="filter-options">
-                                    <?php foreach (['Teknologi Informasi', 'Administrasi', 'Keuangan & Akuntansi', 'Penjualan & Marketing', 'Kuliner & Hospitality', 'Lainnya'] as $fieldName): ?>
-                                        <label class="filter-check">
-                                            <input type="radio" name="job_field" value="<?php echo e($fieldName); ?>" <?php echo $filterField === $fieldName ? 'checked' : ''; ?>>
-                                            <span><?php echo e($fieldName); ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </details>
-                            <button class="primary-btn" type="submit" style="width:100%;margin-top:12px">Terapkan Filter</button>
-                        </form>
-                    </aside>
-                    <div>
+                        <h2 class="jobs-section-title" style="margin-top:24px;font-size:18px;font-weight:800;">Lowongan Aktif Pemberi Kerja Ini</h2>
                         <div class="vacancy-grid">
-                            <?php if (!$jobs): ?>
-                                <div class="section-card" style="padding:24px;grid-column:1/-1">Belum ada lowongan yang sesuai filter. Coba ubah lokasi atau tipe pekerjaan.</div>
-                            <?php else: foreach ($jobs as $job): ?>
+                            <?php if (!$employerJobs): ?>
+                                <div class="section-card" style="padding:24px">Belum ada lowongan tayang dari pemberi kerja ini.</div>
+                            <?php else: foreach ($employerJobs as $job): ?>
                                 <?php echo render_seeker_job_card($job, $appliedIds); ?>
                             <?php endforeach; endif; ?>
                         </div>
                     </div>
-                </div>
-            <?php endif; ?>
+
+                <?php elseif ($page === 'jobs'): ?>
+                    <div class="jobs-page-head" style="margin-bottom:16px;">
+                        <div>
+                            <div class="jobs-kicker">Lowongan Dalam Negeri</div>
+                            <h1 style="font-size:26px;font-weight:800;color:#0f172a;margin:2px 0;">Lowongan Kerja Perorangan</h1>
+                            <p style="color:#64748b;"><?php echo count($jobs); ?> lowongan disetujui siap dilamar</p>
+                        </div>
+                        <form method="get" class="jobs-search">
+                            <input type="hidden" name="page" value="jobs">
+                            <?php if ($filterJobType !== ''): ?><input type="hidden" name="job_type" value="<?php echo e($filterJobType); ?>"><?php endif; ?>
+                            <?php foreach ($filterLocations as $loc): ?>
+                                <input type="hidden" name="location[]" value="<?php echo e($loc); ?>">
+                            <?php endforeach; ?>
+                            <div class="search-small"><i class="fa-solid fa-magnifying-glass"></i><input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan yang kamu inginkan"></div>
+                            <button class="primary-btn" type="submit">Cari</button>
+                        </form>
+                    </div>
+                    
+                    <div class="jobs-layout">
+                        <aside class="jobs-filter" style="border-radius:18px;border:1px solid #e8ebf2;box-shadow:var(--shadow-soft);background:#fff;">
+                            <form method="get">
+                                <input type="hidden" name="page" value="jobs">
+                                <input type="hidden" name="q" value="<?php echo e($search); ?>">
+                                <div class="filter-head">
+                                    <strong>Filter</strong>
+                                    <a href="seeker.php?page=jobs">Reset</a>
+                                </div>
+                                <details class="filter-group" open>
+                                    <summary>Lokasi</summary>
+                                    <div class="filter-search"><input type="search" data-filter-location placeholder="Cari lokasi"></div>
+                                    <div class="filter-options" data-location-options>
+                                        <?php foreach ($filterCityOptions as $index => $cityName): ?>
+                                            <label class="filter-check" <?php echo $index > 7 ? 'data-extra-location hidden' : ''; ?>>
+                                                <input type="checkbox" name="location[]" value="<?php echo e($cityName); ?>" <?php echo in_array($cityName, $filterLocations, true) ? 'checked' : ''; ?>>
+                                                <span><?php echo e($cityName); ?></span>
+                                                <?php if (!empty($locationCounts[$cityName])): ?>
+                                                    <em><?php echo (int) $locationCounts[$cityName]; ?></em>
+                                                <?php endif; ?>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php if (count($filterCityOptions) > 8): ?>
+                                        <button type="button" class="filter-more" data-toggle-locations>Lihat lebih banyak</button>
+                                    <?php endif; ?>
+                                </details>
+                                <details class="filter-group" open>
+                                    <summary>Tipe Pekerjaan</summary>
+                                    <div class="filter-options">
+                                        <label class="filter-check">
+                                            <input type="radio" name="job_type" value="" <?php echo $filterJobType === '' ? 'checked' : ''; ?>>
+                                            <span>Semua</span>
+                                        </label>
+                                        <?php foreach (seeker_job_type_options() as $typeName): ?>
+                                            <label class="filter-check">
+                                                <input type="radio" name="job_type" value="<?php echo e($typeName); ?>" <?php echo $filterJobType === $typeName ? 'checked' : ''; ?>>
+                                                <span><?php echo e($typeName); ?></span>
+                                                <?php if (!empty($typeCounts[$typeName])): ?>
+                                                    <em><?php echo (int) $typeCounts[$typeName]; ?></em>
+                                                <?php endif; ?>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </details>
+                                <details class="filter-group">
+                                    <summary>Pendidikan</summary>
+                                    <div class="filter-options">
+                                        <?php foreach (['SMA / SMK', 'D3', 'D4 / S1', 'S2'] as $edu): ?>
+                                            <label class="filter-check">
+                                                <input type="radio" name="education" value="<?php echo e($edu); ?>" <?php echo $filterEducation === $edu ? 'checked' : ''; ?>>
+                                                <span><?php echo e($edu); ?></span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </details>
+                                <details class="filter-group">
+                                    <summary>Bidang Pekerjaan</summary>
+                                    <div class="filter-options">
+                                        <?php foreach (['Teknologi Informasi', 'Administrasi', 'Keuangan & Akuntansi', 'Penjualan & Marketing', 'Kuliner & Hospitality', 'Lainnya'] as $fieldName): ?>
+                                            <label class="filter-check">
+                                                <input type="radio" name="job_field" value="<?php echo e($fieldName); ?>" <?php echo $filterField === $fieldName ? 'checked' : ''; ?>>
+                                                <span><?php echo e($fieldName); ?></span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </details>
+                                <button class="primary-btn" type="submit" style="width:100%;margin-top:12px;height:40px;">Terapkan Filter</button>
+                            </form>
+                        </aside>
+                        <div>
+                            <div class="vacancy-grid">
+                                <?php if (!$jobs): ?>
+                                    <div class="section-card" style="padding:28px;grid-column:1/-1;text-align:center;color:#64748b;">
+                                        <i class="fa-solid fa-folder-open" style="font-size:32px;margin-bottom:8px;display:block;color:#cbd5e1;"></i>
+                                        Belum ada lowongan yang sesuai filter. Coba ubah kata kunci atau lokasi pencarian.
+                                    </div>
+                                <?php else: foreach ($jobs as $job): ?>
+                                    <?php echo render_seeker_job_card($job, $appliedIds); ?>
+                                <?php endforeach; endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
-<script src="assets/app.js?v=seeker-jobs-1"></script>
+<script src="assets/app.js?v=seeker-std-1"></script>
 </body>
 </html>

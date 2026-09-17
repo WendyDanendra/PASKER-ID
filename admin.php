@@ -532,353 +532,52 @@ if ($view === 'verifikasi_job') {
         }
     }
 }
+
+$unread = unread_notification_count((int) $user['id']);
+$notifications = user_notifications((int) $user['id']);
+$adminInitial = strtoupper(mb_substr($user['name'], 0, 1));
+
+// Overall KPIs for Admin Overview
+$statTotalEmployers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "employer"')->fetchColumn();
+$statPendingEmployers = (int) db()->query('SELECT COUNT(*) FROM employer_profiles WHERE verification_status = "PENDING"')->fetchColumn();
+$statPendingJobs = (int) db()->query('SELECT COUNT(*) FROM job_posts WHERE status = "Menunggu Disetujui"')->fetchColumn();
+$statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "seeker"')->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karirhub Console - Admin</title>
+    <title>Karirhub - Admin Pusat</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/app.css">
+    <link rel="stylesheet" href="assets/app.css?v=admin-std-1">
     <style>
-        :root {
-            --primary: #0284c7;
-            --primary-hover: #0369a1;
-            --sidebar-bg: #ffffff;
-            --border-color: #e2e8f0;
-            --text-dark: #0f172a;
-            --text-muted: #64748b;
-            --bg-page: #f8fafc;
-        }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-page); color: var(--text-dark); margin: 0; }
-        .console-layout { display: flex; min-height: 100vh; }
-        
-        /* SIDEBAR ALIGNED WITH SCREENSHOT BASELINE */
-        .console-sidebar {
-            width: 68px;
-            background: #ffffff;
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 16px 0;
-            flex-shrink: 0;
-            z-index: 50;
-        }
-        .console-sidebar .logo {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #0284c7, #38bdf8);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 20px;
-            margin-bottom: 24px;
-        }
-        .console-sidebar .nav-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            align-items: center;
-        }
-        .console-sidebar .nav-item {
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            color: #64748b;
-            text-decoration: none;
-            font-size: 18px;
-            transition: all 0.2s ease;
-        }
-        .console-sidebar .nav-item:hover, .console-sidebar .nav-item.active {
-            background: #f0f9ff;
-            color: #0284c7;
-        }
-        .console-sidebar .bottom-nav {
-            margin-top: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-        }
-        .console-sidebar .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: #e0f2fe;
-            color: #0284c7;
-            font-weight: 700;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* TOPBAR ALIGNED WITH SCREENSHOT */
-        .console-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .console-topbar {
-            height: 60px;
-            background: #ffffff;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 28px;
-        }
-        .topbar-left { display: flex; align-items: center; gap: 16px; }
-        .nav-arrows { display: flex; gap: 8px; color: #94a3b8; font-size: 14px; cursor: pointer; }
-        .nav-arrows i:hover { color: #0f172a; }
-        .breadcrumb-trail { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b; }
-        .breadcrumb-trail a { color: #64748b; text-decoration: none; font-weight: 500; }
-        .breadcrumb-trail a:hover { color: #0284c7; }
-        .breadcrumb-trail .current { color: #0f172a; font-weight: 600; }
-        
-        .topbar-center { flex: 1; max-width: 480px; margin: 0 24px; }
-        .search-pill-input {
-            width: 100%;
-            height: 38px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 999px;
-            padding: 0 16px 0 38px;
-            font-size: 13px;
-            outline: none;
-            color: #334155;
-            position: relative;
-        }
-        .search-pill-wrapper { position: relative; width: 100%; }
-        .search-pill-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
-
-        .topbar-right { display: flex; align-items: center; gap: 12px; }
-        .admin-user-pill {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 4px 12px;
-            border-radius: 999px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-        .admin-user-pill .icon-box {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            background: #e0f2fe;
-            color: #0284c7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-        .admin-user-pill .name-role { display: flex; flex-direction: column; text-align: left; }
-        .admin-user-pill .name { font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.1; }
-        .admin-user-pill .role { font-size: 10px; color: #64748b; line-height: 1.1; }
-
-        /* BODY CONTAINER */
-        .console-container { padding: 28px; flex: 1; overflow-y: auto; }
-        
-        /* TABS & FILTER BAR */
-        .tab-filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
-        .status-tab-list { display: flex; gap: 24px; border-bottom: 2px solid transparent; }
-        .status-tab-item {
-            font-size: 14px;
-            font-weight: 600;
-            color: #64748b;
-            text-decoration: none;
-            padding-bottom: 8px;
-            position: relative;
-            transition: all 0.2s;
-        }
-        .status-tab-item:hover { color: #0284c7; }
-        .status-tab-item.active { color: #0284c7; font-weight: 700; }
-        .status-tab-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #0284c7;
-            border-radius: 2px;
-        }
-
-        .filter-controls { display: flex; align-items: center; gap: 12px; }
-        .filter-search-box {
-            display: flex;
-            align-items: center;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 0 12px;
-            height: 38px;
-            width: 260px;
-        }
-        .filter-search-box input { border: none; outline: none; width: 100%; font-size: 13px; margin-left: 8px; }
-        .filter-btn {
-            height: 38px;
-            padding: 0 16px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #475569;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        .filter-btn:hover { background: #f8fafc; }
-
-        .entity-selector-pill {
-            display: inline-flex;
-            background: #f1f5f9;
-            border-radius: 10px;
-            padding: 3px;
-            gap: 3px;
-        }
-        .entity-selector-btn {
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #64748b;
-            text-decoration: none;
-            transition: all 0.15s;
-        }
-        .entity-selector-btn.active {
-            background: #ffffff;
-            color: #0284c7;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-        }
-
-        /* CONSOLE DATA TABLE */
-        .console-table-card {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-            overflow: hidden;
-        }
-        .console-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        .console-table th {
-            background: #ffffff;
-            padding: 14px 18px;
-            font-weight: 600;
-            color: #64748b;
-            border-bottom: 1px solid #e2e8f0;
-            white-space: nowrap;
-        }
-        .console-table td {
-            padding: 14px 18px;
-            border-bottom: 1px solid #f1f5f9;
-            color: #334155;
-            vertical-align: middle;
-        }
-        .console-table tbody tr:hover { background: #fbfcfe; }
-
-        .item-avatar-box {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            background: #f1f5f9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 13px;
-            color: #475569;
-            flex-shrink: 0;
-        }
-
-        /* PILL BADGES */
-        .pill-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .pill-badge.verified, .pill-badge.approved, .pill-badge.safe { background: #ecfdf5; color: #059669; }
-        .pill-badge.process, .pill-badge.assigned { background: #f0f9ff; color: #0284c7; }
-        .pill-badge.pending { background: #fff7ed; color: #ea580c; }
-        .pill-badge.revision { background: #fef2f2; color: #dc2626; }
-        .pill-badge.rejected, .pill-badge.danger { background: #fef2f2; color: #dc2626; }
-        .pill-badge.suspended { background: #fef2f2; color: #991b1b; }
-
-        .btn-lihat-detail {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #334155;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.15s;
-        }
-        .btn-lihat-detail:hover { background: #f8fafc; border-color: #94a3b8; }
-
-        /* DETAIL LAYOUT (STACKED CARDS + TIMELINE) */
         .detail-header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 16px;
         }
         .detail-grid-container {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 24px;
+            gap: 20px;
             align-items: start;
         }
         @media (max-width: 1024px) {
             .detail-grid-container { grid-template-columns: 1fr; }
         }
-
-        .section-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 22px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-        .section-card-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
         .key-val-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px 24px;
+            gap: 14px 20px;
             font-size: 13px;
         }
-        .key-val-item .label { font-size: 12px; color: #64748b; margin-bottom: 3px; }
+        .key-val-item .label { font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px; text-transform: uppercase; }
         .key-val-item .value { font-weight: 600; color: #0f172a; }
-
-        /* TIMELINE AUDIT LOG */
         .timeline-list { position: relative; padding-left: 20px; margin-top: 10px; }
         .timeline-list::before {
             content: '';
@@ -897,19 +596,16 @@ if ($view === 'verifikasi_job') {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: #0284c7;
+            background: #30aed8;
             border: 2px solid #ffffff;
             box-shadow: 0 0 0 2px #bae6fd;
         }
         .timeline-time { font-size: 11px; color: #94a3b8; margin-bottom: 2px; }
         .timeline-title { font-size: 12px; font-weight: 700; color: #1e293b; }
         .timeline-desc { font-size: 12px; color: #475569; margin-top: 2px; line-height: 1.4; }
-
-        /* DATA COMPARISON TABLE (OSS / SIAPKERJA) */
         .compare-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .compare-table th { background: #f8fafc; padding: 10px 12px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
         .compare-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-        
         .map-box-placeholder {
             height: 160px;
             background: #f1f5f9;
@@ -922,97 +618,190 @@ if ($view === 'verifikasi_job') {
             margin-top: 12px;
             border: 1px dashed #cbd5e1;
         }
+        .tab-filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 14px; }
+        .status-tab-list { display: flex; gap: 20px; }
+        .status-tab-item {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            padding-bottom: 8px;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .status-tab-item:hover { color: var(--primary-strong); }
+        .status-tab-item.active { color: var(--primary-strong); font-weight: 700; }
+        .status-tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        .filter-controls { display: flex; align-items: center; gap: 10px; }
+        .filter-search-box {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0 12px;
+            height: 38px;
+            width: 240px;
+        }
+        .filter-search-box input { border: none; outline: none; width: 100%; font-size: 13px; margin-left: 8px; background: transparent; }
+        .entity-selector-pill {
+            display: inline-flex;
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 3px;
+            gap: 3px;
+        }
+        .entity-selector-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .entity-selector-btn.active {
+            background: #ffffff;
+            color: var(--primary-strong);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
     </style>
 </head>
 <body>
-<div class="console-layout">
-    <!-- NARROW ICON SIDEBAR (ALIGNED WITH VISUAL BASELINE) -->
-    <aside class="console-sidebar">
-        <div class="logo">
-            <i class="fa-solid fa-cloud"></i>
+<div class="app-shell" style="width:100%;height:100vh;display:flex;overflow:hidden;">
+    <!-- SIDEBAR 260px (COLLAPSIBLE) -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="brand-text">
+                <h1>Karirhub</h1>
+                <p>Admin Pusat</p>
+            </div>
         </div>
-        <div class="nav-list">
-            <a href="admin.php?view=directory_individual" class="nav-item <?php echo $view === 'directory_individual' ? 'active' : ''; ?>" title="Direktori Pemberi Kerja">
-                <i class="fa-solid fa-building"></i>
+        <div class="menu-list">
+            <a class="menu-item <?php echo $view === 'directory_individual' ? 'active' : ''; ?>" href="admin.php?view=directory_individual">
+                <i class="fa-solid fa-building-user"></i>
+                <span class="menu-label"><strong>Direktori Profil</strong><span>Pemberi kerja individu</span></span>
             </a>
-            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="nav-item <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>" title="Verifikasi Pemberi Kerja">
+            <a class="menu-item <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_employer&entity=Individu">
                 <i class="fa-solid fa-id-card"></i>
+                <span class="menu-label"><strong>Verifikasi Profil</strong><span>Antrean verifikasi</span></span>
             </a>
-            <a href="admin.php?view=verifikasi_job&entity=Individu" class="nav-item <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>" title="Verifikasi Lowongan">
+            <a class="menu-item <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>" href="admin.php?view=verifikasi_job&entity=Individu">
                 <i class="fa-solid fa-briefcase"></i>
+                <span class="menu-label"><strong>Verifikasi Lowongan</strong><span>Moderasi loker</span></span>
             </a>
-            <a href="#" class="nav-item" title="Pengaturan"><i class="fa-solid fa-gear"></i></a>
         </div>
-        <div class="bottom-nav">
-            <a href="logout.php" class="nav-item" title="Logout" style="color:#ef4444;"><i class="fa-solid fa-right-from-bracket"></i></a>
-            <div class="user-avatar" title="<?php echo e($user['name']); ?>">PI</div>
+        <div class="sidebar-spacer"></div>
+        <div style="padding:0 4px">
+            <div class="profile-card">
+                <div class="profile-avatar">AD</div>
+                <div style="overflow:hidden;text-overflow:ellipsis;">
+                    <strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo e($user['name']); ?></strong>
+                    <span>Admin Pusat</span>
+                </div>
+            </div>
+            <a href="logout.php" class="sidebar-logout"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
         </div>
     </aside>
 
-    <!-- MAIN CONSOLE CONTENT -->
-    <main class="console-main">
-        <!-- TOPBAR (ALIGNED WITH VISUAL BASELINE) -->
-        <header class="console-topbar">
-            <div class="topbar-left">
-                <div class="nav-arrows">
-                    <i class="fa-solid fa-chevron-left" onclick="history.back()"></i>
-                    <i class="fa-solid fa-chevron-right" onclick="history.forward()"></i>
-                </div>
-                <div class="breadcrumb-trail">
-                    <a href="admin.php">Beranda</a>
-                    <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
-                    <?php if ($view === 'directory_individual'): ?>
-                        <a href="admin.php?view=directory_individual">Perusahaan / Pemberi Kerja</a>
-                        <?php if ($selectedEmployer): ?>
-                            <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
-                            <span class="current">#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></span>
-                        <?php endif; ?>
-                    <?php elseif ($view === 'verifikasi_employer'): ?>
-                        <a href="admin.php?view=verifikasi_employer">Verifikasi Pemberi Kerja</a>
-                        <?php if ($selectedEmployer): ?>
-                            <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
-                            <span class="current">#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></span>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <a href="admin.php?view=verifikasi_job">Verifikasi Lowongan</a>
-                        <?php if ($selectedJob): ?>
-                            <i class="fa-solid fa-chevron-right" style="font-size:10px; color:#cbd5e1;"></i>
-                            <span class="current">#<?php echo substr(md5($selectedJob['id']), 0, 8); ?></span>
-                        <?php endif; ?>
+    <!-- MAIN CONTAINER -->
+    <div class="main">
+        <!-- TOPBAR 68px -->
+        <header class="topbar">
+            <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Toggle Sidebar"><i class="fa-solid fa-bars"></i></button>
+            <div class="crumbs">
+                <span>Beranda</span><span>&gt;</span>
+                <?php if ($view === 'directory_individual'): ?>
+                    <a href="admin.php?view=directory_individual" style="color:inherit;text-decoration:none;">Direktori Pemberi Kerja</a>
+                    <?php if ($selectedEmployer): ?>
+                        <span>&gt;</span>
+                        <strong>#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></strong>
                     <?php endif; ?>
-                </div>
+                <?php elseif ($view === 'verifikasi_employer'): ?>
+                    <a href="admin.php?view=verifikasi_employer" style="color:inherit;text-decoration:none;">Verifikasi Pemberi Kerja</a>
+                    <?php if ($selectedEmployer): ?>
+                        <span>&gt;</span>
+                        <strong>#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></strong>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <a href="admin.php?view=verifikasi_job" style="color:inherit;text-decoration:none;">Verifikasi Lowongan</a>
+                    <?php if ($selectedJob): ?>
+                        <span>&gt;</span>
+                        <strong>#<?php echo substr(md5($selectedJob['id']), 0, 8); ?></strong>
+                    <?php endif; ?>
+                <?php endif; ?>
             </div>
 
-            <div class="topbar-center">
-                <form method="get" action="admin.php">
-                    <input type="hidden" name="view" value="<?php echo e($view); ?>">
-                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
-                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
-                    <div class="search-pill-wrapper">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" name="q" value="<?php echo e($search); ?>" class="search-pill-input" placeholder="Cari lowongan, pemberi kerja, pencari kerja, ata">
-                    </div>
-                </form>
-            </div>
+            <form method="get" action="admin.php" class="search-bar">
+                <input type="hidden" name="view" value="<?php echo e($view); ?>">
+                <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
+                <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan, pemberi kerja, nik, kota...">
+            </form>
 
-            <div class="topbar-right">
-                <div class="admin-user-pill">
-                    <div class="icon-box"><i class="fa-solid fa-shield-halved"></i></div>
-                    <div class="name-role">
-                        <span class="name">Admin</span>
-                        <span class="role">Admin pusat</span>
+            <div class="top-actions">
+                <?php echo render_notif_dropdown($notifications, $unread); ?>
+                <div class="company-chip">
+                    <div class="profile-avatar" style="width:28px;height:28px;font-size:11px;">AD</div>
+                    <div>
+                        <strong><?php echo e($user['name']); ?></strong>
+                        <span>Admin Pusat</span>
                     </div>
                 </div>
+                <a class="action-chip" href="logout.php">Logout</a>
             </div>
         </header>
 
-        <div class="console-container">
-            <?php if ($flash = get_flash()): ?>
-                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:20px;">
-                    <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
-                    <?php echo e($flash['message']); ?>
-                </div>
-            <?php endif; ?>
+        <!-- CONTENT AREA -->
+        <div class="content">
+            <div class="page active">
+                <?php if ($flash = get_flash()): ?>
+                    <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
+                        <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
+                        <?php echo e($flash['message']); ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!$detailId): ?>
+                    <!-- ADMIN OVERVIEW KPI STATS (4 CARDS) -->
+                    <div class="cards4">
+                        <div class="card">
+                            <div class="mini-icon" style="background:#e0f2fe;color:#0284c7;"><i class="fa-solid fa-building-user"></i></div>
+                            <h3>Total Pemberi Kerja</h3>
+                            <div class="value"><?php echo number_format($statTotalEmployers); ?></div>
+                            <div class="desc neutral">Akun terdaftar di sistem</div>
+                        </div>
+                        <div class="card">
+                            <div class="mini-icon" style="background:#fff7ed;color:#ea580c;"><i class="fa-solid fa-id-card"></i></div>
+                            <h3>Antrean Verifikasi Profil</h3>
+                            <div class="value" style="<?php echo $statPendingEmployers > 0 ? 'color:#ea580c;' : ''; ?>"><?php echo number_format($statPendingEmployers); ?></div>
+                            <div class="desc <?php echo $statPendingEmployers > 0 ? 'warning' : 'neutral'; ?>">Menunggu pemeriksaan</div>
+                        </div>
+                        <div class="card">
+                            <div class="mini-icon" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-briefcase"></i></div>
+                            <h3>Antrean Moderasi Loker</h3>
+                            <div class="value" style="<?php echo $statPendingJobs > 0 ? 'color:#d97706;' : ''; ?>"><?php echo number_format($statPendingJobs); ?></div>
+                            <div class="desc <?php echo $statPendingJobs > 0 ? 'warning' : 'neutral'; ?>">Menunggu persetujuan</div>
+                        </div>
+                        <div class="card">
+                            <div class="mini-icon" style="background:#ecfdf5;color:#059669;"><i class="fa-solid fa-users"></i></div>
+                            <h3>Pencari Kerja Aktif</h3>
+                            <div class="value"><?php echo number_format($statTotalSeekers); ?></div>
+                            <div class="desc neutral">Talenta siap dilamar</div>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
             <!-- ========================================== -->
             <!-- 1. DIREKTORI INDIVIDUAL (READ-ONLY DIRECTORY) -->
@@ -2182,10 +1971,11 @@ if ($view === 'verifikasi_job') {
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
+            </div>
         </div>
-    </main>
+    </div>
 </div>
 
-<script src="assets/app.js"></script>
+<script src="assets/app.js?v=admin-std-1"></script>
 </body>
 </html>

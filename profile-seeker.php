@@ -252,7 +252,10 @@ $languagesText = join_records($languages, fn($row) => implode(' | ', [$row['lang
                 <h1>Lengkapi Profil Pencari Kerja</h1>
                 <p>Isi biodata, pengalaman, pelatihan, pendidikan, keahlian, dan bahasa.</p>
             </div>
-            <a class="link-btn" href="logout.php"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <a class="ghost-btn" href="seeker.php" style="padding:8px 14px;font-size:13px;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Dasbor</a>
+                <a class="link-btn" href="logout.php"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
+            </div>
         </div>
 
         <?php if ($flash = get_flash()): ?>

@@ -45,11 +45,17 @@ function initTheme() {
 }
 
 function setActivePage(pageName) {
-    document.querySelectorAll('.page').forEach((page) => {
+    const dataPages = document.querySelectorAll('.page[data-page]');
+    if (dataPages.length === 0) {
+        return;
+    }
+
+    dataPages.forEach((page) => {
         page.classList.toggle('active', page.dataset.page === pageName);
     });
 
     document.querySelectorAll('[data-page]').forEach((item) => {
+        if (item.classList.contains('page')) return;
         item.classList.toggle('active', item.dataset.page === pageName);
     });
 
@@ -1040,6 +1046,9 @@ function initJobCreateWizard() {
 }
 
 function initHashRouting(defaultPage) {
+    if (document.querySelectorAll('.page[data-page]').length === 0) {
+        return;
+    }
     const initialPage = (window.location.hash || `#${defaultPage}`).slice(1);
     setActivePage(initialPage || defaultPage);
 
