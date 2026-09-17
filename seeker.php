@@ -190,9 +190,6 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             <a href="seeker.php?page=jobs" class="rail-btn <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>" title="Lowongan Kerja">
                 <i class="fa-solid fa-briefcase"></i>
             </a>
-            <a href="seeker.php?page=profile" class="rail-btn <?php echo $page === 'profile' ? 'active' : ''; ?>" title="Profil Pencari Kerja">
-                <i class="fa-regular fa-user"></i>
-            </a>
         </div>
 
         <div class="rail-spacer"></div>
@@ -231,8 +228,8 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                     </div>
                     <div class="rail-popover-divider"></div>
                     <div class="rail-popover-list">
-                        <a href="seeker.php?page=profile" class="rail-popover-item">
-                            <div class="rail-popover-item-left"><i class="fa-solid fa-user-pen"></i><span>Profil Pencari Kerja</span></div>
+                        <a href="profile-seeker.php" class="rail-popover-item">
+                            <div class="rail-popover-item-left"><i class="fa-solid fa-user-pen"></i><span>Profil &amp; Biodata</span></div>
                         </a>
                         <a href="settings.php" class="rail-popover-item">
                             <div class="rail-popover-item-left"><i class="fa-solid fa-gear"></i><span>Pengaturan</span></div>
@@ -273,10 +270,6 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             <a href="seeker.php?page=jobs" class="drawer-menu-item <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>">
                 <i class="fa-solid fa-briefcase"></i>
                 <span>Lowongan</span>
-            </a>
-            <a href="seeker.php?page=profile" class="drawer-menu-item <?php echo $page === 'profile' ? 'active' : ''; ?>">
-                <i class="fa-regular fa-user"></i>
-                <span>Profil Pencari Kerja</span>
             </a>
         </div>
     </div>
