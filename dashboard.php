@@ -926,46 +926,37 @@ $replacements = [
 $html = str_replace(array_keys($replacements), array_values($replacements), $html);
 
 $modalStyles = <<<'CSS'
-        /* ══════════════════════════════════════════════════
-           JOB CREATE DRAWER — injected AFTER app.css
-           All critical layout props use !important to win
-           ══════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════
+           JOB CREATE PANEL — injected AFTER app.css
+           Matches Enterprise Employer reference screenshots exactly
+           ═══════════════════════════════════════════════════════ */
 
-        /* Generic modal-backdrop reset (keeps other modals working) */
-        .modal-backdrop {
+        /* Override .modal-backdrop for job-create to be right-side floating */
+        .modal-backdrop[data-modal="job-create"] {
             position: fixed !important;
             inset: 0 !important;
-            background: rgba(15, 23, 42, 0.55);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1050 !important;
-            padding: 16px;
-        }
-        .modal-backdrop.open {
-            display: flex !important;
-        }
-        /* ── Job-Create Drawer: RIGHT-SIDE PANEL ── */
-        .modal-backdrop[data-modal="job-create"] {
+            background: rgba(15, 23, 42, 0.45) !important;
             display: none !important;
+            align-items: flex-start !important;
             justify-content: flex-end !important;
-            align-items: stretch !important;
             padding: 0 !important;
-            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: 1050 !important;
         }
         .modal-backdrop[data-modal="job-create"].open {
             display: flex !important;
         }
+
+        /* The panel itself — floating, right-aligned, all corners rounded, matches reference */
         .job-create-panel {
-            width: min(680px, 92vw) !important;
+            width: min(360px, 92vw) !important;
             height: 100vh !important;
             max-height: 100vh !important;
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
             min-height: 0 !important;
-            border-radius: 20px 0 0 20px !important;
-            box-shadow: -12px 0 40px rgba(15, 23, 42, 0.22) !important;
+            border-radius: 0 !important;
+            box-shadow: -2px 0 20px rgba(15, 23, 42, 0.12) !important;
             background: #ffffff !important;
             margin: 0 !important;
         }
@@ -976,78 +967,83 @@ $modalStyles = <<<'CSS'
             min-height: 0 !important;
             overflow: hidden !important;
         }
+
+        /* Header — sticky at top, matches reference */
         .job-create-panel .modal-header {
             position: relative !important;
-            padding: 20px 24px 16px !important;
-            border-bottom: 1px solid #f1f5f9 !important;
+            padding: 20px 20px 14px 20px !important;
+            border-bottom: none !important;
             flex-shrink: 0 !important;
             background: #ffffff !important;
-            justify-content: flex-start !important;
+            display: block !important;
         }
         .job-create-panel .modal-close {
             position: absolute !important;
-            top: 20px !important;
-            right: 20px !important;
-            width: 32px !important;
-            height: 32px !important;
+            top: 18px !important;
+            right: 18px !important;
+            width: 28px !important;
+            height: 28px !important;
             border-radius: 50% !important;
-            border: 1px solid #e2e8f0 !important;
-            background: #f8fafc !important;
-            color: #64748b !important;
+            border: none !important;
+            background: transparent !important;
+            color: #94a3b8 !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             cursor: pointer !important;
-            transition: all 0.2s !important;
+            font-size: 16px !important;
+            transition: color 0.15s !important;
         }
         .job-create-panel .modal-close:hover {
-            background: #f1f5f9 !important;
             color: #0f172a !important;
         }
         .job-create-panel .modal-title {
-            font-size: 20px !important;
-            font-weight: 800 !important;
+            font-size: 18px !important;
+            font-weight: 700 !important;
             color: #0f172a !important;
-            letter-spacing: -0.02em !important;
-            margin-bottom: 4px !important;
+            letter-spacing: -0.01em !important;
+            margin: 0 0 2px 0 !important;
+            padding-right: 32px !important;
         }
         .job-create-panel .modal-subtitle {
-            font-size: 13px !important;
+            font-size: 12px !important;
             color: #64748b !important;
+            margin: 0 !important;
         }
         .revision-banner {
-            margin-top: 12px;
-            padding: 12px 14px;
-            border-radius: 12px;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
             background: #fff7ed;
             border: 1px solid #fed7aa;
             color: #9a3412;
+            font-size: 12px;
         }
         .revision-banner strong {
             display: block;
-            font-size: 12px;
-            margin-bottom: 4px;
+            font-size: 11px;
+            margin-bottom: 3px;
         }
         .revision-banner p {
             margin: 0;
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.4;
         }
 
-        /* Step Progress Header */
+        /* Step Progress — matches reference exactly */
         .step-progress-wizard {
             display: flex;
             align-items: center;
-            padding: 12px 24px;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 10px 20px 12px;
             background: #ffffff;
             flex-shrink: 0;
+            border-bottom: 1px solid #f1f5f9;
         }
         .step-progress-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 13px;
+            gap: 6px;
+            font-size: 12px;
             font-weight: 600;
             color: #94a3b8;
             user-select: none;
@@ -1057,110 +1053,118 @@ $modalStyles = <<<'CSS'
             font-weight: 700;
         }
         .step-progress-item.done {
-            color: #0f172a;
-            font-weight: 700;
+            color: #0284c7;
+            font-weight: 600;
         }
         .step-progress-item .step-badge {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: #f1f5f9;
+            background: #e2e8f0;
             color: #64748b;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
         .step-progress-item.active .step-badge {
-            background: #0284c7;
+            background: #0ea5e9;
             color: #ffffff;
         }
         .step-progress-item.done .step-badge {
-            background: #0284c7;
+            background: #0ea5e9;
             color: #ffffff;
         }
         .step-progress-line {
             flex: 1;
-            height: 2px;
+            height: 1px;
             background: #e2e8f0;
-            margin: 0 12px;
+            margin: 0 8px;
             transition: background 0.3s ease;
         }
         .step-progress-line.done {
-            background: #0284c7;
+            background: #0ea5e9;
         }
 
-        /* Modal Body & Sections */
+        /* Modal Body — scrollable content area */
         .job-create-panel .modal-body {
             flex: 1 !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
-            padding: 24px !important;
+            padding: 20px !important;
             display: flex !important;
             flex-direction: column !important;
-            gap: 24px !important;
+            gap: 20px !important;
             min-height: 0 !important;
             scrollbar-width: thin !important;
-            scrollbar-color: #cbd5e1 #f8fafc !important;
+            scrollbar-color: #e2e8f0 transparent !important;
         }
         .job-create-panel .modal-body::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
         .job-create-panel .modal-body::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
+            background: #e2e8f0;
+            border-radius: 2px;
         }
+
+        /* Section cards — matches reference */
         .form-section-card {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 16px;
         }
         .form-section-divider {
             height: 1px;
+            border: none;
             border-bottom: 1px dashed #e2e8f0;
-            margin: 8px 0;
+            margin: 2px 0;
         }
         .form-section-header {
             display: flex;
             align-items: flex-start;
-            gap: 12px;
-            padding-bottom: 12px;
+            gap: 10px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #f1f5f9;
         }
         .form-section-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             background: #e0f2fe;
             color: #0284c7;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
             flex-shrink: 0;
         }
-        .form-section-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0 0 2px 0;
+        .section-title, .form-section-title {
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin: 0 0 1px 0 !important;
         }
-        .form-section-subtitle {
-            font-size: 12px;
-            color: #64748b;
-            margin: 0;
+        .section-subtitle, .form-section-subtitle {
+            font-size: 11px !important;
+            color: #64748b !important;
+            margin: 0 !important;
         }
 
-        /* Fields & Grid */
+        /* Form Groups */
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
         .form-group label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #334155;
         }
@@ -1169,61 +1173,69 @@ $modalStyles = <<<'CSS'
             margin-left: 2px;
         }
         .form-group .field-hint {
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
             margin-top: 2px;
         }
         .form-grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 12px;
         }
 
+        /* Input controls — matches reference style */
         .form-control-custom {
             width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            font-size: 13px;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 12px;
             color: #0f172a;
             background: #ffffff;
             outline: none;
-            transition: all 0.15s ease;
+            transition: border-color 0.15s ease;
             box-sizing: border-box;
+            appearance: none;
         }
         .form-control-custom:focus {
-            border-color: #0284c7;
-            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+        }
+        select.form-control-custom {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2394a3b8' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 28px;
         }
 
         /* Addon Groups */
         .input-addon-group {
             display: flex;
             align-items: center;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             overflow: hidden;
             background: #ffffff;
-            transition: all 0.15s ease;
+            transition: border-color 0.15s ease;
         }
         .input-addon-group:focus-within {
-            border-color: #0284c7;
-            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
         }
         .input-addon-group .addon-text {
-            padding: 10px 14px;
+            padding: 8px 10px;
             background: #f8fafc;
             color: #475569;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             border-right: 1px solid #e2e8f0;
             flex-shrink: 0;
         }
         .input-addon-group .addon-suffix {
-            padding: 10px 14px;
+            padding: 8px 10px;
             background: #f8fafc;
             color: #475569;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             border-left: 1px solid #e2e8f0;
             flex-shrink: 0;
@@ -1231,173 +1243,177 @@ $modalStyles = <<<'CSS'
         .input-addon-group input {
             flex: 1;
             border: none;
-            padding: 10px 14px;
-            font-size: 13px;
+            padding: 8px 10px;
+            font-size: 12px;
             outline: none;
             background: transparent;
             width: 100%;
+            min-width: 0;
         }
 
-        /* Radio / Checkbox Pills */
+        /* Radio/Checkbox Pills — matches reference filled style */
         .pill-group {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
         .pill-option {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
+            gap: 6px;
+            padding: 5px 12px;
             border-radius: 9999px;
-            border: 1px solid #cbd5e1;
+            border: 1.5px solid #e2e8f0;
             background: #ffffff;
             color: #475569;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             cursor: pointer;
             user-select: none;
             transition: all 0.15s ease;
         }
         .pill-option:hover {
-            border-color: #94a3b8;
-            background: #f8fafc;
+            border-color: #0ea5e9;
         }
         .pill-option input[type="checkbox"],
         .pill-option input[type="radio"] {
             appearance: none;
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border: 1.5px solid #94a3b8;
+            width: 14px;
+            height: 14px;
+            border: 1.5px solid #cbd5e1;
             border-radius: 50%;
             outline: none;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             margin: 0;
             cursor: pointer;
             transition: all 0.15s ease;
+            flex-shrink: 0;
         }
         .pill-option input[type="checkbox"]:checked,
         .pill-option input[type="radio"]:checked {
-            background: #0284c7;
-            border-color: #0284c7;
+            background: #0ea5e9;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
         }
         .pill-option input[type="checkbox"]:checked::after,
         .pill-option input[type="radio"]:checked::after {
-            content: "✓";
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 800;
+            content: "";
+            display: block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ffffff;
         }
         .pill-option:has(input:checked) {
-            border-color: #0284c7;
+            border-color: #0ea5e9;
             background: #f0f9ff;
             color: #0369a1;
             font-weight: 600;
         }
 
-        /* Option Card Toggles (Radio Cards) */
+        /* Card Toggle Items */
         .card-toggle-group {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
         .card-toggle-item {
             display: flex;
             align-items: flex-start;
-            gap: 12px;
-            padding: 12px 16px;
+            gap: 10px;
+            padding: 10px 12px;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border-radius: 8px;
             background: #ffffff;
             cursor: pointer;
             user-select: none;
-            transition: all 0.15s ease;
+            transition: border-color 0.15s ease;
         }
         .card-toggle-item:hover {
-            border-color: #cbd5e1;
-            background: #f8fafc;
+            border-color: #0ea5e9;
         }
         .card-toggle-item input[type="checkbox"],
         .card-toggle-item input[type="radio"] {
-            margin-top: 3px;
-            accent-color: #0284c7;
-            width: 16px;
-            height: 16px;
+            margin-top: 2px;
+            accent-color: #0ea5e9;
+            width: 14px;
+            height: 14px;
             cursor: pointer;
+            flex-shrink: 0;
         }
         .card-toggle-content {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 1px;
         }
         .card-toggle-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #0f172a;
         }
         .card-toggle-desc {
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
+            line-height: 1.4;
         }
 
-        /* Rich Text Editor Shell */
+        /* Rich Text Editor */
         .rich-editor-shell {
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             overflow: hidden;
             background: #ffffff;
         }
         .rich-editor-shell:focus-within {
-            border-color: #0284c7;
-            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
         }
         .rich-toolbar {
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 6px 10px;
-            border-bottom: 1px solid #e2e8f0;
+            gap: 2px;
+            padding: 4px 8px;
+            border-bottom: 1px solid #f1f5f9;
             background: #f8fafc;
             flex-wrap: wrap;
         }
         .rich-btn {
-            border: 1px solid transparent;
+            border: none;
             background: transparent;
             color: #475569;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 12px;
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 11px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 26px;
-            height: 26px;
+            min-width: 22px;
+            height: 22px;
         }
         .rich-btn:hover {
             background: #e2e8f0;
-            color: #0f172a;
         }
         .rich-btn-select {
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 2px 6px;
-            font-size: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 11px;
             color: #475569;
             background: #ffffff;
-            height: 26px;
+            height: 22px;
         }
         .rich-area {
-            min-height: 140px;
-            max-height: 220px;
+            min-height: 120px;
+            max-height: 180px;
             overflow-y: auto;
-            padding: 12px;
+            padding: 10px;
             outline: none;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.6;
             color: #0f172a;
         }
@@ -1406,18 +1422,18 @@ $modalStyles = <<<'CSS'
         .choice-chip-wrap {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
+            gap: 5px;
+            margin-top: 6px;
         }
         .choice-chip {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
+            gap: 4px;
+            padding: 3px 8px;
             border-radius: 9999px;
             background: #e0f2fe;
             color: #0369a1;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
         }
         .choice-chip button {
@@ -1426,13 +1442,13 @@ $modalStyles = <<<'CSS'
             color: inherit;
             cursor: pointer;
             padding: 0;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1;
         }
 
-        /* Footer Buttons */
+        /* Footer — sticky at bottom */
         .job-create-panel .modal-footer {
-            padding: 16px 24px !important;
+            padding: 14px 20px !important;
             border-top: 1px solid #f1f5f9 !important;
             display: flex !important;
             justify-content: space-between !important;
@@ -1440,33 +1456,39 @@ $modalStyles = <<<'CSS'
             background: #ffffff !important;
             flex-shrink: 0 !important;
             border-radius: 0 !important;
+            gap: 8px !important;
         }
         .btn-secondary-custom {
-            padding: 10px 20px;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
             background: #ffffff;
             color: #334155;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .btn-secondary-custom:hover {
             background: #f8fafc;
             border-color: #94a3b8;
         }
         .btn-primary-custom {
-            padding: 10px 24px;
-            border-radius: 10px;
+            padding: 8px 20px;
+            border-radius: 8px;
             border: none;
             background: #0ea5e9;
             color: #ffffff;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.15s ease;
-            box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+            transition: background 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .btn-primary-custom:hover {
             background: #0284c7;
