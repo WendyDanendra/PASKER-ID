@@ -947,17 +947,28 @@ $modalStyles = <<<'CSS'
             border-radius: 16px;
             box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
         }
+        .modal-backdrop[data-modal="job-create"] {
+            display: none;
+            justify-content: flex-end;
+            align-items: stretch;
+            padding: 0;
+            background: rgba(15, 23, 42, 0.45);
+        }
+        .modal-backdrop[data-modal="job-create"].open {
+            display: flex;
+        }
         .job-create-panel {
-            width: min(840px, 95vw);
-            height: calc(100vh - 40px);
-            max-height: calc(100vh - 40px);
+            width: min(680px, 92vw);
+            height: 100vh;
+            max-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             min-height: 0;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 20px 0 0 20px;
+            box-shadow: -12px 0 40px rgba(15, 23, 42, 0.22);
             background: #ffffff;
+            margin: 0;
         }
         .job-create-panel form {
             display: flex;
@@ -971,6 +982,7 @@ $modalStyles = <<<'CSS'
             padding: 20px 24px 16px;
             border-bottom: 1px solid #f1f5f9;
             flex-shrink: 0;
+            background: #ffffff;
         }
         .job-create-panel .modal-close {
             position: absolute;
@@ -1026,7 +1038,7 @@ $modalStyles = <<<'CSS'
         .step-progress-wizard {
             display: flex;
             align-items: center;
-            padding: 14px 24px;
+            padding: 12px 24px;
             border-bottom: 1px solid #f1f5f9;
             background: #ffffff;
             flex-shrink: 0;
@@ -1034,7 +1046,7 @@ $modalStyles = <<<'CSS'
         .step-progress-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             font-size: 13px;
             font-weight: 600;
             color: #94a3b8;
@@ -1049,8 +1061,8 @@ $modalStyles = <<<'CSS'
             font-weight: 700;
         }
         .step-progress-item .step-badge {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
@@ -1066,18 +1078,18 @@ $modalStyles = <<<'CSS'
             color: #ffffff;
         }
         .step-progress-item.done .step-badge {
-            background: #10b981;
+            background: #0284c7;
             color: #ffffff;
         }
         .step-progress-line {
             flex: 1;
             height: 2px;
             background: #e2e8f0;
-            margin: 0 16px;
+            margin: 0 12px;
             transition: background 0.3s ease;
         }
         .step-progress-line.done {
-            background: #10b981;
+            background: #0284c7;
         }
 
         /* Modal Body & Sections */
@@ -1087,7 +1099,7 @@ $modalStyles = <<<'CSS'
             padding: 24px;
             display: flex;
             flex-direction: column;
-            gap: 28px;
+            gap: 24px;
             scrollbar-width: thin;
             scrollbar-color: #cbd5e1 #f8fafc;
         }
@@ -1101,7 +1113,12 @@ $modalStyles = <<<'CSS'
         .form-section-card {
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 16px;
+        }
+        .form-section-divider {
+            height: 1px;
+            border-bottom: 1px dashed #e2e8f0;
+            margin: 8px 0;
         }
         .form-section-header {
             display: flex;
@@ -1671,6 +1688,8 @@ $modal = <<<HTML
                             </div>
                         </div>
 
+                        <div class="form-section-divider"></div>
+
                         <!-- Section 2: Preferensi Gaji -->
                         <div class="form-section-card">
                             <div class="form-section-header">
@@ -1709,6 +1728,8 @@ $modal = <<<HTML
                             </div>
                         </div>
 
+                        <div class="form-section-divider"></div>
+
                         <!-- Section 3: Preferensi Lainnya -->
                         <div class="form-section-card">
                             <div class="form-section-header">
@@ -1736,6 +1757,8 @@ $modal = <<<HTML
                                 </label>
                             </div>
                         </div>
+
+                        <div class="form-section-divider"></div>
 
                         <!-- Section 4: Durasi Tayang & Kuota Loker -->
                         <div class="form-section-card">
@@ -1836,6 +1859,8 @@ $modal = <<<HTML
                             </div>
                         </div>
 
+                        <div class="form-section-divider"></div>
+
                         <!-- Section 2: Persyaratan Khusus -->
                         <div class="form-section-card">
                             <div class="form-section-header">
@@ -1907,6 +1932,8 @@ $modal = <<<HTML
                                 <div class="choice-chip-wrap" data-chip-list="skills" style="margin-top:8px;"></div>
                             </div>
                         </div>
+
+                        <div class="form-section-divider"></div>
 
                         <!-- Section 2: Kontak -->
                         <div class="form-section-card">
