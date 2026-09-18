@@ -639,14 +639,15 @@ function initRichEditors(root) {
             });
         });
 
-        const blockSelect = editor.querySelector('[data-block]');
-        if (blockSelect) {
-            blockSelect.addEventListener('change', () => {
+        editor.querySelectorAll('[data-cmd-select]').forEach((select) => {
+            select.addEventListener('change', () => {
                 area.focus();
-                document.execCommand('formatBlock', false, blockSelect.value);
+                document.execCommand(select.dataset.cmdSelect, false, select.value);
                 sync();
             });
-        }
+        });
+
+
 
         area.addEventListener('input', sync);
         area.addEventListener('blur', sync);
@@ -752,6 +753,36 @@ function initJobCreateWizard() {
     initRichEditors(modal);
     initChipField(modal, 'skills');
     initChipField(modal, 'contacts');
+
+    const chkSameDomicile = modal.querySelector('#chkSameDomicile');
+    const jobLocationInput = modal.querySelector('#jobLocationInput');
+
+    if (chkSameDomicile && jobLocationInput) {
+        let savedManualLocation = '';
+        chkSameDomicile.addEventListener('change', () => {
+            if (chkSameDomicile.checked) {
+                savedManualLocation = jobLocationInput.value;
+                const domAddr = chkSameDomicile.getAttribute('data-domicile-address') || '';
+                jobLocationInput.value = domAddr;
+            } else {
+                jobLocationInput.value = savedManualLocation;
+            }
+        });
+    }
+
+    const chkDisability = modal.querySelector('#chkDisability');
+    const disabilityGroup = modal.querySelector('#disabilityExcludedGroup');
+
+    const updateDisabilityGroupVisibility = () => {
+        if (disabilityGroup) {
+            disabilityGroup.style.display = (chkDisability && chkDisability.checked) ? 'flex' : 'none';
+        }
+    };
+
+    if (chkDisability) {
+        chkDisability.addEventListener('change', updateDisabilityGroupVisibility);
+        updateDisabilityGroupVisibility();
+    }
 
     const syncRichText = () => {
         modal.querySelectorAll('[data-rich-editor]').forEach((editor) => {

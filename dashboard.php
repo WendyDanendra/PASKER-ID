@@ -800,7 +800,7 @@ unset($_SESSION['kbji_duplicate_error']);
 if (isset($_GET['open_profile']) && $_GET['open_profile'] == '1') {
     $showProfileModal = true;
 } else {
-    $showProfileModal = ($verificationStatus === 'NOT_SUBMITTED');
+    $showProfileModal = false;
 }
 
 ob_start();
@@ -948,13 +948,16 @@ $modalStyles = <<<'CSS'
             box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
         }
         .job-create-panel {
-            width: min(860px, 100%);
-            height: calc(100vh - 32px);
-            max-height: calc(100vh - 32px);
+            width: min(840px, 95vw);
+            height: calc(100vh - 40px);
+            max-height: calc(100vh - 40px);
             display: flex;
             flex-direction: column;
             overflow: hidden;
             min-height: 0;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background: #ffffff;
         }
         .job-create-panel form {
             display: flex;
@@ -963,34 +966,42 @@ $modalStyles = <<<'CSS'
             min-height: 0;
             overflow: hidden;
         }
-        .modal-header,
-        .modal-footer {
-            padding: 20px 24px 16px;
-            border-bottom: 1px solid #eef2f7;
-            flex-shrink: 0;
-        }
         .job-create-panel .modal-header {
             position: relative;
-            padding-right: 56px;
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
         }
-        .modal-footer {
-            border-bottom: none;
-            border-top: 1px solid #eef2f7;
+        .job-create-panel .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #64748b;
             display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            padding: 14px 24px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .modal-title {
+        .job-create-panel .modal-close:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .job-create-panel .modal-title {
             font-size: 20px;
             font-weight: 800;
+            color: #0f172a;
             letter-spacing: -0.02em;
             margin-bottom: 4px;
-            color: #111827;
         }
-        .modal-subtitle {
-            color: #6b7280;
+        .job-create-panel .modal-subtitle {
             font-size: 13px;
+            color: #64748b;
         }
         .revision-banner {
             margin-top: 12px;
@@ -1010,62 +1021,316 @@ $modalStyles = <<<'CSS'
             font-size: 13px;
             line-height: 1.5;
         }
-        .step-progress {
+
+        /* Step Progress Header */
+        .step-progress-wizard {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 14px 24px 0;
-            background: #fff;
+            padding: 14px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            background: #ffffff;
             flex-shrink: 0;
         }
         .step-progress-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            font-weight: 700;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 600;
             color: #94a3b8;
+            user-select: none;
         }
         .step-progress-item.active {
             color: #0284c7;
+            font-weight: 700;
         }
         .step-progress-item.done {
             color: #0f172a;
+            font-weight: 700;
         }
-        .step-progress-item .bubble {
-            width: 24px;
-            height: 24px;
+        .step-progress-item .step-badge {
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: #e2e8f0;
-            color: #475569;
-            font-size: 11px;
-            font-weight: 800;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.2s ease;
         }
-        .step-progress-item.active .bubble {
+        .step-progress-item.active .step-badge {
             background: #0284c7;
-            color: #fff;
+            color: #ffffff;
         }
-        .step-progress-item.done .bubble {
-            background: #0f172a;
-            color: #fff;
+        .step-progress-item.done .step-badge {
+            background: #10b981;
+            color: #ffffff;
         }
         .step-progress-line {
             flex: 1;
             height: 2px;
             background: #e2e8f0;
-            margin: 0 10px;
+            margin: 0 16px;
+            transition: background 0.3s ease;
         }
         .step-progress-line.done {
-            background: #0284c7;
+            background: #10b981;
         }
+
+        /* Modal Body & Sections */
+        .job-create-panel .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f8fafc;
+        }
+        .job-create-panel .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .job-create-panel .modal-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .form-section-card {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .form-section-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .form-section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #e0f2fe;
+            color: #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .form-section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 2px 0;
+        }
+        .form-section-subtitle {
+            font-size: 12px;
+            color: #64748b;
+            margin: 0;
+        }
+
+        /* Fields & Grid */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+        }
+        .form-group label .req {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+        .form-group .field-hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #0f172a;
+            background: #ffffff;
+            outline: none;
+            transition: all 0.15s ease;
+            box-sizing: border-box;
+        }
+        .form-control-custom:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+        }
+
+        /* Addon Groups */
+        .input-addon-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #ffffff;
+            transition: all 0.15s ease;
+        }
+        .input-addon-group:focus-within {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+        }
+        .input-addon-group .addon-text {
+            padding: 10px 14px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            border-right: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+        .input-addon-group .addon-suffix {
+            padding: 10px 14px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            border-left: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+        .input-addon-group input {
+            flex: 1;
+            border: none;
+            padding: 10px 14px;
+            font-size: 13px;
+            outline: none;
+            background: transparent;
+            width: 100%;
+        }
+
+        /* Radio / Checkbox Pills */
+        .pill-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .pill-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .pill-option:hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        .pill-option input[type="checkbox"],
+        .pill-option input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid #94a3b8;
+            border-radius: 50%;
+            outline: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .pill-option input[type="checkbox"]:checked,
+        .pill-option input[type="radio"]:checked {
+            background: #0284c7;
+            border-color: #0284c7;
+        }
+        .pill-option input[type="checkbox"]:checked::after,
+        .pill-option input[type="radio"]:checked::after {
+            content: "✓";
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+        }
+        .pill-option:has(input:checked) {
+            border-color: #0284c7;
+            background: #f0f9ff;
+            color: #0369a1;
+            font-weight: 600;
+        }
+
+        /* Option Card Toggles (Radio Cards) */
+        .card-toggle-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .card-toggle-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .card-toggle-item:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+        .card-toggle-item input[type="checkbox"],
+        .card-toggle-item input[type="radio"] {
+            margin-top: 3px;
+            accent-color: #0284c7;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .card-toggle-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .card-toggle-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .card-toggle-desc {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* Rich Text Editor Shell */
         .rich-editor-shell {
             border: 1px solid #cbd5e1;
             border-radius: 12px;
             overflow: hidden;
-            background: #fff;
+            background: #ffffff;
         }
         .rich-editor-shell:focus-within {
             border-color: #0284c7;
@@ -1075,9 +1340,10 @@ $modalStyles = <<<'CSS'
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 8px;
+            padding: 6px 10px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-wrap: wrap;
         }
         .rich-btn {
             border: 1px solid transparent;
@@ -1087,20 +1353,37 @@ $modalStyles = <<<'CSS'
             padding: 4px 8px;
             font-size: 12px;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            height: 26px;
         }
         .rich-btn:hover {
             background: #e2e8f0;
             color: #0f172a;
         }
+        .rich-btn-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #475569;
+            background: #ffffff;
+            height: 26px;
+        }
         .rich-area {
-            min-height: 120px;
-            max-height: 200px;
-            overflow: auto;
-            padding: 10px 12px;
+            min-height: 140px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 12px;
             outline: none;
             font-size: 13px;
             line-height: 1.6;
+            color: #0f172a;
         }
+
+        /* Chips */
         .choice-chip-wrap {
             display: flex;
             flex-wrap: wrap;
@@ -1127,191 +1410,528 @@ $modalStyles = <<<'CSS'
             font-size: 14px;
             line-height: 1;
         }
-        .checkbox-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 8px;
-        }
-        .checkbox-card {
+
+        /* Footer Buttons */
+        .job-create-panel .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #f1f5f9;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 13px;
-            cursor: pointer;
-            background: #f8fafc;
+            background: #ffffff;
+            flex-shrink: 0;
         }
-        .checkbox-card:hover {
-            background: #f1f5f9;
+        .btn-secondary-custom {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-secondary-custom:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+        .btn-primary-custom {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            background: #0ea5e9;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+        }
+        .btn-primary-custom:hover {
+            background: #0284c7;
         }
 CSS;
 
 $html = str_replace('</head>', "<style>\n" . $modalStyles . "\n</style>\n</head>", $html);
 
-$modal = <<<'HTML'
+$domicileParts = array_filter([
+    $profile['address'] ?? '',
+    $profile['village'] ?? '',
+    $profile['district'] ?? '',
+    $profile['city'] ?? '',
+    $profile['province'] ?? ''
+]);
+$employerDomicileAddress = !empty($domicileParts) ? implode(', ', $domicileParts) : ($profile['city'] ?? '');
+$employerDomicileEsc = htmlspecialchars($employerDomicileAddress, ENT_QUOTES, 'UTF-8');
+
+$kbjiList = [];
+try {
+    $kbjiList = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY kode_kbji ASC')->fetchAll() ?: [];
+} catch (Throwable $e) {}
+
+$kbjiOptionsHtml = '<option value="">Pilih jabatan sesuai KBJI</option>';
+if (!empty($kbjiList)) {
+    foreach ($kbjiList as $kbji) {
+        $code = htmlspecialchars($kbji['kode_kbji']);
+        $name = htmlspecialchars($kbji['nama_jabatan']);
+        $kbjiOptionsHtml .= "<option value=\"{$code}\">{$code} - {$name}</option>";
+    }
+} else {
+    $kbjiOptionsHtml .= '<option value="5120.01">5120.01 - Juru Masak / Koki</option>'
+        . '<option value="5131.00">5131.00 - Pelayan Restoran / Kafe</option>'
+        . '<option value="5151.01">5151.01 - Pengurus Rumah Tangga / ART</option>'
+        . '<option value="8322.01">8322.01 - Pengemudi Mobil Pribadi</option>'
+        . '<option value="5322.00">5322.00 - Pengasuh Anak / Babysitter</option>'
+        . '<option value="5414.01">5414.01 - Penjaga Keamanan / Satpam</option>';
+}
+
+$modal = <<<HTML
     <div class="modal-backdrop" data-modal="job-create">
         <div class="modal-panel job-create-panel" role="dialog" aria-modal="true">
             <div class="modal-header">
                 <button type="button" class="modal-close" data-close-modal="job-create" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
                 <div class="modal-title" id="jobCreateTitle">Tambah Lowongan</div>
-                <div class="modal-subtitle" id="jobCreateSubtitle">Lengkapi formulir 3 langkah untuk membuat lowongan baru</div>
+                <div class="modal-subtitle" id="jobCreateSubtitle">Lengkapi form berikut untuk mengisi lowongan</div>
                 <div class="revision-banner" id="revisionBanner" hidden>
                     <strong><i class="fa-solid fa-triangle-exclamation"></i> Catatan Revisi dari Admin</strong>
                     <p id="revisionBannerText"></p>
                 </div>
             </div>
-            <div class="step-progress" aria-hidden="true">
-                <div class="step-progress-item active" data-step-label="1"><span class="bubble">1</span><span>Informasi Loker</span></div>
+            <div class="step-progress-wizard" aria-hidden="true">
+                <div class="step-progress-item active" data-step-label="1">
+                    <span class="step-badge">1</span>
+                    <span>Informasi Loker</span>
+                </div>
                 <div class="step-progress-line" data-step-line="1"></div>
-                <div class="step-progress-item" data-step-label="2"><span class="bubble">2</span><span>Persyaratan</span></div>
+                <div class="step-progress-item" data-step-label="2">
+                    <span class="step-badge">2</span>
+                    <span>Persyaratan</span>
+                </div>
                 <div class="step-progress-line" data-step-line="2"></div>
-                <div class="step-progress-item" data-step-label="3"><span class="bubble">3</span><span>Tambahan</span></div>
+                <div class="step-progress-item" data-step-label="3">
+                    <span class="step-badge">3</span>
+                    <span>Tambahan</span>
+                </div>
             </div>
             <form method="post" action="dashboard.php" data-job-create-form>
                 <input type="hidden" name="save_job" value="1">
                 <input type="hidden" name="job_action" value="save">
                 <input type="hidden" name="job_id" id="reviseJobId" value="">
-                <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px 24px;">
+                <div class="modal-body">
                     <!-- Step 1: Informasi Loker -->
                     <div class="form-step active" data-job-step="1">
-                        <div class="field" style="margin-bottom:14px;">
-                            <label>Judul Lowongan <span class="req">*</span></label>
-                            <input type="text" name="job_title" placeholder="Contoh: Barista, Asisten Rumah Tangga, Supir Pribadi" required>
-                        </div>
-                        <div class="field" style="margin-bottom:14px;">
-                            <label>Deskripsi Pekerjaan <span class="req">*</span></label>
-                            <div class="rich-editor-shell" data-rich-editor>
-                                <div class="rich-toolbar">
-                                    <button type="button" class="rich-btn" data-cmd="bold"><b>B</b></button>
-                                    <button type="button" class="rich-btn" data-cmd="italic"><i>I</i></button>
-                                    <button type="button" class="rich-btn" data-cmd="insertUnorderedList">• List</button>
+                        <!-- Section 1: Informasi Loker -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-briefcase"></i></div>
+                                <div>
+                                    <h3 class="section-title">Informasi Loker</h3>
+                                    <p class="section-subtitle">Judul, lokasi, hingga jenis disabilitas loker</p>
                                 </div>
-                                <div class="rich-area" contenteditable="true"></div>
-                                <textarea name="job_description" hidden></textarea>
                             </div>
-                        </div>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
-                            <div class="field">
-                                <label>Kode KBJI <span class="req">*</span></label>
-                                <select name="kbji_code" required>
-                                    <option value="">Pilih Jabatan (KBJI)</option>
-                                    <option value="5120.01">5120.01 - Juru Masak / Koki</option>
-                                    <option value="5131.00">5131.00 - Pelayan Restoran / Kafe</option>
-                                    <option value="5151.01">5151.01 - Pengurus Rumah Tangga / ART</option>
-                                    <option value="8322.01">8322.01 - Pengemudi Mobil Pribadi</option>
-                                    <option value="5322.00">5322.00 - Pengasuh Anak / Babysitter</option>
-                                    <option value="5414.01">5414.01 - Penjaga Keamanan / Satpam</option>
+
+                            <div class="form-group">
+                                <label>Judul loker <span class="req">*</span></label>
+                                <input type="text" name="job_title" class="form-control-custom" placeholder="Masukkan judul loker" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Deskripsi loker <span class="req">*</span></label>
+                                <div class="rich-editor-shell" data-rich-editor>
+                                    <div class="rich-toolbar">
+                                        <button type="button" class="rich-btn" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="fullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="removeFormat" title="Hapus Format"><i class="fa-solid fa-eraser"></i></button>
+                                        <select class="rich-btn-select" data-cmd-select="formatBlock">
+                                            <option value="p">Paragraph</option>
+                                            <option value="h1">Heading 1</option>
+                                            <option value="h2">Heading 2</option>
+                                            <option value="h3">Heading 3</option>
+                                        </select>
+                                        <select class="rich-btn-select" data-cmd-select="fontSize">
+                                            <option value="3">Default</option>
+                                            <option value="2">Kecil</option>
+                                            <option value="4">Besar</option>
+                                        </select>
+                                        <button type="button" class="rich-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                                        <button type="button" class="rich-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                                        <button type="button" class="rich-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                                        <button type="button" class="rich-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                                        <button type="button" class="rich-btn" data-cmd="foreColor" title="Warna Teks"><span style="text-decoration:underline; font-weight:bold;">T</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="hiliteColor" title="Warna Sorot"><span style="background:#fef08a; padding:0 2px; font-weight:bold;">A</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertUnorderedList" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertOrderedList" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyLeft" title="Rata Kiri"><i class="fa-solid fa-align-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyCenter" title="Rata Tengah"><i class="fa-solid fa-align-center"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyRight" title="Rata Kanan"><i class="fa-solid fa-align-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="indent" title="Tambah Inden"><i class="fa-solid fa-indent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="outdent" title="Kurangi Inden"><i class="fa-solid fa-outdent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="createLink" title="Sisipkan Tautan"><i class="fa-solid fa-link"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertHorizontalRule" title="Garis Horisontal"><i class="fa-solid fa-minus"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertCode" title="Kode">&lt;&gt;</button>
+                                        <button type="button" class="rich-btn" data-cmd="insertTableCol" title="Tabel"><i class="fa-solid fa-table-cells"></i></button>
+                                    </div>
+                                    <div class="rich-area" contenteditable="true" data-placeholder="Masukkan deskripsi loker"></div>
+                                    <textarea name="job_description" hidden></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Jabatan sesuai KBJI <span class="req">*</span></label>
+                                <select name="kbji_code" class="form-control-custom" required>
+                                    {$kbjiOptionsHtml}
                                 </select>
                             </div>
-                            <div class="field">
-                                <label>Jenis Pekerjaan <span class="req">*</span></label>
-                                <select name="job_type" required>
-                                    <option value="Penuh Waktu">Penuh Waktu</option>
-                                    <option value="Paruh Waktu">Paruh Waktu</option>
-                                    <option value="Kontrak">Kontrak</option>
-                                    <option value="Harian Lepas">Harian Lepas</option>
+
+                            <div class="form-group">
+                                <label>Lokasi loker <span class="req">*</span></label>
+                                <input type="text" name="job_location" id="jobLocationInput" class="form-control-custom" placeholder="Pilih lokasi loker" required>
+                                <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:13px; font-weight:normal; color:#475569; cursor:pointer; user-select:none;">
+                                    <input type="checkbox" id="chkSameDomicile" data-domicile-address="{$employerDomicileEsc}">
+                                    <span>Alamat loker sama dengan alamat domisili pemberi kerja</span>
+                                </label>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Jenis pekerjaan <span class="req">*</span></label>
+                                    <select name="job_type" class="form-control-custom" required>
+                                        <option value="">Pilih jenis pekerjaan</option>
+                                        <option value="Penuh Waktu" selected>Penuh Waktu</option>
+                                        <option value="Paruh Waktu">Paruh Waktu</option>
+                                        <option value="Kontrak">Kontrak</option>
+                                        <option value="Harian Lepas">Harian Lepas</option>
+                                        <option value="Magang">Magang</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Bidang pekerjaan <span class="req">*</span></label>
+                                    <input type="text" name="job_field" class="form-control-custom" placeholder="Pilih bidang pekerjaan" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Industri / sektor <span class="req">*</span></label>
+                                <select name="industry" class="form-control-custom" required>
+                                    <option value="">Pilih Industri / Sektor Pekerjaan</option>
+                                    <option value="Rumah Tangga & Jasa Perorangan">Rumah Tangga & Jasa Perorangan</option>
+                                    <option value="Kuliner & Katering / Restoran">Kuliner & Katering / Restoran</option>
+                                    <option value="Retail & Perdagangan">Retail & Perdagangan</option>
+                                    <option value="Transportasi & Logistik">Transportasi & Logistik</option>
+                                    <option value="Keamanan & Kebersihan">Keamanan & Kebersihan</option>
+                                    <option value="Jasa Profesional & Administrasi">Jasa Profesional & Administrasi</option>
+                                    <option value="Konstruksi & Properti">Konstruksi & Properti</option>
+                                    <option value="Lainnya">Lainnya</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                            <div class="field">
-                                <label>Bidang Pekerjaan <span class="req">*</span></label>
-                                <input type="text" name="job_field" placeholder="Contoh: Kuliner, Domestik, Logistik" required>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Kondisi fisik <span class="req">*</span></label>
+                                    <div class="pill-group" data-required-group="Pilih minimal satu kondisi fisik.">
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="physical_condition[]" id="chkDisability" value="Disabilitas">
+                                            <span>Disabilitas</span>
+                                        </label>
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="physical_condition[]" value="Non Disabilitas" checked>
+                                            <span>Non Disabilitas</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Jenis kelamin <span class="req">*</span></label>
+                                    <div class="pill-group" data-required-group="Pilih minimal satu jenis kelamin.">
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="gender[]" value="Laki-laki" checked>
+                                            <span>Laki-laki</span>
+                                        </label>
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="gender[]" value="Perempuan" checked>
+                                            <span>Perempuan</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="field">
-                                <label>Industri <span class="req">*</span></label>
-                                <input type="text" name="industry" placeholder="Contoh: Rumah Tangga, Jasa Makanan" required>
+
+                            <div class="form-group" id="disabilityExcludedGroup" style="display:none;">
+                                <label>Jenis disabilitas tidak diperbolehkan</label>
+                                <select name="disability_excluded" class="form-control-custom">
+                                    <option value="">Pilih jenis disabilitas</option>
+                                    <option value="Tidak Ada">Tidak Ada (Semua diperbolehkan)</option>
+                                    <option value="Disabilitas Fisik / Sensorik Berat">Disabilitas Fisik / Sensorik Berat</option>
+                                    <option value="Disabilitas Intelektual">Disabilitas Intelektual</option>
+                                    <option value="Disabilitas Netra">Disabilitas Netra (Tunanetra)</option>
+                                    <option value="Disabilitas Rungu">Disabilitas Rungu / Wicara</option>
+                                    <option value="Disabilitas Mental">Disabilitas Mental</option>
+                                </select>
+                                <div class="field-hint"><i class="fa-regular fa-circle-info"></i> Pilih jenis disabilitas yang tidak diperbolehkan untuk melamar.</div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Preferensi Gaji -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                                <div>
+                                    <h3 class="section-title">Preferensi Gaji</h3>
+                                    <p class="section-subtitle">Besaran dan pengaturan gaji pada loker</p>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Gaji minimal <span class="req">*</span></label>
+                                    <div class="input-addon-group">
+                                        <span class="addon-text">Rp</span>
+                                        <input type="number" name="salary_min" placeholder="Isi minimal gaji yang akan diberikan" required min="0">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Gaji maksimal <span class="req">*</span></label>
+                                    <div class="input-addon-group">
+                                        <span class="addon-text">Rp</span>
+                                        <input type="number" name="salary_max" placeholder="Isi maksimal gaji yang akan diberikan" required min="0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-toggle-group">
+                                <label class="card-toggle-item">
+                                    <input type="checkbox" name="show_salary" value="1" checked>
+                                    <div class="card-toggle-content">
+                                        <span class="card-toggle-title">Tampilkan gaji</span>
+                                        <span class="card-toggle-desc">Fun facts: Berbagi rentang gaji meningkatkan klik posting pekerjaan kamu.</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Preferensi Lainnya -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-sliders"></i></div>
+                                <div>
+                                    <h3 class="section-title">Preferensi Lainnya</h3>
+                                    <p class="section-subtitle">Tentukan preferensi lainnya untuk lowongan pekerjaan</p>
+                                </div>
+                            </div>
+
+                            <div class="card-toggle-group">
+                                <label class="card-toggle-item">
+                                    <input type="checkbox" name="is_remote" value="1">
+                                    <div class="card-toggle-content">
+                                        <span class="card-toggle-title">Remote working</span>
+                                        <span class="card-toggle-desc">Dapat bekerja secara remote (jarak jauh)</span>
+                                    </div>
+                                </label>
+                                <label class="card-toggle-item">
+                                    <input type="checkbox" name="is_limited" value="1">
+                                    <div class="card-toggle-content">
+                                        <span class="card-toggle-title">Terbatas</span>
+                                        <span class="card-toggle-desc">Loker tidak dipublikasikan secara umum</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Durasi Tayang & Kuota Loker -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                                <div>
+                                    <h3 class="section-title">Durasi Tayang & Kuota Loker</h3>
+                                    <p class="section-subtitle">Tentukan berapa lama loker tayang setelah diverifikasi dan jumlah kuota yang diperlukan</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Lama expired loker <span class="req">*</span></label>
+                                <select name="expiry_days" class="form-control-custom" required>
+                                    <option value="">Pilih lama expired loker</option>
+                                    <option value="14">14 Hari</option>
+                                    <option value="30" selected>30 Hari</option>
+                                    <option value="60">60 Hari</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Jumlah lowongan <span class="req">*</span></label>
+                                <div class="input-addon-group">
+                                    <input type="number" name="quota" value="1" min="1" placeholder="Isi jumlah lowongan pada loker" required>
+                                    <span class="addon-suffix">Orang</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Step 2: Persyaratan -->
                     <div class="form-step" data-job-step="2" hidden>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
-                            <div class="field">
-                                <label>Minimal Pendidikan <span class="req">*</span></label>
-                                <select name="education_required" required>
-                                    <option value="Tidak Ada Minimal">Tidak Ada Minimal</option>
-                                    <option value="SD">SD Sederajat</option>
-                                    <option value="SMP">SMP Sederajat</option>
-                                    <option value="SMA/SMK">SMA/SMK Sederajat</option>
-                                    <option value="Diploma">Diploma (D3)</option>
-                                    <option value="Sarjana">Sarjana (S1)</option>
-                                </select>
+                        <!-- Section 1: Persyaratan Umum -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-file-lines"></i></div>
+                                <div>
+                                    <h3 class="section-title">Persyaratan Umum</h3>
+                                    <p class="section-subtitle">Informasi pendidikan, pengalaman, status pernikahan, dan usia</p>
+                                </div>
                             </div>
-                            <div class="field">
-                                <label>Minimal Pengalaman <span class="req">*</span></label>
-                                <select name="experience_required" required>
-                                    <option value="Fresh Graduate / Pemula">Fresh Graduate / Pemula</option>
-                                    <option value="Kurang dari 1 tahun">Kurang dari 1 tahun</option>
-                                    <option value="1 - 3 tahun">1 - 3 tahun</option>
-                                    <option value="Lebih dari 3 tahun">Lebih dari 3 tahun</option>
-                                </select>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Pendidikan minimal <span class="req">*</span></label>
+                                    <select name="education_required" class="form-control-custom" required>
+                                        <option value="">Pilih pendidikan minimal</option>
+                                        <option value="Tidak Ada Minimal">Tidak Ada Minimal</option>
+                                        <option value="SD">SD Sederajat</option>
+                                        <option value="SMP">SMP Sederajat</option>
+                                        <option value="SMA/SMK" selected>SMA/SMK Sederajat</option>
+                                        <option value="Diploma">Diploma (D3)</option>
+                                        <option value="Sarjana">Sarjana (S1)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pengalaman dibutuhkan <span class="req">*</span></label>
+                                    <select name="experience_required" class="form-control-custom" required>
+                                        <option value="">Pilih pengalaman</option>
+                                        <option value="Fresh Graduate / Pemula">Fresh Graduate / Pemula</option>
+                                        <option value="Kurang dari 1 tahun">Kurang dari 1 tahun</option>
+                                        <option value="1 - 3 tahun" selected>1 - 3 tahun</option>
+                                        <option value="Lebih dari 3 tahun">Lebih dari 3 tahun</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Status pernikahan <span class="req">*</span></label>
+                                <div class="pill-group" data-required-group="Pilih minimal satu status pernikahan.">
+                                    <label class="pill-option">
+                                        <input type="checkbox" name="marital_status[]" value="Telah Menikah" checked>
+                                        <span>Telah Menikah</span>
+                                    </label>
+                                    <label class="pill-option">
+                                        <input type="checkbox" name="marital_status[]" value="Lajang / Belum Menikah" checked>
+                                        <span>Lajang / Belum Menikah</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Usia minimal <span class="req">*</span></label>
+                                    <div class="input-addon-group">
+                                        <input type="number" name="age_min" placeholder="Isi usia minimal" required min="17" max="80" value="18">
+                                        <span class="addon-suffix">Tahun</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Usia maksimal <span class="req">*</span></label>
+                                    <div class="input-addon-group">
+                                        <input type="number" name="age_max" placeholder="Isi usia maksimal" required min="17" max="80" value="45">
+                                        <span class="addon-suffix">Tahun</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
-                            <div class="field">
-                                <label>Usia Minimal</label>
-                                <input type="number" name="age_min" placeholder="Contoh: 18">
+
+                        <!-- Section 2: Persyaratan Khusus -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-file-signature"></i></div>
+                                <div>
+                                    <h3 class="section-title">Persyaratan Khusus</h3>
+                                    <p class="section-subtitle">Masukkan persyaratan khusus untuk loker ini</p>
+                                </div>
                             </div>
-                            <div class="field">
-                                <label>Usia Maksimal</label>
-                                <input type="number" name="age_max" placeholder="Contoh: 45">
+
+                            <div class="form-group">
+                                <div class="rich-editor-shell" data-rich-editor>
+                                    <div class="rich-toolbar">
+                                        <button type="button" class="rich-btn" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="fullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="removeFormat" title="Hapus Format"><i class="fa-solid fa-eraser"></i></button>
+                                        <select class="rich-btn-select" data-cmd-select="formatBlock">
+                                            <option value="p">Paragraph</option>
+                                            <option value="h1">Heading 1</option>
+                                            <option value="h2">Heading 2</option>
+                                            <option value="h3">Heading 3</option>
+                                        </select>
+                                        <select class="rich-btn-select" data-cmd-select="fontSize">
+                                            <option value="3">Default</option>
+                                            <option value="2">Kecil</option>
+                                            <option value="4">Besar</option>
+                                        </select>
+                                        <button type="button" class="rich-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                                        <button type="button" class="rich-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                                        <button type="button" class="rich-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                                        <button type="button" class="rich-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                                        <button type="button" class="rich-btn" data-cmd="foreColor" title="Warna Teks"><span style="text-decoration:underline; font-weight:bold;">T</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="hiliteColor" title="Warna Sorot"><span style="background:#fef08a; padding:0 2px; font-weight:bold;">A</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertUnorderedList" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertOrderedList" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyLeft" title="Rata Kiri"><i class="fa-solid fa-align-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyCenter" title="Rata Tengah"><i class="fa-solid fa-align-center"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyRight" title="Rata Kanan"><i class="fa-solid fa-align-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="indent" title="Tambah Inden"><i class="fa-solid fa-indent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="outdent" title="Kurangi Inden"><i class="fa-solid fa-outdent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="createLink" title="Sisipkan Tautan"><i class="fa-solid fa-link"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertHorizontalRule" title="Garis Horisontal"><i class="fa-solid fa-minus"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertCode" title="Kode">&lt;&gt;</button>
+                                        <button type="button" class="rich-btn" data-cmd="insertTableCol" title="Tabel"><i class="fa-solid fa-table-cells"></i></button>
+                                    </div>
+                                    <div class="rich-area" contenteditable="true" data-placeholder="Masukkan persyaratan khusus untuk loker ini"></div>
+                                    <textarea name="special_requirements" hidden></textarea>
+                                </div>
                             </div>
-                        </div>
-                        <div class="field" style="margin-bottom:14px;">
-                            <label>Keahlian yang Dibutuhkan</label>
-                            <input type="text" data-chip-input="skills" placeholder="Ketik keahlian lalu tekan Enter...">
-                            <input type="hidden" name="skills" data-chip-value="skills">
-                            <div class="choice-chip-wrap" data-chip-list="skills"></div>
                         </div>
                     </div>
 
                     <!-- Step 3: Tambahan -->
                     <div class="form-step" data-job-step="3" hidden>
-                        <div class="field" style="margin-bottom:14px;">
-                            <label>Lokasi Kerja <span class="req">*</span></label>
-                            <input type="text" name="job_location" placeholder="Kota / Wilayah Kerja" required>
-                        </div>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
-                            <div class="field">
-                                <label>Gaji Minimal (Rp)</label>
-                                <input type="number" name="salary_min" placeholder="0">
+                        <!-- Section 1: Skill / Keahlian -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                                <div>
+                                    <h3 class="section-title">Skill / Keahlian</h3>
+                                    <p class="section-subtitle">Keahlian sangat berpengaruh untuk sistem pencocokan dengan pencari kerja.</p>
+                                </div>
                             </div>
-                            <div class="field">
-                                <label>Gaji Maksimal (Rp)</label>
-                                <input type="number" name="salary_max" placeholder="0">
+
+                            <div class="form-group">
+                                <input type="text" data-chip-input="skills" class="form-control-custom" placeholder="Pilih keahlian">
+                                <input type="hidden" name="skills" data-chip-value="skills">
+                                <div class="choice-chip-wrap" data-chip-list="skills" style="margin-top:8px;"></div>
                             </div>
                         </div>
-                        <div class="field" style="margin-bottom:14px;">
-                            <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;">
-                                <input type="checkbox" name="show_salary" value="1">
-                                <span>Tampilkan besaran gaji kepada pencari kerja</span>
-                            </label>
-                        </div>
-                        <div class="field-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                            <div class="field">
-                                <label>Kuota Penerimaan (Orang) <span class="req">*</span></label>
-                                <input type="number" name="quota" min="1" value="1" required>
+
+                        <!-- Section 2: Kontak -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-address-book"></i></div>
+                                <div>
+                                    <h3 class="section-title">Kontak</h3>
+                                    <p class="section-subtitle">Kami akan mengirimkan email ke daftar email di bawah ini untuk setiap lamaran yang masuk.</p>
+                                </div>
                             </div>
-                            <div class="field">
-                                <label>Masa Berlaku Tayang (Hari) <span class="req">*</span></label>
-                                <select name="expiry_days" required>
-                                    <option value="14">14 Hari</option>
-                                    <option value="30" selected>30 Hari</option>
-                                    <option value="60">60 Hari</option>
-                                </select>
+
+                            <div class="form-group">
+                                <input type="text" data-chip-input="contacts" class="form-control-custom" placeholder="Klik untuk menambahkan kontak">
+                                <input type="hidden" name="contacts" data-chip-value="contacts">
+                                <div class="choice-chip-wrap" data-chip-list="contacts" style="margin-top:8px;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="ghost-btn" data-job-cancel data-close-modal="job-create">Batal</button>
-                    <button type="button" class="ghost-btn" data-job-back hidden><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-                    <button type="button" class="primary-btn" data-job-next>Lanjut <i class="fa-solid fa-arrow-right"></i></button>
-                    <button type="submit" class="primary-btn" data-job-submit hidden><i class="fa-solid fa-paper-plane"></i> TAMBAH LOKER</button>
+                    <button type="button" class="btn-secondary-custom" data-job-cancel data-close-modal="job-create">Batal</button>
+                    <button type="button" class="btn-secondary-custom" data-job-back hidden><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+                    <button type="button" class="btn-primary-custom" data-job-next>Selanjutnya <i class="fa-solid fa-arrow-right"></i></button>
+                    <button type="submit" class="btn-primary-custom" data-job-submit hidden><i class="fa-solid fa-paper-plane"></i> Tambah Loker</button>
                 </div>
             </form>
         </div>
