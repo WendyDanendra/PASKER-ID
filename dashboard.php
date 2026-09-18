@@ -1094,8 +1094,10 @@ $modalStyles = <<<'CSS'
 
         /* Modal Body & Sections */
         .job-create-panel .modal-body {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: calc(100vh - 140px);
+            overflow-y: auto !important;
             padding: 24px;
             display: flex;
             flex-direction: column;
