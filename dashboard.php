@@ -926,94 +926,94 @@ $replacements = [
 $html = str_replace(array_keys($replacements), array_values($replacements), $html);
 
 $modalStyles = <<<'CSS'
+        /* ══════════════════════════════════════════════════
+           JOB CREATE DRAWER — injected AFTER app.css
+           All critical layout props use !important to win
+           ══════════════════════════════════════════════════ */
+
+        /* Generic modal-backdrop reset (keeps other modals working) */
         .modal-backdrop {
-            position: fixed;
-            inset: 0;
+            position: fixed !important;
+            inset: 0 !important;
             background: rgba(15, 23, 42, 0.55);
             display: none;
             align-items: center;
-            justify-content: flex-end;
-            z-index: 1000;
+            justify-content: center;
+            z-index: 1050 !important;
             padding: 16px;
         }
         .modal-backdrop.open {
-            display: flex;
+            display: flex !important;
         }
-        .modal-panel {
-            width: min(720px, 100%);
-            max-height: calc(100vh - 32px);
-            overflow: auto;
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
-        }
+        /* ── Job-Create Drawer: RIGHT-SIDE PANEL ── */
         .modal-backdrop[data-modal="job-create"] {
-            display: none;
-            justify-content: flex-end;
-            align-items: stretch;
-            padding: 0;
-            background: rgba(15, 23, 42, 0.45);
+            display: none !important;
+            justify-content: flex-end !important;
+            align-items: stretch !important;
+            padding: 0 !important;
+            background: rgba(15, 23, 42, 0.5) !important;
         }
         .modal-backdrop[data-modal="job-create"].open {
-            display: flex;
+            display: flex !important;
         }
         .job-create-panel {
-            width: min(680px, 92vw);
-            height: 100vh;
-            max-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-height: 0;
-            border-radius: 20px 0 0 20px;
-            box-shadow: -12px 0 40px rgba(15, 23, 42, 0.22);
-            background: #ffffff;
-            margin: 0;
+            width: min(680px, 92vw) !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            min-height: 0 !important;
+            border-radius: 20px 0 0 20px !important;
+            box-shadow: -12px 0 40px rgba(15, 23, 42, 0.22) !important;
+            background: #ffffff !important;
+            margin: 0 !important;
         }
         .job-create-panel form {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
         }
         .job-create-panel .modal-header {
-            position: relative;
-            padding: 20px 24px 16px;
-            border-bottom: 1px solid #f1f5f9;
-            flex-shrink: 0;
-            background: #ffffff;
+            position: relative !important;
+            padding: 20px 24px 16px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            flex-shrink: 0 !important;
+            background: #ffffff !important;
+            justify-content: flex-start !important;
         }
         .job-create-panel .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
+            position: absolute !important;
+            top: 20px !important;
+            right: 20px !important;
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 50% !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #f8fafc !important;
+            color: #64748b !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
         }
         .job-create-panel .modal-close:hover {
-            background: #f1f5f9;
-            color: #0f172a;
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
         }
         .job-create-panel .modal-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: -0.02em;
-            margin-bottom: 4px;
+            font-size: 20px !important;
+            font-weight: 800 !important;
+            color: #0f172a !important;
+            letter-spacing: -0.02em !important;
+            margin-bottom: 4px !important;
         }
         .job-create-panel .modal-subtitle {
-            font-size: 13px;
-            color: #64748b;
+            font-size: 13px !important;
+            color: #64748b !important;
         }
         .revision-banner {
             margin-top: 12px;
@@ -1094,16 +1094,16 @@ $modalStyles = <<<'CSS'
 
         /* Modal Body & Sections */
         .job-create-panel .modal-body {
-            flex: 1 1 auto;
-            min-height: 0;
-            max-height: calc(100vh - 140px);
+            flex: 1 !important;
             overflow-y: auto !important;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 #f8fafc;
+            overflow-x: hidden !important;
+            padding: 24px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 24px !important;
+            min-height: 0 !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #cbd5e1 #f8fafc !important;
         }
         .job-create-panel .modal-body::-webkit-scrollbar {
             width: 6px;
@@ -1432,13 +1432,14 @@ $modalStyles = <<<'CSS'
 
         /* Footer Buttons */
         .job-create-panel .modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid #f1f5f9;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            flex-shrink: 0;
+            padding: 16px 24px !important;
+            border-top: 1px solid #f1f5f9 !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            background: #ffffff !important;
+            flex-shrink: 0 !important;
+            border-radius: 0 !important;
         }
         .btn-secondary-custom {
             padding: 10px 20px;
@@ -1472,7 +1473,8 @@ $modalStyles = <<<'CSS'
         }
 CSS;
 
-$html = str_replace('</head>', "<style>\n" . $modalStyles . "\n</style>\n</head>", $html);
+// Inject drawer CSS just before </body> so it loads AFTER app.css and wins the cascade
+$drawerStyleTag = "<style id='job-create-drawer-css'>\n" . $modalStyles . "\n</style>";
 
 $domicileParts = array_filter([
     $profile['address'] ?? '',
@@ -1690,8 +1692,6 @@ $modal = <<<HTML
                             </div>
                         </div>
 
-                        <div class="form-section-divider"></div>
-
                         <!-- Section 2: Preferensi Gaji -->
                         <div class="form-section-card">
                             <div class="form-section-header">
@@ -1730,8 +1730,6 @@ $modal = <<<HTML
                             </div>
                         </div>
 
-                        <div class="form-section-divider"></div>
-
                         <!-- Section 3: Preferensi Lainnya -->
                         <div class="form-section-card">
                             <div class="form-section-header">
@@ -1759,8 +1757,6 @@ $modal = <<<HTML
                                 </label>
                             </div>
                         </div>
-
-                        <div class="form-section-divider"></div>
 
                         <!-- Section 4: Durasi Tayang & Kuota Loker -->
                         <div class="form-section-card">
@@ -1861,8 +1857,6 @@ $modal = <<<HTML
                             </div>
                         </div>
 
-                        <div class="form-section-divider"></div>
-
                         <!-- Section 2: Persyaratan Khusus -->
                         <div class="form-section-card">
                             <div class="form-section-header">
@@ -1934,8 +1928,6 @@ $modal = <<<HTML
                                 <div class="choice-chip-wrap" data-chip-list="skills" style="margin-top:8px;"></div>
                             </div>
                         </div>
-
-                        <div class="form-section-divider"></div>
 
                         <!-- Section 2: Kontak -->
                         <div class="form-section-card">
@@ -2043,7 +2035,8 @@ $modal = <<<HTML
     </div>
 HTML;
 
-$html = str_replace('</body>', $modal . "\n</body>", $html);
+// Inject modal HTML + drawer CSS (AFTER app.css) before </body>
+$html = str_replace('</body>', $drawerStyleTag . "\n" . $modal . "\n</body>", $html);
 
 $html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i> Tambah</button>', '<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
 $html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', '<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
