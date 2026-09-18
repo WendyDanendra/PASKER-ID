@@ -140,7 +140,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     // 1. UPDATE STATUS PELAMAR (Diizinkan saat ACTIVE_VERIFIED dan TRANSITION_LIMITED)
     if (isset($_POST['update_application_status'])) {
         if ($isFullDisable || $verificationStatus === 'SUSPENDED') {
-            flash('error', 'Akun sedang terkunci atau ditangguhkan.');
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan atau tidak aktif.');
             redirect('dashboard.php#lowongan');
             exit;
         }
@@ -183,6 +183,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // 2. SIMPAN & AJUKAN PROFIL PEMBERI KERJA INDIVIDU (ONBOARDING / REVISION / REACTIVATION)
     if (isset($_POST['submit_profile'])) {
+        if ($verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan. Pembaharuan profil tidak dapat dilakukan.');
+            redirect('dashboard.php?open_profile=1');
+            exit;
+        }
         $ownerName   = trim($_POST['owner_name'] ?? '');
         $nik         = trim($_POST['nik'] ?? '');
         $phone       = trim($_POST['phone'] ?? '');
@@ -424,6 +429,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // UPLOAD DOKUMEN TAMBAHAN UNTUK LOWONGAN KE-4+ KBJI SAMA
     if (isset($_POST['upload_additional_doc'])) {
+        if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi, ditangguhkan, atau terkunci. Tidak dapat mengunggah dokumen tambahan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
         $jobId = (int)$_POST['job_id'];
         $notes = trim($_POST['additional_notes'] ?? '');
         
@@ -465,6 +475,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // 5. TUTUP LOWONGAN & POSTING ULANG SISA KUOTA (ATOMIC TRANSACTION)
     if (isset($_POST['close_job'])) {
+        if ($isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan atau tidak aktif. Tidak dapat mengubah atau menutup lowongan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
         $jobId = (int)$_POST['job_id'];
         $repost = ($_POST['repost'] ?? '0') === '1';
         $reasons = $_POST['reasons'] ?? [];
@@ -617,6 +632,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // 6. AJUKAN PERPANJANGAN HAK AKSES PEMBERI KERJA INDIVIDU (1x, 1-3 HARI)
     if (isset($_POST['request_extension'])) {
+        if ($verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan. Perpanjangan Hak Akses tidak dapat diajukan.');
+            redirect('dashboard.php');
+            exit;
+        }
         $pdo = db();
         $pdo->beginTransaction();
 
@@ -708,6 +728,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // 7. HAPUS DRAFT LOWONGAN
     if (isset($_POST['delete_job'])) {
+        if ($isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan atau tidak aktif. Tidak dapat menghapus lowongan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
         $jobId = (int)$_POST['job_id'];
         $stmt = db()->prepare('DELETE FROM job_posts WHERE id = ? AND user_id = ? AND status = "Draft"');
         $stmt->execute([$jobId, $user['id']]);
@@ -718,6 +743,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // 8. BERIKAN CONSENT (JALUR MANUAL DINAS)
     if (isset($_POST['give_manual_dinas_consent'])) {
+        if ($verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan. Persetujuan consent tidak dapat diproses.');
+            redirect('dashboard.php');
+            exit;
+        }
         $stmtEmp = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
         $stmtEmp->execute([$user['id']]);
         $emp = $stmtEmp->fetch();

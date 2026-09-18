@@ -290,27 +290,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
     // 6. TANGGUHKAN / BATALKAN PENANGGUHAN (SUSPENSION)
     if ($action === 'suspend_employer') {
-        $targetUserId = (int)$_POST['user_id'];
+        $targetUserId = (int)($_POST['user_id'] ?? 0);
         $reason = trim($_POST['suspension_reason'] ?? '');
-
-        if ($reason === '') {
-            flash('error', 'Alasan Penangguhan WAJIB diisi.');
+        $res = suspend_employer_access(db(), $targetUserId, $reason, $user);
+        if (!$res['success']) {
+            flash('error', $res['error']);
         } else {
-            $stmt = db()->prepare('UPDATE employer_profiles SET verification_status = "SUSPENDED", suspension_reason = ? WHERE user_id = ?');
-            $stmt->execute([$reason, $targetUserId]);
-            record_audit_log('employer', $targetUserId, 'SUSPENDED', "Pemberi kerja ditangguhkan. Alasan: {$reason}", $user['name']);
-            flash('success', 'Pemberi kerja berhasil ditangguhkan.');
+            flash('success', $res['message']);
         }
         redirect($redirectUrl);
         exit;
     }
 
     if ($action === 'unsuspend_employer') {
-        $targetUserId = (int)$_POST['user_id'];
-        $stmt = db()->prepare('UPDATE employer_profiles SET verification_status = "APPROVED", suspension_reason = NULL WHERE user_id = ?');
-        $stmt->execute([$targetUserId]);
-        record_audit_log('employer', $targetUserId, 'UNSUSPENDED', "Penangguhan pemberi kerja dibatalkan.", $user['name']);
-        flash('success', 'Penangguhan pemberi kerja berhasil dibatalkan.');
+        $targetUserId = (int)($_POST['user_id'] ?? 0);
+        $res = unsuspend_employer_access(db(), $targetUserId, $user);
+        if (!$res['success']) {
+            flash('error', $res['error']);
+        } else {
+            flash('success', $res['message']);
+        }
         redirect($redirectUrl);
         exit;
     }
@@ -1563,7 +1562,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
                                 <div class="modal-body">
                                     <div style="font-size:13px; color:#475569; margin-bottom:12px;">
-                                        Penangguhan akun akan menonaktifkan seluruh lowongan yang sedang tayang dan membatasi akses pemberi kerja. Masukkan alasan penangguhan:
+                                        Penangguhan Hak Akses Pemberi Kerja Individu akan membatasi aksi operasional pemohon tanpa menonaktifkan akun SIAPkerja. Masukkan alasan penangguhan:
                                     </div>
                                     <textarea name="suspension_reason" required placeholder="Alasan penangguhan wajib diisi..." style="width:100%; min-height:80px; padding:10px; border-radius:8px; border:1px solid #fca5a5; font-size:13px;"></textarea>
                                 </div>

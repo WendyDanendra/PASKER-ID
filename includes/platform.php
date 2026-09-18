@@ -796,6 +796,7 @@ function calculate_employer_consent_hash(array $p): string
     return hash('sha256', implode('|#|', $fields));
 }
 
+
 function compliance_categories(): array
 {
     return [
@@ -806,4 +807,228 @@ function compliance_categories(): array
     ];
 }
 
+/**
+ * Suspend an Individual Employer's access rights.
+ * Allowed ONLY if profile is verified (verified = 1), active_until is present, and current lifecycle is ACTIVE (APPROVED) or TRANSITION_LIMITED.
+ * Mandatory reason required; scope checked for Admin Dinas (exact domicile_city_id match without city fallback) while Admin Pusat is national.
+ * Atomic transaction with SELECT FOR UPDATE and strict audit logging.
+ */
+function suspend_employer_access(PDO $pdo, int $targetUserId, string $reason, array $actorUser): array
+{
+    $reason = trim($reason);
+    if ($reason === '') {
+        return ['success' => false, 'error' => 'Alasan Penangguhan Hak Akses Pemberi Kerja Individu WAJIB diisi.'];
+    }
 
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+        $empStmt->execute([$targetUserId]);
+        $targetEmp = $empStmt->fetch();
+
+        if (!$targetEmp) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu tidak ditemukan.'];
+        }
+
+        // Scope check: Admin Dinas matches exact domicile_city_id (no fallback to city)
+        $adminDomicileCity = (string)($actorUser['domicile_city_id'] ?? '');
+        $role = $actorUser['role'] ?? 'admin';
+        if ($role === 'admin_dinas' || ($adminDomicileCity !== '' && $role !== 'admin' && $role !== 'admin_pusat')) {
+            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                if (!$inTx && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return [
+                    'success' => false,
+                    'error' => 'Akses ditolak: Hak Akses Pemberi Kerja Individu ini di luar wilayah kewenangan Dinas Anda (' . $adminDomicileCity . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.'
+                ];
+            }
+        }
+
+        $currentStatus = $targetEmp['verification_status'] ?? 'NOT_SUBMITTED';
+        $activeUntilRaw = $targetEmp['active_until'] ?? null;
+
+        // Lifecycle evaluation: Check if profile is active or in transition period based on active_until
+        $now = new DateTime();
+        $isWithinTimeWindow = false;
+
+        if ($activeUntilRaw) {
+            $activeUntil = new DateTime($activeUntilRaw);
+            if ($now <= $activeUntil) {
+                $isWithinTimeWindow = true;
+            } else {
+                $diffSec = $now->getTimestamp() - $activeUntil->getTimestamp();
+                if ($diffSec <= (7 * 86400)) {
+                    $isWithinTimeWindow = true;
+                }
+            }
+        }
+
+        // Strict SIMULTANEOUS Eligibility:
+        // 1. verified == 1
+        // 2. active_until is present
+        // 3. verification_status is explicitly APPROVED, ACTIVE_VERIFIED, or TRANSITION_LIMITED
+        // 4. time evaluation is active or within 7-day Transition Period
+        $isExplicitStatusAllowed = in_array($currentStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED'], true);
+        $isEligibleForSuspend = !empty($targetEmp['verified'])
+            && !empty($activeUntilRaw)
+            && $isExplicitStatusAllowed
+            && $isWithinTimeWindow;
+
+        if (!$isEligibleForSuspend || $currentStatus === 'SUSPENDED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if ($currentStatus === 'SUSPENDED') {
+                return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu ini sudah dalam status Ditangguhkan (SUSPENDED).'];
+            }
+            return [
+                'success' => false,
+                'error' => 'Penangguhan Hak Akses Pemberi Kerja Individu hanya dapat dilakukan pada Hak Akses Pemberi Kerja Individu yang telah terverifikasi dengan masa aktif yang valid (berstatus Aktif atau Masa Transisi).'
+            ];
+        }
+
+        $stmt = $pdo->prepare('UPDATE employer_profiles SET verification_status = "SUSPENDED", suspension_reason = ? WHERE user_id = ?');
+        $stmt->execute([$reason, $targetUserId]);
+
+        record_audit_log(
+            'employer',
+            $targetUserId,
+            'SUSPENDED',
+            "Hak Akses Pemberi Kerja Individu ditangguhkan. Alasan: {$reason}",
+            $actorUser['name'] ?? 'Admin',
+            $actorUser['role'] ?? 'admin',
+            true // strict mode: throws exception if audit log insert fails, triggering transaction rollback
+        );
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return ['success' => true, 'message' => 'Hak Akses Pemberi Kerja Individu berhasil ditangguhkan.'];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['success' => false, 'error' => 'Gagal menangguhkan Hak Akses Pemberi Kerja Individu: ' . $e->getMessage()];
+    }
+}
+
+/**
+ * Unsuspend an Individual Employer's access rights with active_until recalculation.
+ * Scope checked for Admin Dinas (exact domicile_city_id match without city fallback) while Admin Pusat is national.
+ * Atomic transaction with SELECT FOR UPDATE and strict audit logging.
+ * Status recalculated based on active_until:
+ * - active_until valid (now <= active_until) -> APPROVED
+ * - active_until passed, but <= 7 days ago (Masa Transisi) -> TRANSITION_LIMITED
+ * - active_until passed > 7 days ago -> FULL_DISABLED
+ * - active_until empty/null -> REJECTED with safe error message (never grant active access without active_until)
+ */
+function unsuspend_employer_access(PDO $pdo, int $targetUserId, array $actorUser, ?string $refTime = null): array
+{
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+        $empStmt->execute([$targetUserId]);
+        $targetEmp = $empStmt->fetch();
+
+        if (!$targetEmp) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu tidak ditemukan.'];
+        }
+
+        // State Check: Must currently be SUSPENDED
+        if (($targetEmp['verification_status'] ?? '') !== 'SUSPENDED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Pembatalan penangguhan hanya dapat dilakukan jika Hak Akses Pemberi Kerja Individu berstatus SUSPENDED.'];
+        }
+
+        // Scope check: Admin Dinas matches exact domicile_city_id (no fallback to city)
+        $adminDomicileCity = (string)($actorUser['domicile_city_id'] ?? '');
+        $role = $actorUser['role'] ?? 'admin';
+        if ($role === 'admin_dinas' || ($adminDomicileCity !== '' && $role !== 'admin' && $role !== 'admin_pusat')) {
+            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                if (!$inTx && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return [
+                    'success' => false,
+                    'error' => 'Akses ditolak: Hak Akses Pemberi Kerja Individu ini di luar wilayah kewenangan Dinas Anda (' . $adminDomicileCity . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.'
+                ];
+            }
+        }
+
+        $activeUntilRaw = $targetEmp['active_until'] ?? null;
+
+        // If active_until is empty/null, reject unsuspend safely
+        if (empty($activeUntilRaw)) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Pembatalan penangguhan tidak dapat dilakukan karena masa berlaku Hak Akses Pemberi Kerja Individu (active_until) tidak dapat ditentukan.'
+            ];
+        }
+
+        $now = $refTime ? new DateTime($refTime) : new DateTime();
+        $activeUntil = new DateTime($activeUntilRaw);
+        if ($now <= $activeUntil) {
+            $newStatus = 'APPROVED';
+        } else {
+            $nowTs = $now->getTimestamp();
+            $actUntilTs = $activeUntil->getTimestamp();
+            $diffSec = $nowTs - $actUntilTs;
+            if ($diffSec <= (7 * 86400)) {
+                $newStatus = 'TRANSITION_LIMITED';
+            } else {
+                $newStatus = 'FULL_DISABLED';
+            }
+        }
+
+        $stmt = $pdo->prepare('UPDATE employer_profiles SET verification_status = ?, suspension_reason = NULL WHERE user_id = ?');
+        $stmt->execute([$newStatus, $targetUserId]);
+
+        record_audit_log(
+            'employer',
+            $targetUserId,
+            'UNSUSPENDED',
+            "Penangguhan Hak Akses Pemberi Kerja Individu dibatalkan. Status dikembalikan ke {$newStatus} berdasarkan masa aktif (active_until: {$activeUntilRaw}).",
+            $actorUser['name'] ?? 'Admin',
+            $actorUser['role'] ?? 'admin',
+            true // strict mode: throws exception if audit log insert fails, triggering transaction rollback
+        );
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return [
+            'success' => true,
+            'new_status' => $newStatus,
+            'message' => "Penangguhan Hak Akses Pemberi Kerja Individu berhasil dibatalkan. Status dikembalikan ke {$newStatus}."
+        ];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['success' => false, 'error' => 'Gagal membatalkan penangguhan Hak Akses Pemberi Kerja Individu: ' . $e->getMessage()];
+    }
+}
