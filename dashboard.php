@@ -18,6 +18,41 @@ $jobsStatement = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER 
 $jobsStatement->execute([$user['id']]);
 $jobs = $jobsStatement->fetchAll() ?: [];
 
+// Helper Indonesian date formatter
+if (!function_exists('format_indo_date')) {
+    function format_indo_date($dt, $format = 'long') {
+        if (!$dt) return '-';
+        if (!($dt instanceof DateTime)) {
+            try {
+                $dt = new DateTime($dt);
+            } catch (Exception $e) {
+                return '-';
+            }
+        }
+        $day = $dt->format('j');
+        $monthNum = (int)$dt->format('n');
+        $year = $dt->format('Y');
+
+        $monthsLong = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        $monthsShort = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        if ($format === 'short') {
+            return $day . ' ' . ($monthsShort[$monthNum] ?? '') . ' ' . $year;
+        } elseif ($format === 'day_month') {
+            return $day . ' ' . ($monthsShort[$monthNum] ?? '');
+        }
+        return $day . ' ' . ($monthsLong[$monthNum] ?? '') . ' ' . $year;
+    }
+}
+
 // Status calculation logic according to FSD Final & Step 4/5 specification
 $verificationStatus = $profile['verification_status'] ?? 'NOT_SUBMITTED';
 if (empty($profile)) {
@@ -63,6 +98,74 @@ if (in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LI
         $verificationStatus = 'ACTIVE_VERIFIED';
     }
 }
+
+// Lifecycle date calculation & formatting
+$startDate = null;
+if (!empty($profile['last_activated_at'])) {
+    try {
+        $startDate = new DateTime($profile['last_activated_at']);
+    } catch (Exception $e) {
+        $startDate = null;
+    }
+}
+if (!$startDate && $activeUntil) {
+    $startDate = (clone $activeUntil)->modify('-3 months');
+}
+
+$totalDays = 90;
+$elapsedDays = 1;
+$progressPct = 0;
+$isH7 = false;
+$isLastDay = false;
+
+if ($startDate && $activeUntil) {
+    $totalDays = max(1, (int)$startDate->diff($activeUntil)->days);
+
+    if ($now <= $activeUntil) {
+        $elapsedSec = max(0, $now->getTimestamp() - $startDate->getTimestamp());
+        $elapsedDays = max(1, min($totalDays, (int)floor($elapsedSec / 86400) + 1));
+
+        $diffRem = $now->diff($activeUntil);
+        $daysRemaining = (int)$diffRem->days;
+        if ($now->getTimestamp() + 86400 >= $activeUntil->getTimestamp() && $daysRemaining <= 0) {
+            $daysRemaining = 0;
+            $isLastDay = true;
+            $elapsedDays = $totalDays;
+        } elseif ($daysRemaining <= 7) {
+            $isH7 = true;
+        }
+
+        $progressPct = max(0, min(100, (int)round(($elapsedDays / $totalDays) * 100)));
+    } else {
+        $elapsedDays = $totalDays;
+        $progressPct = 100;
+        $daysRemaining = 0;
+    }
+}
+
+// Transition calculations (Masa Transisi maksimal 7 hari)
+$transElapsed = 1;
+$transRemain = 7;
+$transProgressPct = 0;
+$transEndDate = null;
+if ($activeUntil) {
+    $transEndDate = (clone $activeUntil)->modify('+7 days');
+    if ($now > $activeUntil) {
+        $secInTrans = max(0, $now->getTimestamp() - $activeUntil->getTimestamp());
+        $transElapsed = max(1, min(7, (int)floor($secInTrans / 86400) + 1));
+        $transRemain = max(0, 7 - (int)floor($secInTrans / 86400));
+        $transProgressPct = max(0, min(100, (int)round(($transElapsed / 7) * 100)));
+    }
+}
+
+$lastActivatedLong = format_indo_date($startDate, 'long');
+$lastActivatedFormatted = format_indo_date($startDate, 'short');
+$lastActivatedShort = format_indo_date($startDate, 'day_month');
+$activeUntilLong = format_indo_date($activeUntil, 'long');
+$activeUntilFormatted = format_indo_date($activeUntil, 'short');
+$activeUntilShort = format_indo_date($activeUntil, 'day_month');
+$transEndFormatted = format_indo_date($transEndDate, 'long');
+$extStat = $profile['extension_status'] ?? 'NONE';
 
 // Reactivation eligibility: must have at least 1 candidate accepted in previous cycle (not whole history)
 $isEligibleForReactivation = false;
@@ -855,93 +958,6 @@ $html = ob_get_clean();
 // Sisipkan flash toast ke dalam body
 if ($flashHtml) {
     $html = preg_replace('/(<body[^>]*>)/i', '$1' . "\n" . $flashHtml, $html, 1);
-}
-
-// Manual Dinas Consent Banner
-$dinasBannerHtml = '';
-if (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING') {
-    $dinasBannerHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(245,158,11,0.1);">'
-        . '<div>'
-        . '<div style="font-weight:800;color:#92400e;font-size:14px;"><i class="fa-solid fa-hands-holding-child"></i> Persetujuan Perbaikan Data (Jalur Dinas) Diperlukan</div>'
-        . '<div style="font-size:13px;color:#78350f;margin-top:4px;">Petugas Dinas Tenaga Kerja telah menyiapkan data perbaikan profil Anda. Silakan baca dan berikan persetujuan (Consent) agar akun Anda dapat diaktifkan.</div>'
-        . '</div>'
-        . '<form method="post" action="dashboard.php">'
-        . '<input type="hidden" name="give_manual_dinas_consent" value="1">'
-        . '<button type="submit" class="primary-btn" style="background:#059669;height:38px;padding:0 18px;font-size:13px;font-weight:700;"><i class="fa-solid fa-check"></i> Setuju & Berikan Consent</button>'
-        . '</form>'
-        . '</div>';
-} elseif (($profile['manual_review_status'] ?? '') === 'CONSENT_GIVEN') {
-    $dinasBannerHtml = '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:14px 20px;margin:16px 24px;font-size:13px;color:#065f46;box-shadow:0 4px 12px rgba(16,185,129,0.08);">'
-        . '<i class="fa-solid fa-circle-check"></i> <strong>Consent Diberikan:</strong> Anda telah menyetujui data perbaikan. Menunggu pengesahan dan pengaktifan akun oleh Petugas Dinas Tenaga Kerja.'
-        . '</div>';
-} elseif (($profile['manual_review_status'] ?? '') === 'INVALID') {
-    $dinasBannerHtml = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:14px 20px;margin:16px 24px;font-size:13px;color:#991b1b;box-shadow:0 4px 12px rgba(239,68,68,0.08);">'
-        . '<i class="fa-solid fa-triangle-exclamation"></i> <strong>Persetujuan Dibatalkan:</strong> Data profil telah diperbarui kembali oleh Admin. Menunggu pengajuan Consent ulang dari Petugas Dinas.'
-        . '</div>';
-}
-
-// Transition & Extension Banner for Hak Akses Pemberi Kerja Individu
-$transitionBannerHtml = '';
-if ($isTransitionPeriod) {
-    $extStat = $profile['extension_status'] ?? 'NONE';
-    if ($extStat === 'REQUESTED') {
-        $transitionBannerHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(245,158,11,0.08);">'
-            . '<div>'
-            . '<div style="font-weight:800;color:#92400e;font-size:14px;"><i class="fa-solid fa-hourglass-half"></i> Permohonan Perpanjangan Hak Akses Sedang Ditinjau</div>'
-            . '<div style="font-size:13px;color:#78350f;margin-top:4px;">Hak Akses Pemberi Kerja Individu Anda saat ini berada dalam <strong>Masa Transisi (Akses Dibatasi)</strong>. Permohonan perpanjangan (1x) telah diajukan dan sedang menunggu verifikasi.</div>'
-            . '</div>'
-            . '<div style="font-size:12px;font-weight:700;color:#92400e;background:#fef3c7;padding:6px 14px;border-radius:9999px;border:1px solid #fcd34d;">Status: Menunggu Verifikasi</div>'
-            . '</div>';
-    } elseif ($extStat === 'REJECTED') {
-        $transitionBannerHtml = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(239,68,68,0.08);">'
-            . '<div>'
-            . '<div style="font-weight:800;color:#991b1b;font-size:14px;"><i class="fa-solid fa-triangle-exclamation"></i> Hak Akses Pemberi Kerja Individu Dalam Masa Transisi</div>'
-            . '<div style="font-size:13px;color:#7f1d1d;margin-top:4px;">Permohonan perpanjangan Hak Akses telah ditolak. Selesaikan proses rekrutmen pelamar yang ada sebelum masa transisi berakhir.</div>'
-            . '</div>'
-            . '<div style="font-size:12px;font-weight:700;color:#991b1b;background:#fee2e2;padding:6px 14px;border-radius:9999px;border:1px solid #fca5a5;">Perpanjangan Ditolak</div>'
-            . '</div>';
-    } elseif (empty($profile['extension_requested'])) {
-        $transitionBannerHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(245,158,11,0.1);">'
-            . '<div>'
-            . '<div style="font-weight:800;color:#92400e;font-size:14px;"><i class="fa-solid fa-clock-rotate-left"></i> Masa Aktif Berakhir — Masa Transisi (Akses Dibatasi)</div>'
-            . '<div style="font-size:13px;color:#78350f;margin-top:4px;">Masa aktif Hak Akses Pemberi Kerja Individu telah berakhir. Anda hanya dapat mengelola pelamar eksisting dan menutup lowongan. Anda berhak mengajukan perpanjangan hak akses <strong>maksimal 1 kali (1–3 hari)</strong>.</div>'
-            . '</div>'
-            . '<form method="post" action="dashboard.php" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
-            . '<input type="hidden" name="request_extension" value="1">'
-            . '<label style="font-size:13px;font-weight:700;color:#78350f;">Pilih Durasi:</label>'
-            . '<select name="extension_days" style="height:38px;padding:0 12px;border-radius:8px;border:1px solid #fcd34d;font-size:13px;background:#fff;">'
-            . '<option value="1">1 Hari</option>'
-            . '<option value="2">2 Hari</option>'
-            . '<option value="3" selected>3 Hari</option>'
-            . '</select>'
-            . '<button type="submit" class="primary-btn" style="background:#d97706;height:38px;padding:0 18px;font-size:13px;font-weight:700;"><i class="fa-solid fa-paper-plane"></i> Ajukan Perpanjangan</button>'
-            . '</form>'
-            . '</div>';
-    }
-} elseif ($isFullDisable) {
-    if ($isEligibleForReactivation) {
-        $transitionBannerHtml = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(34,197,94,0.08);">'
-            . '<div>'
-            . '<div style="font-weight:800;color:#166534;font-size:14px;"><i class="fa-solid fa-arrows-rotate"></i> Hak Akses Berakhir — Memenuhi Syarat Reaktivasi Online</div>'
-            . '<div style="font-size:13px;color:#14532d;margin-top:4px;">Masa aktif dan masa transisi Hak Akses Anda telah berakhir. Karena Anda telah menerima minimal 1 pelamar (status <strong>Diterima</strong>) pada siklus sebelumnya, Anda dapat mengajukan reaktivasi secara online menggunakan profil yang ada.</div>'
-            . '</div>'
-            . '<a href="dashboard.php?open_profile=1" class="primary-btn" style="background:#16a34a;height:38px;padding:0 18px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:8px;text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i> Ajukan Reaktivasi Online</a>'
-            . '</div>';
-    } else {
-        $domicileName = !empty($profile['city']) ? $profile['city'] : 'Dinas Tenaga Kerja sesuai domisili Anda';
-        $transitionBannerHtml = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:16px 20px;margin:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(239,68,68,0.08);">'
-            . '<div>'
-            . '<div style="font-weight:800;color:#991b1b;font-size:14px;"><i class="fa-solid fa-lock"></i> Hak Akses Berakhir — Reaktivasi Melalui Dinas Tenaga Kerja</div>'
-            . '<div style="font-size:13px;color:#7f1d1d;margin-top:4px;">Masa aktif dan masa transisi Anda telah selesai tanpa adanya pelamar berstatus <strong>Diterima</strong> pada siklus sebelumnya. Pengajuan reaktivasi online tidak tersedia. Silakan lakukan proses reaktivasi melalui Dinas Tenaga Kerja (' . htmlspecialchars($domicileName, ENT_QUOTES, 'UTF-8') . ').</div>'
-            . '</div>'
-            . '<button type="button" class="ghost-btn" data-open-modal="modal-disnaker-instructions" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;height:38px;padding:0 16px;font-size:13px;font-weight:700;"><i class="fa-solid fa-building-flag"></i> Info Dinas Domisili</button>'
-            . '</div>';
-    }
-}
-
-$allBannersHtml = $dinasBannerHtml . $transitionBannerHtml;
-if ($allBannersHtml) {
-    $html = preg_replace('/(<div[^>]*class="[^"]*content[^"]*"[^>]*>)/i', '$1' . "\n" . $allBannersHtml, $html, 1);
 }
 
 $initials = mb_strtoupper(mb_substr($ownerName, 0, 1));

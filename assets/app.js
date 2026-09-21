@@ -1725,7 +1725,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     bindPageSwitchers();
     bindModalsAndDrawers();
-    bindCascadingLocation();
 
     const defaultPage = document.body.dataset.defaultPage || 'dashboard';
     initHashRouting(defaultPage);
@@ -2010,16 +2009,10 @@ document.addEventListener('DOMContentLoaded', () => {
 window.setScheduleView = setScheduleView;
 window.navigateSchedule = navigateSchedule;
 window.resetScheduleToday = resetScheduleToday;
-window.toggleScheduleFilter = toggleScheduleFilter;
-window.toggleFilterOption = toggleFilterOption;
-window.toggleThemeMenu = toggleThemeMenu;
-window.toggleAccountMenu = toggleAccountMenu;
-window.closeRailPopovers = closeRailPopovers;
-window.selectThemeOption = selectThemeOption;
 
 /* ─── FORM PROFIL PEMBERI KERJA INDIVIDU & HIERARCHICAL LOCATION SELECTOR ─── */
 
-const ID_LOCATIONS = {
+const PKI_FORM_LOCATIONS = {
     "Aceh": {
         "Kota Banda Aceh": {
             "Kuta Alam": ["Beurawe", "Bandar Baru", "Kota Baru", "Keuramat", "Lambaro Skep"],
@@ -2128,13 +2121,13 @@ function initHierarchicalLocationSelector() {
 
         // Check behavior requirement:
         // If already fully selected, open directly at Level 4 (Kelurahan / Desa)
-        if (selProv && selCity && selDistrict && selVillage && ID_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
+        if (selProv && selCity && selDistrict && selVillage && PKI_FORM_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
             currentLocLevel = 4;
-        } else if (selProv && selCity && selDistrict && ID_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
+        } else if (selProv && selCity && selDistrict && PKI_FORM_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
             currentLocLevel = 4;
-        } else if (selProv && selCity && ID_LOCATIONS[selProv]?.[selCity]) {
+        } else if (selProv && selCity && PKI_FORM_LOCATIONS[selProv]?.[selCity]) {
             currentLocLevel = 3;
-        } else if (selProv && ID_LOCATIONS[selProv]) {
+        } else if (selProv && PKI_FORM_LOCATIONS[selProv]) {
             currentLocLevel = 2;
         } else {
             currentLocLevel = 1;
@@ -2183,7 +2176,7 @@ function initHierarchicalLocationSelector() {
         let html = '';
 
         if (currentLocLevel === 1) {
-            const provinces = Object.keys(ID_LOCATIONS);
+            const provinces = Object.keys(PKI_FORM_LOCATIONS);
             provinces.forEach(prov => {
                 const isSel = prov === selProv;
                 html += `
@@ -2197,7 +2190,7 @@ function initHierarchicalLocationSelector() {
                 `;
             });
         } else if (currentLocLevel === 2) {
-            const cities = Object.keys(ID_LOCATIONS[selProv] || {});
+            const cities = Object.keys(PKI_FORM_LOCATIONS[selProv] || {});
             cities.forEach(city => {
                 const isSel = city === selCity;
                 html += `
@@ -2211,7 +2204,7 @@ function initHierarchicalLocationSelector() {
                 `;
             });
         } else if (currentLocLevel === 3) {
-            const districts = Object.keys(ID_LOCATIONS[selProv]?.[selCity] || {});
+            const districts = Object.keys(PKI_FORM_LOCATIONS[selProv]?.[selCity] || {});
             districts.forEach(dist => {
                 const isSel = dist === selDistrict;
                 html += `
@@ -2225,7 +2218,7 @@ function initHierarchicalLocationSelector() {
                 `;
             });
         } else if (currentLocLevel === 4) {
-            const villages = ID_LOCATIONS[selProv]?.[selCity]?.[selDistrict] || [];
+            const villages = PKI_FORM_LOCATIONS[selProv]?.[selCity]?.[selDistrict] || [];
             villages.forEach(vill => {
                 const isSel = vill === selVillage;
                 html += `
@@ -2391,10 +2384,101 @@ function initEmployerProfileForm() {
     // Initial map check
     autoGeocodeLocation();
 }
+
+const CITY_COORDINATES = {
+    "Kota Banda Aceh": [5.5483, 95.3238],
+    "Kota Sabang": [5.8944, 95.3242],
+    "Kab. Aceh Besar": [5.4628, 95.4216],
+    "Kab. Pidie": [5.3831, 95.9602],
+    "Kota Jakarta Selatan": [-6.2615, 106.8106],
+    "Kota Jakarta Pusat": [-6.1805, 106.8284],
+    "Kota Bekasi": [-6.2383, 106.9756],
+    "Kota Bandung": [-6.9175, 107.6191],
+    "Kota Semarang": [-6.9667, 110.4167],
+    "Kota Surabaya": [-7.2575, 112.7521]
+};
+
+let pkiMarkerInstance = null;
+
+function autoGeocodeLocation() {
+    const hiddenVillage = document.getElementById('hiddenVillage')?.value;
+    const hiddenCity = document.getElementById('hiddenCity')?.value;
+    const hiddenProv = document.getElementById('hiddenProvince')?.value;
+    const address = document.getElementById('inputAddress')?.value?.trim();
+
+    const placeholder = document.getElementById('mapPlaceholder');
+    const leafletBox = document.getElementById('leafletMap');
+    const openLinkWrap = document.getElementById('mapOpenLinkWrapper');
+    const btnOpenMap = document.getElementById('btnOpenMap');
+
+    if (!placeholder || !leafletBox) return;
+
+    // Peta HANYA dimuat jika Lokasi Domisili DAN Alamat Lengkap terisi!
+    if ((hiddenVillage || hiddenCity) && address && address.length > 3) {
+        placeholder.style.display = 'none';
+        leafletBox.style.display = 'block';
+        if (openLinkWrap) openLinkWrap.style.display = 'block';
+
+        const fullQuery = `${address}, ${hiddenVillage || ''}, ${hiddenCity || ''}, ${hiddenProv || ''}, Indonesia`;
+        if (btnOpenMap) {
+            btnOpenMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullQuery)}`;
+        }
+
+        const targetCoords = CITY_COORDINATES[hiddenCity] || [-6.2088, 106.8456];
+
+        const inputLat = document.getElementById('inputLat');
+        const inputLng = document.getElementById('inputLng');
+        if (inputLat) inputLat.value = targetCoords[0];
+        if (inputLng) inputLng.value = targetCoords[1];
+
+        // Initialize or update Leaflet map
+        if (window.L && document.getElementById('leafletMap')) {
+            if (!pkiMapInstance) {
+                pkiMapInstance = L.map('leafletMap', {
+                    dragging: true,
+                    zoomControl: true,
+                    scrollWheelZoom: false
+                }).setView(targetCoords, 14);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(pkiMapInstance);
+
+                pkiMarkerInstance = L.marker(targetCoords, { interactive: false }).addTo(pkiMapInstance);
+            } else {
+                pkiMapInstance.setView(targetCoords, 14);
+                if (pkiMarkerInstance) {
+                    pkiMarkerInstance.setLatLng(targetCoords);
+                }
+            }
+            setTimeout(() => {
+                pkiMapInstance.invalidateSize();
+            }, 200);
+        } else {
+            leafletBox.innerHTML = `
+                <div style="height:100%; width:100%; background:#e2e8f0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px;">
+                    <div style="font-size:28px; color:#ef4444; margin-bottom:4px;"><i class="fa-solid fa-location-dot"></i></div>
+                    <div style="font-weight:700; color:#0f172a; font-size:13px;">${e(address)}</div>
+                    <div style="font-size:11px; color:#475569; margin-top:2px;">${e(hiddenVillage || '')} ${e(hiddenCity || '')}, ${e(hiddenProv || '')}</div>
+                </div>
+            `;
+        }
+    } else {
+        placeholder.style.display = 'flex';
         leafletBox.style.display = 'none';
         if (openLinkWrap) openLinkWrap.style.display = 'none';
     }
 }
+
+// Global helper to dismiss activation notification
+window.dismissActivationNotif = function() {
+    const banner = document.getElementById('notifAktivasiBanner');
+    if (banner) {
+        banner.style.display = 'none';
+        localStorage.setItem('hide_notif_aktivasi_pki', '1');
+    }
+};
 
 // Helper escape HTML string function for app.js
 function e(str) {
@@ -2405,4 +2489,8 @@ function e(str) {
 document.addEventListener('DOMContentLoaded', () => {
     initHierarchicalLocationSelector();
     initEmployerProfileForm();
+    if (localStorage.getItem('hide_notif_aktivasi_pki') === '1') {
+        const banner = document.getElementById('notifAktivasiBanner');
+        if (banner) banner.style.display = 'none';
+    }
 });
