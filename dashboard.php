@@ -317,16 +317,49 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $quota = (int)($_POST['quota'] ?? 1);
         $description = trim($_POST['job_description'] ?? $_POST['description'] ?? '');
 
+        $salaryMin = isset($_POST['salary_min']) && $_POST['salary_min'] !== '' ? (int)$_POST['salary_min'] : null;
+        $salaryMax = isset($_POST['salary_max']) && $_POST['salary_max'] !== '' ? (int)$_POST['salary_max'] : null;
+
+        $physicalConditions = isset($_POST['physical_condition']) ? array_values((array)$_POST['physical_condition']) : ['Non Disabilitas'];
+        $genders = isset($_POST['gender']) ? array_values((array)$_POST['gender']) : ['Laki-laki', 'Perempuan'];
+        $maritalStatuses = isset($_POST['marital_status']) ? array_values((array)$_POST['marital_status']) : ['Telah Menikah', 'Lajang / Belum Menikah'];
+
+        $skillsRaw = $_POST['skills'] ?? '';
+        $skills = is_array($skillsRaw) ? $skillsRaw : array_values(array_filter(array_map('trim', explode(',', (string)$skillsRaw))));
+
+        $contactsRaw = $_POST['contacts'] ?? '';
+        $contacts = is_array($contactsRaw) ? $contactsRaw : array_values(array_filter(array_map('trim', explode(',', (string)$contactsRaw))));
+
+        $detailsData = [
+            'job_field' => trim($_POST['job_field'] ?? $_POST['industry'] ?? ''),
+            'physical_conditions' => $physicalConditions,
+            'genders' => $genders,
+            'disability_excluded' => trim($_POST['disability_excluded'] ?? ''),
+            'show_salary' => !empty($_POST['show_salary']),
+            'is_remote' => !empty($_POST['is_remote']),
+            'is_limited' => !empty($_POST['is_limited']),
+            'expiry_days' => (int)($_POST['expiry_days'] ?? 30),
+            'education_required' => $minEducation,
+            'experience_required' => $minExperience,
+            'marital_statuses' => $maritalStatuses,
+            'age_min' => isset($_POST['age_min']) && $_POST['age_min'] !== '' ? (int)$_POST['age_min'] : 18,
+            'age_max' => isset($_POST['age_max']) && $_POST['age_max'] !== '' ? (int)$_POST['age_max'] : 45,
+            'special_requirements' => trim($_POST['special_requirements'] ?? ''),
+            'skills' => $skills,
+            'contacts' => $contacts,
+        ];
+        $detailsJson = json_encode($detailsData, JSON_UNESCAPED_UNICODE);
+
         if ($title !== '' && $location !== '' && $kbjiCode !== '' && $quota > 0 && $description !== '') {
             if ($jobId > 0) {
                 // Update existing job maintaining its identity and draft/revision status
-                $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status IN ("Draft", "Perlu Direvisi", "Perlu Revisi")');
-                $stmt->execute([$title, $location, $jobType, $industry, $kbjiCode, $minEducation, $minExperience, $quota, $description, $jobId, $user['id']]);
+                $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, salary_min = ?, salary_max = ?, details = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status IN ("Draft", "Perlu Direvisi", "Perlu Revisi")');
+                $stmt->execute([$title, $location, $jobType, $industry, $kbjiCode, $minEducation, $minExperience, $quota, $description, $salaryMin, $salaryMax, $detailsJson, $jobId, $user['id']]);
                 flash('success', 'Draft lowongan berhasil diperbarui.');
             } else {
                 // Always create as Draft with NO rules engine checks
-                $stmt = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code, min_education, min_experience, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Draft", ?, ?, ?, ?, CURRENT_TIMESTAMP)');
-                $stmt->execute([$user['id'], $title, $description, $location, $jobType, $industry, $quota, $kbjiCode, $minEducation, $minExperience]);
+                $stmt = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code, min_education, min_experience, salary_min, salary_max, details, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Draft", ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)');
+                $stmt->execute([$user['id'], $title, $description, $location, $jobType, $industry, $quota, $kbjiCode, $minEducation, $minExperience, $salaryMin, $salaryMax, $detailsJson]);
                 $jobId = (int)db()->lastInsertId();
                 flash('success', 'Lowongan berhasil disimpan sebagai Draft.');
             }
@@ -987,23 +1020,27 @@ $modalStyles = <<<'CSS'
         /* ── Header: sticky top, no scroll ── */
         .job-create-panel .modal-header {
             flex-shrink: 0 !important;
-            padding: 20px 24px 12px !important;
+            padding: 20px 24px 14px !important;
             border-bottom: 1px solid #f1f5f9 !important;
             background: #ffffff !important;
             position: relative !important;
+            display: block !important;
         }
         .job-create-panel .modal-title {
             font-size: 18px !important;
             font-weight: 700 !important;
             color: #0f172a !important;
-            margin: 0 0 3px 0 !important;
-            padding-right: 36px !important;
+            margin: 0 0 4px 0 !important;
+            padding-right: 40px !important;
             line-height: 1.3 !important;
+            display: block !important;
         }
         .job-create-panel .modal-subtitle {
             font-size: 13px !important;
             color: #64748b !important;
             margin: 0 !important;
+            display: block !important;
+            line-height: 1.4 !important;
         }
         .job-create-panel .modal-close {
             position: absolute !important;
@@ -1620,7 +1657,22 @@ $modal = <<<HTML
                                 </div>
                                 <div class="form-group">
                                     <label>Bidang pekerjaan <span class="req">*</span></label>
-                                    <input type="text" name="job_field" class="form-control-custom" placeholder="Pilih bidang pekerjaan" required>
+                                    <select name="job_field" class="form-control-custom" required>
+                                        <option value="">Pilih bidang pekerjaan</option>
+                                        <option value="Akuntansi & Keuangan">Akuntansi & Keuangan</option>
+                                        <option value="Administrasi & Sekretaris">Administrasi & Sekretaris</option>
+                                        <option value="Rumah Tangga & ART / Pengasuh">Rumah Tangga & ART / Pengasuh</option>
+                                        <option value="Kuliner & Katering / Restoran">Kuliner & Katering / Restoran</option>
+                                        <option value="Keamanan & Kebersihan">Keamanan & Kebersihan</option>
+                                        <option value="Logistik, Pengemudi & Kurir">Logistik, Pengemudi & Kurir</option>
+                                        <option value="Penjualan, Kasir & Marketing">Penjualan, Kasir & Marketing</option>
+                                        <option value="Teknologi Informasi & Komputer">Teknologi Informasi & Komputer</option>
+                                        <option value="Teknik, Pemeliharaan & Konstruksi">Teknik, Pemeliharaan & Konstruksi</option>
+                                        <option value="Kesehatan & Perawatan">Kesehatan & Perawatan</option>
+                                        <option value="Pendidikan & Pelatihan">Pendidikan & Pelatihan</option>
+                                        <option value="Jasa Perorangan & Umum">Jasa Perorangan & Umum</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
                                 </div>
                             </div>
 

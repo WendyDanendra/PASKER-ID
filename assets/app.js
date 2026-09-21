@@ -815,6 +815,25 @@ function initJobCreateWizard() {
             return;
         }
 
+        if (mode === 'edit' || mode === 'draft') {
+            if (titleEl) {
+                titleEl.textContent = 'Edit Lowongan';
+            }
+            if (subtitleEl) {
+                subtitleEl.textContent = 'Data sebelumnya sudah terisi. Perbarui informasi lowongan, lalu simpan.';
+            }
+            if (btnSubmit) {
+                btnSubmit.textContent = 'Simpan Lowongan';
+            }
+            if (banner) {
+                banner.hidden = true;
+            }
+            if (bannerText) {
+                bannerText.textContent = '';
+            }
+            return;
+        }
+
         if (titleEl) {
             titleEl.textContent = 'Tambah Lowongan';
         }
@@ -837,7 +856,15 @@ function initJobCreateWizard() {
         if (!field) {
             return;
         }
-        field.value = value == null ? '' : String(value);
+        const valStr = value == null ? '' : String(value);
+        if (field.tagName === 'SELECT' && valStr) {
+            const exists = Array.from(field.options).some((opt) => opt.value === valStr);
+            if (!exists) {
+                const opt = new Option(valStr, valStr, true, true);
+                field.add(opt);
+            }
+        }
+        field.value = valStr;
     };
 
     const setCheckboxGroup = (name, selected) => {
@@ -1048,35 +1075,39 @@ function initJobCreateWizard() {
         setStep(1);
     });
 
-    document.querySelectorAll('[data-revise-job], [data-edit-draft]').forEach((button) => {
-        button.addEventListener('click', () => {
-            const jobId = button.dataset.reviseJob || button.dataset.editDraft;
-            const hidden = document.getElementById('reviseJobId');
-            fetch(`dashboard.php?job_json=${encodeURIComponent(jobId)}`)
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error('not found');
-                    }
-                    return response.json();
-                })
-                .then((payload) => {
-                    if (!payload?.ok || !payload.data) {
-                        throw new Error('invalid');
-                    }
-                    modal.dataset.jobFormMode = 'revise';
-                    modal.dataset.skipReset = 'true';
-                    if (hidden) {
-                        hidden.value = String(payload.data.id || jobId);
-                    }
-                    fillJobCreateForm(payload.data);
-                    setJobCreateMode('revise', payload.data.admin_notes);
-                    modal.classList.add('open');
-                    modal.dispatchEvent(new CustomEvent('modal:open'));
-                })
-                .catch(() => {
-                    window.alert('Data lowongan tidak dapat dimuat. Silakan coba lagi.');
-                });
-        });
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-revise-job], [data-edit-draft]');
+        if (!button) {
+            return;
+        }
+        const jobId = button.dataset.reviseJob || button.dataset.editDraft;
+        const hidden = document.getElementById('reviseJobId');
+        fetch(`dashboard.php?job_json=${encodeURIComponent(jobId)}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('not found');
+                }
+                return response.json();
+            })
+            .then((payload) => {
+                if (!payload?.ok || !payload.data) {
+                    throw new Error('invalid');
+                }
+                const isDraftMode = Boolean(button.dataset.editDraft) || payload.data.status === 'Draft';
+                const formMode = isDraftMode ? 'edit' : 'revise';
+                modal.dataset.jobFormMode = formMode;
+                modal.dataset.skipReset = 'true';
+                if (hidden) {
+                    hidden.value = String(payload.data.id || jobId);
+                }
+                fillJobCreateForm(payload.data);
+                setJobCreateMode(formMode, payload.data.admin_notes);
+                modal.classList.add('open');
+                modal.dispatchEvent(new CustomEvent('modal:open'));
+            })
+            .catch(() => {
+                window.alert('Data lowongan tidak dapat dimuat. Silakan coba lagi.');
+            });
     });
 
     setStep(1);
