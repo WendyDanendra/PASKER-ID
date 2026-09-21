@@ -2089,6 +2089,209 @@
 
 
                 <section class="page" data-page="lowongan" id="page-lowongan">
+                <?php if (!empty($detailJob)): ?>
+                    <!-- DEDICATED FULL-PAGE DETAIL LOWONGAN (DRAFT & OTHER STATUSES) -->
+                    <div class="job-detail-container" style="max-width:1100px; margin:0 auto; padding:10px 0 30px 0;">
+                        <!-- Header Nav Back -->
+                        <div style="margin-bottom:20px;">
+                            <a href="dashboard.php#lowongan" class="ghost-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:13px; color:#475569; padding:8px 16px; border:1px solid #cbd5e1; border-radius:8px; background:#fff;">
+                                <i class="fa-solid fa-arrow-left"></i> Kembali
+                            </a>
+                        </div>
+
+                        <!-- Detail Job Header Card -->
+                        <?php 
+                            $dStatus = normalize_job_status($detailJob['status'] ?? 'Draft');
+                            $dMeta = job_status_meta($dStatus);
+                            if (!empty($detailJob['created_at']) && !empty($detailData['expiry_days'])) {
+                                $expDate = date('d M Y', strtotime('+' . (int)$detailData['expiry_days'] . ' days', strtotime($detailJob['created_at'])));
+                            } else {
+                                $expDate = date('d M Y', strtotime('+30 days', strtotime($detailJob['created_at'] ?? 'now')));
+                            }
+                        ?>
+                        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:24px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px;">
+                            <div style="flex:1; min-width:300px;">
+                                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+                                    <h1 style="font-size:22px; font-weight:800; color:#0f172a; margin:0; line-height:1.2;"><?php echo e($detailJob['title']); ?></h1>
+                                    <span class="status-pill <?php echo e($dMeta['class']); ?>" style="padding:4px 12px; border-radius:9999px; font-size:12px; font-weight:700;">
+                                        <?php echo e($dMeta['label']); ?>
+
+                                    </span>
+                                </div>
+
+                                <div style="display:flex; flex-wrap:wrap; gap:16px; font-size:13px; color:#64748b; margin-bottom:24px;">
+                                    <div><i class="fa-regular fa-calendar" style="color:#0ea5e9; margin-right:4px;"></i> <strong>Kadaluarsa:</strong> <?php echo $expDate; ?></div>
+                                    <div><i class="fa-solid fa-graduation-cap" style="color:#0ea5e9; margin-right:4px;"></i> <strong>Pendidikan Minimal:</strong> <?php echo e($detailJob['min_education'] ?: ($detailData['education_required'] ?: 'Tidak ditentukan')); ?></div>
+                                    <div><i class="fa-solid fa-location-dot" style="color:#0ea5e9; margin-right:4px;"></i> <strong>Lokasi:</strong> <?php echo e($detailJob['location'] ?: 'Kota Bekasi'); ?></div>
+                                </div>
+
+                                <!-- Action Buttons for Draft -->
+                                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                    <?php if ($dStatus === 'Draft'): ?>
+                                        <button type="button" class="btn-secondary-custom" data-edit-draft="<?php echo $detailJob['id']; ?>" style="border:1px solid #cbd5e1; background:#fff; color:#334155; padding:9px 18px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                                            <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
+                                        </button>
+
+                                        <form method="post" action="dashboard.php#lowongan" style="display:inline;">
+                                            <input type="hidden" name="send_job" value="1">
+                                            <input type="hidden" name="job_id" value="<?php echo $detailJob['id']; ?>">
+                                            <button type="submit" class="btn-primary-custom" style="background:#0ea5e9; color:#fff; border:none; padding:9px 20px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 3px rgba(14,165,233,0.3);">
+                                                <i class="fa-solid fa-paper-plane"></i> Kirim Lowongan
+                                            </button>
+                                        </form>
+
+                                        <form method="post" action="dashboard.php#lowongan" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft lowongan ini?')">
+                                            <input type="hidden" name="delete_job" value="1">
+                                            <input type="hidden" name="job_id" value="<?php echo $detailJob['id']; ?>">
+                                            <button type="submit" style="background:#fff; color:#dc2626; border:1px solid #fecaca; padding:9px 18px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                                <i class="fa-solid fa-trash"></i> Hapus Lowongan
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Quota Card -->
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; min-width:240px; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+                                <div style="font-size:11px; font-weight:800; color:#64748b; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:10px;">KUOTA</div>
+                                <?php 
+                                    $acceptedCount = (int)($detailJob['accepted_count'] ?? 0);
+                                    $totalQuota = max(1, (int)($detailJob['quota'] ?? 1));
+                                    $percent = min(100, (int)round(($acceptedCount / $totalQuota) * 100));
+                                ?>
+                                <div style="background:#e2e8f0; height:10px; border-radius:6px; overflow:hidden; margin-bottom:10px;">
+                                    <div style="background:#0ea5e9; width:<?php echo $percent; ?>%; height:100%; border-radius:6px;"></div>
+                                </div>
+                                <div style="font-size:14px; font-weight:800; color:#0f172a;">
+                                    <?php echo $acceptedCount; ?> / <?php echo $totalQuota; ?> terisi
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detail Tabs Section -->
+                        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                            <div style="display:flex; border-bottom:1px solid #e2e8f0; background:#f8fafc;">
+                                <button type="button" id="tabBtnLamaran" onclick="switchPageDetailTab('lamaran')" style="padding:16px 28px; border:none; background:none; border-bottom:3px solid #0ea5e9; color:#0ea5e9; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                                    <i class="fa-solid fa-users"></i> Lamaran
+                                </button>
+                                <button type="button" id="tabBtnRincian" onclick="switchPageDetailTab('rincian')" style="padding:16px 28px; border:none; background:none; border-bottom:3px solid transparent; color:#64748b; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                                    <i class="fa-solid fa-file-text"></i> Rincian Lowongan
+                                </button>
+                            </div>
+
+                            <div style="padding:28px;">
+                                <!-- TAB 1: LAMARAN (LOCKED STATE FOR DRAFT) -->
+                                <div id="tabPanePageLamaran">
+                                    <?php if ($dStatus === 'Draft' || $dStatus === 'Menunggu Verifikasi'): ?>
+                                        <div style="border:2px dashed #cbd5e1; border-radius:14px; padding:56px 28px; text-align:center; background:#fafafa; max-width:620px; margin:20px auto;">
+                                            <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; color:#64748b; font-size:28px;">
+                                                🔒
+                                            </div>
+                                            <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:10px;">Proses seleksi terkunci</h3>
+                                            <p style="font-size:13.5px; color:#64748b; line-height:1.6; margin:0;">
+                                                Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang. Lowongan masih dalam tahap penyusunan dan belum diajukan untuk diverifikasi.
+                                            </p>
+                                        </div>
+                                    <?php else: ?>
+                                        <?php 
+                                            $detailAppsStmt = db()->prepare('SELECT a.*, u.name as seeker_name, u.email as seeker_email FROM job_applications a JOIN users u ON u.id = a.seeker_id WHERE a.job_id = ? ORDER BY a.created_at DESC');
+                                            $detailAppsStmt->execute([$detailJob['id']]);
+                                            $detailApps = $detailAppsStmt->fetchAll() ?: [];
+                                        ?>
+                                        <?php if (!$detailApps): ?>
+                                            <div style="text-align:center; padding:40px; color:#64748b; font-size:14px;">Belum ada pelamar pada lowongan ini.</div>
+                                        <?php else: ?>
+                                            <table class="applicant-table" style="width:100%;">
+                                                <thead>
+                                                    <tr><th>Pelamar</th><th>Status</th><th>Aksi</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($detailApps as $app): ?>
+                                                        <tr data-open-applicant="<?php echo (int)$app['id']; ?>">
+                                                            <td><strong><?php echo e($app['seeker_name']); ?></strong><div class="tiny"><?php echo e($app['seeker_email']); ?></div></td>
+                                                            <td><span class="tag"><?php echo e($app['status']); ?></span></td>
+                                                            <td>Lihat profil</td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- TAB 2: RINCIAN LOWONGAN -->
+                                <div id="tabPanePageRincian" style="display:none;">
+                                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:28px; font-size:13.5px;">
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Judul Lowongan</span><strong style="color:#0f172a;"><?php echo e($detailJob['title']); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Kode KBJI</span><strong style="color:#0f172a;"><?php echo e($detailJob['kbji_code']); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Lokasi</span><strong style="color:#0f172a;"><?php echo e($detailJob['location'] ?: 'Kota Bekasi'); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Jenis Pekerjaan</span><strong style="color:#0f172a;"><?php echo e($detailJob['job_type']); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Bidang Pekerjaan</span><strong style="color:#0f172a;"><?php echo e(($detailData['job_field'] ?? '-') ?: '-'); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Industri / Sektor</span><strong style="color:#0f172a;"><?php echo e(($detailJob['industry'] ?: ($detailData['industry'] ?? '-')) ?: '-'); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Kondisi Fisik</span><strong style="color:#0f172a;"><?php echo !empty($detailData['physical_conditions']) ? implode(', ', (array)$detailData['physical_conditions']) : 'Non Disabilitas'; ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Jenis Kelamin</span><strong style="color:#0f172a;"><?php echo !empty($detailData['genders']) ? implode(', ', (array)$detailData['genders']) : 'Laki-laki, Perempuan'; ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Gaji Minimum & Maksimum</span><strong style="color:#0f172a;"><?php echo (!empty($detailJob['salary_min']) || !empty($detailData['salary_min'])) ? ('Rp ' . number_format((float)($detailJob['salary_min'] ?: $detailData['salary_min'])) . ' - Rp ' . number_format((float)($detailJob['salary_max'] ?: $detailData['salary_max']))) : 'Tidak ditampilkan'; ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Kuota</span><strong style="color:#0f172a;"><?php echo (int)($detailJob['quota'] ?? 1); ?> orang</strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Masa Tayang</span><strong style="color:#0f172a;"><?php echo !empty($detailData['expiry_days']) ? (int)$detailData['expiry_days'] . ' Hari' : '30 Hari'; ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Pendidikan Minimal</span><strong style="color:#0f172a;"><?php echo e($detailJob['min_education'] ?: ($detailData['education_required'] ?: '-')); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Pengalaman</span><strong style="color:#0f172a;"><?php echo e($detailJob['min_experience'] ?: ($detailData['experience_required'] ?: '-')); ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Status Pernikahan</span><strong style="color:#0f172a;"><?php echo !empty($detailData['marital_statuses']) ? implode(', ', (array)$detailData['marital_statuses']) : 'Semua Status'; ?></strong></div>
+                                        <div style="background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #f1f5f9;"><span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Usia Minimum & Maksimum</span><strong style="color:#0f172a;"><?php echo (!empty($detailData['age_min']) || !empty($detailData['age_max'])) ? (($detailData['age_min'] ?: '18') . ' - ' . ($detailData['age_max'] ?: '60') . ' tahun') : 'Semua usia'; ?></strong></div>
+                                    </div>
+
+                                    <?php if (!empty($detailData['special_requirements'])): ?>
+                                        <div style="margin-bottom:20px; background:#f8fafc; padding:18px; border-radius:10px; border:1px solid #f1f5f9;">
+                                            <span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:6px;">Persyaratan Khusus</span>
+                                            <div style="color:#334155; line-height:1.6; font-size:13.5px;"><?php echo nl2br(e($detailData['special_requirements'])); ?></div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($detailData['skills'])): ?>
+                                        <div style="margin-bottom:20px; background:#f8fafc; padding:18px; border-radius:10px; border:1px solid #f1f5f9;">
+                                            <span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:8px;">Skill / Keahlian</span>
+                                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                                <?php foreach ((array)$detailData['skills'] as $skill): ?>
+                                                    <span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600;"><?php echo e($skill); ?></span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($detailData['contacts'])): ?>
+                                        <div style="margin-bottom:20px; background:#f8fafc; padding:18px; border-radius:10px; border:1px solid #f1f5f9;">
+                                            <span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:8px;">Kontak Informasi</span>
+                                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                                <?php foreach ((array)$detailData['contacts'] as $contact): ?>
+                                                    <span style="background:#f1f5f9; color:#475569; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600;"><?php echo e($contact); ?></span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div style="background:#f8fafc; padding:20px; border-radius:10px; border:1px solid #f1f5f9;">
+                                        <span style="color:#64748b; display:block; font-size:12px; font-weight:600; margin-bottom:8px;">Deskripsi Pekerjaan</span>
+                                        <div style="color:#334155; line-height:1.6; font-size:13.5px;"><?php echo nl2br(e($detailJob['description'])); ?></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                    function switchPageDetailTab(tab) {
+                        document.getElementById('tabPanePageLamaran').style.display = tab === 'lamaran' ? 'block' : 'none';
+                        document.getElementById('tabPanePageRincian').style.display = tab === 'rincian' ? 'block' : 'none';
+                        
+                        document.getElementById('tabBtnLamaran').style.borderBottomColor = tab === 'lamaran' ? '#0ea5e9' : 'transparent';
+                        document.getElementById('tabBtnLamaran').style.color = tab === 'lamaran' ? '#0ea5e9' : '#64748b';
+                        document.getElementById('tabBtnLamaran').style.fontWeight = tab === 'lamaran' ? '700' : '600';
+                        
+                        document.getElementById('tabBtnRincian').style.borderBottomColor = tab === 'rincian' ? '#0ea5e9' : 'transparent';
+                        document.getElementById('tabBtnRincian').style.color = tab === 'rincian' ? '#0ea5e9' : '#64748b';
+                        document.getElementById('tabBtnRincian').style.fontWeight = tab === 'rincian' ? '700' : '600';
+                    }
+                    </script>
+                <?php else: ?>
                     <div class="page-title-row">
                     <div>
                         <h2>Lowongan</h2>
@@ -2215,9 +2418,9 @@
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11px;" data-open-modal="detail-draft-<?php echo $j['id']; ?>">
-                                                    <i class="fa-solid fa-eye"></i> Detail
-                                                </button>
+                                                <a href="dashboard.php?job_detail=<?php echo $j['id']; ?>#lowongan" class="ghost-btn" style="padding:4px 10px; font-size:11px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                                    <i class="fa-solid fa-eye"></i> Lihat Detail
+                                                </a>
 
                                                  <!-- MODAL DETAIL DRAFT / LOWONGAN -->
                                                  <div class="modal-backdrop <?php echo (isset($_GET['open_draft']) && (int)$_GET['open_draft'] === (int)$j['id']) ? 'open' : ''; ?>" data-modal="detail-draft-<?php echo $j['id']; ?>">
@@ -2646,6 +2849,7 @@
                         <!--JOB_APPLICANTS-->
                     </div>
                 </div>
+            <?php endif; ?>
             </section>
 
             <!-- SECTION: JADWAL WAWANCARA (EXACT KARIRHUB SCREENSHOTS 1, 2, 3) -->

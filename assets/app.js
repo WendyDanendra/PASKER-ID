@@ -1048,9 +1048,9 @@ function initJobCreateWizard() {
         setStep(1);
     });
 
-    document.querySelectorAll('[data-revise-job]').forEach((button) => {
+    document.querySelectorAll('[data-revise-job], [data-edit-draft]').forEach((button) => {
         button.addEventListener('click', () => {
-            const jobId = button.dataset.reviseJob;
+            const jobId = button.dataset.reviseJob || button.dataset.editDraft;
             const hidden = document.getElementById('reviseJobId');
             fetch(`dashboard.php?job_json=${encodeURIComponent(jobId)}`)
                 .then((response) => {

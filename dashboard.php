@@ -328,13 +328,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $stmt = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code, min_education, min_experience, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Draft", ?, ?, ?, ?, CURRENT_TIMESTAMP)');
                 $stmt->execute([$user['id'], $title, $description, $location, $jobType, $industry, $quota, $kbjiCode, $minEducation, $minExperience]);
                 $jobId = (int)db()->lastInsertId();
-                flash('success', 'Lowongan baru berhasil dibuat dan disimpan sebagai Draft.');
+                flash('success', 'Lowongan berhasil disimpan sebagai Draft.');
             }
-            redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+            redirect('dashboard.php#lowongan');
             exit;
         } else {
             flash('error', 'Lengkapi semua field wajib pada form lowongan.');
-            redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+            redirect('dashboard.php#lowongan');
             exit;
         }
     }
@@ -801,6 +801,18 @@ if (isset($_GET['open_profile']) && $_GET['open_profile'] == '1') {
     $showProfileModal = true;
 } else {
     $showProfileModal = false;
+}
+
+$selectedJobId = isset($_GET['job_detail']) ? (int)$_GET['job_detail'] : 0;
+$detailJob = null;
+$detailData = null;
+if ($selectedJobId > 0) {
+    $stmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
+    $stmt->execute([$selectedJobId, $user['id']]);
+    $detailJob = $stmt->fetch() ?: null;
+    if ($detailJob) {
+        $detailData = job_to_form_data($detailJob);
+    }
 }
 
 ob_start();
