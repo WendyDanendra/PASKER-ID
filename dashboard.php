@@ -1406,6 +1406,9 @@ $modalStyles = <<<'CSS'
         .choice-chip button:hover { opacity: 1; }
 
         /* ── Footer: sticky bottom, shows correct buttons per step ── */
+        .job-create-panel [hidden] {
+            display: none !important;
+        }
         .job-create-panel .modal-footer {
             flex-shrink: 0 !important;
             padding: 14px 24px !important;
