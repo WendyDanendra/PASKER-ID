@@ -1725,7 +1725,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     bindPageSwitchers();
     bindModalsAndDrawers();
-    bindCascadingLocation();
+    if (typeof bindCascadingLocation === 'function') {
+        bindCascadingLocation();
+    }
 
     const defaultPage = document.body.dataset.defaultPage || 'dashboard';
     initHashRouting(defaultPage);
