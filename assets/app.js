@@ -224,6 +224,26 @@ function bindModal(openSelector, closeSelector, modalSelector) {
 
 // Comprehensive Cascading Locations Dictionary for Indonesia
 const ID_LOCATIONS = {
+    'Aceh': {
+        'Kota Banda Aceh': {
+            'Kuta Alam': { 'Beurawe': '23124', 'Bandar Baru': '23126', 'Kota Baru': '23125', 'Keuramat': '23123', 'Lambaro Skep': '23127' },
+            'Baiturrahman': { 'Neusu Aceh': '23241', 'Peuniti': '23241', 'Seutui': '23243', 'Ateuk Pabuat': '23244' },
+            'Banda Raya': { 'Geuceu Komplek': '23238', 'Laksana': '23239' },
+            'Jaya Baru': { 'Lampoh Daya': '23231', 'Punge Blang Cut': '23232' }
+        },
+        'Kota Sabang': {
+            'Sukakarya': { 'Kuta Ateuh': '23511', 'Kuta Barat': '23512' }
+        },
+        'Kab. Aceh Besar': {
+            'Ingin Jaya': { 'Aneu Galang': '23371', 'Ateuk Angok': '23371' }
+        },
+        'Kab. Pidie': {
+            'Kota Sigli': { 'Blang Paseh': '24112' }
+        },
+        'Kab. Pidie Jaya': {
+            'Trienggadeng': { 'Rawasari': '24186' }
+        }
+    },
     'DKI Jakarta': {
         'Jakarta Pusat': {
             'Gambir': { 'Gambir': '10110', 'Kebon Kelapa': '10120', 'Petojo Selatan': '10160', 'Duri Pulo': '10140' },
@@ -462,20 +482,34 @@ function updatePkiMap(lat, lng) {
     }
 }
 
+function removeUploadedDoc(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    if (input) input.value = '';
+    if (preview) preview.style.display = 'none';
+}
+
 function autoGeocodeLocation() {
-    const prov = document.getElementById('selectProvince')?.value || '';
-    const city = document.getElementById('selectCity')?.value || '';
-    const dist = document.getElementById('selectDistrict')?.value || '';
-    const vill = document.getElementById('selectVillage')?.value || '';
+    const prov = document.getElementById('hiddenProvinceName')?.value || '';
+    const city = document.getElementById('hiddenCityName')?.value || '';
+    const dist = document.getElementById('hiddenDistrictName')?.value || '';
+    const vill = document.getElementById('hiddenVillageName')?.value || '';
+    const addr = document.getElementById('inputAddress')?.value.trim() || '';
+
+    // Map ONLY displays if BOTH location (prov + city) AND address are provided!
+    if (!addr || !prov || !city) {
+        updatePkiMap(null, null);
+        return;
+    }
 
     let coords = null;
-    if (vill && ID_COORDINATES[vill]) {
+    if (vill && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[vill]) {
         coords = ID_COORDINATES[vill];
-    } else if (dist && ID_COORDINATES[dist]) {
+    } else if (dist && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[dist]) {
         coords = ID_COORDINATES[dist];
-    } else if (city && ID_COORDINATES[city]) {
+    } else if (city && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[city]) {
         coords = ID_COORDINATES[city];
-    } else if (prov && ID_COORDINATES[prov]) {
+    } else if (prov && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[prov]) {
         coords = ID_COORDINATES[prov];
     }
 
@@ -492,110 +526,272 @@ function autoGeocodeLocation() {
     }
 }
 
-// Cascading Province -> City -> District -> Village -> Postal Code
-function bindCascadingLocation() {
-    const provSelect = document.getElementById('selectProvince');
-    const citySelect = document.getElementById('selectCity');
-    const distSelect = document.getElementById('selectDistrict');
-    const villSelect = document.getElementById('selectVillage');
+function initHierarchicalLocationSelector() {
+    const trigger = document.getElementById('locationBoxTrigger');
+    const display = document.getElementById('locationBoxDisplay');
+    const caret = document.getElementById('locationBoxCaret');
+    const panel = document.getElementById('locationDropdownPanel');
+    const breadcrumb = document.getElementById('locationBreadcrumbHeader');
+    const levelTitle = document.getElementById('locationLevelTitleBar');
+    const optionsList = document.getElementById('locationOptionsContainer');
+
+    const hidProv = document.getElementById('hiddenProvinceName');
+    const hidCity = document.getElementById('hiddenCityName');
+    const hidDomCity = document.getElementById('hiddenDomicileCityId');
+    const hidDist = document.getElementById('hiddenDistrictName');
+    const hidVill = document.getElementById('hiddenVillageName');
     const postalInput = document.getElementById('inputPostalCode');
 
-    if (!provSelect || !citySelect || !distSelect || !villSelect) return;
+    if (!trigger || !panel || !optionsList) return;
 
-    // 1. Populate Provinces
-    const savedProv = provSelect.dataset.saved || '';
-    const savedCity = citySelect.dataset.saved || '';
-    const savedDist = distSelect.dataset.saved || '';
-    const savedVill = villSelect.dataset.saved || '';
+    let selectedProv = hidProv?.value || '';
+    let selectedCity = hidCity?.value || '';
+    let selectedDist = hidDist?.value || '';
+    let selectedVill = hidVill?.value || '';
+    let currentLevel = 1;
 
-    const provinces = Object.keys(ID_LOCATIONS);
-    provSelect.innerHTML = '<option value="">Pilih Provinsi</option>' + provinces.map(p => `<option value="${p}" ${p === savedProv ? 'selected' : ''}>${p}</option>`).join('');
-
-    function updateCities(selectedProv, preselectCity = '') {
-        citySelect.innerHTML = '<option value="">Pilih Kabupaten / Kota</option>';
-        distSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
-        villSelect.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
-
-        if (!selectedProv || !ID_LOCATIONS[selectedProv]) {
-            if (preselectCity) {
-                citySelect.innerHTML += `<option value="${preselectCity}" selected>${preselectCity}</option>`;
+    function renderPanel() {
+        if (currentLevel === 1) {
+            if (breadcrumb) breadcrumb.style.display = 'none';
+            if (levelTitle) levelTitle.textContent = 'Pilih Provinsi';
+            const provinces = typeof ID_LOCATIONS !== 'undefined' ? Object.keys(ID_LOCATIONS) : [];
+            optionsList.innerHTML = provinces.map(p => {
+                const isSel = p === selectedProv;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${p}" data-loc-type="prov">
+                    <span>${isSel ? '●' : '○'} ${p}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        } else if (currentLevel === 2) {
+            if (breadcrumb) {
+                breadcrumb.style.display = 'flex';
+                breadcrumb.innerHTML = `<span class="crumb-btn" data-crumb-lvl="1">${selectedProv}</span>`;
             }
+            if (levelTitle) levelTitle.textContent = 'Pilih Kabupaten / Kota';
+            const cities = (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]) ? Object.keys(ID_LOCATIONS[selectedProv]) : [];
+            optionsList.innerHTML = cities.map(c => {
+                const isSel = c === selectedCity;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${c}" data-loc-type="city">
+                    <span>${isSel ? '●' : '○'} ${c}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        } else if (currentLevel === 3) {
+            if (breadcrumb) {
+                breadcrumb.style.display = 'flex';
+                breadcrumb.innerHTML = `<span class="crumb-btn" data-crumb-lvl="1">${selectedProv}</span> › <span class="crumb-btn" data-crumb-lvl="2">${selectedCity}</span>`;
+            }
+            if (levelTitle) levelTitle.textContent = 'Pilih Kecamatan';
+            const districts = (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]?.[selectedCity]) ? Object.keys(ID_LOCATIONS[selectedProv][selectedCity]) : [];
+            optionsList.innerHTML = districts.map(d => {
+                const isSel = d === selectedDist;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${d}" data-loc-type="dist">
+                    <span>${isSel ? '●' : '○'} ${d}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        } else if (currentLevel === 4) {
+            if (breadcrumb) {
+                breadcrumb.style.display = 'flex';
+                breadcrumb.innerHTML = `<span class="crumb-btn" data-crumb-lvl="1">${selectedProv}</span> › <span class="crumb-btn" data-crumb-lvl="2">${selectedCity}</span> › <span class="crumb-btn" data-crumb-lvl="3">${selectedDist}</span>`;
+            }
+            if (levelTitle) levelTitle.textContent = 'Pilih Kelurahan / Desa';
+            const villages = (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]?.[selectedCity]?.[selectedDist]) ? Object.keys(ID_LOCATIONS[selectedProv][selectedCity][selectedDist]) : [];
+            optionsList.innerHTML = villages.map(v => {
+                const isSel = v === selectedVill;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${v}" data-loc-type="vill">
+                    <span>${isSel ? '●' : '○'} ${v}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        }
+    }
+
+    function togglePanel() {
+        const isOpen = panel.style.display === 'block';
+        if (isOpen) {
+            panel.style.display = 'none';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+        } else {
+            // Determine level to open
+            if (selectedProv && selectedCity && selectedDist && selectedVill) {
+                currentLevel = 4; // Open directly at Kelurahan / Desa!
+            } else if (selectedProv && selectedCity && selectedDist) {
+                currentLevel = 4;
+            } else if (selectedProv && selectedCity) {
+                currentLevel = 3;
+            } else if (selectedProv) {
+                currentLevel = 2;
+            } else {
+                currentLevel = 1;
+            }
+            renderPanel();
+            panel.style.display = 'block';
+            if (caret) caret.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePanel();
+    });
+
+    panel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const crumb = e.target.closest('[data-crumb-lvl]');
+        if (crumb) {
+            currentLevel = parseInt(crumb.dataset.crumbLvl, 10);
+            renderPanel();
             return;
         }
 
-        const cities = Object.keys(ID_LOCATIONS[selectedProv]);
-        citySelect.innerHTML += cities.map(c => `<option value="${c}" ${c === preselectCity ? 'selected' : ''}>${c}</option>`).join('');
-    }
+        const opt = e.target.closest('[data-loc-val]');
+        if (!opt) return;
 
-    function updateDistricts(selectedProv, selectedCity, preselectDist = '') {
-        distSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
-        villSelect.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
+        const val = opt.dataset.locVal;
+        const type = opt.dataset.locType;
 
-        if (!selectedProv || !selectedCity || !ID_LOCATIONS[selectedProv]?.[selectedCity]) {
-            if (preselectDist) {
-                distSelect.innerHTML += `<option value="${preselectDist}" selected>${preselectDist}</option>`;
+        if (type === 'prov') {
+            if (selectedProv !== val) {
+                selectedProv = val;
+                selectedCity = '';
+                selectedDist = '';
+                selectedVill = '';
             }
-            return;
-        }
-
-        const districts = Object.keys(ID_LOCATIONS[selectedProv][selectedCity]);
-        distSelect.innerHTML += districts.map(d => `<option value="${d}" ${d === preselectDist ? 'selected' : ''}>${d}</option>`).join('');
-    }
-
-    function updateVillages(selectedProv, selectedCity, selectedDist, preselectVill = '') {
-        villSelect.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
-
-        if (!selectedProv || !selectedCity || !selectedDist || !ID_LOCATIONS[selectedProv]?.[selectedCity]?.[selectedDist]) {
-            if (preselectVill) {
-                villSelect.innerHTML += `<option value="${preselectVill}" selected>${preselectVill}</option>`;
+            currentLevel = 2;
+            renderPanel();
+        } else if (type === 'city') {
+            if (selectedCity !== val) {
+                selectedCity = val;
+                selectedDist = '';
+                selectedVill = '';
             }
-            return;
-        }
-
-        const villages = Object.keys(ID_LOCATIONS[selectedProv][selectedCity][selectedDist]);
-        villSelect.innerHTML += villages.map(v => `<option value="${v}" ${v === preselectVill ? 'selected' : ''}>${v}</option>`).join('');
-    }
-
-    // Initial fill if data is saved
-    if (savedProv) {
-        updateCities(savedProv, savedCity);
-        if (savedCity) {
-            updateDistricts(savedProv, savedCity, savedDist);
-            if (savedDist) {
-                updateVillages(savedProv, savedCity, savedDist, savedVill);
+            if (hidCity) hidCity.value = val;
+            if (hidDomCity) hidDomCity.value = val;
+            currentLevel = 3;
+            renderPanel();
+        } else if (type === 'dist') {
+            if (selectedDist !== val) {
+                selectedDist = val;
+                selectedVill = '';
             }
+            if (hidDist) hidDist.value = val;
+            currentLevel = 4;
+            renderPanel();
+        } else if (type === 'vill') {
+            selectedVill = val;
+            if (hidProv) hidProv.value = selectedProv;
+            if (hidCity) hidCity.value = selectedCity;
+            if (hidDomCity) hidDomCity.value = selectedCity;
+            if (hidDist) hidDist.value = selectedDist;
+            if (hidVill) hidVill.value = selectedVill;
+
+            if (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]?.[selectedCity]?.[selectedDist]?.[selectedVill]) {
+                const pCode = ID_LOCATIONS[selectedProv][selectedCity][selectedDist][selectedVill];
+                if (postalInput && pCode) postalInput.value = pCode;
+            }
+
+            if (display) {
+                display.innerHTML = `${selectedVill}, ${selectedDist}, ${selectedCity}, ${selectedProv}`;
+                display.style.color = '#0f172a';
+                display.style.fontWeight = '600';
+            }
+
+            panel.style.display = 'none';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+
+            autoGeocodeLocation();
         }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (panel.style.display === 'block' && !panel.contains(e.target) && !trigger.contains(e.target)) {
+            panel.style.display = 'none';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+        }
+    });
+}
+
+function initEmployerProfileForm() {
+    const nikInput = document.getElementById('inputNik');
+    const nikError = document.getElementById('nikErrorMsg');
+    const addrInput = document.getElementById('inputAddress');
+    const cbSameLoc = document.getElementById('cbSameLocation');
+    const noticeLoc = document.getElementById('siapkerjaLocNotice');
+    const docInput = document.getElementById('inputPermitDoc');
+    const photoInput = document.getElementById('inputWorkplacePhoto');
+    const form = document.getElementById('formEmployerProfile');
+
+    if (nikInput) {
+        nikInput.addEventListener('input', () => {
+            nikInput.value = nikInput.value.replace(/\D/g, '').slice(0, 16);
+            if (nikInput.value.length === 16) {
+                if (nikError) nikError.style.display = 'none';
+                nikInput.setCustomValidity('');
+            }
+        });
+        nikInput.addEventListener('blur', () => {
+            if (nikInput.value.length !== 16 && nikInput.value.length > 0) {
+                if (nikError) nikError.style.display = 'block';
+                nikInput.setCustomValidity('NIK harus terdiri dari 16 digit angka.');
+            } else {
+                if (nikError) nikError.style.display = 'none';
+                nikInput.setCustomValidity('');
+            }
+        });
     }
 
-    // Event listeners
-    provSelect.addEventListener('change', () => {
-        updateCities(provSelect.value);
-        autoGeocodeLocation();
-    });
+    if (addrInput) {
+        addrInput.addEventListener('input', () => {
+            autoGeocodeLocation();
+        });
+    }
 
-    citySelect.addEventListener('change', () => {
-        updateDistricts(provSelect.value, citySelect.value);
-        autoGeocodeLocation();
-    });
+    if (cbSameLoc) {
+        cbSameLoc.addEventListener('change', () => {
+            if (cbSameLoc.checked) {
+                if (noticeLoc) noticeLoc.style.display = 'block';
+            } else {
+                if (noticeLoc) noticeLoc.style.display = 'none';
+            }
+        });
+    }
 
-    distSelect.addEventListener('change', () => {
-        updateVillages(provSelect.value, citySelect.value, distSelect.value);
-        autoGeocodeLocation();
-    });
+    if (docInput) {
+        docInput.addEventListener('change', () => {
+            const preview = document.getElementById('permitDocPreview');
+            const nameEl = document.getElementById('permitDocName');
+            if (docInput.files && docInput.files[0]) {
+                if (nameEl) nameEl.textContent = '📄 ' + docInput.files[0].name;
+                if (preview) preview.style.display = 'flex';
+            }
+        });
+    }
 
-    villSelect.addEventListener('change', () => {
-        const prov = provSelect.value;
-        const city = citySelect.value;
-        const dist = distSelect.value;
-        const vill = villSelect.value;
+    if (photoInput) {
+        photoInput.addEventListener('change', () => {
+            const preview = document.getElementById('workplacePhotoPreview');
+            const nameEl = document.getElementById('workplacePhotoName');
+            if (photoInput.files && photoInput.files[0]) {
+                if (nameEl) nameEl.textContent = '📷 ' + photoInput.files[0].name;
+                if (preview) preview.style.display = 'flex';
+            }
+        });
+    }
 
-        if (postalInput && prov && city && dist && vill && ID_LOCATIONS[prov]?.[city]?.[dist]?.[vill]) {
-            postalInput.value = ID_LOCATIONS[prov][city][dist][vill];
-        }
-        autoGeocodeLocation();
-    });
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            if (nikInput && nikInput.value.length !== 16) {
+                e.preventDefault();
+                if (nikError) nikError.style.display = 'block';
+                nikInput.setCustomValidity('NIK harus terdiri dari 16 digit angka.');
+                nikInput.reportValidity();
+                return false;
+            }
+        });
+    }
 
-    // Check if lat/lng already exists
+    // Initial map check
     const initialLat = document.getElementById('inputLat')?.value;
     const initialLng = document.getElementById('inputLng')?.value;
     if (initialLat && initialLng) {
@@ -1821,7 +2017,392 @@ window.toggleAccountMenu = toggleAccountMenu;
 window.closeRailPopovers = closeRailPopovers;
 window.selectThemeOption = selectThemeOption;
 
+/* ─── FORM PROFIL PEMBERI KERJA INDIVIDU & HIERARCHICAL LOCATION SELECTOR ─── */
 
+const ID_LOCATIONS = {
+    "Aceh": {
+        "Kota Banda Aceh": {
+            "Kuta Alam": ["Beurawe", "Bandar Baru", "Kota Baru", "Keuramat", "Lambaro Skep"],
+            "Baiturrahman": ["Neusu Aceh", "Peunitia", "Ateuk Pabuat", "Sukaramai"],
+            "Banda Raya": ["Lamlagang", "Geuceu Komplek", "Geuceu Ineum"],
+            "Jaya Baru": ["Punge Blang Cut", "Lampoh Daya", "Empee Trieng"]
+        },
+        "Kota Sabang": {
+            "Sukakarya": ["Aneuk Laot", "Iboih", "Krueng Raya"],
+            "Sukajaya": ["Anoi Itam", "Balohan", "Cot Abeuk"]
+        },
+        "Kab. Aceh Besar": {
+            "Ingin Jaya": ["Lambaro", "Aneyuk Batee", "Lubok Sukon"],
+            "Darul Imarah": ["Lampeuneurut", "Punieu", "Gue Gajah"]
+        },
+        "Kab. Pidie": {
+            "Sigli": ["Blang Paseh", "Kuala Pidie", "Kramat Luar"]
+        }
+    },
+    "DKI Jakarta": {
+        "Kota Jakarta Selatan": {
+            "Kebayoran Baru": ["Senayan", "Rawa Barat", "Melawai", "Gandaria Utara"],
+            "Cilandak": ["Cilandak Barat", "Pondok Labu", "Lebak Bulus"]
+        },
+        "Kota Jakarta Pusat": {
+            "Gambir": ["Gambir", "Cideng", "Petojo Selatan"],
+            "Menteng": ["Menteng", "Cikini", "Gondangdia"]
+        }
+    },
+    "Jawa Barat": {
+        "Kota Bekasi": {
+            "Bekasi Selatan": ["Pekayon Jaya", "Kayuringin Jaya", "Jatibening"],
+            "Bekasi Barat": ["Kranji", "Kota Baru", "Bintara"]
+        },
+        "Kota Bandung": {
+            "Coblong": ["Dago", "Lebak Siliwangi", "Sadang Serang"],
+            "Cicendo": ["Pasirkaliki", "Arjuna", "Susuinan"]
+        }
+    },
+    "Jawa Tengah": {
+        "Kota Semarang": {
+            "Semarang Selatan": ["Peterongan", "Randusari", "Pleburan"],
+            "Gajahmungkur": ["Bendan Ngisor", "Petompon"]
+        }
+    },
+    "Jawa Timur": {
+        "Kota Surabaya": {
+            "Tegalsari": ["Dr. Soetomo", "Kedungdoro", "Wonorejo"],
+            "Gubeng": ["Airlangga", "Mojo", "Kertajaya"]
+        }
+    }
+};
 
+let currentLocLevel = 1; // 1: Prov, 2: City, 3: District, 4: Village
+let selProv = '';
+let selCity = '';
+let selDistrict = '';
+let selVillage = '';
+let pkiMapInstance = null;
 
+function initHierarchicalLocationSelector() {
+    const locInput = document.getElementById('hierarchicalLocationInput');
+    const locDropdown = document.getElementById('hierarchicalLocDropdown');
+    const locDisplay = document.getElementById('locDisplayValue');
+    const locCaret = document.getElementById('locCaret');
+    const breadcrumbs = document.getElementById('locBreadcrumbs');
+    const optionsList = document.getElementById('locOptionsList');
 
+    if (!locInput || !locDropdown) return;
+
+    // Load saved values from hidden inputs
+    selProv = document.getElementById('hiddenProvince')?.value || '';
+    selCity = document.getElementById('hiddenCity')?.value || '';
+    selDistrict = document.getElementById('hiddenDistrict')?.value || '';
+    selVillage = document.getElementById('hiddenVillage')?.value || '';
+
+    // Click trigger field
+    locInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = locDropdown.style.display === 'block';
+        if (isOpen) {
+            closeLocDropdown();
+        } else {
+            openLocDropdown();
+        }
+    });
+
+    // Prevent closing when clicking inside dropdown
+    locDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!locInput.contains(e.target) && !locDropdown.contains(e.target)) {
+            closeLocDropdown();
+        }
+    });
+
+    function openLocDropdown() {
+        locDropdown.style.display = 'block';
+        if (locCaret) {
+            locCaret.classList.remove('fa-chevron-down');
+            locCaret.classList.add('fa-chevron-up');
+        }
+
+        // Check behavior requirement:
+        // If already fully selected, open directly at Level 4 (Kelurahan / Desa)
+        if (selProv && selCity && selDistrict && selVillage && ID_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
+            currentLocLevel = 4;
+        } else if (selProv && selCity && selDistrict && ID_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
+            currentLocLevel = 4;
+        } else if (selProv && selCity && ID_LOCATIONS[selProv]?.[selCity]) {
+            currentLocLevel = 3;
+        } else if (selProv && ID_LOCATIONS[selProv]) {
+            currentLocLevel = 2;
+        } else {
+            currentLocLevel = 1;
+        }
+
+        renderLocationView();
+    }
+
+    function closeLocDropdown() {
+        locDropdown.style.display = 'none';
+        if (locCaret) {
+            locCaret.classList.remove('fa-chevron-up');
+            locCaret.classList.add('fa-chevron-down');
+        }
+    }
+
+    function renderLocationView() {
+        renderBreadcrumbs();
+        renderOptions();
+    }
+
+    function renderBreadcrumbs() {
+        if (!breadcrumbs) return;
+        let html = '';
+
+        if (currentLocLevel === 1) {
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(1)">Pilih Provinsi</span>`;
+        } else if (currentLocLevel === 2) {
+            html += `<span class="crumb-btn" onclick="switchLocLevel(1)">${selProv}</span> › `;
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(2)">Pilih Kabupaten / Kota</span>`;
+        } else if (currentLocLevel === 3) {
+            html += `<span class="crumb-btn" onclick="switchLocLevel(1)">${selProv}</span> › `;
+            html += `<span class="crumb-btn" onclick="switchLocLevel(2)">${selCity}</span> › `;
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(3)">Pilih Kecamatan</span>`;
+        } else if (currentLocLevel === 4) {
+            html += `<span class="crumb-btn" onclick="switchLocLevel(1)">${selProv}</span> › `;
+            html += `<span class="crumb-btn" onclick="switchLocLevel(2)">${selCity}</span> › `;
+            html += `<span class="crumb-btn" onclick="switchLocLevel(3)">${selDistrict}</span> › `;
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(4)">Pilih Kelurahan / Desa</span>`;
+        }
+        breadcrumbs.innerHTML = html;
+    }
+
+    function renderOptions() {
+        if (!optionsList) return;
+        let html = '';
+
+        if (currentLocLevel === 1) {
+            const provinces = Object.keys(ID_LOCATIONS);
+            provinces.forEach(prov => {
+                const isSel = prov === selProv;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectProv('${prov}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${prov}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        } else if (currentLocLevel === 2) {
+            const cities = Object.keys(ID_LOCATIONS[selProv] || {});
+            cities.forEach(city => {
+                const isSel = city === selCity;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectCity('${city}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${city}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        } else if (currentLocLevel === 3) {
+            const districts = Object.keys(ID_LOCATIONS[selProv]?.[selCity] || {});
+            districts.forEach(dist => {
+                const isSel = dist === selDistrict;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectDistrict('${dist}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${dist}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        } else if (currentLocLevel === 4) {
+            const villages = ID_LOCATIONS[selProv]?.[selCity]?.[selDistrict] || [];
+            villages.forEach(vill => {
+                const isSel = vill === selVillage;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectVillage('${vill}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${vill}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        }
+        optionsList.innerHTML = html;
+    }
+
+    window.switchLocLevel = function(lvl) {
+        currentLocLevel = lvl;
+        renderLocationView();
+    };
+
+    window.selectProv = function(prov) {
+        if (selProv !== prov) {
+            selProv = prov;
+            selCity = '';
+            selDistrict = '';
+            selVillage = '';
+            updateHiddenFields();
+        }
+        currentLocLevel = 2;
+        renderLocationView();
+    };
+
+    window.selectCity = function(city) {
+        if (selCity !== city) {
+            selCity = city;
+            selDistrict = '';
+            selVillage = '';
+            updateHiddenFields();
+        }
+        currentLocLevel = 3;
+        renderLocationView();
+    };
+
+    window.selectDistrict = function(dist) {
+        if (selDistrict !== dist) {
+            selDistrict = dist;
+            selVillage = '';
+            updateHiddenFields();
+        }
+        currentLocLevel = 4;
+        renderLocationView();
+    };
+
+    window.selectVillage = function(vill) {
+        selVillage = vill;
+        updateHiddenFields();
+        updateDisplayField();
+        closeLocDropdown();
+        autoGeocodeLocation();
+    };
+
+    function updateHiddenFields() {
+        document.getElementById('hiddenProvince').value = selProv;
+        document.getElementById('hiddenCity').value = selCity;
+        document.getElementById('hiddenDistrict').value = selDistrict;
+        document.getElementById('hiddenVillage').value = selVillage;
+        document.getElementById('hiddenDomicileCityId').value = selCity;
+    }
+
+    function updateDisplayField() {
+        if (selVillage && selDistrict && selCity && selProv) {
+            locDisplay.textContent = `${selVillage}, ${selDistrict}, ${selCity}, ${selProv}`;
+            locDisplay.classList.remove('placeholder');
+        } else {
+            locDisplay.textContent = 'Pilih lokasi domisili';
+            locDisplay.classList.add('placeholder');
+        }
+    }
+}
+
+// Global Document Upload helper
+window.removeUploadedDoc = function(type) {
+    if (type === 'permit') {
+        const container = document.getElementById('docPermitContainer');
+        if (container) {
+            container.innerHTML = `<input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;" required>`;
+        }
+    } else if (type === 'photo') {
+        const container = document.getElementById('docPhotoContainer');
+        if (container) {
+            container.innerHTML = `<input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">`;
+        }
+    }
+};
+
+function initEmployerProfileForm() {
+    // NIK validation (16 digits only)
+    const inputNik = document.getElementById('inputNik');
+    const nikErr = document.getElementById('nikErrorMsg');
+
+    if (inputNik) {
+        inputNik.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 16);
+            if (this.value.length === 16) {
+                if (nikErr) nikErr.style.display = 'none';
+            }
+        });
+        inputNik.addEventListener('blur', function() {
+            if (this.value.length > 0 && this.value.length !== 16) {
+                if (nikErr) nikErr.style.display = 'block';
+            } else {
+                if (nikErr) nikErr.style.display = 'none';
+            }
+        });
+    }
+
+    // SIAPKerja checkbox notices
+    const cbSameLoc = document.getElementById('cbSameLocation');
+    const cbSameAddr = document.getElementById('cbSameAddress');
+    const noticeLoc = document.getElementById('siapkerjaLocNotice');
+    const noticeAddr = document.getElementById('siapkerjaAddrNotice');
+
+    if (cbSameLoc && noticeLoc) {
+        cbSameLoc.addEventListener('change', function() {
+            noticeLoc.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    if (cbSameAddr && noticeAddr) {
+        cbSameAddr.addEventListener('change', function() {
+            noticeAddr.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    // Address input triggers geocoding map
+    const inputAddress = document.getElementById('inputAddress');
+    if (inputAddress) {
+        inputAddress.addEventListener('input', function() {
+            autoGeocodeLocation();
+        });
+    }
+
+    // Form submit validation
+    const form = document.getElementById('formEmployerProfile');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (inputNik && inputNik.value.length !== 16) {
+                e.preventDefault();
+                if (nikErr) nikErr.style.display = 'block';
+                inputNik.focus();
+                alert('NIK harus terdiri dari 16 digit angka.');
+                return false;
+            }
+            const cbConsent = document.getElementById('cbUserConsent');
+            if (cbConsent && !cbConsent.checked) {
+                e.preventDefault();
+                alert('Anda harus menyetujui pernyataan persetujuan sebelum mengajukan verifikasi.');
+                return false;
+            }
+        });
+    }
+
+    // Initial map check
+    autoGeocodeLocation();
+}
+        leafletBox.style.display = 'none';
+        if (openLinkWrap) openLinkWrap.style.display = 'none';
+    }
+}
+
+// Helper escape HTML string function for app.js
+function e(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initHierarchicalLocationSelector();
+    initEmployerProfileForm();
+});
