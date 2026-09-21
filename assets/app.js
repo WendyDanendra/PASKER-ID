@@ -921,7 +921,7 @@ function initJobCreateWizard() {
             const index = Number(label.dataset.stepLabel);
             label.classList.toggle('active', index === current);
             label.classList.toggle('done', index < current);
-            const bubble = label.querySelector('.bubble');
+            const bubble = label.querySelector('.step-badge');
             if (bubble) {
                 bubble.innerHTML = index < current ? '<i class="fa-solid fa-check"></i>' : String(index);
             }

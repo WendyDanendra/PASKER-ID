@@ -926,18 +926,19 @@ $replacements = [
 $html = str_replace(array_keys($replacements), array_values($replacements), $html);
 
 $modalStyles = <<<'CSS'
-        /* ═══════════════════════════════════════════════════════
-           JOB CREATE PANEL — injected AFTER app.css
-           Matches Enterprise Employer reference screenshots exactly
-           ═══════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           JOB CREATE DRAWER — injected AFTER app.css via </body>
+           ASCII wireframe spec: 40-45% viewport width, 100vh, sticky
+           header+footer, scrollable body only.
+           ═══════════════════════════════════════════════════════════════ */
 
-        /* Override .modal-backdrop for job-create to be right-side floating */
+        /* ── Backdrop: dark overlay left, panel flush-right ── */
         .modal-backdrop[data-modal="job-create"] {
             position: fixed !important;
             inset: 0 !important;
-            background: rgba(15, 23, 42, 0.45) !important;
+            background: rgba(15, 23, 42, 0.50) !important;
             display: none !important;
-            align-items: flex-start !important;
+            align-items: stretch !important;
             justify-content: flex-end !important;
             padding: 0 !important;
             z-index: 1050 !important;
@@ -946,9 +947,9 @@ $modalStyles = <<<'CSS'
             display: flex !important;
         }
 
-        /* The panel itself — floating, right-aligned, all corners rounded, matches reference */
+        /* ── Panel: 40-45% viewport, full height, white, flush right ── */
         .job-create-panel {
-            width: min(360px, 92vw) !important;
+            width: clamp(400px, 44vw, 680px) !important;
             height: 100vh !important;
             max-height: 100vh !important;
             display: flex !important;
@@ -956,10 +957,13 @@ $modalStyles = <<<'CSS'
             overflow: hidden !important;
             min-height: 0 !important;
             border-radius: 0 !important;
-            box-shadow: -2px 0 20px rgba(15, 23, 42, 0.12) !important;
+            box-shadow: -4px 0 32px rgba(15, 23, 42, 0.18) !important;
             background: #ffffff !important;
             margin: 0 !important;
+            flex-shrink: 0 !important;
         }
+
+        /* ── Form: flex column to fill panel ── */
         .job-create-panel form {
             display: flex !important;
             flex-direction: column !important;
@@ -968,48 +972,50 @@ $modalStyles = <<<'CSS'
             overflow: hidden !important;
         }
 
-        /* Header — sticky at top, matches reference */
+        /* ── Header: sticky top, no scroll ── */
         .job-create-panel .modal-header {
-            position: relative !important;
-            padding: 20px 20px 14px 20px !important;
-            border-bottom: none !important;
             flex-shrink: 0 !important;
+            padding: 20px 24px 12px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
             background: #ffffff !important;
-            display: block !important;
-        }
-        .job-create-panel .modal-close {
-            position: absolute !important;
-            top: 18px !important;
-            right: 18px !important;
-            width: 28px !important;
-            height: 28px !important;
-            border-radius: 50% !important;
-            border: none !important;
-            background: transparent !important;
-            color: #94a3b8 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            cursor: pointer !important;
-            font-size: 16px !important;
-            transition: color 0.15s !important;
-        }
-        .job-create-panel .modal-close:hover {
-            color: #0f172a !important;
+            position: relative !important;
         }
         .job-create-panel .modal-title {
             font-size: 18px !important;
             font-weight: 700 !important;
             color: #0f172a !important;
-            letter-spacing: -0.01em !important;
-            margin: 0 0 2px 0 !important;
-            padding-right: 32px !important;
+            margin: 0 0 3px 0 !important;
+            padding-right: 36px !important;
+            line-height: 1.3 !important;
         }
         .job-create-panel .modal-subtitle {
-            font-size: 12px !important;
+            font-size: 13px !important;
             color: #64748b !important;
             margin: 0 !important;
         }
+        .job-create-panel .modal-close {
+            position: absolute !important;
+            top: 18px !important;
+            right: 20px !important;
+            width: 30px !important;
+            height: 30px !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 50% !important;
+            background: #f8fafc !important;
+            color: #64748b !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            font-size: 14px !important;
+            transition: all 0.15s !important;
+        }
+        .job-create-panel .modal-close:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+
+        /* ── Revision Banner ── */
         .revision-banner {
             margin-top: 10px;
             padding: 10px 12px;
@@ -1019,46 +1025,32 @@ $modalStyles = <<<'CSS'
             color: #9a3412;
             font-size: 12px;
         }
-        .revision-banner strong {
-            display: block;
-            font-size: 11px;
-            margin-bottom: 3px;
-        }
-        .revision-banner p {
-            margin: 0;
-            font-size: 12px;
-            line-height: 1.4;
-        }
+        .revision-banner strong { display: block; font-size: 11px; margin-bottom: 3px; }
+        .revision-banner p { margin: 0; font-size: 12px; line-height: 1.4; }
 
-        /* Step Progress — matches reference exactly */
+        /* ── Step Progress Bar: sticky below header ── */
         .step-progress-wizard {
-            display: flex;
-            align-items: center;
-            padding: 10px 20px 12px;
-            background: #ffffff;
-            flex-shrink: 0;
-            border-bottom: 1px solid #f1f5f9;
+            display: flex !important;
+            align-items: center !important;
+            padding: 12px 24px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            background: #ffffff !important;
+            flex-shrink: 0 !important;
         }
         .step-progress-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 12px;
+            gap: 7px;
+            font-size: 13px;
             font-weight: 600;
             color: #94a3b8;
-            user-select: none;
+            white-space: nowrap;
         }
-        .step-progress-item.active {
-            color: #0284c7;
-            font-weight: 700;
-        }
-        .step-progress-item.done {
-            color: #0284c7;
-            font-weight: 600;
-        }
+        .step-progress-item.active { color: #0284c7; font-weight: 700; }
+        .step-progress-item.done  { color: #0284c7; font-weight: 600; }
         .step-progress-item .step-badge {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
@@ -1067,75 +1059,59 @@ $modalStyles = <<<'CSS'
             color: #64748b;
             font-size: 11px;
             font-weight: 700;
-            transition: all 0.2s ease;
             flex-shrink: 0;
+            transition: all 0.2s;
         }
-        .step-progress-item.active .step-badge {
-            background: #0ea5e9;
-            color: #ffffff;
-        }
-        .step-progress-item.done .step-badge {
-            background: #0ea5e9;
-            color: #ffffff;
-        }
+        .step-progress-item.active .step-badge { background: #0ea5e9; color: #fff; }
+        .step-progress-item.done .step-badge   { background: #0ea5e9; color: #fff; }
         .step-progress-line {
             flex: 1;
-            height: 1px;
+            height: 1.5px;
             background: #e2e8f0;
-            margin: 0 8px;
-            transition: background 0.3s ease;
+            margin: 0 10px;
+            transition: background 0.3s;
         }
-        .step-progress-line.done {
-            background: #0ea5e9;
-        }
+        .step-progress-line.done { background: #0ea5e9; }
 
-        /* Modal Body — scrollable content area */
+        /* ── Modal Body: ONLY this section scrolls ── */
         .job-create-panel .modal-body {
             flex: 1 !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
-            padding: 20px !important;
+            padding: 24px !important;
             display: flex !important;
             flex-direction: column !important;
             gap: 20px !important;
             min-height: 0 !important;
+            background: #f8fafc !important;
             scrollbar-width: thin !important;
-            scrollbar-color: #e2e8f0 transparent !important;
+            scrollbar-color: #cbd5e1 transparent !important;
         }
-        .job-create-panel .modal-body::-webkit-scrollbar {
-            width: 4px;
-        }
+        .job-create-panel .modal-body::-webkit-scrollbar { width: 5px; }
         .job-create-panel .modal-body::-webkit-scrollbar-thumb {
-            background: #e2e8f0;
-            border-radius: 2px;
+            background: #cbd5e1; border-radius: 3px;
         }
 
-        /* Section cards — matches reference */
+        /* ── Section Cards ── */
         .form-section-card {
+            background: #ffffff;
+            border: 1px solid #e8edf3;
+            border-radius: 12px;
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            background: #ffffff;
-            border: 1px solid #f1f5f9;
-            border-radius: 12px;
-            padding: 16px;
-        }
-        .form-section-divider {
-            height: 1px;
-            border: none;
-            border-bottom: 1px dashed #e2e8f0;
-            margin: 2px 0;
+            gap: 16px;
         }
         .form-section-header {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
-            padding-bottom: 10px;
+            gap: 12px;
+            padding-bottom: 14px;
             border-bottom: 1px solid #f1f5f9;
         }
         .form-section-icon {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 8px;
             background: #e0f2fe;
             color: #0284c7;
@@ -1146,112 +1122,112 @@ $modalStyles = <<<'CSS'
             flex-shrink: 0;
         }
         .section-title, .form-section-title {
-            font-size: 13px !important;
+            font-size: 14px !important;
             font-weight: 700 !important;
             color: #0f172a !important;
-            margin: 0 0 1px 0 !important;
+            margin: 0 0 2px 0 !important;
+            line-height: 1.3 !important;
         }
         .section-subtitle, .form-section-subtitle {
-            font-size: 11px !important;
+            font-size: 12px !important;
             color: #64748b !important;
             margin: 0 !important;
+            line-height: 1.4 !important;
         }
 
-        /* Form Groups */
+        /* ── Form Elements ── */
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 6px;
         }
         .form-group label {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             color: #334155;
+            line-height: 1.3;
         }
-        .form-group label .req {
-            color: #ef4444;
-            margin-left: 2px;
-        }
-        .form-group .field-hint {
+        .form-group label .req { color: #ef4444; margin-left: 2px; }
+        .field-hint {
             font-size: 11px;
             color: #64748b;
-            margin-top: 2px;
+            margin-top: 3px;
         }
         .form-grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 14px;
         }
 
-        /* Input controls — matches reference style */
+        /* ── Text / Select Inputs ── */
         .form-control-custom {
             width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #e2e8f0;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 13px;
             color: #0f172a;
             background: #ffffff;
             outline: none;
-            transition: border-color 0.15s ease;
             box-sizing: border-box;
+            transition: border-color 0.15s, box-shadow 0.15s;
             appearance: none;
         }
         .form-control-custom:focus {
             border-color: #0ea5e9;
-            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
         }
         select.form-control-custom {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2394a3b8' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 10px center;
-            padding-right: 28px;
+            padding-right: 30px;
+            cursor: pointer;
         }
 
-        /* Addon Groups */
+        /* ── Addon inputs (Rp prefix, Tahun/Orang suffix) ── */
         .input-addon-group {
             display: flex;
             align-items: center;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
             overflow: hidden;
             background: #ffffff;
-            transition: border-color 0.15s ease;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
         .input-addon-group:focus-within {
             border-color: #0ea5e9;
-            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
         }
         .input-addon-group .addon-text {
-            padding: 8px 10px;
+            padding: 9px 11px;
             background: #f8fafc;
             color: #475569;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
-            border-right: 1px solid #e2e8f0;
+            border-right: 1px solid #e5e7eb;
             flex-shrink: 0;
         }
         .input-addon-group .addon-suffix {
-            padding: 8px 10px;
+            padding: 9px 11px;
             background: #f8fafc;
             color: #475569;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
-            border-left: 1px solid #e2e8f0;
+            border-left: 1px solid #e5e7eb;
             flex-shrink: 0;
         }
         .input-addon-group input {
             flex: 1;
             border: none;
-            padding: 8px 10px;
-            font-size: 12px;
+            padding: 9px 12px;
+            font-size: 13px;
             outline: none;
             background: transparent;
-            width: 100%;
             min-width: 0;
         }
 
-        /* Radio/Checkbox Pills — matches reference filled style */
+        /* ── Pill Radio / Checkbox (Kondisi Fisik, Jenis Kelamin, Status Pernikahan) ── */
         .pill-group {
             display: flex;
             align-items: center;
@@ -1261,28 +1237,26 @@ $modalStyles = <<<'CSS'
         .pill-option {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
+            gap: 7px;
+            padding: 6px 14px;
             border-radius: 9999px;
-            border: 1.5px solid #e2e8f0;
-            background: #ffffff;
+            border: 1.5px solid #d1d5db;
+            background: #fff;
             color: #475569;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             user-select: none;
-            transition: all 0.15s ease;
+            transition: border-color 0.15s, background 0.15s, color 0.15s;
         }
-        .pill-option:hover {
-            border-color: #0ea5e9;
-        }
+        .pill-option:hover { border-color: #0ea5e9; }
         .pill-option input[type="checkbox"],
         .pill-option input[type="radio"] {
             appearance: none;
             -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            border: 1.5px solid #cbd5e1;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid #9ca3af;
             border-radius: 50%;
             outline: none;
             display: inline-flex;
@@ -1290,23 +1264,21 @@ $modalStyles = <<<'CSS'
             justify-content: center;
             margin: 0;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.15s;
             flex-shrink: 0;
         }
         .pill-option input[type="checkbox"]:checked,
         .pill-option input[type="radio"]:checked {
             background: #0ea5e9;
             border-color: #0ea5e9;
-            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
         }
         .pill-option input[type="checkbox"]:checked::after,
         .pill-option input[type="radio"]:checked::after {
             content: "";
             display: block;
-            width: 5px;
-            height: 5px;
+            width: 5px; height: 5px;
             border-radius: 50%;
-            background: #ffffff;
+            background: #fff;
         }
         .pill-option:has(input:checked) {
             border-color: #0ea5e9;
@@ -1315,78 +1287,60 @@ $modalStyles = <<<'CSS'
             font-weight: 600;
         }
 
-        /* Card Toggle Items */
-        .card-toggle-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        /* ── Card Toggle (Tampilkan Gaji, Remote, Terbatas) ── */
+        .card-toggle-group { display: flex; flex-direction: column; gap: 8px; }
         .card-toggle-item {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
-            padding: 10px 12px;
-            border: 1px solid #e2e8f0;
+            gap: 12px;
+            padding: 11px 14px;
+            border: 1.5px solid #e5e7eb;
             border-radius: 8px;
-            background: #ffffff;
+            background: #fff;
             cursor: pointer;
             user-select: none;
-            transition: border-color 0.15s ease;
+            transition: border-color 0.15s, background 0.15s;
         }
-        .card-toggle-item:hover {
-            border-color: #0ea5e9;
-        }
+        .card-toggle-item:hover { border-color: #0ea5e9; }
+        .card-toggle-item:has(input:checked) { border-color: #0ea5e9; background: #f0f9ff; }
         .card-toggle-item input[type="checkbox"],
         .card-toggle-item input[type="radio"] {
             margin-top: 2px;
             accent-color: #0ea5e9;
-            width: 14px;
-            height: 14px;
+            width: 15px; height: 15px;
             cursor: pointer;
             flex-shrink: 0;
         }
-        .card-toggle-content {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-        .card-toggle-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #0f172a;
-        }
-        .card-toggle-desc {
-            font-size: 11px;
-            color: #64748b;
-            line-height: 1.4;
-        }
+        .card-toggle-content { display: flex; flex-direction: column; gap: 2px; }
+        .card-toggle-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+        .card-toggle-desc  { font-size: 12px; color: #64748b; line-height: 1.4; }
 
-        /* Rich Text Editor */
+        /* ── Rich Text Editor ── */
         .rich-editor-shell {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
             overflow: hidden;
-            background: #ffffff;
+            background: #fff;
         }
         .rich-editor-shell:focus-within {
             border-color: #0ea5e9;
-            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
         }
         .rich-toolbar {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 2px;
-            padding: 4px 8px;
+            padding: 5px 8px;
             border-bottom: 1px solid #f1f5f9;
             background: #f8fafc;
-            flex-wrap: wrap;
         }
         .rich-btn {
             border: none;
             background: transparent;
             color: #475569;
             border-radius: 4px;
-            padding: 3px 6px;
+            padding: 3px 5px;
             font-size: 11px;
             cursor: pointer;
             display: inline-flex;
@@ -1395,45 +1349,48 @@ $modalStyles = <<<'CSS'
             min-width: 22px;
             height: 22px;
         }
-        .rich-btn:hover {
-            background: #e2e8f0;
-        }
+        .rich-btn:hover { background: #e2e8f0; }
         .rich-btn-select {
             border: 1px solid #e2e8f0;
             border-radius: 4px;
             padding: 1px 4px;
             font-size: 11px;
             color: #475569;
-            background: #ffffff;
+            background: #fff;
             height: 22px;
         }
         .rich-area {
-            min-height: 120px;
-            max-height: 180px;
+            min-height: 130px;
+            max-height: 200px;
             overflow-y: auto;
-            padding: 10px;
+            padding: 11px 13px;
             outline: none;
-            font-size: 12px;
+            font-size: 13px;
             line-height: 1.6;
             color: #0f172a;
         }
+        .rich-area:empty::before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+        }
 
-        /* Chips */
+        /* ── Chips ── */
         .choice-chip-wrap {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
-            margin-top: 6px;
+            gap: 6px;
+            min-height: 10px;
         }
         .choice-chip {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 3px 8px;
+            gap: 5px;
+            padding: 4px 10px;
             border-radius: 9999px;
-            background: #e0f2fe;
-            color: #0369a1;
-            font-size: 11px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 12px;
             font-weight: 600;
         }
         .choice-chip button {
@@ -1442,57 +1399,54 @@ $modalStyles = <<<'CSS'
             color: inherit;
             cursor: pointer;
             padding: 0;
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1;
+            opacity: 0.7;
         }
+        .choice-chip button:hover { opacity: 1; }
 
-        /* Footer — sticky at bottom */
+        /* ── Footer: sticky bottom, shows correct buttons per step ── */
         .job-create-panel .modal-footer {
-            padding: 14px 20px !important;
+            flex-shrink: 0 !important;
+            padding: 14px 24px !important;
             border-top: 1px solid #f1f5f9 !important;
             display: flex !important;
-            justify-content: space-between !important;
             align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 10px !important;
             background: #ffffff !important;
-            flex-shrink: 0 !important;
-            border-radius: 0 !important;
-            gap: 8px !important;
         }
         .btn-secondary-custom {
-            padding: 8px 16px;
+            padding: 9px 20px;
             border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            background: #ffffff;
-            color: #334155;
-            font-size: 12px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #374151;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: background 0.15s, border-color 0.15s;
         }
-        .btn-secondary-custom:hover {
-            background: #f8fafc;
-            border-color: #94a3b8;
-        }
+        .btn-secondary-custom:hover { background: #f9fafb; border-color: #9ca3af; }
         .btn-primary-custom {
-            padding: 8px 20px;
+            padding: 9px 22px;
             border-radius: 8px;
             border: none;
             background: #0ea5e9;
-            color: #ffffff;
-            font-size: 12px;
+            color: #fff;
+            font-size: 13px;
             font-weight: 700;
             cursor: pointer;
-            transition: background 0.15s ease;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: background 0.15s;
+            box-shadow: 0 1px 3px rgba(14,165,233,0.3);
         }
-        .btn-primary-custom:hover {
-            background: #0284c7;
-        }
+        .btn-primary-custom:hover { background: #0284c7; }
 CSS;
 
 // Inject drawer CSS just before </body> so it loads AFTER app.css and wins the cascade
@@ -1848,7 +1802,7 @@ $modal = <<<HTML
                             </div>
 
                             <div class="form-group">
-                                <label>Status pernikahan <span class="req">*</span></label>
+                                <label>Status Pernikahan <span class="req">*</span></label>
                                 <div class="pill-group" data-required-group="Pilih minimal satu status pernikahan.">
                                     <label class="pill-option">
                                         <input type="checkbox" name="marital_status[]" value="Telah Menikah" checked>
