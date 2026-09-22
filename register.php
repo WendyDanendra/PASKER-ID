@@ -47,20 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
-    <div class="auth-shell">
-        <div class="auth-visual">
-            <div class="auth-brand">
-                <div class="brand-mark"><i class="fa-solid fa-user-plus"></i></div>
-                <div>
-                    <h1>Simulasi Akses PKI</h1>
-                    <p>Shortcut simulasi onboarding akun SIAPkerja untuk layanan Pemberi Kerja Individu</p>
-                </div>
-            </div>
-            <div class="auth-copy">
-                <p><strong>Konteks SIAPkerja:</strong> Pada implementasi sebenarnya, pengguna telah memiliki akun SIAPkerja sebelum mengakses Karirhub dan memilih layanan Pemberi Kerja Individu.</p>
-                <p style="margin-top:12px;">Halaman ini difungsikan khusus sebagai shortcut pengujian alur registrasi / onboarding awal ke formulir profil PKI.</p>
-            </div>
-        </div>
+    <div class="auth-shell auth-shell-single">
         <div class="auth-panel">
             <div class="auth-card">
                 <h2>Simulasi Onboarding</h2>

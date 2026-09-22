@@ -12,6 +12,17 @@ body {
     overflow: hidden;
 }
 
+.auth-shell-single {
+    grid-template-columns: minmax(320px, 480px);
+    justify-content: center;
+}
+
+.auth-shell-single .auth-panel {
+    border-left: none;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    border-radius: 24px;
+}
+
 .auth-shell::before {
     content: '';
     position: absolute;
