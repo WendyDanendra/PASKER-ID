@@ -1,8 +1,27 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 
-if (current_user()) {
+if (current_user() && !isset($_GET['success'])) {
     redirect('index.php');
+}
+
+$showSuccessPopup = isset($_GET['success']) && $_GET['success'] === '1';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action'] ?? '') === 'simulate_employer_session') {
+    $ownerName = trim($_POST['owner_name'] ?? '');
+    if ($ownerName === '') {
+        $ownerName = 'Pemberi Kerja Individu';
+    }
+
+    $uniqueEmail = 'sim.employer.' . date('YmdHis') . '.' . random_int(1000, 9999) . '@paskerid.test';
+    $tempPassword = 'Sim' . random_int(100000, 999999);
+
+    create_user($ownerName, $uniqueEmail, $tempPassword, 'employer');
+    $newUser = find_user_by_email($uniqueEmail);
+    if ($newUser) {
+        login_user($newUser);
+        redirect('register.php?success=1');
+    }
 }
 
 ?>
@@ -27,6 +46,8 @@ if (current_user()) {
                     </div>
                 </div>
 
+                <form method="post">
+                    <input type="hidden" name="register_action" value="simulate_employer_session">
                 <div class="modal-body" style="padding:24px;">
                     <div class="modal-section" style="margin-bottom:24px;">
                         <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:4px;">1. IDENTITAS PERORANGAN</div>
@@ -34,7 +55,7 @@ if (current_user()) {
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                             <div class="field">
                                 <label>Nama Pemberi Kerja <span class="req">*</span></label>
-                                <input type="text" placeholder="Masukkan nama lengkap">
+                                <input type="text" name="owner_name" placeholder="Masukkan nama lengkap">
                             </div>
                             <div class="field">
                                 <label>NIK <span class="req">*</span></label>
@@ -138,15 +159,16 @@ if (current_user()) {
                 </div>
 
                 <div class="modal-footer" style="padding:16px 24px;">
-                    <button type="button" class="primary-btn" id="btnDaftarPopup">
+                    <button type="submit" class="primary-btn" id="btnDaftarPopup">
                         <i class="fa-solid fa-paper-plane"></i>
                         Daftar
                     </button>
                 </div>
+                </form>
             </div>
         </div>
     </div>
-    <div class="modal-backdrop" id="modalPendaftaranBerhasil">
+    <div class="modal-backdrop <?php echo $showSuccessPopup ? 'open' : ''; ?>" id="modalPendaftaranBerhasil">
         <div class="popup-dialog-card">
             <div class="popup-dialog-icon success"><i class="fa-solid fa-circle-check"></i></div>
             <h3 style="font-size:22px; font-weight:800; color:#0f172a; margin-bottom:10px;">Pendaftaran Berhasil</h3>
@@ -155,26 +177,15 @@ if (current_user()) {
                 Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
                 Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
             </p>
-            <button type="button" class="primary-btn" id="btnTutupPendaftaranPopup" style="width:100%;">Menuju Dashboard Pemberi Kerja</button>
+            <a class="primary-btn" href="dashboard.php#dashboard" style="width:100%; text-align:center; justify-content:center;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
     <script>
         (function () {
-            var openBtn = document.getElementById('btnDaftarPopup');
             var modal = document.getElementById('modalPendaftaranBerhasil');
-            var closeBtn = document.getElementById('btnTutupPendaftaranPopup');
-
-            if (!openBtn || !modal || !closeBtn) {
+            if (!modal) {
                 return;
             }
-
-            openBtn.addEventListener('click', function () {
-                modal.classList.add('open');
-            });
-
-            closeBtn.addEventListener('click', function () {
-                window.location.href = 'dashboard.php#dashboard';
-            });
 
             modal.addEventListener('click', function (event) {
                 if (event.target === modal) {
