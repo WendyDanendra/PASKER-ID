@@ -10,7 +10,7 @@ if (current_user()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pilih Pendaftaran - <?php echo APP_NAME; ?></title>
+    <title>Pilih Jenis Pemberi Kerja - <?php echo APP_NAME; ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/app.css">
@@ -109,47 +109,50 @@ if (current_user()) {
         }
 
         .registration-footer {
-            margin-top: 16px;
-            color: #5c6785;
+            margin-top: 18px;
+            text-align: center;
         }
 
         .registration-footer a {
-            color: #2f79f6;
+            color: #667085;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 20px;
         }
     </style>
 </head>
 <body>
     <div class="registration-shell">
         <div class="registration-card">
-            <h1 class="registration-title">Pilih pendaftaran</h1>
-            <p class="registration-subtitle">Pilih pendaftaran yang Anda inginkan pada akun Anda.</p>
+            <h1 class="registration-title">Pilih jenis pemberi kerja</h1>
+            <p class="registration-subtitle">Pilih jenis pemberi kerja yang sesuai dengan kondisi Anda untuk melanjutkan.</p>
+
+            <a class="registration-option" href="login.php">
+                <div class="registration-option-head">
+                    <div class="registration-option-left">
+                        <i class="fa-solid fa-user"></i>
+                        <h3>Pemberi Kerja Individu</h3>
+                    </div>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+                <p>Perorangan yang membutuhkan tenaga kerja seperti asisten rumah tangga, pengasuh, sopir pribadi atau kebutuhan pekerjaan perorangan lainnya.</p>
+            </a>
 
             <div class="registration-option disabled">
                 <span class="coming-soon">Akan datang</span>
                 <div class="registration-option-head">
                     <div class="registration-option-left">
-                        <i class="fa-solid fa-user"></i>
-                        <h3>Pencari Kerja</h3>
+                        <i class="fa-solid fa-building"></i>
+                        <h3>Pemberi Kerja Badan Usaha/Instansi/Lembaga</h3>
                     </div>
                     <i class="fa-solid fa-chevron-right"></i>
                 </div>
-                <p>Perorangan yang membutuhkan pekerjaan, dan dapat melamar pada lowongan pekerjaan yang tersedia.</p>
+                <p>Untuk perusahaan, instansi pemerintah, yayasan, organisasi atau lembaga yang memiliki pegawai atau membuka lowongan kerja atas nama entitas.</p>
             </div>
 
-            <a class="registration-option" href="employer-type.php">
-                <div class="registration-option-head">
-                    <div class="registration-option-left">
-                        <i class="fa-solid fa-building"></i>
-                        <h3>Pemberi Kerja</h3>
-                    </div>
-                    <i class="fa-solid fa-chevron-right"></i>
-                </div>
-                <p>Perorangan atau instansi yang dapat mengelola lowongan pekerjaan yang tersedia.</p>
-            </a>
-
-            <p class="registration-footer">Kembali ke halaman awal? <a href="index.php">Pilih mode simulasi</a></p>
+            <div class="registration-footer">
+                <a href="employer-menu.php">Sebelumnya</a>
+            </div>
         </div>
     </div>
 </body>
