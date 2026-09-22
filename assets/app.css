@@ -53,6 +53,33 @@ body {
     gap: 10px;
 }
 
+.auth-shell-single .profile-modal-preview,
+.auth-shell-single .profile-modal-preview * {
+    box-sizing: border-box;
+}
+
+.auth-shell-single .profile-modal-preview .field label {
+    white-space: normal;
+    word-break: break-word;
+}
+
+.auth-shell-single .profile-modal-preview .field input,
+.auth-shell-single .profile-modal-preview .field select,
+.auth-shell-single .profile-modal-preview .field textarea {
+    width: 100%;
+    max-width: 100%;
+}
+
+@media (max-width: 1100px) {
+    .auth-shell-single .profile-modal-preview .field-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .auth-shell-single .profile-modal-preview .field[style*="grid-column: 1 / -1;"] input {
+        max-width: 100% !important;
+    }
+}
+
 @media (max-width: 768px) {
     .auth-shell-single {
         padding: 14px 10px;
@@ -64,6 +91,23 @@ body {
 
     .auth-shell-single .profile-modal-preview .field-grid {
         grid-template-columns: 1fr !important;
+    }
+
+    .auth-shell-single .profile-modal-preview .modal-header,
+    .auth-shell-single .profile-modal-preview .modal-body,
+    .auth-shell-single .profile-modal-preview .modal-footer {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .auth-shell-single .profile-modal-preview .modal-footer {
+        flex-wrap: wrap;
+    }
+
+    .auth-shell-single .profile-modal-preview .modal-footer .ghost-btn,
+    .auth-shell-single .profile-modal-preview .modal-footer .primary-btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .auth-shell-single .profile-modal-preview input[style*="max-width:calc(50% - 8px)"] {
