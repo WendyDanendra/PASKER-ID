@@ -138,13 +138,50 @@ if (current_user()) {
                 </div>
 
                 <div class="modal-footer" style="padding:16px 24px;">
-                    <a class="primary-btn" href="dashboard.php?open_profile=1#dashboard">
+                    <button type="button" class="primary-btn" id="btnDaftarPopup">
                         <i class="fa-solid fa-paper-plane"></i>
                         Daftar
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+    <div class="modal-backdrop" id="modalPendaftaranBerhasil">
+        <div class="popup-dialog-card">
+            <div class="popup-dialog-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 style="font-size:22px; font-weight:800; color:#0f172a; margin-bottom:10px;">Pendaftaran Berhasil</h3>
+            <div style="font-size:12px; font-weight:800; letter-spacing:0.6px; color:#ea580c; margin-bottom:10px;">MENUNGGU VERIFIKASI</div>
+            <p style="font-size:14px; color:#475569; line-height:1.65; margin-bottom:20px;">
+                Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
+                Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
+            </p>
+            <button type="button" class="primary-btn" id="btnTutupPendaftaranPopup" style="width:100%;">Oke</button>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var openBtn = document.getElementById('btnDaftarPopup');
+            var modal = document.getElementById('modalPendaftaranBerhasil');
+            var closeBtn = document.getElementById('btnTutupPendaftaranPopup');
+
+            if (!openBtn || !modal || !closeBtn) {
+                return;
+            }
+
+            openBtn.addEventListener('click', function () {
+                modal.classList.add('open');
+            });
+
+            closeBtn.addEventListener('click', function () {
+                modal.classList.remove('open');
+            });
+
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    modal.classList.remove('open');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
