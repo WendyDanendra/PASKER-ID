@@ -161,6 +161,12 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
             if (!in_array('consent_agreed', $cols, true)) {
                 $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN consent_agreed INTEGER DEFAULT 0');
             }
+            if (!in_array('last_activated_at', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN last_activated_at DATETIME');
+            }
+            if (!in_array('domicile_city_id', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN domicile_city_id TEXT');
+            }
         } catch (Throwable $ignored) {}
     } catch (Throwable $ignored) {}
 

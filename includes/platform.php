@@ -1032,3 +1032,321 @@ function unsuspend_employer_access(PDO $pdo, int $targetUserId, array $actorUser
         return ['success' => false, 'error' => 'Gagal membatalkan penangguhan Hak Akses Pemberi Kerja Individu: ' . $e->getMessage()];
     }
 }
+
+/**
+ * Format date string into Indonesian formatted date.
+ * E.g. '2026-09-22' -> '22 September 2026'
+ */
+function format_indo_date(?string $dateRaw): string
+{
+    if (empty($dateRaw)) {
+        return '-';
+    }
+    try {
+        $d = new DateTime($dateRaw);
+        $monthsLong = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        return $d->format('j') . ' ' . $monthsLong[(int)$d->format('n')] . ' ' . $d->format('Y');
+    } catch (Exception $e) {
+        return '-';
+    }
+}
+
+/**
+ * Format date range into Indonesian cycle format.
+ * E.g. ('2026-09-21', '2026-12-21') -> '21 Sep – 21 Des 2026'
+ */
+function format_cycle_range(?string $startDateRaw, ?string $endDateRaw): string
+{
+    if (empty($startDateRaw) || empty($endDateRaw)) {
+        return '-';
+    }
+    try {
+        $start = new DateTime($startDateRaw);
+        $end = new DateTime($endDateRaw);
+        $months = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+        $sDay = $start->format('j');
+        $sMonth = $months[(int)$start->format('n')];
+        $sYear = $start->format('Y');
+
+        $eDay = $end->format('j');
+        $eMonth = $months[(int)$end->format('n')];
+        $eYear = $end->format('Y');
+
+        if ($sYear === $eYear) {
+            return "{$sDay} {$sMonth} – {$eDay} {$eMonth} {$eYear}";
+        }
+        return "{$sDay} {$sMonth} {$sYear} – {$eDay} {$eMonth} {$eYear}";
+    } catch (Exception $e) {
+        return '-';
+    }
+}
+
+/**
+ * Resolve effective lifecycle status for an individual employer.
+ */
+function get_employer_access_status(array $profile, ?string $refTime = null): array
+{
+    $verStatus = $profile['verification_status'] ?? 'NOT_SUBMITTED';
+    $activeUntilRaw = $profile['active_until'] ?? null;
+    $hasLastActivated = !empty($profile['last_activated_at']);
+    $now = $refTime ? new DateTime($refTime) : new DateTime();
+
+    if ($verStatus === 'SUSPENDED') {
+        return [
+            'status' => 'SUSPENDED',
+            'label' => 'Ditangguhkan',
+            'badge_class' => 'suspended',
+            'is_active' => false,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => false,
+            'is_online_reactivation_pending' => false,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    if ($verStatus === 'PENDING') {
+        $isOnlinePending = $hasLastActivated;
+        return [
+            'status' => 'PENDING',
+            'label' => $isOnlinePending ? 'Menunggu Verifikasi (Reaktivasi Online)' : 'Menunggu Verifikasi',
+            'badge_class' => 'pending',
+            'is_active' => false,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => true,
+            'is_online_reactivation_pending' => $isOnlinePending,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    if ($verStatus === 'NEEDS_REVISION') {
+        return [
+            'status' => 'NEEDS_REVISION',
+            'label' => 'Perlu Diperbaiki',
+            'badge_class' => 'revision',
+            'is_active' => false,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => false,
+            'is_online_reactivation_pending' => false,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    if (in_array($verStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED', 'FULL_DISABLED'], true)) {
+        if ($activeUntilRaw) {
+            $actUntil = new DateTime($activeUntilRaw);
+            if ($now <= $actUntil) {
+                return [
+                    'status' => 'ACTIVE',
+                    'label' => 'Aktif',
+                    'badge_class' => 'verified',
+                    'is_active' => true,
+                    'is_disabled' => false,
+                    'is_transition' => false,
+                    'is_pending' => false,
+                    'is_online_reactivation_pending' => false,
+                    'can_direct_reactivate' => false,
+                ];
+            }
+            $diffSec = $now->getTimestamp() - $actUntil->getTimestamp();
+            if ($diffSec <= (7 * 86400)) {
+                return [
+                    'status' => 'TRANSITION_LIMITED',
+                    'label' => 'Masa Transisi',
+                    'badge_class' => 'warning',
+                    'is_active' => false,
+                    'is_disabled' => false,
+                    'is_transition' => true,
+                    'is_pending' => false,
+                    'is_online_reactivation_pending' => false,
+                    'can_direct_reactivate' => false,
+                ];
+            }
+            // Expired past 7 days -> FULL_DISABLED (Tidak Aktif)
+            return [
+                'status' => 'FULL_DISABLED',
+                'label' => 'Tidak Aktif',
+                'badge_class' => 'disabled',
+                'is_active' => false,
+                'is_disabled' => true,
+                'is_transition' => false,
+                'is_pending' => false,
+                'is_online_reactivation_pending' => false,
+                'can_direct_reactivate' => true,
+            ];
+        }
+        return [
+            'status' => 'ACTIVE',
+            'label' => 'Aktif',
+            'badge_class' => 'verified',
+            'is_active' => true,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => false,
+            'is_online_reactivation_pending' => false,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    return [
+        'status' => 'NOT_SUBMITTED',
+        'label' => 'Belum Mengajukan',
+        'badge_class' => 'neutral',
+        'is_active' => false,
+        'is_disabled' => false,
+        'is_transition' => false,
+        'is_pending' => false,
+        'is_online_reactivation_pending' => false,
+        'can_direct_reactivate' => false,
+    ];
+}
+
+/**
+ * Direct Reactivation of Individual Employer Access by Admin Dinas.
+ * - Atomic transaction with SELECT FOR UPDATE
+ * - Scope check: admin_dinas.domicile_city_id === employer.domicile_city_id exact (no city string fallback)
+ * - State check: Must be FULL_DISABLED (Tidak Aktif). Not allowed if ACTIVE, TRANSITION_LIMITED, SUSPENDED, or PENDING.
+ * - Concurrency protection: If status is already ACTIVE, rejects second request.
+ * - Collision protection: If online reactivation is PENDING, rejects with clear error message.
+ * - Directly transitions to ACTIVE / APPROVED with new 3-month cycle (no secondary verification case or approval).
+ * - Sets last_activated_at = now, active_until = now + 3 months.
+ * - Strict audit logging: action = 'REACTIVATE_EMPLOYER_ACCESS', source = 'ADMIN_DINAS'.
+ */
+function reactivate_employer_access_by_admin_dinas(PDO $pdo, int $targetUserId, array $actorUser, ?string $refTime = null): array
+{
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $lockSql = $driver === 'sqlite' ? 'SELECT * FROM employer_profiles WHERE user_id = ?' : 'SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE';
+        $empStmt = $pdo->prepare($lockSql);
+        $empStmt->execute([$targetUserId]);
+        $targetEmp = $empStmt->fetch();
+
+        if (!$targetEmp) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu tidak ditemukan.'];
+        }
+
+        // Scope check: Admin Dinas matches exact domicile_city_id (no fallback to city string)
+        $adminDomicileCity = (string)($actorUser['domicile_city_id'] ?? '');
+        $role = $actorUser['role'] ?? 'admin';
+        if ($role === 'admin_dinas' || ($adminDomicileCity !== '' && $role !== 'admin' && $role !== 'admin_pusat')) {
+            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                if (!$inTx && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return [
+                    'success' => false,
+                    'error' => 'Akses ditolak: Hak Akses Pemberi Kerja Individu ini di luar wilayah kewenangan Dinas Anda (' . $adminDomicileCity . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.'
+                ];
+            }
+        }
+
+        // State check: Resolve current effective status
+        $statusInfo = get_employer_access_status($targetEmp, $refTime);
+        $currentStatus = $statusInfo['status'];
+
+        // Collision Protection: If online reactivation is PENDING
+        if ($statusInfo['is_pending']) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses ditolak: Permohonan reaktivasi online sedang dalam proses verifikasi.'
+            ];
+        }
+
+        // Concurrency / State Protection: If already ACTIVE
+        if ($statusInfo['is_active']) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses gagal: Hak Akses Pemberi Kerja Individu sudah dalam status Aktif.'
+            ];
+        }
+
+        // Suspended or Transition Protection
+        if ($statusInfo['status'] === 'SUSPENDED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses gagal: Hak Akses Pemberi Kerja Individu sedang dalam status Ditangguhkan (SUSPENDED).'
+            ];
+        }
+        if ($statusInfo['is_transition']) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses gagal: Hak Akses Pemberi Kerja Individu masih berada dalam Masa Transisi.'
+            ];
+        }
+
+        if ($statusInfo['status'] !== 'FULL_DISABLED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses hanya dapat dilakukan untuk Hak Akses yang telah berakhir (FULL_DISABLED).'
+            ];
+        }
+
+        // Apply mutation: directly active with new 3-month cycle
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
+        } else {
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
+        }
+        $stmt->execute([$targetUserId]);
+        $pdo->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
+
+        $nowFormatted = format_indo_date(date('Y-m-d'));
+        $newActiveUntilFormatted = format_indo_date(date('Y-m-d', strtotime('+3 months')));
+        $prevActiveUntil = $targetEmp['active_until'] ? date('d M Y', strtotime($targetEmp['active_until'])) : '-';
+
+        $auditDetails = "Hak Akses Pemberi Kerja Individu direaktivasi langsung oleh Admin Dinas. Previous Status: {$currentStatus}, New Status: ACTIVE, Previous Active Until: {$prevActiveUntil}, New Activated At: " . date('Y-m-d H:i:s') . ", New Active Until: " . date('Y-m-d H:i:s', strtotime('+3 months')) . " | Source: ADMIN_DINAS";
+        record_audit_log('employer', $targetUserId, 'REACTIVATE_EMPLOYER_ACCESS', $auditDetails, $actorUser['name'] ?? 'Admin Dinas', $actorUser['role'] ?? 'admin_dinas', true);
+
+        notify_user($targetUserId, 'Hak Akses Diaktifkan Kembali', 'Hak Akses Pemberi Kerja Individu Anda telah diaktifkan kembali oleh Dinas Tenaga Kerja selama 3 bulan.', 'success');
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return [
+            'success' => true,
+            'activated_at' => $nowFormatted,
+            'active_until' => $newActiveUntilFormatted,
+            'employer_name' => $targetEmp['owner_name'] ?: 'Pemberi Kerja',
+            'message' => 'Hak Akses berhasil direaktivasi. Hak Akses Pemberi Kerja Individu telah langsung aktif kembali.'
+        ];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['success' => false, 'error' => 'Gagal mereaktivasi Hak Akses: ' . $e->getMessage()];
+    }
+}

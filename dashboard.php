@@ -108,17 +108,15 @@ if (!empty($profile['last_activated_at'])) {
         $startDate = null;
     }
 }
-if (!$startDate && $activeUntil) {
-    $startDate = (clone $activeUntil)->modify('-3 months');
-}
 
-$totalDays = 90;
-$elapsedDays = 1;
+$hasValidDates = ($startDate !== null && $activeUntil !== null);
+$totalDays = null;
+$elapsedDays = null;
 $progressPct = 0;
 $isH7 = false;
 $isLastDay = false;
 
-if ($startDate && $activeUntil) {
+if ($hasValidDates) {
     $totalDays = max(1, (int)$startDate->diff($activeUntil)->days);
 
     if ($now <= $activeUntil) {
@@ -126,7 +124,7 @@ if ($startDate && $activeUntil) {
         $elapsedDays = max(1, min($totalDays, (int)floor($elapsedSec / 86400) + 1));
 
         $diffRem = $now->diff($activeUntil);
-        $daysRemaining = (int)$diffRem->days;
+        $daysRemaining = max(0, (int)$diffRem->days);
         if ($now->getTimestamp() + 86400 >= $activeUntil->getTimestamp() && $daysRemaining <= 0) {
             $daysRemaining = 0;
             $isLastDay = true;
@@ -141,6 +139,8 @@ if ($startDate && $activeUntil) {
         $progressPct = 100;
         $daysRemaining = 0;
     }
+} else {
+    $daysRemaining = null;
 }
 
 // Transition calculations (Masa Transisi maksimal 7 hari)
@@ -183,6 +183,18 @@ if ($isFullDisable && !empty($profile['active_until'])) {
     ');
     $accCandidateStmt->execute([$user['id'], $cycleStart, $cycleEnd]);
     $isEligibleForReactivation = ((int)$accCandidateStmt->fetchColumn() > 0);
+}
+
+// Reactivated employer detection (for active cycle dashboard banner)
+$isReactivatedEmployer = false;
+if (!empty($profile['last_activated_at'])) {
+    try {
+        $checkAudit = db()->prepare("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'employer' AND entity_id = ? AND action IN ('REACTIVATE_EMPLOYER_ACCESS', 'REACTIVATION_APPROVED', 'REACTIVATION_REQUESTED')");
+        $checkAudit->execute([$user['id']]);
+        $isReactivatedEmployer = ((int)$checkAudit->fetchColumn() > 0);
+    } catch (Throwable $e) {
+        $isReactivatedEmployer = false;
+    }
 }
 
 // --- API / JSON HANDLERS ---
@@ -981,7 +993,7 @@ $replacements = [
     '3402153112760034'                    => htmlspecialchars($profile['nik'] ?? ($seekerProfile['nik'] ?? '3402153112760034'), ENT_QUOTES, 'UTF-8'),
     'PT. Pandu Jaya'                      => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'Kota Bekasi'                         => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
-    '<strong>Sisa 87 hari</strong>'       => '<strong>Sisa ' . max(0, $daysRemaining) . ' hari</strong>',
+    '<strong>Sisa 87 hari</strong>'       => '<strong>Sisa ' . (int)max(0, $daysRemaining ?? 0) . ' hari</strong>',
 ];
 
 $html = str_replace(array_keys($replacements), array_values($replacements), $html);

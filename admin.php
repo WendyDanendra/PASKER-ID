@@ -130,10 +130,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
                 }
                 $stmt->execute([$notes, $checklist, $targetUserId]);
                 $pdo->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
-                record_audit_log('employer', $targetUserId, 'APPROVED', "Profil disetujui. Masa aktif berlaku 3 bulan. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
-                notify_user($targetUserId, 'Profil Disetujui', 'Selamat! Profil Pemberi Kerja Individu Anda telah disetujui dan aktif selama 3 bulan.', 'success');
+
+                $isReactivationApproval = !empty($targetEmp['last_activated_at']);
+                $auditAction = $isReactivationApproval ? 'REACTIVATION_APPROVED' : 'APPROVED';
+                $auditText = $isReactivationApproval
+                    ? "Permohonan reaktivasi Hak Akses online disetujui. Masa aktif baru berlaku 3 bulan. Catatan: {$notes} | Source: ONLINE_REACTIVATION"
+                    : "Profil disetujui. Masa aktif berlaku 3 bulan. Catatan: {$notes} | Source: INITIAL_VERIFICATION";
+
+                record_audit_log('employer', $targetUserId, $auditAction, $auditText, $user['name'], $user['role'] ?? 'admin', true);
+                notify_user($targetUserId, 'Profil Disetujui', 'Selamat! Hak Akses Pemberi Kerja Individu Anda telah disetujui dan aktif selama 3 bulan.', 'success');
                 $pdo->commit();
-                flash('success', 'Profil Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 3 Bulan).');
+                flash('success', 'Hak Akses Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 3 Bulan).');
             } elseif ($decision === 'revision') {
                 $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 $stmt->execute([$notes, $checklist, $targetUserId]);
@@ -769,6 +776,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         redirect($redirectUrl);
         exit;
     }
+
+    // 14. REAKTIVASI HAK AKSES PEMBERI KERJA INDIVIDU (ADMIN DINAS / CENTRAL ADMIN)
+    if ($action === 'reactivate_employer_access') {
+        $targetUserId = (int)($_POST['user_id'] ?? 0);
+        $res = reactivate_employer_access_by_admin_dinas(db(), $targetUserId, $user);
+        if (!$res['success']) {
+            flash('error', $res['error']);
+        } else {
+            $_SESSION['reactivation_success_banner'] = [
+                'activated_at' => $res['activated_at'],
+                'active_until' => $res['active_until'],
+                'name' => $res['employer_name'],
+            ];
+            flash('success', $res['message']);
+        }
+        redirect($redirectUrl);
+        exit;
+    }
 }
 
 // --- FETCH DATA FOR DIRECTORY INDIVIDUAL ---
@@ -778,7 +803,8 @@ if ($view === 'directory_individual') {
                ep.id as profile_id, ep.owner_name, ep.nik, ep.phone, ep.whatsapp, ep.npwp, ep.profession, ep.address, ep.address_detail,
                ep.city, ep.province, ep.district, ep.village, ep.postal_code, ep.latitude, ep.longitude, ep.description,
                ep.verified, ep.verification_status, ep.suspension_reason, ep.extension_status, ep.verifier_notes, ep.verification_checklist,
-               ep.manual_review_status, ep.assigned_to, ep.assigned_at, ep.rejection_count, ep.entity_type
+               ep.manual_review_status, ep.assigned_to, ep.assigned_at, ep.rejection_count, ep.entity_type,
+               ep.active_until, ep.last_activated_at, ep.domicile_city_id
         FROM users u
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
         WHERE u.role = 'employer'
@@ -1132,6 +1158,37 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
             color: var(--primary-strong);
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
         }
+        .pill-badge.disabled {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+        .pill-badge.warning {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        .pill-badge.neutral {
+            background: #f8fafc;
+            color: #94a3b8;
+            border: 1px solid #e2e8f0;
+        }
+        .action-dropdown { position: relative; display: inline-block; }
+        .action-menu-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 4px);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            min-width: 195px;
+            z-index: 50;
+            padding: 6px 0;
+            text-align: left;
+        }
+        .action-menu-dropdown.show { display: block; }
     </style>
 </head>
 <body>
@@ -1307,6 +1364,27 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         <!-- CONTENT AREA -->
         <div class="content" style="flex:1; overflow-y:auto; background:#f8fafc;">
             <div class="page active">
+                <?php if (!empty($_SESSION['reactivation_success_banner'])):
+                    $rBanner = $_SESSION['reactivation_success_banner'];
+                    unset($_SESSION['reactivation_success_banner']);
+                ?>
+                    <div style="background:#ecfdf5; border:1px solid #6ee7b7; border-radius:12px; padding:20px; margin-bottom:20px; color:#065f46; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                        <div style="display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px; margin-bottom:6px;">
+                            <i class="fa-solid fa-circle-check" style="color:#059669; font-size:20px;"></i>
+                            Hak Akses berhasil direaktivasi.
+                        </div>
+                        <p style="margin:0 0 14px 0; font-size:13.5px; color:#047857;">Hak Akses Pemberi Kerja Individu telah langsung aktif kembali.</p>
+                        <div style="background:#ffffff; border:1px solid #a7f3d0; border-radius:8px; padding:12px 18px; font-size:13px; display:inline-grid; grid-template-columns:auto auto; column-gap:20px; row-gap:8px;">
+                            <span style="color:#64748b; font-weight:500;">Tanggal Aktivasi :</span>
+                            <strong style="color:#0f172a;"><?php echo e($rBanner['activated_at']); ?></strong>
+                            <span style="color:#64748b; font-weight:500;">Berlaku Sampai :</span>
+                            <strong style="color:#0f172a;"><?php echo e($rBanner['active_until']); ?></strong>
+                            <span style="color:#64748b; font-weight:500;">Status :</span>
+                            <strong style="color:#059669;"><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">● Aktif</span></strong>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <?php if ($flash = get_flash()): ?>
                     <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
                         <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
@@ -1348,7 +1426,13 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
             <!-- 1. DIREKTORI INDIVIDUAL (READ-ONLY DIRECTORY) -->
             <!-- ========================================== -->
             <?php if ($view === 'directory_individual'): ?>
-                <?php if ($selectedEmployer): ?>
+                <?php if ($selectedEmployer):
+                    $selectedEmpStatus = get_employer_access_status($selectedEmployer);
+                    $selectedSiklusTerakhir = format_cycle_range($selectedEmployer['last_activated_at'] ?? null, $selectedEmployer['active_until'] ?? null);
+                    $adminCity = (string)($user['domicile_city_id'] ?? '');
+                    $isScopeMatchSelected = ($user['role'] === 'admin' || $user['role'] === 'admin_pusat' || empty($adminCity) || ($selectedEmployer['domicile_city_id'] ?? '') === $adminCity);
+                    $canReactivateSelected = ($selectedEmpStatus['can_direct_reactivate'] && $isScopeMatchSelected);
+                ?>
                     <!-- DETAIL VIEW FOR DIRECTORY (STRICTLY READ-ONLY) -->
                     <div style="margin-bottom:16px;">
                         <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail">
@@ -1364,28 +1448,37 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                             <div>
                                 <div style="display:flex; align-items:center; gap:10px;">
                                     <h1 style="font-size:20px; font-weight:800; margin:0;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></h1>
-                                    <span class="pill-badge <?php echo $selectedEmployer['verification_status'] === 'APPROVED' ? 'verified' : ($selectedEmployer['verification_status'] === 'SUSPENDED' ? 'suspended' : 'pending'); ?>">
-                                        ● <?php echo e($selectedEmployer['verification_status'] === 'APPROVED' ? 'Terverifikasi' : $selectedEmployer['verification_status']); ?>
+                                    <span class="pill-badge <?php echo $selectedEmpStatus['badge_class']; ?>">
+                                        ● <?php echo e($selectedEmpStatus['label']); ?>
                                     </span>
                                 </div>
                                 <div style="font-size:12px; color:#64748b; margin-top:4px;">
                                     Slug: <code><?php echo strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $selectedEmployer['owner_name'] ?: $selectedEmployer['name'])); ?></code> • 
                                     Didaftarkan: <?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?> • 
-                                    <?php echo e($selectedEmployer['city'] ?: 'Kota Belum Diisi'); ?>
+                                    <?php echo e($selectedEmployer['domicile_city_id'] ?: $selectedEmployer['city'] ?: 'Kota Belum Diisi'); ?>
                                 </div>
                             </div>
                         </div>
 
-                        <div style="display:flex; gap:10px;">
+                        <div style="display:flex; gap:10px; align-items:center;">
                             <button type="button" class="btn-lihat-detail" data-open-modal="modal-ver-info">
                                 <i class="fa-solid fa-shield-halved"></i> Lihat Rincian Verifikasi
                             </button>
-                            <?php if ($selectedEmployer['verification_status'] === 'APPROVED'): ?>
+                            <?php if ($canReactivateSelected): ?>
+                                <button type="button" class="btn-lihat-detail" style="color:#0284c7; border-color:#93c5fd; background:#eff6ff; font-weight:700;" data-open-modal="modal-reactivate-<?php echo $selectedEmployer['user_id']; ?>">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Reaktivasi Hak Akses
+                                </button>
+                            <?php elseif ($selectedEmpStatus['is_online_reactivation_pending']): ?>
+                                <span class="pill-badge warning" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 12px;">
+                                    <i class="fa-solid fa-hourglass-half"></i> Permohonan reaktivasi online sedang dalam proses verifikasi
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($selectedEmpStatus['is_active']): ?>
                                 <button type="button" class="btn-lihat-detail" style="color:#dc2626; border-color:#fca5a5;" data-open-modal="modal-suspend">
                                     <i class="fa-solid fa-ban"></i> Tangguhkan
                                 </button>
-                            <?php elseif ($selectedEmployer['verification_status'] === 'SUSPENDED'): ?>
-                                <form method="post" action="admin.php?view=directory_individual&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                            <?php elseif ($selectedEmpStatus['status'] === 'SUSPENDED'): ?>
+                                <form method="post" action="admin.php?view=directory_individual&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="margin:0;">
                                     <input type="hidden" name="admin_action" value="unsuspend_employer">
                                     <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
                                     <button type="submit" class="btn-lihat-detail" style="color:#059669; border-color:#a7f3d0;">
@@ -1571,8 +1664,61 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <button type="submit" class="primary-btn" style="background:#dc2626;">Tangguhkan Sekarang</button>
                                 </div>
                             </form>
+                        <!-- MODAL REACTIVATE FOR DETAIL VIEW -->
+                    <?php if ($selectedEmployer && $canReactivateSelected): ?>
+                        <div class="modal-backdrop" data-modal="modal-reactivate-<?php echo $selectedEmployer['user_id']; ?>">
+                            <div class="modal-panel" style="width:min(540px, 92vw);">
+                                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <div class="modal-title" style="color:#0284c7; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                                            <i class="fa-solid fa-arrows-rotate"></i> KONFIRMASI REAKTIVASI HAK AKSES
+                                        </div>
+                                    </div>
+                                    <button type="button" class="close-btn" data-close-modal="modal-reactivate-<?php echo $selectedEmployer['user_id']; ?>" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;">&times;</button>
+                                </div>
+                                <form method="post" action="admin.php?view=directory_individual&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                    <input type="hidden" name="admin_action" value="reactivate_employer_access">
+                                    <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                    <div class="modal-body" style="padding:16px 20px;">
+                                        <p style="margin:0 0 14px 0; color:#475569; font-size:13px; line-height:1.5;">
+                                            Anda akan mengaktifkan kembali <strong>Hak Akses Pemberi Kerja Individu</strong> berikut:
+                                        </p>
+
+                                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; margin-bottom:14px; font-size:13px; display:grid; grid-template-columns:130px 1fr; row-gap:8px;">
+                                            <span style="color:#64748b;">Nama</span>
+                                            <strong style="color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></strong>
+
+                                            <span style="color:#64748b;">NIK</span>
+                                            <code style="color:#0f172a; font-weight:600;"><?php echo e($selectedEmployer['nik'] ?: '-'); ?></code>
+
+                                            <span style="color:#64748b;">Lokasi Domisili</span>
+                                            <span style="color:#0f172a;"><?php echo e($selectedEmployer['domicile_city_id'] ?: $selectedEmployer['city'] ?: '-'); ?></span>
+
+                                            <span style="color:#64748b;">Status Saat Ini</span>
+                                            <span style="color:#dc2626; font-weight:600;">Tidak Aktif</span>
+                                        </div>
+
+                                        <div style="background:#f1f5f9; border-left:4px solid #0284c7; padding:10px 14px; border-radius:0 6px 6px 0; margin-bottom:14px;">
+                                            <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#64748b; margin-bottom:2px;">Siklus Terakhir</div>
+                                            <div style="font-size:13px; font-weight:600; color:#0f172a;"><?php echo e($selectedSiklusTerakhir); ?></div>
+                                        </div>
+
+                                        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; font-size:12.5px; color:#1e40af; line-height:1.5;">
+                                            <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
+                                            Hak Akses akan langsung aktif kembali selama <strong>3 bulan</strong> sejak tanggal reaktivasi ini.<br>
+                                            Reaktivasi melalui Admin Dinas tidak memerlukan proses verifikasi lanjutan.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
+                                        <button type="button" class="ghost-btn" data-close-modal="modal-reactivate-<?php echo $selectedEmployer['user_id']; ?>">Batal</button>
+                                        <button type="submit" class="primary-btn" style="background:#0284c7; display:inline-flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-arrows-rotate"></i> Reaktivasi Hak Akses
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
-                    </div>
+                    <?php endif; ?>
 
                 <?php else: ?>
                     <!-- DIRECTORY TABLE VIEW (MATCHING VISUAL SCREENSHOT BASELINE) -->
@@ -1610,22 +1756,27 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                         <table class="console-table">
                             <thead>
                                 <tr>
-                                    <th>Nama Perusahaan / Pemberi Kerja</th>
-                                    <th>Email</th>
-                                    <th>Telepon</th>
-                                    <th>NIB / NPWP</th>
-                                    <th>PIC</th>
-                                    <th>Lokasi</th>
-                                    <th>Status</th>
+                                    <th>Nama Pemberi Kerja / Perusahaan</th>
+                                    <th>Status Hak Akses</th>
+                                    <th>Siklus Terakhir</th>
+                                    <th>Email & Kontak</th>
+                                    <th>NIK / NPWP</th>
+                                    <th>Lokasi Domisili</th>
                                     <th>Tanggal Daftar</th>
-                                    <th>Aksi</th>
+                                    <th style="text-align:center;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!$individualList): ?>
-                                    <tr><td colspan="9" style="text-align:center; padding:40px; color:#64748b;">Tidak ada data pemberi kerja ditemukan.</td></tr>
+                                    <tr><td colspan="8" style="text-align:center; padding:40px; color:#64748b;">Tidak ada data pemberi kerja ditemukan.</td></tr>
                                 <?php else: ?>
-                                    <?php foreach ($individualList as $emp): ?>
+                                    <?php foreach ($individualList as $emp):
+                                        $empStatus = get_employer_access_status($emp);
+                                        $siklusTerakhir = format_cycle_range($emp['last_activated_at'] ?? null, $emp['active_until'] ?? null);
+                                        $adminCity = (string)($user['domicile_city_id'] ?? '');
+                                        $isScopeMatch = ($user['role'] === 'admin' || $user['role'] === 'admin_pusat' || empty($adminCity) || ($emp['domicile_city_id'] ?? '') === $adminCity);
+                                        $canReactivate = ($empStatus['can_direct_reactivate'] && $isScopeMatch);
+                                    ?>
                                         <tr>
                                             <td>
                                                 <div style="display:flex; align-items:center; gap:12px;">
@@ -1638,27 +1789,44 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td><?php echo e($emp['email']); ?></td>
-                                            <td><?php echo e($emp['phone'] ?: '0'); ?></td>
-                                            <td><code><?php echo e($emp['npwp'] ?: '-'); ?></code></td>
-                                            <td>-</td>
-                                            <td><?php echo e($emp['city'] ?: '-'); ?>, <?php echo e($emp['province'] ?: '-'); ?></td>
                                             <td>
-                                                <?php if ($emp['verification_status'] === 'APPROVED'): ?>
-                                                    <span class="pill-badge verified">● Terverifikasi</span>
-                                                <?php elseif ($emp['verification_status'] === 'PENDING'): ?>
-                                                    <span class="pill-badge pending">● Menunggu</span>
-                                                <?php elseif ($emp['verification_status'] === 'SUSPENDED'): ?>
-                                                    <span class="pill-badge suspended">● Ditangguhkan</span>
-                                                <?php else: ?>
-                                                    <span class="pill-badge revision">● <?php echo e($emp['verification_status']); ?></span>
-                                                <?php endif; ?>
+                                                <span class="pill-badge <?php echo $empStatus['badge_class']; ?>">● <?php echo e($empStatus['label']); ?></span>
                                             </td>
-                                            <td><?php echo date('d M Y, H:i', strtotime($emp['created_at'])); ?></td>
+                                            <td style="font-size:12.5px; color:#334155; font-weight:500;">
+                                                <?php echo e($siklusTerakhir); ?>
+                                            </td>
                                             <td>
-                                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $emp['user_id']; ?>" class="btn-lihat-detail">
-                                                    Lihat Detail
-                                                </a>
+                                                <div style="font-size:12.5px;"><?php echo e($emp['email']); ?></div>
+                                                <div style="font-size:11.5px; color:#64748b;"><?php echo e($emp['phone'] ?: '-'); ?></div>
+                                            </td>
+                                            <td><code><?php echo e($emp['npwp'] ?: $emp['nik'] ?: '-'); ?></code></td>
+                                            <td><?php echo e($emp['domicile_city_id'] ?: $emp['city'] ?: '-'); ?></td>
+                                            <td><?php echo date('d M Y', strtotime($emp['created_at'])); ?></td>
+                                            <td style="text-align:center;">
+                                                <div class="action-dropdown">
+                                                    <button type="button" class="btn-action-trigger" onclick="toggleActionMenu(this, event)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 12px; cursor:pointer; color:#475569; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:4px;" title="Menu Aksi">
+                                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                                    </button>
+                                                    <div class="action-menu-dropdown">
+                                                        <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $emp['user_id']; ?>" style="display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:13px; color:#334155; text-decoration:none;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                                            <i class="fa-solid fa-eye" style="color:#64748b; width:16px;"></i> Lihat Profil
+                                                        </a>
+                                                        <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $emp['user_id']; ?>#audit-trail" style="display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:13px; color:#334155; text-decoration:none;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                                            <i class="fa-solid fa-clock-rotate-left" style="color:#64748b; width:16px;"></i> Riwayat Hak Akses
+                                                        </a>
+                                                        <?php if ($canReactivate): ?>
+                                                            <div style="height:1px; background:#e2e8f0; margin:4px 0;"></div>
+                                                            <button type="button" data-open-modal="modal-reactivate-<?php echo $emp['user_id']; ?>" style="display:flex; width:100%; border:none; background:none; align-items:center; gap:8px; padding:8px 14px; font-size:13px; color:#0284c7; font-weight:600; cursor:pointer; text-align:left;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='transparent'">
+                                                                <i class="fa-solid fa-arrows-rotate" style="color:#0284c7; width:16px;"></i> Reaktivasi Hak Akses
+                                                            </button>
+                                                        <?php elseif ($empStatus['is_online_reactivation_pending']): ?>
+                                                            <div style="height:1px; background:#e2e8f0; margin:4px 0;"></div>
+                                                            <div style="padding:6px 14px; font-size:11px; color:#92400e; background:#fef3c7; line-height:1.3;">
+                                                                <i class="fa-solid fa-hourglass-half"></i> Permohonan reaktivasi online sedang diverifikasi
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -1666,6 +1834,69 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- MODALS FOR TABLE VIEW REACTIVATION -->
+                    <?php foreach ($individualList as $emp):
+                        $empStatus = get_employer_access_status($emp);
+                        $adminCity = (string)($user['domicile_city_id'] ?? '');
+                        $isScopeMatch = ($user['role'] === 'admin' || $user['role'] === 'admin_pusat' || empty($adminCity) || ($emp['domicile_city_id'] ?? '') === $adminCity);
+                        $canReactivate = ($empStatus['can_direct_reactivate'] && $isScopeMatch);
+                        if ($canReactivate):
+                            $siklusTerakhir = format_cycle_range($emp['last_activated_at'] ?? null, $emp['active_until'] ?? null);
+                    ?>
+                        <div class="modal-backdrop" data-modal="modal-reactivate-<?php echo $emp['user_id']; ?>">
+                            <div class="modal-panel" style="width:min(540px, 92vw);">
+                                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <div class="modal-title" style="color:#0284c7; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                                            <i class="fa-solid fa-arrows-rotate"></i> KONFIRMASI REAKTIVASI HAK AKSES
+                                        </div>
+                                    </div>
+                                    <button type="button" class="close-btn" data-close-modal="modal-reactivate-<?php echo $emp['user_id']; ?>" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;">&times;</button>
+                                </div>
+                                <form method="post" action="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>">
+                                    <input type="hidden" name="admin_action" value="reactivate_employer_access">
+                                    <input type="hidden" name="user_id" value="<?php echo $emp['user_id']; ?>">
+                                    <div class="modal-body" style="padding:16px 20px;">
+                                        <p style="margin:0 0 14px 0; color:#475569; font-size:13px; line-height:1.5;">
+                                            Anda akan mengaktifkan kembali <strong>Hak Akses Pemberi Kerja Individu</strong> berikut:
+                                        </p>
+
+                                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; margin-bottom:14px; font-size:13px; display:grid; grid-template-columns:130px 1fr; row-gap:8px;">
+                                            <span style="color:#64748b;">Nama</span>
+                                            <strong style="color:#0f172a;"><?php echo e($emp['owner_name'] ?: $emp['name']); ?></strong>
+
+                                            <span style="color:#64748b;">NIK</span>
+                                            <code style="color:#0f172a; font-weight:600;"><?php echo e($emp['nik'] ?: '-'); ?></code>
+
+                                            <span style="color:#64748b;">Lokasi Domisili</span>
+                                            <span style="color:#0f172a;"><?php echo e($emp['domicile_city_id'] ?: $emp['city'] ?: '-'); ?></span>
+
+                                            <span style="color:#64748b;">Status Saat Ini</span>
+                                            <span style="color:#dc2626; font-weight:600;">Tidak Aktif</span>
+                                        </div>
+
+                                        <div style="background:#f1f5f9; border-left:4px solid #0284c7; padding:10px 14px; border-radius:0 6px 6px 0; margin-bottom:14px;">
+                                            <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#64748b; margin-bottom:2px;">Siklus Terakhir</div>
+                                            <div style="font-size:13px; font-weight:600; color:#0f172a;"><?php echo e($siklusTerakhir); ?></div>
+                                        </div>
+
+                                        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; font-size:12.5px; color:#1e40af; line-height:1.5;">
+                                            <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
+                                            Hak Akses akan langsung aktif kembali selama <strong>3 bulan</strong> sejak tanggal reaktivasi ini.<br>
+                                            Reaktivasi melalui Admin Dinas tidak memerlukan proses verifikasi lanjutan.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
+                                        <button type="button" class="ghost-btn" data-close-modal="modal-reactivate-<?php echo $emp['user_id']; ?>">Batal</button>
+                                        <button type="submit" class="primary-btn" style="background:#0284c7; display:inline-flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-arrows-rotate"></i> Reaktivasi Hak Akses
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; endforeach; ?>
                 <?php endif; ?>
             <?php endif; ?>
 
@@ -2679,8 +2910,20 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
             </div>
         </div>
     </div>
-</div>
-
 <script src="assets/app.js?v=admin-std-1"></script>
+<script>
+function toggleActionMenu(btn, e) {
+    e.stopPropagation();
+    const menu = btn.nextElementSibling;
+    const isShown = menu.classList.contains('show');
+    document.querySelectorAll('.action-menu-dropdown').forEach(el => el.classList.remove('show'));
+    if (!isShown) {
+        menu.classList.add('show');
+    }
+}
+document.addEventListener('click', () => {
+    document.querySelectorAll('.action-menu-dropdown').forEach(el => el.classList.remove('show'));
+});
+</script>
 </body>
 </html>

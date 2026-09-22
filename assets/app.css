@@ -2192,26 +2192,92 @@ html.dark-theme .menu-item.active {
 }
 
 .lifecycle-header {
-    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
 }
 .lifecycle-title {
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 700;
     color: #0f172a;
     letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.3;
 }
-.lifecycle-subtitle {
+.lifecycle-header-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #ffffff;
+    padding: 8px 18px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+.lifecycle-summary-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.summary-top-tag {
     font-size: 13px;
+    font-weight: 700;
+    color: #0284c7;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.summary-top-tag.warning {
+    color: #d97706;
+}
+.lifecycle-summary-sep {
+    width: 1px;
+    height: 32px;
+    background: #e2e8f0;
+}
+.summary-main-val {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.summary-sub-val {
+    font-size: 11.5px;
+    font-weight: 500;
     color: #64748b;
     margin-top: 2px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .lifecycle-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .lifecycle-header-summary {
+        width: 100%;
+        justify-content: space-between;
+        padding: 10px 14px;
+    }
 }
 
 .lifecycle-banner {
     border-radius: 14px;
     padding: 18px 22px;
     position: relative;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     border: 1px solid transparent;
+    margin-bottom: 20px;
 }
 .lifecycle-banner.banner-info {
     background: #f0f9ff;
@@ -2235,12 +2301,12 @@ html.dark-theme .menu-item.active {
 }
 
 .lifecycle-banner .banner-title {
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 800;
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.02em;
 }
@@ -2251,10 +2317,10 @@ html.dark-theme .menu-item.active {
 
 .lifecycle-banner .banner-desc {
     font-size: 13.5px;
-    line-height: 1.5;
-    color: inherit;
+    line-height: 1.6;
+    color: #334155;
 }
-.lifecycle-banner.banner-info .banner-desc { color: #075985; }
+.lifecycle-banner.banner-info .banner-desc { color: #0c4a6e; }
 .lifecycle-banner.banner-warning .banner-desc { color: #78350f; }
 .lifecycle-banner.banner-danger .banner-desc { color: #7f1d1d; }
 .lifecycle-banner.banner-success .banner-desc { color: #14532d; }
