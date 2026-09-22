@@ -16,9 +16,30 @@ if ($user) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/app.css">
+    <style>
+        .quick-login-link {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 4;
+            min-width: 110px;
+        }
+
+        @media (max-width: 768px) {
+            .quick-login-link {
+                top: 14px;
+                right: 14px;
+                min-width: 96px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="auth-shell auth-shell-login">
+        <a class="primary-btn quick-login-link" href="login.php">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            Login
+        </a>
         <div class="auth-visual">
             <div class="auth-brand">
                 <div class="brand-pill">
