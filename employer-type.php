@@ -127,7 +127,7 @@ if (current_user()) {
             <h1 class="registration-title">Pilih jenis pemberi kerja</h1>
             <p class="registration-subtitle">Pilih jenis pemberi kerja yang sesuai dengan kondisi Anda untuk melanjutkan.</p>
 
-            <a class="registration-option" href="login.php">
+            <a class="registration-option" href="register.php">
                 <div class="registration-option-head">
                     <div class="registration-option-left">
                         <i class="fa-solid fa-user"></i>
