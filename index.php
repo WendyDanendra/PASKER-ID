@@ -64,10 +64,6 @@ if ($user) {
                         <i class="fa-solid fa-building-user"></i>
                         Employer
                     </a>
-                    <a class="primary-btn" href="login.php">
-                        <i class="fa-solid fa-user"></i>
-                        Seeker
-                    </a>
                 </div>
             </div>
         </div>
