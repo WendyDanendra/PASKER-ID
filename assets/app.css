@@ -13,7 +13,7 @@ body {
 }
 
 .auth-shell-single {
-    grid-template-columns: minmax(320px, 480px);
+    grid-template-columns: minmax(320px, 900px);
     justify-content: center;
 }
 
@@ -21,6 +21,20 @@ body {
     border-left: none;
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
     border-radius: 24px;
+}
+
+.auth-shell-single .profile-modal-preview {
+    max-width: 900px;
+}
+
+.auth-shell-single .profile-modal-preview .modal-header {
+    padding: 18px 24px 10px;
+}
+
+.auth-shell-single .profile-modal-preview .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .auth-shell::before {
