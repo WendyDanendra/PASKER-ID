@@ -45,7 +45,7 @@ if ($user) {
                     </a>
                     <a class="primary-btn" href="employer-menu.php">
                         <i class="fa-solid fa-building-user"></i>
-                        Employer
+                        Pemberi Kerja
                     </a>
                     <a class="primary-btn" href="login.php">
                         <i class="fa-solid fa-user"></i>
