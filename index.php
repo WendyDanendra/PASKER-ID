@@ -43,7 +43,7 @@ if ($user) {
                         <i class="fa-solid fa-user-shield"></i>
                         Admin
                     </a>
-                    <a class="primary-btn" href="login.php">
+                    <a class="primary-btn" href="employer-menu.php">
                         <i class="fa-solid fa-building-user"></i>
                         Employer
                     </a>
