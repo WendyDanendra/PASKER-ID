@@ -155,7 +155,7 @@ if (current_user()) {
                 Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
                 Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
             </p>
-            <button type="button" class="primary-btn" id="btnTutupPendaftaranPopup" style="width:100%;">Oke</button>
+            <button type="button" class="primary-btn" id="btnTutupPendaftaranPopup" style="width:100%;">Menuju Dashboard Pemberi Kerja</button>
         </div>
     </div>
     <script>
