@@ -138,10 +138,9 @@ if (current_user()) {
                 </div>
 
                 <div class="modal-footer" style="padding:16px 24px;">
-                    <a class="ghost-btn" href="login.php">Masuk</a>
                     <a class="primary-btn" href="dashboard.php?open_profile=1#dashboard">
                         <i class="fa-solid fa-paper-plane"></i>
-                        Buka Modal Profil di Dashboard
+                        Daftar
                     </a>
                 </div>
             </div>
