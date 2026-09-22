@@ -57,13 +57,9 @@ if ($user) {
         </div>
         <div class="auth-panel">
             <div class="auth-card">
-                <h2>Masuk Sebagai</h2>
+                <h2>Daftar Sebagai</h2>
                 <p>Pilih peran pengguna untuk mulai simulasi:</p>
                 <div class="auth-actions" style="display:grid; gap:10px;">
-                    <a class="primary-btn" href="login.php">
-                        <i class="fa-solid fa-user-shield"></i>
-                        Admin
-                    </a>
                     <a class="primary-btn" href="employer-menu.php">
                         <i class="fa-solid fa-building-user"></i>
                         Employer
