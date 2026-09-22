@@ -173,7 +173,7 @@ if (current_user()) {
             });
 
             closeBtn.addEventListener('click', function () {
-                modal.classList.remove('open');
+                window.location.href = 'dashboard.php#dashboard';
             });
 
             modal.addEventListener('click', function (event) {
