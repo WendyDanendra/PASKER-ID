@@ -119,43 +119,38 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                                 <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" checked>
                                 <span>Sama seperti lokasi Domisili?</span>
                             </label>
-                            <div id="siapkerjaNotice" style="color:#0284c7; font-size:13px; margin-top:10px; background:#f0f9ff; padding:10px 14px; border-radius:8px; border:1px solid #bae6fd; font-weight:500;">
-                                <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Lokasi domisili akan menggunakan data dari akun SIAPKerja.
-                            </div>
                         </div>
 
-                        <div id="regionSelectorsContainer" style="display:none;">
-                            <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
-                                <div class="field">
-                                    <label>Provinsi <span class="req">*</span></label>
-                                    <select name="province" id="selectProvince" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
-                                        <option value="">Pilih Provinsi</option>
-                                    </select>
+                        <!-- HIDDEN LOCATION FIELDS FOR BACKEND -->
+                        <input type="hidden" name="province" id="hiddenProvince" value="">
+                        <input type="hidden" name="city" id="hiddenCity" value="">
+                        <input type="hidden" name="district" id="hiddenDistrict" value="">
+                        <input type="hidden" name="village" id="hiddenVillage" value="">
+                        <input type="hidden" name="domicile_city_id" id="hiddenDomicileCityId" value="">
+
+                        <div class="field-grid" style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
+                            <div class="field" style="position: relative;">
+                                <label>Lokasi Domisili Pemberi Kerja <span class="req">*</span></label>
+                                <div id="hierarchicalLocationInput" class="hierarchical-loc-field" tabindex="0">
+                                    <span id="locDisplayValue">Lokasi domisili akan menggunakan data dari akun SIAPKerja.</span>
+                                    <i id="locCaret" class="fa-solid fa-chevron-down" style="color:#64748b; font-size:12px;"></i>
                                 </div>
-                                <div class="field">
-                                    <label>Kabupaten / Kota <span class="req">*</span></label>
-                                    <select name="city" id="selectCity" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" disabled>
-                                        <option value="">Pilih Kabupaten / Kota</option>
-                                    </select>
+
+                                <div id="hierarchicalLocDropdown" class="loc-dropdown-popup" style="display: none;">
+                                    <div id="locBreadcrumbs" class="loc-breadcrumbs">
+                                        <span class="crumb-btn active" data-level="1">Pilih Provinsi</span>
+                                    </div>
+                                    <div id="locOptionsList" class="loc-options-list"></div>
+                                </div>
+
+                                <div id="siapkerjaNotice" style="color:#0284c7; font-size:12px; margin-top:6px; background:#f0f9ff; padding:8px 12px; border-radius:6px; border:1px solid #bae6fd; font-weight:500;">
+                                    <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Lokasi domisili akan menggunakan data dari akun SIAPKerja.
                                 </div>
                             </div>
-                            <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
-                                <div class="field">
-                                    <label>Kecamatan <span class="req">*</span></label>
-                                    <select name="district" id="selectDistrict" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" disabled>
-                                        <option value="">Pilih Kecamatan</option>
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label>Kelurahan / Desa <span class="req">*</span></label>
-                                    <select name="village" id="selectVillage" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" disabled>
-                                        <option value="">Pilih Kelurahan / Desa</option>
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label>Kode Pos</label>
-                                    <input type="text" name="postal_code" id="inputPostalCode" placeholder="Masukkan kode pos">
-                                </div>
+
+                            <div class="field">
+                                <label>Kode Pos</label>
+                                <input type="text" name="postal_code" id="inputPostalCode" placeholder="Masukkan kode pos">
                             </div>
                         </div>
                     </div>
@@ -228,13 +223,33 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
 
             var cbSameLocation = document.getElementById('cbSameLocation');
             var siapkerjaNotice = document.getElementById('siapkerjaNotice');
-            var regionSelectorsContainer = document.getElementById('regionSelectorsContainer');
+            var locInput = document.getElementById('hierarchicalLocationInput');
+            var locDropdown = document.getElementById('hierarchicalLocDropdown');
+            var locDisplay = document.getElementById('locDisplayValue');
+            var locCaret = document.getElementById('locCaret');
+            var breadcrumbs = document.getElementById('locBreadcrumbs');
+            var optionsList = document.getElementById('locOptionsList');
 
-            var selectProv = document.getElementById('selectProvince');
-            var selectCity = document.getElementById('selectCity');
-            var selectDist = document.getElementById('selectDistrict');
-            var selectVill = document.getElementById('selectVillage');
+            var hiddenProv = document.getElementById('hiddenProvince');
+            var hiddenCity = document.getElementById('hiddenCity');
+            var hiddenDist = document.getElementById('hiddenDistrict');
+            var hiddenVill = document.getElementById('hiddenVillage');
+            var hiddenCityId = document.getElementById('hiddenDomicileCityId');
             var inputPostal = document.getElementById('inputPostalCode');
+
+            var siapkerjaData = {
+                province: 'Jawa Barat',
+                city: 'Kota Bekasi',
+                district: 'Bekasi Selatan',
+                village: 'Pekayon Jaya',
+                postal: '17148'
+            };
+
+            var selProv = '';
+            var selCity = '';
+            var selDistrict = '';
+            var selVillage = '';
+            var currentLocLevel = 1;
 
             var locData = window.ID_LOCATIONS || {
                 'DKI Jakarta': {
@@ -314,120 +329,228 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 }
             };
 
-            function populateProvinces() {
-                if (!selectProv) return;
-                selectProv.innerHTML = '<option value="">Pilih Provinsi</option>';
-                Object.keys(locData).sort().forEach(function (prov) {
-                    var opt = document.createElement('option');
-                    opt.value = prov;
-                    opt.textContent = prov;
-                    selectProv.appendChild(opt);
-                });
-            }
+            function updateDisplayLocation() {
+                if (cbSameLocation && cbSameLocation.checked) {
+                    var fullLocStr = siapkerjaData.village + ', ' + siapkerjaData.district + ', ' + siapkerjaData.city + ', ' + siapkerjaData.province;
+                    if (locDisplay) {
+                        locDisplay.textContent = fullLocStr;
+                        locDisplay.classList.remove('placeholder');
+                    }
+                    if (hiddenProv) hiddenProv.value = siapkerjaData.province;
+                    if (hiddenCity) hiddenCity.value = siapkerjaData.city;
+                    if (hiddenDist) hiddenDist.value = siapkerjaData.district;
+                    if (hiddenVill) hiddenVill.value = siapkerjaData.village;
+                    if (hiddenCityId) hiddenCityId.value = siapkerjaData.city;
+                    if (inputPostal) inputPostal.value = siapkerjaData.postal;
 
-            function toggleLocationView() {
-                if (!cbSameLocation) return;
-                if (cbSameLocation.checked) {
-                    regionSelectorsContainer.style.display = 'none';
-                    siapkerjaNotice.style.display = 'block';
+                    if (locInput) {
+                        locInput.style.cursor = 'default';
+                        locInput.style.background = '#f8fafc';
+                    }
+                    if (locCaret) locCaret.style.display = 'none';
+                    if (siapkerjaNotice) siapkerjaNotice.style.display = 'block';
+                    closeLocDropdown();
                 } else {
-                    regionSelectorsContainer.style.display = 'block';
-                    siapkerjaNotice.style.display = 'none';
+                    if (locInput) {
+                        locInput.style.cursor = 'pointer';
+                        locInput.style.background = '#ffffff';
+                    }
+                    if (locCaret) locCaret.style.display = 'block';
+                    if (siapkerjaNotice) siapkerjaNotice.style.display = 'none';
+
+                    if (selProv && selCity && selDistrict && selVillage) {
+                        if (locDisplay) {
+                            locDisplay.textContent = selVillage + ', ' + selDistrict + ', ' + selCity + ', ' + selProv;
+                            locDisplay.classList.remove('placeholder');
+                        }
+                    } else {
+                        if (locDisplay) {
+                            locDisplay.textContent = 'Pilih lokasi domisili';
+                            locDisplay.classList.add('placeholder');
+                        }
+                        if (hiddenProv) hiddenProv.value = '';
+                        if (hiddenCity) hiddenCity.value = '';
+                        if (hiddenDist) hiddenDist.value = '';
+                        if (hiddenVill) hiddenVill.value = '';
+                        if (hiddenCityId) hiddenCityId.value = '';
+                        if (inputPostal) inputPostal.value = '';
+                    }
                 }
             }
 
             if (cbSameLocation) {
-                cbSameLocation.addEventListener('change', toggleLocationView);
-                toggleLocationView();
+                cbSameLocation.addEventListener('change', function () {
+                    updateDisplayLocation();
+                });
             }
 
-            populateProvinces();
+            if (locInput) {
+                locInput.addEventListener('click', function (e) {
+                    if (cbSameLocation && cbSameLocation.checked) return;
+                    e.stopPropagation();
+                    if (locDropdown && locDropdown.style.display === 'block') {
+                        closeLocDropdown();
+                    } else {
+                        openLocDropdown();
+                    }
+                });
+            }
 
-            if (selectProv) {
-                selectProv.addEventListener('change', function () {
-                    var provVal = this.value;
-                    selectCity.innerHTML = '<option value="">Pilih Kabupaten / Kota</option>';
-                    selectDist.innerHTML = '<option value="">Pilih Kecamatan</option>';
-                    selectVill.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
-                    selectCity.disabled = !provVal;
-                    selectDist.disabled = true;
-                    selectVill.disabled = true;
+            if (locDropdown) {
+                locDropdown.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
 
-                    if (provVal && locData[provVal]) {
-                        Object.keys(locData[provVal]).sort().forEach(function (city) {
-                            var opt = document.createElement('option');
-                            opt.value = city;
-                            opt.textContent = city;
-                            selectCity.appendChild(opt);
+            document.addEventListener('click', function (e) {
+                if (locInput && locDropdown && !locInput.contains(e.target) && !locDropdown.contains(e.target)) {
+                    closeLocDropdown();
+                }
+            });
+
+            function openLocDropdown() {
+                if (!locDropdown) return;
+                locDropdown.style.display = 'block';
+                if (locCaret) {
+                    locCaret.classList.remove('fa-chevron-down');
+                    locCaret.classList.add('fa-chevron-up');
+                }
+
+                if (selProv && selCity && selDistrict && selVillage && locData[selProv]?.[selCity]?.[selDistrict]) {
+                    currentLocLevel = 4;
+                } else if (selProv && selCity && selDistrict && locData[selProv]?.[selCity]?.[selDistrict]) {
+                    currentLocLevel = 4;
+                } else if (selProv && selCity && locData[selProv]?.[selCity]) {
+                    currentLocLevel = 3;
+                } else if (selProv && locData[selProv]) {
+                    currentLocLevel = 2;
+                } else {
+                    currentLocLevel = 1;
+                }
+                renderLocationView();
+            }
+
+            function closeLocDropdown() {
+                if (!locDropdown) return;
+                locDropdown.style.display = 'none';
+                if (locCaret) {
+                    locCaret.classList.remove('fa-chevron-up');
+                    locCaret.classList.add('fa-chevron-down');
+                }
+            }
+
+            window.switchLocLevel = function (level) {
+                currentLocLevel = level;
+                renderLocationView();
+            };
+
+            window.selectProv = function (prov) {
+                selProv = prov;
+                selCity = '';
+                selDistrict = '';
+                selVillage = '';
+                currentLocLevel = 2;
+                renderLocationView();
+            };
+
+            window.selectCity = function (city) {
+                selCity = city;
+                selDistrict = '';
+                selVillage = '';
+                currentLocLevel = 3;
+                renderLocationView();
+            };
+
+            window.selectDistrict = function (dist) {
+                selDistrict = dist;
+                selVillage = '';
+                currentLocLevel = 4;
+                renderLocationView();
+            };
+
+            window.selectVillage = function (vill, postal) {
+                selVillage = vill;
+                if (hiddenProv) hiddenProv.value = selProv;
+                if (hiddenCity) hiddenCity.value = selCity;
+                if (hiddenDist) hiddenDist.value = selDistrict;
+                if (hiddenVill) hiddenVill.value = selVillage;
+                if (hiddenCityId) hiddenCityId.value = selCity;
+                if (inputPostal && postal) inputPostal.value = postal;
+
+                if (locDisplay) {
+                    locDisplay.textContent = selVillage + ', ' + selDistrict + ', ' + selCity + ', ' + selProv;
+                    locDisplay.classList.remove('placeholder');
+                }
+                closeLocDropdown();
+            };
+
+            function renderLocationView() {
+                renderBreadcrumbs();
+                renderOptions();
+            }
+
+            function renderBreadcrumbs() {
+                if (!breadcrumbs) return;
+                var html = '';
+                if (currentLocLevel === 1) {
+                    html += '<span class="crumb-btn active" onclick="switchLocLevel(1)">Pilih Provinsi</span>';
+                } else if (currentLocLevel === 2) {
+                    html += '<span class="crumb-btn" onclick="switchLocLevel(1)">' + selProv + '</span> › ';
+                    html += '<span class="crumb-btn active" onclick="switchLocLevel(2)">Pilih Kabupaten / Kota</span>';
+                } else if (currentLocLevel === 3) {
+                    html += '<span class="crumb-btn" onclick="switchLocLevel(1)">' + selProv + '</span> › ';
+                    html += '<span class="crumb-btn" onclick="switchLocLevel(2)">' + selCity + '</span> › ';
+                    html += '<span class="crumb-btn active" onclick="switchLocLevel(3)">Pilih Kecamatan</span>';
+                } else if (currentLocLevel === 4) {
+                    html += '<span class="crumb-btn" onclick="switchLocLevel(1)">' + selProv + '</span> › ';
+                    html += '<span class="crumb-btn" onclick="switchLocLevel(2)">' + selCity + '</span> › ';
+                    html += '<span class="crumb-btn" onclick="switchLocLevel(3)">' + selDistrict + '</span> › ';
+                    html += '<span class="crumb-btn active" onclick="switchLocLevel(4)">Pilih Kelurahan / Desa</span>';
+                }
+                breadcrumbs.innerHTML = html;
+            }
+
+            function renderOptions() {
+                if (!optionsList) return;
+                var html = '';
+
+                if (currentLocLevel === 1) {
+                    Object.keys(locData).sort().forEach(function (prov) {
+                        var isSel = prov === selProv;
+                        html += '<div class="loc-opt-row ' + (isSel ? 'selected' : '') + '" onclick="selectProv(\'' + prov + '\')">';
+                        html += '<div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>' + prov + '</span></div>';
+                        html += '<i class="fa-solid fa-chevron-right" style="color:#94a3b8; font-size:12px;"></i></div>';
+                    });
+                } else if (currentLocLevel === 2 && selProv && locData[selProv]) {
+                    Object.keys(locData[selProv]).sort().forEach(function (city) {
+                        var isSel = city === selCity;
+                        html += '<div class="loc-opt-row ' + (isSel ? 'selected' : '') + '" onclick="selectCity(\'' + city + '\')">';
+                        html += '<div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>' + city + '</span></div>';
+                        html += '<i class="fa-solid fa-chevron-right" style="color:#94a3b8; font-size:12px;"></i></div>';
+                    });
+                } else if (currentLocLevel === 3 && selProv && selCity && locData[selProv]?.[selCity]) {
+                    Object.keys(locData[selProv][selCity]).sort().forEach(function (dist) {
+                        var isSel = dist === selDistrict;
+                        html += '<div class="loc-opt-row ' + (isSel ? 'selected' : '') + '" onclick="selectDistrict(\'' + dist + '\')">';
+                        html += '<div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>' + dist + '</span></div>';
+                        html += '<i class="fa-solid fa-chevron-right" style="color:#94a3b8; font-size:12px;"></i></div>';
+                    });
+                } else if (currentLocLevel === 4 && selProv && selCity && selDistrict && locData[selProv]?.[selCity]?.[selDistrict]) {
+                    var vills = locData[selProv][selCity][selDistrict];
+                    if (typeof vills === 'object') {
+                        Object.keys(vills).sort().forEach(function (v) {
+                            var isSel = v === selVillage;
+                            var postal = vills[v];
+                            html += '<div class="loc-opt-row ' + (isSel ? 'selected' : '') + '" onclick="selectVillage(\'' + v + '\', \'' + postal + '\')">';
+                            html += '<div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>' + v + '</span></div>';
+                            html += '<span style="font-size:12px; color:#64748b;">' + postal + '</span></div>';
                         });
                     }
-                });
+                }
+                optionsList.innerHTML = html;
             }
 
-            if (selectCity) {
-                selectCity.addEventListener('change', function () {
-                    var provVal = selectProv.value;
-                    var cityVal = this.value;
-                    selectDist.innerHTML = '<option value="">Pilih Kecamatan</option>';
-                    selectVill.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
-                    selectDist.disabled = !cityVal;
-                    selectVill.disabled = true;
-
-                    if (provVal && cityVal && locData[provVal] && locData[provVal][cityVal]) {
-                        Object.keys(locData[provVal][cityVal]).sort().forEach(function (dist) {
-                            var opt = document.createElement('option');
-                            opt.value = dist;
-                            opt.textContent = dist;
-                            selectDist.appendChild(opt);
-                        });
-                    }
-                });
-            }
-
-            if (selectDist) {
-                selectDist.addEventListener('change', function () {
-                    var provVal = selectProv.value;
-                    var cityVal = selectCity.value;
-                    var distVal = this.value;
-                    selectVill.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
-                    selectVill.disabled = !distVal;
-
-                    if (provVal && cityVal && distVal && locData[provVal] && locData[provVal][cityVal] && locData[provVal][cityVal][distVal]) {
-                        var vills = locData[provVal][cityVal][distVal];
-                        if (Array.isArray(vills)) {
-                            vills.forEach(function (v) {
-                                var opt = document.createElement('option');
-                                opt.value = v;
-                                opt.textContent = v;
-                                selectVill.appendChild(opt);
-                            });
-                        } else if (typeof vills === 'object') {
-                            Object.keys(vills).sort().forEach(function (v) {
-                                var opt = document.createElement('option');
-                                opt.value = v;
-                                opt.textContent = v;
-                                selectVill.appendChild(opt);
-                            });
-                        }
-                    }
-                });
-            }
-
-            if (selectVill) {
-                selectVill.addEventListener('change', function () {
-                    var provVal = selectProv.value;
-                    var cityVal = selectCity.value;
-                    var distVal = selectDist.value;
-                    var villVal = this.value;
-
-                    if (inputPostal && provVal && cityVal && distVal && villVal && locData[provVal] && locData[provVal][cityVal] && locData[provVal][cityVal][distVal]) {
-                        var vills = locData[provVal][cityVal][distVal];
-                        if (typeof vills === 'object' && vills[villVal]) {
-                            inputPostal.value = vills[villVal];
-                        }
-                    }
-                });
-            }
+            updateDisplayLocation();
         })();
     </script>
 </body>
