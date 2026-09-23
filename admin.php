@@ -114,9 +114,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
                 }
             }
 
-            if (($decision === 'revision' || $decision === 'reject') && $notes === '') {
+        if (($decision === 'revision' || $decision === 'reject') && $notes === '') {
                 $pdo->rollBack();
-                flash('error', 'Catatan Verifikator wajib diisi untuk keputusan Revisi atau Tolak.');
+            flash('error', 'Catatan Verifikator wajib diisi untuk keputusan Revisi atau Tolak.');
                 redirect($redirectUrl);
                 exit;
             }
@@ -380,7 +380,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             } else {
                 $stmt = $pdo->prepare("UPDATE employer_profiles SET extension_status = 'APPROVED', verification_status = 'APPROVED', verified = 1, active_until = DATE_ADD(NOW(), INTERVAL {$extDays} DAY) WHERE user_id = ?");
             }
-            $stmt->execute([$targetUserId]);
+        $stmt->execute([$targetUserId]);
 
             // Record audit log INSIDE transaction before commit (strict mode for atomic rollback)
             record_audit_log('employer', $targetUserId, 'EXTENSION_APPROVED', "Perpanjangan Hak Akses Pemberi Kerja Individu disetujui selama {$extDays} hari. Hak Akses diaktifkan kembali.", $user['name'], $user['role'] ?? 'admin', true);
@@ -389,7 +389,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
             flash('success', "Permohonan perpanjangan Hak Akses Pemberi Kerja Individu ({$extDays} hari) berhasil disetujui. Hak Akses telah aktif kembali.");
             redirect($redirectUrl);
-            exit;
+        exit;
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -569,31 +569,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
         $checklistJson = json_encode($checklistData, JSON_UNESCAPED_UNICODE);
 
-        if ($decision === 'approve') {
+            if ($decision === 'approve') {
             $stmt = db()->prepare('UPDATE job_posts SET status = "Tayang", published_at = CURRENT_TIMESTAMP, verifier_notes = ?, compliance_checklist = ? WHERE id = ?');
             $stmt->execute([$notes, $checklistJson, $jobId]);
             try {
                 db()->prepare('UPDATE job_verifications SET status = "APPROVED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
             } catch (Throwable $ignored) {}
             record_audit_log('job', $jobId, 'APPROVED', "Lowongan disetujui dan Tayang. Semua kategori patuh. Catatan: {$notes}", $user['name']);
-            flash('success', 'Lowongan berhasil disetujui dan Tayang.');
-        } elseif ($decision === 'revision') {
+                flash('success', 'Lowongan berhasil disetujui dan Tayang.');
+            } elseif ($decision === 'revision') {
             $stmt = db()->prepare('UPDATE job_posts SET status = "Perlu Direvisi", admin_notes = ?, verifier_notes = ?, compliance_checklist = ? WHERE id = ?');
             $stmt->execute([$notes, $notes, $checklistJson, $jobId]);
             try {
                 db()->prepare('UPDATE job_verifications SET status = "NEEDS_REVISION", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
             } catch (Throwable $ignored) {}
             record_audit_log('job', $jobId, 'REVISION_REQUESTED', "Lowongan dikembalikan ke pemohon untuk diperbaiki (Perlu Direvisi). Catatan: {$notes}", $user['name']);
-            flash('success', 'Lowongan dikembalikan ke pemberi kerja (Perlu Direvisi).');
-        } elseif ($decision === 'reject') {
+                flash('success', 'Lowongan dikembalikan ke pemberi kerja (Perlu Direvisi).');
+            } elseif ($decision === 'reject') {
             $stmt = db()->prepare('UPDATE job_posts SET status = "Ditolak", admin_notes = ?, verifier_notes = ?, compliance_checklist = ? WHERE id = ?');
             $stmt->execute([$notes, $notes, $checklistJson, $jobId]);
             try {
                 db()->prepare('UPDATE job_verifications SET status = "REJECTED", verifier_notes = ? WHERE job_id = ?')->execute([$notes, $jobId]);
             } catch (Throwable $ignored) {}
             record_audit_log('job', $jobId, 'REJECTED', "Lowongan Ditolak secara permanen. Catatan: {$notes}", $user['name']);
-            flash('success', 'Lowongan Ditolak.');
-        }
+                flash('success', 'Lowongan Ditolak.');
+            }
 
         redirect($redirectUrl);
         exit;
@@ -616,8 +616,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         if (!$targetJob) {
             flash('error', 'Lowongan tidak ditemukan.');
             redirect($redirectUrl);
-            exit;
-        }
+        exit;
+    }
 
         // 1. Check Scope: Admin Dinas scoping uses employer's domicile_city_id (NOT job location).
         $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
@@ -1385,12 +1385,12 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                     </div>
                 <?php endif; ?>
 
-                <?php if ($flash = get_flash()): ?>
-                    <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
-                        <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
-                        <?php echo e($flash['message']); ?>
-                    </div>
-                <?php endif; ?>
+            <?php if ($flash = get_flash()): ?>
+                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
+                    <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
+                    <?php echo e($flash['message']); ?>
+                </div>
+            <?php endif; ?>
 
                 <?php if (!$detailId): ?>
                     <!-- ADMIN OVERVIEW KPI STATS (4 CARDS) -->
@@ -1438,7 +1438,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                         <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail">
                             <i class="fa-solid fa-arrow-left"></i> Kembali
                         </a>
-                    </div>
+                </div>
 
                     <div class="detail-header-bar">
                         <div style="display:flex; align-items:center; gap:16px;">
@@ -1737,17 +1737,17 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <a href="admin.php?view=directory_individual&entity=Semua&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
                                     <a href="admin.php?view=directory_individual&entity=Perusahaan&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
                                     <a href="admin.php?view=directory_individual&entity=Individu&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
-                                </div>
-                                <form method="get" action="admin.php" style="display:flex; gap:8px;">
-                                    <input type="hidden" name="view" value="directory_individual">
+                        </div>
+                        <form method="get" action="admin.php" style="display:flex; gap:8px;">
+                            <input type="hidden" name="view" value="directory_individual">
                                     <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
-                                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                            <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
                                     <div class="filter-search-box">
                                         <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i>
                                         <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari perusahaan...">
                                     </div>
                                     <button type="submit" class="filter-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
-                                </form>
+                        </form>
                             </div>
                         </div>
                     </div>
@@ -1806,7 +1806,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                                 <div class="action-dropdown">
                                                     <button type="button" class="btn-action-trigger" onclick="toggleActionMenu(this, event)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 12px; cursor:pointer; color:#475569; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:4px;" title="Menu Aksi">
                                                         <i class="fa-solid fa-ellipsis-vertical"></i>
-                                                    </button>
+                                                </button>
                                                     <div class="action-menu-dropdown">
                                                         <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $emp['user_id']; ?>" style="display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:13px; color:#334155; text-decoration:none;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
                                                             <i class="fa-solid fa-eye" style="color:#64748b; width:16px;"></i> Lihat Profil
@@ -1823,8 +1823,8 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                                             <div style="height:1px; background:#e2e8f0; margin:4px 0;"></div>
                                                             <div style="padding:6px 14px; font-size:11px; color:#92400e; background:#fef3c7; line-height:1.3;">
                                                                 <i class="fa-solid fa-hourglass-half"></i> Permohonan reaktivasi online sedang diverifikasi
-                                                            </div>
-                                                        <?php endif; ?>
+                                                        </div>
+                                                            <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </td>
@@ -1850,7 +1850,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <div>
                                         <div class="modal-title" style="color:#0284c7; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
                                             <i class="fa-solid fa-arrows-rotate"></i> KONFIRMASI REAKTIVASI HAK AKSES
-                                        </div>
+                </div>
                                     </div>
                                     <button type="button" class="close-btn" data-close-modal="modal-reactivate-<?php echo $emp['user_id']; ?>" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;">&times;</button>
                                 </div>
@@ -1910,7 +1910,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                         <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail">
                             <i class="fa-solid fa-arrow-left"></i> Kembali
                         </a>
-                    </div>
+                </div>
 
                     <div class="detail-header-bar">
                         <div style="display:flex; align-items:center; gap:16px;">
@@ -1930,8 +1930,8 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     Didaftarkan: <?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?> • 
                                     <?php echo e($selectedEmployer['city'] ?: '-'); ?>
                                 </div>
-                            </div>
                         </div>
+                    </div>
 
                         <div style="display:flex; gap:10px;">
                             <?php if (empty($selectedEmployer['assigned_to'])): ?>
@@ -2023,15 +2023,15 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 <div class="section-card-title">Perbandingan Data Pemberi Kerja dan OSS / SIAPkerja</div>
                                 <p style="font-size:12px; color:#64748b; margin-top:-8px; margin-bottom:12px;">Data referensi diambil otomatis berdasarkan NIK/NPWP pemohon.</p>
                                 <table class="compare-table">
-                                    <thead>
-                                        <tr>
+                            <thead>
+                                <tr>
                                             <th>Variabel</th>
                                             <th>Data Pemberi Kerja</th>
                                             <th>Data OSS / SIAPkerja</th>
                                             <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                </tr>
+                            </thead>
+                            <tbody>
                                         <tr>
                                             <td><strong>Nama Lengkap / Pemilik</strong></td>
                                             <td><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></td>
@@ -2175,7 +2175,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:14px; margin-bottom:14px;">
                                         <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
                                             <i class="fa-solid fa-paper-plane"></i> 2. Ajukan Permintaan Consent ke Pemohon
-                                        </div>
+                                                        </div>
                                         <p style="font-size:12px; color:#64748b; margin-bottom:10px;">
                                             Klik tombol berikut untuk mengunci data hash dan mengirimkan notifikasi persetujuan ke pemohon di dashboard mereka.
                                         </p>
@@ -2186,7 +2186,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                                 <i class="fa-solid fa-paper-plane"></i> Ajukan Consent ke Pemohon
                                             </button>
                                         </form>
-                                    </div>
+                                                                </div>
 
                                     <!-- 3. PERNYATAAN PETUGAS & SETUJUI AKTIFKAN -->
                                     <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:14px;">
@@ -2205,12 +2205,12 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                                     <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Pernyataan Petugas:</label>
                                                     <textarea name="officer_statement" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; min-height:50px;">Saya telah memvalidasi keabsahan data dan identitas pemberi kerja secara langsung melalui pendampingan dinas tenaga kerja.</textarea>
                                                 </div>
-                                                <div style="margin-bottom:14px;">
+                                                                <div style="margin-bottom:14px;">
                                                     <label style="font-size:12px; display:flex; align-items:center; gap:8px;">
                                                         <input type="checkbox" name="statement_confirmed" value="1" required>
                                                         Saya menyatakan bahwa proses verifikasi manual telah memenuhi seluruh ketentuan regulasi yang berlaku.
                                                     </label>
-                                                </div>
+                                                                    </div>
                                                 <button type="submit" class="primary-btn" style="background:#059669; width:100%; height:38px; font-size:13px;">
                                                     <i class="fa-solid fa-check-double"></i> Setujui & Aktifkan Akun (3 Bulan)
                                                 </button>
@@ -2218,7 +2218,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                         <?php else: ?>
                                             <div style="background:#f8fafc; padding:12px; border-radius:8px; font-size:12px; color:#64748b;">
                                                 <i class="fa-solid fa-lock"></i> Tombol <strong>Setujui & Aktifkan</strong> akan aktif setelah pemohon membaca dan menyetujui Consent melalui Dashboard mereka.
-                                            </div>
+                                                                </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -2248,7 +2248,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                         <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
                                         <input type="hidden" name="form_token" value="<?php echo time(); ?>">
 
-                                        <div style="margin-bottom:14px;">
+                                                                <div style="margin-bottom:14px;">
                                             <label style="font-weight:700; font-size:13px; display:block; margin-bottom:8px;">Checklist Pemeriksaan Verifikator:</label>
                                             <div style="display:grid; gap:8px; font-size:13px;">
                                                 <label style="display:flex; align-items:center; gap:8px;">
@@ -2264,9 +2264,9 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                                     Dokumen izin / identitas pendukung sesuai
                                                 </label>
                                             </div>
-                                        </div>
+                                                                </div>
 
-                                        <div style="margin-bottom:14px;">
+                                                                <div style="margin-bottom:14px;">
                                             <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">
                                                 Catatan Verifikator <small style="color:#ef4444;">(Wajib diisi jika Revisi / Tolak)</small>:
                                             </label>
@@ -2274,23 +2274,23 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                         </div>
 
                                         <div style="margin-bottom:16px;">
-                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
+                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
                                             <select name="decision" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;">
-                                                <option value="approve">Setujui (Profil Terverifikasi 3 Bulan)</option>
+                                                                        <option value="approve">Setujui (Profil Terverifikasi 3 Bulan)</option>
                                                 <option value="revision">Perlu Diperbaiki / Revisi (Membuka Kesempatan Perbaikan)</option>
                                                 <option value="reject">Tolak Profil (Penolakan ke-<?php echo ((int)$selectedEmployer['rejection_count'] + 1); ?>)</option>
-                                            </select>
-                                        </div>
+                                                                    </select>
+                                                                </div>
 
                                         <div style="display:flex; justify-content:flex-end; gap:10px;">
                                             <button type="submit" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
                                                 Simpan Keputusan Final
                                             </button>
-                                        </div>
-                                    </form>
+                                                            </div>
+                                                        </form>
                                 <?php endif; ?>
-                            </div>
-                        </div>
+                                                    </div>
+                                                </div>
 
                         <!-- RIGHT COLUMN: AUDIT LOG TIMELINE -->
                         <div>
@@ -2310,8 +2310,8 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                             <div class="timeline-desc"><?php echo e($log['details']); ?></div>
                                         </div>
                                     <?php endforeach; ?>
-                                </div>
-                            </div>
+                    </div>
+                </div>
                         </div>
                     </div>
 
@@ -2332,7 +2332,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                             <option value="<?php echo e($user['name']); ?>"><?php echo e($user['name']); ?> (Saya)</option>
                                             <?php if ($user['name'] !== 'Admin Pusat'): ?>
                                                 <option value="Admin Pusat">Admin Pusat</option>
-                                            <?php endif; ?>
+            <?php endif; ?>
                                             <option value="Petugas Pengawas Wilayah 1">Petugas Pengawas Wilayah 1</option>
                                             <option value="Petugas Pengawas Wilayah 2">Petugas Pengawas Wilayah 2</option>
                                         </select>
@@ -2361,7 +2361,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=revision" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
                                 <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=approved" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Terverifikasi</a>
                                 <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
-                            </div>
+                </div>
 
                             <div class="filter-controls">
                                 <div class="entity-selector-pill">
@@ -2491,8 +2491,8 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
                                     <button type="submit" class="primary-btn" style="height:36px; padding:0 16px; font-size:12px;">
                                         <i class="fa-solid fa-hand-holding-hand"></i> Ambil Case Lowongan
-                                    </button>
-                                </form>
+                                                    </button>
+                                                </form>
                             <?php else: ?>
                                 <span class="pill-badge assigned">Pemeriksa: <?php echo e($selectedJob['assigned_to']); ?></span>
                             <?php endif; ?>
@@ -2631,7 +2631,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                         <div style="display:flex; justify-content:flex-end; gap:10px;">
                                             <button type="submit" name="decision" value="reject" id="btnRejectAddDoc" class="danger-btn" style="background:#ef4444; color:#fff; border:none; padding:9px 18px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer;" disabled onclick="return confirm('Apakah Anda yakin ingin MENOLAK Dokumen Tambahan dan membatalkan pengajuan lowongan ini (CANCELED)?')">
                                                 <i class="fa-solid fa-xmark"></i> Tolak (CANCELED)
-                                            </button>
+                                                </button>
                                             <button type="submit" name="decision" value="approve" id="btnApproveAddDoc" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;" disabled>
                                                 <i class="fa-solid fa-check"></i> Setujui Dokumen (Lanjut Layer 3)
                                             </button>
@@ -2659,7 +2659,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     }
                                     document.addEventListener('DOMContentLoaded', checkAddDocRadios);
                                     </script>
-                                </div>
+                                                        </div>
                             <?php else: ?>
                                 <?php if (!empty($selectedJob['additional_doc_required']) || $additionalDocCase): ?>
                                     <div class="section-card" style="border-left:4px solid #0284c7;">
@@ -2668,7 +2668,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                             <span class="pill-badge <?php echo ($additionalDocCase['status'] ?? '') === 'APPROVED' ? 'verified' : 'danger'; ?>">
                                                 ● Status: <?php echo e($additionalDocCase['status'] ?? $selectedJob['additional_doc_status'] ?? '-'); ?>
                                             </span>
-                                        </div>
+                                                                </div>
                                         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:13px; margin-bottom:12px;">
                                             <div style="color:#0284c7; font-weight:700; margin-bottom:6px;">
                                                 <i class="fa-solid fa-lock"></i> Single-Final-Decision Locked: Keputusan untuk Dokumen Tambahan lowongan ini sudah final dan terkunci.
@@ -2689,7 +2689,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <div class="section-card-title">
                                         <span>Matriks Kepatuhan Verifikasi Lowongan</span>
                                         <small style="font-size:11px; font-weight:normal; color:#64748b;">(4 Kategori Wajib FSD)</small>
-                                    </div>
+                                                                    </div>
 
                                     <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>" id="jobVerificationForm">
                                         <input type="hidden" name="admin_action" value="verify_job">
@@ -2726,31 +2726,31 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                                     </div>
                                                 </div>
                                             <?php endforeach; ?>
-                                        </div>
+                                                                </div>
 
-                                        <div style="margin-bottom:14px;">
+                                                                <div style="margin-bottom:14px;">
                                             <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Catatan Umum Verifikator:</label>
                                             <textarea name="verifier_notes" placeholder="Berikan catatan detail keputusan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:60px;"><?php echo e($selectedJob['verifier_notes']); ?></textarea>
-                                        </div>
+                                                                </div>
 
                                         <div style="margin-bottom:16px;">
                                             <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
                                             <select name="decision" id="decisionSelect" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;" onchange="updateJobCompliance()">
                                                 <option value="approve" id="optApprove">Setujui (Tayang)</option>
                                                 <option value="revision">Revisi (Kembalikan ke Pemberi Kerja)</option>
-                                                <option value="reject">Tolak Lowongan</option>
-                                            </select>
+                                                                        <option value="reject">Tolak Lowongan</option>
+                                                                    </select>
                                             <div id="approvalWarningNotice" style="display:none; color:#dc2626; font-size:12px; margin-top:6px; font-weight:600;">
                                                 <i class="fa-solid fa-triangle-exclamation"></i> Terdapat kategori yang "Tidak Patuh". Keputusan "Setujui" tidak valid. Silakan pilih "Revisi" atau "Tolak".
-                                            </div>
-                                        </div>
+                                                                </div>
+                                                            </div>
 
                                         <div style="display:flex; justify-content:flex-end;">
                                             <button type="submit" id="btnSubmitJobDecision" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
                                                 Simpan Keputusan Verifikasi
                                             </button>
-                                        </div>
-                                    </form>
+                                                            </div>
+                                                        </form>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -2904,11 +2904,11 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 <?php endif; ?>
                             </tbody>
                         </table>
-                    </div>
+                </div>
                 <?php endif; ?>
             <?php endif; ?>
-            </div>
         </div>
+</div>
     </div>
 <script src="assets/app.js?v=admin-std-1"></script>
 <script>
