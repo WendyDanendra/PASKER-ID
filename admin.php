@@ -3725,7 +3725,18 @@ document.addEventListener('click', function(e) {
                     </div>
 
                     <script>
-                    const VERIFIER_LIST_EMP = <?php echo json_encode($pemeriksaMasterList); ?>;
+                    const VERIFIER_LIST_EMP = [
+                        "A. Dimas, Se",
+                        "A. Fajar Wahyu",
+                        "A. RAHMAT FAJAR",
+                        "A.a. Putra Wirasanjaya",
+                        "ABD Halim",
+                        "ABD. WAHAB, S.Pd",
+                        "ABDUL BASYIR",
+                        "ABDUL HAMID TUASALAMONY",
+                        "ABDUL SALAM LAUMA, S.Sos",
+                        "ACHMAD RAJA NASUTION"
+                    ];
 
                     function toggleFilterPopoverEmp(e) {
                         if (e) e.stopPropagation();
