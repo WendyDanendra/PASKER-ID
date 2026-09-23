@@ -3119,15 +3119,15 @@ document.addEventListener('click', function(e) {
                                 </button>
 
                                 <!-- FILTER POPOVER CARD EMP -->
-                                <div id="filterPopoverEmp" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:320px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05); z-index:1000; overflow:visible;">
+                                <div id="filterPopoverEmp" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:280px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05); z-index:1000; overflow:visible;">
 
                                     <!-- ACCORDION 1: TANGGAL PENGAJUAN -->
                                     <div style="border-bottom:1px solid #f1f5f9;">
                                         <div onclick="toggleAccordionEmp('date')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
-                                            <span style="font-size:13.5px; font-weight:700; color:#475569;">Tanggal Pengajuan</span>
-                                            <i class="fa-solid fa-chevron-up" id="dateChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                            <span style="font-size:13.5px; font-weight:700; color:#334155;">Tanggal Pengajuan</span>
+                                            <i class="fa-solid fa-chevron-up" id="dateChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s; <?php echo ($startDate || $endDate) ? 'transform:rotate(180deg);' : ''; ?>"></i>
                                         </div>
-                                        <div id="dateAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px;">
+                                        <div id="dateAccordionBodyEmp" style="display:<?php echo ($startDate || $endDate) ? 'block' : 'none'; ?>; padding:0 18px 14px 18px;">
                                             <div id="dateRangeTriggerEmp" onclick="toggleDatePickerPopoverEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
                                                 <div style="display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                                                     <i class="fa-regular fa-calendar" style="color:#94a3b8; font-size:14px;"></i>
@@ -3141,10 +3141,10 @@ document.addEventListener('click', function(e) {
                                     <!-- ACCORDION 2: WILAYAH / KOTA -->
                                     <div style="border-bottom:1px solid #f1f5f9;">
                                         <div onclick="toggleAccordionEmp('city')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
-                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Wilayah / Kota</span>
-                                            <i class="fa-solid fa-chevron-up" id="cityChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                            <span style="font-size:13.5px; font-weight:700; color:#334155;">Wilayah / Kota</span>
+                                            <i class="fa-solid fa-chevron-up" id="cityChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s; <?php echo $cityFilter ? 'transform:rotate(180deg);' : ''; ?>"></i>
                                         </div>
-                                        <div id="cityAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px; position:relative;">
+                                        <div id="cityAccordionBodyEmp" style="display:<?php echo $cityFilter ? 'block' : 'none'; ?>; padding:0 18px 14px 18px; position:relative;">
                                             <div id="citySelectTriggerEmp" onclick="toggleCityDropdownEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
                                                 <span id="citySelectLabelEmp" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $cityFilter ? e($cityFilter) : 'Pilih kota...'; ?></span>
                                                 <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
@@ -3161,10 +3161,10 @@ document.addEventListener('click', function(e) {
                                     <!-- ACCORDION 3: VERIFIKATOR -->
                                     <div style="border-bottom:1px solid #f1f5f9;">
                                         <div onclick="toggleAccordionEmp('verifier')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
-                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Verifikator</span>
-                                            <i class="fa-solid fa-chevron-up" id="verifierChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                            <span style="font-size:13.5px; font-weight:700; color:#334155;">Verifikator</span>
+                                            <i class="fa-solid fa-chevron-up" id="verifierChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s; <?php echo $verifierFilter ? 'transform:rotate(180deg);' : ''; ?>"></i>
                                         </div>
-                                        <div id="verifierAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px; position:relative;">
+                                        <div id="verifierAccordionBodyEmp" style="display:<?php echo $verifierFilter ? 'block' : 'none'; ?>; padding:0 18px 14px 18px; position:relative;">
                                             <div id="verifierSelectTriggerEmp" onclick="toggleVerifierDropdownEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
                                                 <span id="verifierSelectLabelEmp" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $verifierFilter ? e($verifierFilter) : 'Pilih verifikator...'; ?></span>
                                                 <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
@@ -3181,10 +3181,10 @@ document.addEventListener('click', function(e) {
                                     <!-- ACCORDION 4: PETUGAS PEMERIKSA -->
                                     <div style="border-bottom:1px solid #f1f5f9;">
                                         <div onclick="toggleAccordionEmp('officer')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
-                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Petugas Pemeriksa</span>
-                                            <i class="fa-solid fa-chevron-up" id="officerChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                            <span style="font-size:13.5px; font-weight:700; color:#334155;">Petugas Pemeriksa</span>
+                                            <i class="fa-solid fa-chevron-up" id="officerChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s; <?php echo $officerFilter ? 'transform:rotate(180deg);' : ''; ?>"></i>
                                         </div>
-                                        <div id="officerAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px; position:relative;">
+                                        <div id="officerAccordionBodyEmp" style="display:<?php echo $officerFilter ? 'block' : 'none'; ?>; padding:0 18px 14px 18px; position:relative;">
                                             <div id="officerSelectTriggerEmp" onclick="toggleOfficerDropdownEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
                                                 <span id="officerSelectLabelEmp" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $officerFilter ? e($officerFilter) : 'Pilih pemeriksa...'; ?></span>
                                                 <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
@@ -3201,10 +3201,10 @@ document.addEventListener('click', function(e) {
                                     <!-- ACCORDION 5: STATUS PENUGASAN -->
                                     <div>
                                         <div onclick="toggleAccordionEmp('unassigned')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
-                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Status Penugasan</span>
-                                            <i class="fa-solid fa-chevron-up" id="unassignedChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                            <span style="font-size:13.5px; font-weight:700; color:#334155;">Status Penugasan</span>
+                                            <i class="fa-solid fa-chevron-up" id="unassignedChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s; <?php echo $unassignedFilter ? 'transform:rotate(180deg);' : ''; ?>"></i>
                                         </div>
-                                        <div id="unassignedAccordionBodyEmp" style="display:block; padding:0 18px 18px 18px;">
+                                        <div id="unassignedAccordionBodyEmp" style="display:<?php echo $unassignedFilter ? 'block' : 'none'; ?>; padding:0 18px 18px 18px;">
                                             <label onclick="toggleUnassignedOptionEmp()" style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-size:13px; color:#1e293b; font-weight:500;">
                                                 <div id="unassignedRadioCircleEmp" style="width:18px; height:18px; border-radius:50%; border:2px solid <?php echo $unassignedFilter ? '#00a8e8' : '#cbd5e1'; ?>; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                                     <div style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:<?php echo $unassignedFilter ? 'block' : 'none'; ?>;"></div>
