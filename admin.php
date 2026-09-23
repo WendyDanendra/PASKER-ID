@@ -3093,17 +3093,19 @@ document.addEventListener('click', function(e) {
                                     <input type="hidden" name="admin_action" value="assign_employer_case">
                                     <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
 
-                                    <div style="margin-bottom:14px;">
+                                    <div style="margin-bottom:14px; position:relative;">
                                         <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Pemeriksa <span style="color:#ef4444;">*</span></label>
-                                        <select name="verifier_name" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; background:#ffffff;">
-                                            <option value="" disabled selected>Pilih pemeriksa...</option>
-                                            <option value="<?php echo e($user['name']); ?>"><?php echo e($user['name']); ?> (Saya)</option>
-                                            <?php foreach ($pemeriksaMasterList as $pItem): ?>
-                                                <?php if ($pItem !== $user['name']): ?>
-                                                    <option value="<?php echo e($pItem); ?>"><?php echo e($pItem); ?></option>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </select>
+                                        <input type="hidden" name="verifier_name" id="inputAssignPemeriksa" required value="">
+                                        <div id="assignPemeriksaTrigger" onclick="toggleAssignPemeriksaDropdown(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#0f172a;">
+                                            <span id="assignPemeriksaLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#64748b;">Pilih pemeriksa...</span>
+                                            <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                        </div>
+
+                                        <!-- SEARCHABLE DROPDOWN CARD -->
+                                        <div id="assignPemeriksaDropdownCard" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:12px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.15); z-index:1005; padding:8px;">
+                                            <input type="text" id="assignPemeriksaSearchInput" onkeyup="filterAssignPemeriksaOptions()" placeholder="Cari Pemeriksa..." style="width:100%; border:1px solid #00a8e8; border-radius:8px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                            <div id="assignPemeriksaOptionsContainer" style="max-height:220px; overflow-y:auto;"></div>
+                                        </div>
                                     </div>
 
                                     <div style="margin-bottom:16px;">
@@ -3392,16 +3394,19 @@ document.addEventListener('click', function(e) {
                                 <input type="hidden" name="admin_action" value="assign_employer_case">
                                 <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
                                 <div class="modal-body">
-                                    <div style="margin-bottom:12px;">
+                                    <div style="margin-bottom:14px; position:relative;">
                                         <label style="font-size:13px; font-weight:700; display:block; margin-bottom:4px;">Pemeriksa:</label>
-                                        <select name="verifier_name" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;">
-                                            <option value="<?php echo e($user['name']); ?>"><?php echo e($user['name']); ?> (Saya)</option>
-                                            <?php foreach ($pemeriksaMasterList as $pItem): ?>
-                                                <?php if ($pItem !== $user['name']): ?>
-                                                    <option value="<?php echo e($pItem); ?>"><?php echo e($pItem); ?></option>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </select>
+                                        <input type="hidden" name="verifier_name" id="inputAssignPemeriksaModal" required value="<?php echo e($user['name']); ?>">
+                                        <div id="assignPemeriksaModalTrigger" onclick="toggleAssignPemeriksaModalDropdown(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #cbd5e1; border-radius:8px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#0f172a;">
+                                            <span id="assignPemeriksaModalLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#0f172a; font-weight:600;"><?php echo e($user['name']); ?> (Saya)</span>
+                                            <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                        </div>
+
+                                        <!-- SEARCHABLE DROPDOWN CARD -->
+                                        <div id="assignPemeriksaModalDropdownCard" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:12px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.15); z-index:1005; padding:8px;">
+                                            <input type="text" id="assignPemeriksaModalSearchInput" onkeyup="filterAssignPemeriksaModalOptions()" placeholder="Cari Pemeriksa..." style="width:100%; border:1px solid #00a8e8; border-radius:8px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                            <div id="assignPemeriksaModalOptionsContainer" style="max-height:220px; overflow-y:auto;"></div>
+                                        </div>
                                     </div>
                                     <div style="margin-bottom:12px;">
                                         <label style="font-size:13px; font-weight:700; display:block; margin-bottom:4px;">Alasan Penugasan (Minimal 10 karakter):</label>
@@ -3737,6 +3742,146 @@ document.addEventListener('click', function(e) {
                         "ABDUL SALAM LAUMA, S.Sos",
                         "ACHMAD RAJA NASUTION"
                     ];
+
+                    const ALL_PEMERIKSA_MASTER = <?php echo json_encode(array_merge([$user['name'] . ' (Saya)'], $pemeriksaMasterList)); ?>;
+
+                    function toggleAssignPemeriksaDropdown(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('assignPemeriksaDropdownCard');
+                        if (!card) return;
+                        const isHidden = card.style.display === 'none';
+                        card.style.display = isHidden ? 'block' : 'none';
+                        if (isHidden) {
+                            populateAssignPemeriksaOptions();
+                            setTimeout(() => {
+                                const input = document.getElementById('assignPemeriksaSearchInput');
+                                if (input) input.focus();
+                            }, 50);
+                        }
+                    }
+
+                    function populateAssignPemeriksaOptions() {
+                        const container = document.getElementById('assignPemeriksaOptionsContainer');
+                        if (!container || container.children.length > 0) return;
+                        renderAssignPemeriksaList(ALL_PEMERIKSA_MASTER);
+                    }
+
+                    function renderAssignPemeriksaList(list) {
+                        const container = document.getElementById('assignPemeriksaOptionsContainer');
+                        if (!container) return;
+                        container.innerHTML = '';
+                        const currentVal = document.getElementById('inputAssignPemeriksa') ? document.getElementById('inputAssignPemeriksa').value : '';
+
+                        list.forEach(itemText => {
+                            const item = document.createElement('div');
+                            const val = itemText.replace(' (Saya)', '');
+                            const isSelected = val === currentVal || itemText === currentVal;
+                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+                            item.textContent = itemText;
+                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectAssignPemeriksa(val, itemText);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterAssignPemeriksaOptions() {
+                        const input = document.getElementById('assignPemeriksaSearchInput');
+                        const query = (input ? input.value : '').toLowerCase().trim();
+                        const filtered = ALL_PEMERIKSA_MASTER.filter(n => n.toLowerCase().includes(query));
+                        renderAssignPemeriksaList(filtered);
+                    }
+
+                    function selectAssignPemeriksa(val, labelText) {
+                        const input = document.getElementById('inputAssignPemeriksa');
+                        if (input) input.value = val;
+                        const label = document.getElementById('assignPemeriksaLabel');
+                        if (label) {
+                            label.textContent = labelText;
+                            label.style.color = '#0f172a';
+                        }
+                        const card = document.getElementById('assignPemeriksaDropdownCard');
+                        if (card) card.style.display = 'none';
+                    }
+
+                    function toggleAssignPemeriksaModalDropdown(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('assignPemeriksaModalDropdownCard');
+                        if (!card) return;
+                        const isHidden = card.style.display === 'none';
+                        card.style.display = isHidden ? 'block' : 'none';
+                        if (isHidden) {
+                            populateAssignPemeriksaModalOptions();
+                            setTimeout(() => {
+                                const input = document.getElementById('assignPemeriksaModalSearchInput');
+                                if (input) input.focus();
+                            }, 50);
+                        }
+                    }
+
+                    function populateAssignPemeriksaModalOptions() {
+                        const container = document.getElementById('assignPemeriksaModalOptionsContainer');
+                        if (!container || container.children.length > 0) return;
+                        renderAssignPemeriksaModalList(ALL_PEMERIKSA_MASTER);
+                    }
+
+                    function renderAssignPemeriksaModalList(list) {
+                        const container = document.getElementById('assignPemeriksaModalOptionsContainer');
+                        if (!container) return;
+                        container.innerHTML = '';
+                        const currentVal = document.getElementById('inputAssignPemeriksaModal') ? document.getElementById('inputAssignPemeriksaModal').value : '';
+
+                        list.forEach(itemText => {
+                            const item = document.createElement('div');
+                            const val = itemText.replace(' (Saya)', '');
+                            const isSelected = val === currentVal || itemText === currentVal;
+                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+                            item.textContent = itemText;
+                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectAssignPemeriksaModal(val, itemText);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterAssignPemeriksaModalOptions() {
+                        const input = document.getElementById('assignPemeriksaModalSearchInput');
+                        const query = (input ? input.value : '').toLowerCase().trim();
+                        const filtered = ALL_PEMERIKSA_MASTER.filter(n => n.toLowerCase().includes(query));
+                        renderAssignPemeriksaModalList(filtered);
+                    }
+
+                    function selectAssignPemeriksaModal(val, labelText) {
+                        const input = document.getElementById('inputAssignPemeriksaModal');
+                        if (input) input.value = val;
+                        const label = document.getElementById('assignPemeriksaModalLabel');
+                        if (label) {
+                            label.textContent = labelText;
+                            label.style.color = '#0f172a';
+                        }
+                        const card = document.getElementById('assignPemeriksaModalDropdownCard');
+                        if (card) card.style.display = 'none';
+                    }
+
+                    document.addEventListener('click', function(e) {
+                        const card = document.getElementById('assignPemeriksaDropdownCard');
+                        const trigger = document.getElementById('assignPemeriksaTrigger');
+                        if (card && card.style.display !== 'none' && !card.contains(e.target) && (!trigger || !trigger.contains(e.target))) {
+                            card.style.display = 'none';
+                        }
+
+                        const modalCard = document.getElementById('assignPemeriksaModalDropdownCard');
+                        const modalTrigger = document.getElementById('assignPemeriksaModalTrigger');
+                        if (modalCard && modalCard.style.display !== 'none' && !modalCard.contains(e.target) && (!modalTrigger || !modalTrigger.contains(e.target))) {
+                            modalCard.style.display = 'none';
+                        }
+                    });
 
                     function toggleFilterPopoverEmp(e) {
                         if (e) e.stopPropagation();
