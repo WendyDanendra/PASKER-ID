@@ -1762,26 +1762,26 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 <i class="fa-solid fa-sliders" style="font-size:12px;"></i> Filter
                             </button>
                         </form>
-                                <div class="console-table-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
-                        <table class="console-table" style="width:100%; border-collapse:collapse;">
+                    <div class="console-table-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow-x:auto;">
+                        <table class="console-table" style="width:100%; border-collapse:collapse; min-width:1000px;">
                             <thead>
                                 <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left;">
-                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:160px;">
                                         <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'name_asc' ? 'name_desc' : 'name_asc'; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
                                             Nama <i class="fa-solid fa-arrows-up-down" style="font-size:11px; color:#94a3b8;"></i>
                                         </a>
                                     </th>
-                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Email</th>
-                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Telepon</th>
-                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Alamat</th>
-                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Lokasi</th>
-                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Status</th>
-                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:180px;">Email</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:130px;">Telepon</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:180px;">Alamat</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:160px;">Lokasi</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:130px;">Status</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:150px;">
                                         <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'date_desc' ? 'date_asc' : 'date_desc'; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
                                             Tanggal Daftar <i class="fa-solid fa-arrow-down" style="font-size:11px; color:#64748b;"></i>
                                         </a>
                                     </th>
-                                    <th style="padding:12px 16px; width:120px; text-align:right;"></th>
+                                    <th style="padding:14px 16px; width:130px; text-align:right;"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1817,13 +1817,13 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                         <tr style="border-bottom:1px solid #f1f5f9;">
                                             <td style="padding:14px 16px; font-weight:600; color:#0f172a; font-size:13px;"><?php echo e($nameStr); ?></td>
                                             <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($emailStr); ?></td>
-                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($phoneStr); ?></td>
-                                            <td style="padding:14px 16px; color:#334155; font-size:13px; max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($addressStr); ?>"><?php echo e($addressStr); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px; white-space:nowrap;"><?php echo e($phoneStr); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px; max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($addressStr); ?>"><?php echo e($addressStr); ?></td>
                                             <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($locationStr); ?></td>
-                                            <td style="padding:14px 16px; font-size:13px;"><?php echo $badgeHtml; ?></td>
-                                            <td style="padding:14px 16px; color:#64748b; font-size:12.5px;"><?php echo e($dateStr); ?></td>
-                                            <td style="padding:14px 16px; text-align:right;">
-                                                <a href="admin.php?view=directory_individual&detail_id=<?php echo $emp['user_id']; ?>" class="btn-lihat-detail">Lihat Detail</a>
+                                            <td style="padding:14px 16px; font-size:13px; white-space:nowrap;"><?php echo $badgeHtml; ?></td>
+                                            <td style="padding:14px 16px; color:#64748b; font-size:12.5px; white-space:nowrap;"><?php echo e($dateStr); ?></td>
+                                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
+                                                <a href="admin.php?view=directory_individual&detail_id=<?php echo $emp['user_id']; ?>" class="btn-lihat-detail" style="white-space:nowrap;">Lihat Detail</a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
