@@ -116,7 +116,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
 
                         <div style="margin-bottom:14px;">
                             <label style="font-size:13px; font-weight:600; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
-                                <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" checked>
+                                <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1">
                                 <span>Sama seperti lokasi Domisili?</span>
                             </label>
                         </div>
@@ -132,7 +132,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                             <div class="field" style="position: relative;">
                                 <label>Lokasi Domisili Pemberi Kerja <span class="req">*</span></label>
                                 <div id="hierarchicalLocationInput" class="hierarchical-loc-field" tabindex="0">
-                                    <span id="locDisplayValue">Lokasi domisili akan menggunakan data dari akun SIAPKerja.</span>
+                                    <span id="locDisplayValue" class="placeholder">Pilih lokasi domisili</span>
                                     <i id="locCaret" class="fa-solid fa-chevron-down" style="color:#64748b; font-size:12px;"></i>
                                 </div>
 
@@ -143,7 +143,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                                     <div id="locOptionsList" class="loc-options-list"></div>
                                 </div>
 
-                                <div id="siapkerjaNotice" style="color:#0284c7; font-size:12px; margin-top:6px; background:#f0f9ff; padding:8px 12px; border-radius:6px; border:1px solid #bae6fd; font-weight:500;">
+                                <div id="siapkerjaNotice" style="display:none; color:#0284c7; font-size:12px; margin-top:6px; background:#f0f9ff; padding:8px 12px; border-radius:6px; border:1px solid #bae6fd; font-weight:500;">
                                     <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Lokasi domisili akan menggunakan data dari akun SIAPKerja.
                                 </div>
                             </div>
