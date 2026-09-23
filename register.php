@@ -150,8 +150,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                             </div>
 
                             <div class="field">
-                                <label>Kode Pos</label>
-                                <input type="text" name="postal_code" id="inputPostalCode" placeholder="Masukkan kode pos">
+                                <label>Kode Pos <span class="req">*</span></label>
+                                <select name="postal_code" id="selectPostalCode" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" disabled>
+                                    <option value="">Pilih Kode Pos</option>
+                                </select>
                             </div>
                         </div>
 
@@ -252,7 +254,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             var hiddenDist = document.getElementById('hiddenDistrict');
             var hiddenVill = document.getElementById('hiddenVillage');
             var hiddenCityId = document.getElementById('hiddenDomicileCityId');
-            var inputPostal = document.getElementById('inputPostalCode');
+            var selectPostal = document.getElementById('selectPostalCode');
             var inputAddress = document.getElementById('inputAddress');
 
             var mapBox = document.getElementById('leafletMap');
@@ -354,6 +356,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 }
             };
 
+            function updatePostalDropdown(postalCodeVal) {
+                if (!selectPostal) return;
+                selectPostal.innerHTML = '';
+                if (!postalCodeVal) {
+                    selectPostal.innerHTML = '<option value="">Pilih Kode Pos</option>';
+                    selectPostal.disabled = true;
+                    return;
+                }
+
+                var codes = Array.isArray(postalCodeVal) ? postalCodeVal : [postalCodeVal];
+                selectPostal.innerHTML = '<option value="">Pilih Kode Pos</option>';
+                codes.forEach(function (c) {
+                    var opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    selectPostal.appendChild(opt);
+                });
+
+                selectPostal.disabled = false;
+                if (codes.length === 1) {
+                    selectPostal.value = codes[0];
+                }
+            }
+
             function updateMapState() {
                 if (!inputAddress) return;
                 var addrVal = inputAddress.value.trim();
@@ -413,7 +439,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     if (hiddenDist) hiddenDist.value = siapkerjaData.district;
                     if (hiddenVill) hiddenVill.value = siapkerjaData.village;
                     if (hiddenCityId) hiddenCityId.value = siapkerjaData.city;
-                    if (inputPostal) inputPostal.value = siapkerjaData.postal;
+
+                    if (selectPostal) {
+                        selectPostal.innerHTML = '<option value="' + siapkerjaData.postal + '" selected>' + siapkerjaData.postal + '</option>';
+                        selectPostal.disabled = true;
+                    }
 
                     if (locInput) {
                         locInput.style.cursor = 'default';
@@ -445,7 +475,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         if (hiddenDist) hiddenDist.value = '';
                         if (hiddenVill) hiddenVill.value = '';
                         if (hiddenCityId) hiddenCityId.value = '';
-                        if (inputPostal) inputPostal.value = '';
+
+                        if (selectPostal) {
+                            selectPostal.innerHTML = '<option value="">Pilih Kode Pos</option>';
+                            selectPostal.disabled = true;
+                        }
                     }
                 }
                 updateMapState();
@@ -522,6 +556,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 selCity = '';
                 selDistrict = '';
                 selVillage = '';
+                updatePostalDropdown('');
                 currentLocLevel = 2;
                 renderLocationView();
             };
@@ -530,6 +565,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 selCity = city;
                 selDistrict = '';
                 selVillage = '';
+                updatePostalDropdown('');
                 currentLocLevel = 3;
                 renderLocationView();
             };
@@ -537,6 +573,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             window.selectDistrict = function (dist) {
                 selDistrict = dist;
                 selVillage = '';
+                updatePostalDropdown('');
                 currentLocLevel = 4;
                 renderLocationView();
             };
@@ -548,7 +585,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 if (hiddenDist) hiddenDist.value = selDistrict;
                 if (hiddenVill) hiddenVill.value = selVillage;
                 if (hiddenCityId) hiddenCityId.value = selCity;
-                if (inputPostal && postal) inputPostal.value = postal;
+
+                updatePostalDropdown(postal);
 
                 if (locDisplay) {
                     locDisplay.textContent = selVillage + ', ' + selDistrict + ', ' + selCity + ', ' + selProv;
