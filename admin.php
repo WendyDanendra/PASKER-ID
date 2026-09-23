@@ -1765,7 +1765,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                             </div>
                         </div>
 
-                        <form method="get" action="admin.php" id="filterMainForm" style="display:flex; justify-space-between; align-items:center; gap:16px; margin-bottom:16px; position:relative;">
+                        <form method="get" action="admin.php" id="filterMainForm" style="display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; width:100%; position:relative;">
                             <input type="hidden" name="view" value="directory_individual">
                             <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
                             <?php if ($sort): ?><input type="hidden" name="sort" value="<?php echo e($sort); ?>"><?php endif; ?>
@@ -1826,51 +1826,51 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                         </div>
                                     </div>
 
-                                    <!-- DUAL MONTH DATE RANGE PICKER POPOVER -->
-                                    <div id="datePickerPopover" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:540px; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 15px 35px -5px rgba(0,0,0,0.15); z-index:1010; padding:18px; box-sizing:border-box;">
-                                        <!-- Header row with month/year navigation -->
-                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                                            <button type="button" onclick="prevMonthCluster()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-left"></i></button>
+                                </div>
 
-                                            <div style="display:flex; gap:24px; align-items:center;">
-                                                <div style="display:flex; gap:6px;">
-                                                    <select id="m1Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
-                                                    <select id="y1Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
-                                                </div>
-                                                <div style="display:flex; gap:6px;">
-                                                    <select id="m2Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
-                                                    <select id="y2Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
-                                                </div>
+                                <!-- DUAL MONTH DATE RANGE PICKER POPOVER (SIBLING ANCHORED TO RIGHT) -->
+                                <div id="datePickerPopover" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:540px; max-width:90vw; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 15px 35px -5px rgba(0,0,0,0.15); z-index:1010; padding:18px; box-sizing:border-box;">
+                                    <!-- Header row with month/year navigation -->
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                                        <button type="button" onclick="prevMonthCluster()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-left"></i></button>
+
+                                        <div style="display:flex; gap:24px; align-items:center;">
+                                            <div style="display:flex; gap:6px;">
+                                                <select id="m1Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                <select id="y1Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
                                             </div>
-
-                                            <button type="button" onclick="nextMonthCluster()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-right"></i></button>
-                                        </div>
-
-                                        <!-- Dual Month Grids -->
-                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:16px;">
-                                            <!-- Month 1 Grid -->
-                                            <div>
-                                                <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
-                                                    <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
-                                                </div>
-                                                <div id="m1DaysGrid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
-                                            </div>
-                                            <!-- Month 2 Grid -->
-                                            <div>
-                                                <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
-                                                    <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
-                                                </div>
-                                                <div id="m2DaysGrid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                            <div style="display:flex; gap:6px;">
+                                                <select id="m2Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                <select id="y2Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
                                             </div>
                                         </div>
 
-                                        <!-- Footer Buttons -->
-                                        <div style="display:flex; flex-direction:column; gap:8px;">
-                                            <button type="button" onclick="applyDatePickerSelection()" style="width:100%; background:#00a8e8; border:none; border-radius:10px; padding:10px; color:#ffffff; font-size:13.5px; font-weight:700; cursor:pointer;">Simpan</button>
-                                            <button type="button" onclick="resetDatePickerSelection()" style="width:100%; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; color:#0f172a; font-size:13.5px; font-weight:700; cursor:pointer;">Reset</button>
+                                        <button type="button" onclick="nextMonthCluster()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-right"></i></button>
+                                    </div>
+
+                                    <!-- Dual Month Grids -->
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:16px;">
+                                        <!-- Month 1 Grid -->
+                                        <div>
+                                            <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                            </div>
+                                            <div id="m1DaysGrid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                        </div>
+                                        <!-- Month 2 Grid -->
+                                        <div>
+                                            <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                            </div>
+                                            <div id="m2DaysGrid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
                                         </div>
                                     </div>
 
+                                    <!-- Footer Buttons -->
+                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                                        <button type="button" onclick="applyDatePickerSelection()" style="width:100%; background:#00a8e8; border:none; border-radius:10px; padding:10px; color:#ffffff; font-size:13.5px; font-weight:700; cursor:pointer;">Simpan</button>
+                                        <button type="button" onclick="resetDatePickerSelection()" style="width:100%; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; color:#0f172a; font-size:13.5px; font-weight:700; cursor:pointer;">Reset</button>
+                                    </div>
                                 </div>
                             </div>
                         </form>
