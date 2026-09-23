@@ -1,15 +1,29 @@
 // Theme Management (Terang, Gelap, Sistem)
 function setTheme(theme) {
     localStorage.setItem('karirhub_theme', theme);
+    let isDark = false;
     if (theme === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark-theme', prefersDark);
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     } else {
-        document.documentElement.classList.toggle('dark-theme', theme === 'dark');
+        isDark = (theme === 'dark');
+    }
+    document.documentElement.classList.toggle('dark-theme', isDark);
+    if (document.body) {
+        document.body.classList.toggle('dark-theme', isDark);
+    }
+
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (toggleBtn) {
+        toggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
+        toggleBtn.title = isDark ? 'Tema: Gelap (Klik untuk beralih ke Terang)' : 'Tema: Terang (Klik untuk beralih ke Gelap)';
     }
 
     document.querySelectorAll('[data-theme-option]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.themeOption === theme);
+    });
+
+    document.querySelectorAll('[data-theme-val]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.themeVal === theme);
     });
 }
 
@@ -19,61 +33,98 @@ function initTheme() {
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
         if (localStorage.getItem('karirhub_theme') === 'system') {
-            document.documentElement.classList.toggle('dark-theme', e.matches);
+            const prefersDark = e.matches;
+            document.documentElement.classList.toggle('dark-theme', prefersDark);
+            if (document.body) document.body.classList.toggle('dark-theme', prefersDark);
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = prefersDark ? '<i class="fa-solid fa-moon" style="color:#38bdf8;"></i>' : '<i class="fa-solid fa-display"></i>';
+            }
         }
     });
 }
 
 function setActivePage(pageName) {
-    document.querySelectorAll('.page').forEach((page) => {
-        page.classList.toggle('active', page.dataset.page === pageName);
+    const dataPages = document.querySelectorAll('.page[data-page], .page[id^="page-"]');
+    if (dataPages.length === 0) {
+        return;
+    }
+
+    const targetPage = pageName || 'dashboard';
+
+    dataPages.forEach((page) => {
+        const matches = page.dataset.page === targetPage || page.id === `page-${targetPage}`;
+        page.classList.toggle('active', matches);
     });
 
-    document.querySelectorAll('[data-page]').forEach((item) => {
-        item.classList.toggle('active', item.dataset.page === pageName);
+    document.querySelectorAll('[data-page]:not(.page):not(section), [data-nav]').forEach((item) => {
+        const p = item.dataset.page || item.dataset.nav;
+        item.classList.toggle('active', p === targetPage);
     });
 
-    const currentCrumb = document.querySelector('[data-current-crumb]');
+    const navDrawer = document.getElementById('navDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    if (navDrawer) navDrawer.classList.remove('open');
+    if (drawerBackdrop) drawerBackdrop.classList.remove('open');
+
+    const currentCrumb = document.querySelector('[data-current-crumb]') || document.getElementById('crumbCurrent');
     const labelMap = {
         dashboard: 'Dasbor',
         lowongan: 'Lowongan',
         jadwal: 'Jadwal Wawancara',
-        profil: 'Profil Pemberi Kerja',
-        individual: 'Individual',
-        employerdashboard: 'Pemberi Kerja Individu',
-        seeker: 'Pencari Kerja',
-        admin: 'Admin'
+        profil: 'Profil Pemberi kerja',
+        jobs: 'Lowongan Kerja',
+        profile: 'Profil Pencari Kerja',
+        directory_individual: 'Direktori Profil',
+        verifikasi_employer: 'Verifikasi Profil',
+        verifikasi_job: 'Verifikasi Lowongan'
     };
 
     if (currentCrumb) {
-        currentCrumb.textContent = labelMap[pageName] || 'Dasbor';
+        currentCrumb.textContent = labelMap[targetPage] || 'Dasbor';
     }
 
-    if (window.location.hash !== `#${pageName}`) {
-        window.location.hash = pageName;
+    if (window.location.hash !== `#${targetPage}`) {
+        window.location.hash = targetPage;
     }
 }
+window.setActivePage = setActivePage;
+window.showPage = setActivePage;
 
 function bindPageSwitchers() {
-    document.querySelectorAll('[data-page]').forEach((item) => {
+    document.querySelectorAll('[data-page], [data-nav]').forEach((item) => {
+        if (item.classList.contains('page') || item.tagName === 'SECTION') return;
         item.addEventListener('click', (e) => {
             if (item.tagName === 'A' && item.getAttribute('href') && !item.getAttribute('href').startsWith('#')) {
                 return; // Let normal links work
             }
-            e.preventDefault();
-            setActivePage(item.dataset.page);
+            const target = item.dataset.page || item.dataset.nav;
+            if (target) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof showPage === 'function') {
+                    showPage(target);
+                } else {
+                    setActivePage(target);
+                }
+            }
         });
     });
 }
 
-<<<<<<< HEAD
 function bindModalsAndDrawers() {
     document.querySelectorAll('[data-open-modal]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             const modalId = btn.dataset.openModal;
             const modal = document.querySelector(`[data-modal="${modalId}"]`);
-            if (modal) modal.classList.add('open');
+            if (modal) {
+                modal.classList.add('open');
+                modal.dispatchEvent(new CustomEvent('modal:open'));
+                if (modalId === 'modal-employer-profile' && typeof invalidatePkiMap === 'function') {
+                    invalidatePkiMap();
+                }
+            }
         });
     });
 
@@ -82,7 +133,10 @@ function bindModalsAndDrawers() {
             e.preventDefault();
             const modalId = btn.dataset.closeModal;
             const modal = document.querySelector(`[data-modal="${modalId}"]`);
-            if (modal) modal.classList.remove('open');
+            if (modal) {
+                modal.classList.remove('open');
+                modal.dispatchEvent(new CustomEvent('modal:close'));
+            }
         });
     });
 
@@ -131,7 +185,9 @@ function scrollAndFocusKbji() {
             kbjiSelect.style.borderColor = '';
             kbjiSelect.style.boxShadow = '';
         }, 4000);
-=======
+    }
+}
+
 function bindModal(openSelector, closeSelector, modalSelector) {
     const openButtons = document.querySelectorAll(openSelector);
     const closeButtons = document.querySelectorAll(closeSelector);
@@ -139,46 +195,8 @@ function bindModal(openSelector, closeSelector, modalSelector) {
 
     if (!modal || !openButtons.length) {
         return;
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     }
-}
 
-<<<<<<< HEAD
-// Cascading District & Village Select Sample Generator
-function bindCascadingLocation() {
-    const provSelect = document.getElementById('selectProvince');
-    const citySelect = document.getElementById('selectCity');
-    const distSelect = document.getElementById('selectDistrict');
-    const villSelect = document.getElementById('selectVillage');
-
-    if (!provSelect || !citySelect || !distSelect || !villSelect) return;
-
-    const districts = {
-        'Kota Bekasi': ['Bekasi Selatan', 'Bekasi Timur', 'Bekasi Barat', 'Bekasi Utara', 'Pondok Gede', 'Jatiasih'],
-        'Kabupaten Bekasi': ['Cikarang Pusat', 'Cikarang Selatan', 'Cikarang Barat', 'Cikarang Utara', 'Tambun Selatan'],
-        'Kota Bandung': ['Coblong', 'Sukajadi', 'Cicendo', 'Sumur Bandung', 'Bandung Wetan'],
-        'Jakarta Selatan': ['Kebayoran Baru', 'Cilandak', 'Pasar Minggu', 'Setiabudi', 'Tebet']
-    };
-
-    const villages = {
-        'Bekasi Selatan': ['Pekayon Jaya', 'Jatibening', 'Jakasetia', 'Kayuringin Jaya', 'Marga Jaya'],
-        'Bekasi Timur': ['Duren Jaya', 'Bekasi Jaya', 'Margahayu'],
-        'Cikarang Pusat': ['Jayamukti', 'Pasirranji', 'Sukamahi'],
-        'Coblong': ['Dago', 'Lebak Siliwangi', 'Sekeloa']
-    };
-
-    citySelect.addEventListener('change', () => {
-        const val = citySelect.value;
-        const list = districts[val] || ['Bekasi Selatan', 'Cikarang Pusat', 'Coblong', 'Kebayoran Baru'];
-        distSelect.innerHTML = '<option value="">Pilih Kecamatan</option>' + list.map(d => `<option value="${d}">${d}</option>`).join('');
-        villSelect.innerHTML = '<option value="">Pilih Kelurahan/Desa</option>';
-    });
-
-    distSelect.addEventListener('change', () => {
-        const val = distSelect.value;
-        const list = villages[val] || ['Pekayon Jaya', 'Jatibening', 'Jakasetia', 'Marga Jaya'];
-        villSelect.innerHTML = '<option value="">Pilih Kelurahan/Desa</option>' + list.map(v => `<option value="${v}">${v}</option>`).join('');
-=======
     const open = () => {
         modal.classList.add('open');
         modal.dispatchEvent(new CustomEvent('modal:open'));
@@ -201,8 +219,586 @@ function bindCascadingLocation() {
         if (event.target === modal) {
             close();
         }
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     });
+}
+
+// Comprehensive Cascading Locations Dictionary for Indonesia
+const ID_LOCATIONS = {
+    'Aceh': {
+        'Kota Banda Aceh': {
+            'Kuta Alam': { 'Beurawe': '23124', 'Bandar Baru': '23126', 'Kota Baru': '23125', 'Keuramat': '23123', 'Lambaro Skep': '23127' },
+            'Baiturrahman': { 'Neusu Aceh': '23241', 'Peuniti': '23241', 'Seutui': '23243', 'Ateuk Pabuat': '23244' },
+            'Banda Raya': { 'Geuceu Komplek': '23238', 'Laksana': '23239' },
+            'Jaya Baru': { 'Lampoh Daya': '23231', 'Punge Blang Cut': '23232' }
+        },
+        'Kota Sabang': {
+            'Sukakarya': { 'Kuta Ateuh': '23511', 'Kuta Barat': '23512' }
+        },
+        'Kab. Aceh Besar': {
+            'Ingin Jaya': { 'Aneu Galang': '23371', 'Ateuk Angok': '23371' }
+        },
+        'Kab. Pidie': {
+            'Kota Sigli': { 'Blang Paseh': '24112' }
+        },
+        'Kab. Pidie Jaya': {
+            'Trienggadeng': { 'Rawasari': '24186' }
+        }
+    },
+    'DKI Jakarta': {
+        'Jakarta Pusat': {
+            'Gambir': { 'Gambir': '10110', 'Kebon Kelapa': '10120', 'Petojo Selatan': '10160', 'Duri Pulo': '10140' },
+            'Tanah Abang': { 'Bendungan Hilir': '10210', 'Karet Tengsin': '10220', 'Kebon Melati': '10230', 'Kebon Kacang': '10240', 'Kampung Bali': '10250', 'Petamburan': '10260', 'Gelora': '10270' },
+            'Menteng': { 'Menteng': '10310', 'Pegangsaan': '10320', 'Cikini': '10330', 'Gondangdia': '10350', 'Kebon Sirih': '10340' },
+            'Senen': { 'Senen': '10410', 'Kenari': '10430', 'Paseban': '10440', 'Kramat': '10450', 'Kwitang': '10420', 'Bungur': '10460' }
+        },
+        'Jakarta Selatan': {
+            'Kebayoran Baru': { 'Selong': '12110', 'Gunung': '12120', 'Kramat Pela': '12130', 'Gandaria Utara': '12140', 'Cipete Utara': '12150', 'Melawai': '12160', 'Pulo': '12160', 'Petogogan': '12170', 'Rawa Barat': '12180', 'Senayan': '12190' },
+            'Cilandak': { 'Cilandak Barat': '12430', 'Lebak Bulus': '12440', 'Pondok Labu': '12450', 'Gandaria Selatan': '12420', 'Cipete Selatan': '12410' },
+            'Setiabudi': { 'Setiabudi': '12910', 'Karet': '12920', 'Karet Semanggi': '12930', 'Karet Kuningan': '12940', 'Kuningan Timur': '12950', 'Menteng Atas': '12960', 'Pasar Manggis': '12970', 'Guntur': '12980' },
+            'Pasar Minggu': { 'Pejaten Barat': '12510', 'Pejaten Timur': '12510', 'Pasar Minggu': '12520', 'Kebagusan': '12520', 'Jati Padang': '12540', 'Ragunan': '12550', 'Cilandak Timur': '12560' },
+            'Tebet': { 'Tebet Barat': '12810', 'Tebet Timur': '12820', 'Kebon Baru': '12830', 'Bukit Duri': '12840', 'Manggarai': '12850', 'Manggarai Selatan': '12860', 'Menteng Dalam': '12870' }
+        },
+        'Jakarta Barat': {
+            'Grogol Petamburan': { 'Tanjung Duren Utara': '11470', 'Tanjung Duren Selatan': '11470', 'Tomang': '11440', 'Grogol': '11450', 'Jelambar': '11460', 'Wijaya Kusuma': '11460' },
+            'Kebon Jeruk': { 'Kebon Jeruk': '11530', 'Sukabumi Utara': '11540', 'Sukabumi Selatan': '11560', 'Kelapa Dua': '11550', 'Duri Kepa': '11510', 'Kedoya Selatan': '11520', 'Kedoya Utara': '11520' },
+            'Kembangan': { 'Kembangan Utara': '11610', 'Kembangan Selatan': '11610', 'Meruya Utara': '11620', 'Meruya Selatan': '11650', 'Srengseng': '11630', 'Joglo': '11640' }
+        },
+        'Jakarta Timur': {
+            'Jatinegara': { 'Bali Mester': '13310', 'Kampung Melayu': '13320', 'Bidara Cina': '13330', 'Cipinang Cempedak': '13340', 'Rawa Bunga': '13350', 'Cipinang Besar Utara': '13410', 'Cipinang Besar Selatan': '13410', 'Cipinang Muara': '13420' },
+            'Duren Sawit': { 'Pondok Bambu': '13430', 'Duren Sawit': '13440', 'Pondok Kelapa': '13450', 'Malaka Jaya': '13460', 'Malaka Sari': '13460', 'Pondok Kopi': '13460', 'Klender': '13470' },
+            'Matraman': { 'Pisangan Baru': '13110', 'Utan Kayu Selatan': '13120', 'Utan Kayu Utara': '13120', 'Kayu Manis': '13130', 'Pal Matraman': '13140', 'Kebon Manggis': '13150' }
+        },
+        'Jakarta Utara': {
+            'Penjaringan': { 'Pluit': '14450', 'Pejagalan': '14450', 'Kapuk Muara': '14460', 'Kamal Muara': '14470', 'Penjaringan': '14440' },
+            'Kelapa Gading': { 'Kelapa Gading Barat': '14240', 'Kelapa Gading Timur': '14240', 'Pegangsaan Dua': '14250' }
+        }
+    },
+    'Jawa Barat': {
+        'Kota Bekasi': {
+            'Bekasi Selatan': { 'Pekayon Jaya': '17148', 'Jaka Setia': '17147', 'Kayuringin Jaya': '17144', 'Marga Jaya': '17141' },
+            'Bekasi Timur': { 'Aren Jaya': '17111', 'Bekasi Jaya': '17112', 'Duren Jaya': '17111', 'Margahayu': '17113' },
+            'Bekasi Barat': { 'Bintara': '17134', 'Kranji': '17135', 'Kota Baru': '17133', 'Jaka Sampurna': '17145' },
+            'Bekasi Utara': { 'Harapan Baru': '17123', 'Harapan Jaya': '17124', 'Kaliabang Tengah': '17125', 'Perwira': '17122', 'Teluk Pucung': '17121' },
+            'Pondok Gede': { 'Jatibening': '17412', 'Jatibening Baru': '17412', 'Jaticempaka': '17411', 'Jatimakmur': '17413', 'Jatiwaringin': '17411' },
+            'Jatiasih': { 'Jatiasih': '17423', 'Jatikramat': '17421', 'Jatimekar': '17422', 'Jatirasa': '17424', 'Jatisari': '17426', 'Jatiluhur': '17425' },
+            'Medan Satria': { 'Medan Satria': '17132', 'Pejuang': '17131', 'Harapan Mulya': '17143', 'Kali Baru': '17133' },
+            'Rawalumbu': { 'Bojong Rawalumbu': '17116', 'Bojong Menteng': '17117', 'Pengasinan': '17115', 'Sepanjang Jaya': '17114' }
+        },
+        'Kabupaten Bekasi': {
+            'Cikarang Pusat': { 'Jayamukti': '17530', 'Pasirranji': '17530', 'Pasirtanjung': '17530', 'Sukamahi': '17530', 'Cicau': '17530', 'Hegarmanah': '17530' },
+            'Cikarang Selatan': { 'Ciantra': '17530', 'Cibatu': '17530', 'Pasirsari': '17530', 'Serang': '17530', 'Sukadami': '17530', 'Sukaresmi': '17530', 'Sukasejati': '17530' },
+            'Cikarang Barat': { 'Danau Indah': '17520', 'Gandamekar': '17520', 'Gandasari': '17520', 'Jatiwangi': '17520', 'Kalijaya': '17520', 'Telagamurni': '17520', 'Telajung': '17520' },
+            'Cikarang Utara': { 'Cikarang Kota': '17530', 'Harjamekar': '17530', 'Karangasih': '17530', 'Karangbaru': '17530', 'Pasirgombong': '17530', 'Simpangan': '17530', 'Tanjungsari': '17530' },
+            'Tambun Selatan': { 'Jatimulya': '17510', 'Lambangjaya': '17510', 'Lambangsari': '17510', 'Mangunjaya': '17510', 'Setiadarma': '17510', 'Setiamekar': '17510', 'Sumberjaya': '17510', 'Tambun': '17510', 'Tridaya Sakti': '17510' }
+        },
+        'Kota Bandung': {
+            'Coblong': { 'Dago': '40135', 'Lebak Gede': '40132', 'Lebak Siliwangi': '40132', 'Sadang Serang': '40133', 'Sekeloa': '40134' },
+            'Sukajadi': { 'Cipedes': '40162', 'Pasteur': '40161', 'Sukabungah': '40162', 'Sukagalih': '40163', 'Sukawarna': '40164' },
+            'Cicendo': { 'Arjuna': '40172', 'Husen Sastranegara': '40174', 'Pajajaran': '40173', 'Pamoyanan': '40173', 'Pasirkaliki': '40171', 'Sukaraja': '40175' },
+            'Sumur Bandung': { 'Braga': '40111', 'Kebon Pisang': '40112', 'Merdeka': '40113', 'Babakan Ciamis': '40117' },
+            'Bandung Wetan': { 'Cihapit': '40114', 'Citarum': '40115', 'Tamansari': '40116' }
+        },
+        'Kota Bogor': {
+            'Bogor Tengah': { 'Babakan': '16128', 'Babakan Pasar': '16126', 'Cibogor': '16124', 'Ciwaringin': '16124', 'Gudang': '16123', 'Kebon Kelapa': '16125', 'Pabaton': '16121', 'Paledang': '16122', 'Panaragan': '16125', 'Sempur': '16129', 'Tegallega': '16127' },
+            'Bogor Selatan': { 'Batutulis': '16133', 'Bondongan': '16131', 'Empang': '16132', 'Genteng': '16137', 'Harjasari': '16138', 'Kertamaya': '16138', 'Lawanggintung': '16134', 'Muarasari': '16137', 'Mulyaharja': '16135', 'Pakuan': '16134', 'Pamoyanan': '16136', 'Rancamaya': '16139', 'Ranggamekar': '16136' }
+        },
+        'Kota Depok': {
+            'Pancoran Mas': { 'Depok': '16431', 'Depok Jaya': '16432', 'Mampang': '16433', 'Pancoran Mas': '16436', 'Rangkapan Jaya': '16435', 'Rangkapan Jaya Baru': '16434' },
+            'Beji': { 'Beji': '16421', 'Beji Timur': '16422', 'Kemiri Muka': '16423', 'Kukusan': '16425', 'Pondok Cina': '16424', 'Tanah Baru': '16426' }
+        },
+        'Kota Tangerang Selatan': {
+            'Serpong': { 'Buaran': '15310', 'Ciater': '15310', 'Cilenggang': '15310', 'Lengkong Gudang': '15321', 'Lengkong Gudang Timur': '15321', 'Lengkong Wetan': '15322', 'Rawa Buntu': '15318', 'Rawa Mekar Jaya': '15310', 'Serpong': '15311' },
+            'Pondok Aren': { 'Jurang Mangu Barat': '15223', 'Jurang Mangu Timur': '15222', 'Pondok Kacang Barat': '15226', 'Pondok Kacang Timur': '15226', 'Pondok Karya': '15225', 'Pondok Jaya': '15224', 'Pondok Betung': '15221', 'Pondok Pucung': '15229', 'Pondok Aren': '15224' }
+        }
+    },
+    'Banten': {
+        'Kota Tangerang': {
+            'Tangerang': { 'Babakan': '15118', 'Buaran Indah': '15119', 'Cikokol': '15117', 'Kelapa Indah': '15117', 'Sukarasa': '15111', 'Sukasari': '15118', 'Tanah Tinggi': '15119' },
+            'Cipondoh': { 'Cipondoh': '15148', 'Cipondoh Indah': '15148', 'Cipondoh Makmur': '15148', 'Gondrong': '15146', 'Kenanga': '15146', 'Ketapang': '15147', 'Petir': '15147', 'Poris Plawad': '15141', 'Poris Plawad Indah': '15141', 'Poris Plawad Utara': '15141' }
+        },
+        'Kota Serang': {
+            'Serang': { 'Cipare': '42117', 'Kagungan': '42114', 'Kotabaru': '42112', 'Lontarbaru': '42115', 'Serang': '42116', 'Sukawana': '42116', 'Sumurpecung': '42118' }
+        }
+    },
+    'Jawa Tengah': {
+        'Kota Semarang': {
+            'Semarang Tengah': { 'Bangunharjo': '50139', 'Brumbungan': '50135', 'Gabahan': '50135', 'Jagalan': '50136', 'Karangkidul': '50136', 'Kauman': '50138', 'Kembangsari': '50133', 'Kranggan': '50139', 'Miroto': '50134', 'Pandansari': '50139', 'Pekunden': '50134', 'Pendrikan Kidul': '50131', 'Pendrikan Lor': '50131', 'Purwodinatan': '50137', 'Sekayu': '50132' },
+            'Semarang Barat': { 'Bojongsalaman': '50141', 'Bongsari': '50148', 'Cabean': '50141', 'Gisikdrono': '50149', 'Kalibanteng Kidul': '50145', 'Kalibanteng Kulon': '50145', 'Karangayu': '50149', 'Krobokan': '50141', 'Manyaran': '50147', 'Ngemplak Simongan': '50148', 'Salamanmloyo': '50149', 'Tambakharjo': '50149', 'Tawangmas': '50144', 'Tawangsari': '50144' }
+        },
+        'Kota Surakarta': {
+            'Banjarsari': { 'Banyuanyar': '57137', 'Gilingan': '57134', 'Kadipiro': '57136', 'Keprabon': '57131', 'Kestalan': '57133', 'Ketelan': '57132', 'Manahan': '57139', 'Mangkubumen': '57139', 'Nusukan': '57135', 'Punggawan': '57132', 'Setabelan': '57133', 'Sumber': '57138', 'Timuran': '57131' }
+        }
+    },
+    'DI Yogyakarta': {
+        'Kota Yogyakarta': {
+            'Danurejan': { 'Bausasran': '55211', 'Tegal Panggung': '55212', 'Suryatmajan': '55213' },
+            'Gondomanan': { 'Ngupasan': '55122', 'Prawirodirjan': '55121' },
+            'Kotagede': { 'Prenggan': '55172', 'Purbayan': '55173', 'Rejowinangun': '55171' }
+        },
+        'Kabupaten Sleman': {
+            'Depok': { 'Caturtunggal': '55281', 'Condongcatur': '55283', 'Maguwoharjo': '55282' },
+            'Mlati': { 'Sendangadi': '55285', 'Sinduadi': '55284', 'Sumberadi': '55288', 'Tirtoadi': '55287', 'Tlogoadi': '55286' }
+        }
+    },
+    'Jawa Timur': {
+        'Kota Surabaya': {
+            'Genteng': { 'Embong Kaliasin': '60271', 'Genteng': '60272', 'Kapasari': '60273', 'Ketabang': '60272', 'Peneleh': '60274' },
+            'Gubeng': { 'Airlangga': '60286', 'Barata Jaya': '60284', 'Gubeng': '60281', 'Kertajaya': '60282', 'Mojo': '60285', 'Pucang Sewu': '60283' },
+            'Wonokromo': { 'Darmo': '60241', 'Jagir': '60244', 'Ngagel': '60246', 'Ngagelrejo': '60245', 'Sawunggaling': '60242', 'Wonokromo': '60243' }
+        },
+        'Kota Malang': {
+            'Klojen': { 'Bareng': '65116', 'Gadingasri': '65115', 'Kasin': '65117', 'Kauman': '65119', 'Kiduldalem': '65119', 'Klojen': '65111', 'Oro-oro Dowo': '65112', 'Penanggungan': '65113', 'Rampal Celaket': '65111', 'Samaan': '65112', 'Sukoharjo': '65118' },
+            'Lowokwaru': { 'Dinoyo': '65144', 'Jatimulyo': '65141', 'Ketawanggede': '65145', 'Lowokwaru': '65141', 'Merjosari': '65144', 'Mojolangu': '65142', 'Sumbersari': '65145', 'Tasikmadu': '65143', 'Tlogomas': '65144', 'Tulusrejo': '65143', 'Tunggulwulung': '65143' }
+        }
+    },
+    'Bali': {
+        'Kota Denpasar': {
+            'Denpasar Barat': { 'Dauh Puri': '80113', 'Padangsambian': '80118', 'Pemecutan': '80111' },
+            'Denpasar Selatan': { 'Panjer': '80225', 'Pedungan': '80222', 'Sanur': '80228', 'Renon': '80226' }
+        },
+        'Kabupaten Badung': {
+            'Kuta': { 'Kedonganan': '80361', 'Tuban': '80361', 'Kuta': '80361', 'Legian': '80361', 'Seminyak': '80361' },
+            'Kuta Selatan': { 'Jimbaran': '80361', 'Benoa': '80361', 'Pecatu': '80361', 'Ungasan': '80361' }
+        }
+    },
+    'Sumatera Utara': {
+        'Kota Medan': {
+            'Medan Kota': { 'Kotamatsum III': '20215', 'Mesjid': '20212', 'Pasar Baru': '20212', 'Pasar Merah Barat': '20214', 'Pusat Pasar': '20211', 'Sitirejo II': '20216', 'Sudirejo I': '20218', 'Sudirejo II': '20218', 'Teladan Barat': '20217', 'Teladan Timur': '20217' },
+            'Medan Petisah': { 'Petisah Tengah': '20112', 'Sekip': '20113', 'Sei Putih Barat': '20118', 'Sei Putih Timur I': '20118', 'Sei Putih Timur II': '20118', 'Sei Putih Tengah': '20118', 'Sikambing D': '20111' }
+        }
+    }
+};
+
+const ID_COORDINATES = {
+    'DKI Jakarta': [-6.2088, 106.8456],
+    'Jawa Barat': [-6.9175, 107.6191],
+    'Banten': [-6.4058, 106.0640],
+    'Jawa Tengah': [-7.1510, 110.1403],
+    'DI Yogyakarta': [-7.7956, 110.3695],
+    'Jawa Timur': [-7.5360, 112.2384],
+    'Bali': [-8.4095, 115.1889],
+    'Sumatera Utara': [2.1154, 99.5451],
+
+    'Jakarta Pusat': [-6.1805, 106.8284],
+    'Jakarta Selatan': [-6.2615, 106.8106],
+    'Jakarta Barat': [-6.1683, 106.7588],
+    'Jakarta Timur': [-6.2250, 106.9004],
+    'Jakarta Utara': [-6.1384, 106.8640],
+    'Kota Bekasi': [-6.2383, 106.9756],
+    'Kabupaten Bekasi': [-6.3644, 107.1725],
+    'Kota Bandung': [-6.9175, 107.6191],
+    'Kota Bogor': [-6.5971, 106.8060],
+    'Kota Depok': [-6.4025, 106.7942],
+    'Kota Tangerang': [-6.1783, 106.6319],
+    'Kota Tangerang Selatan': [-6.2887, 106.7179],
+    'Kota Serang': [-6.1104, 106.1639],
+    'Kota Semarang': [-6.9667, 110.4167],
+    'Kota Surakarta': [-7.5755, 110.8243],
+    'Kota Yogyakarta': [-7.7956, 110.3695],
+    'Kabupaten Sleman': [-7.7156, 110.3556],
+    'Kota Surabaya': [-7.2575, 112.7521],
+    'Kota Malang': [-7.9797, 112.6304],
+    'Kota Denpasar': [-8.6705, 115.2126],
+    'Kabupaten Badung': [-8.5819, 115.1771],
+    'Kota Medan': [3.5952, 98.6722],
+
+    'Bekasi Selatan': [-6.2572, 106.9896],
+    'Pekayon Jaya': [-6.2639, 106.9858],
+    'Kebayoran Baru': [-6.2443, 106.7997],
+    'Coblong': [-6.8833, 107.6167],
+    'Dago': [-6.8770, 107.6186]
+};
+
+let pkiLeafletMap = null;
+let pkiMapMarker = null;
+
+function invalidatePkiMap() {
+    setTimeout(() => {
+        if (pkiLeafletMap) {
+            pkiLeafletMap.invalidateSize();
+        }
+    }, 250);
+}
+
+function updatePkiMap(lat, lng) {
+    const latInput = document.getElementById('inputLat');
+    const lngInput = document.getElementById('inputLng');
+    const mapDiv = document.getElementById('leafletMap');
+    const emptyState = document.getElementById('mapEmptyState');
+    const openBtn = document.getElementById('btnOpenMap');
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+
+    if (isNaN(latitude) || isNaN(longitude) || latitude === 0 || longitude === 0) {
+        if (mapDiv) mapDiv.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'flex';
+        if (openBtn) openBtn.style.display = 'none';
+        if (latInput) latInput.value = '';
+        if (lngInput) lngInput.value = '';
+        return;
+    }
+
+    if (latInput) latInput.value = latitude.toFixed(6);
+    if (lngInput) lngInput.value = longitude.toFixed(6);
+
+    if (emptyState) emptyState.style.display = 'none';
+    if (mapDiv) mapDiv.style.display = 'block';
+
+    if (openBtn) {
+        openBtn.style.display = 'inline-flex';
+        openBtn.href = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    }
+
+    if (typeof L === 'undefined') return;
+
+    if (!pkiLeafletMap) {
+        pkiLeafletMap = L.map('leafletMap', {
+            center: [latitude, longitude],
+            zoom: 15,
+            dragging: true,
+            touchZoom: true,
+            scrollWheelZoom: true,
+            doubleClickZoom: true,
+            boxZoom: true
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(pkiLeafletMap);
+
+        pkiMapMarker = L.marker([latitude, longitude], {
+            draggable: false,
+            interactive: false
+        }).addTo(pkiLeafletMap);
+    } else {
+        pkiLeafletMap.setView([latitude, longitude], 15);
+        if (pkiMapMarker) {
+            pkiMapMarker.setLatLng([latitude, longitude]);
+        } else {
+            pkiMapMarker = L.marker([latitude, longitude], { draggable: false, interactive: false }).addTo(pkiLeafletMap);
+        }
+        invalidatePkiMap();
+    }
+}
+
+function removeUploadedDoc(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    if (input) input.value = '';
+    if (preview) preview.style.display = 'none';
+}
+
+function autoGeocodeLocation() {
+    const prov = document.getElementById('hiddenProvinceName')?.value || '';
+    const city = document.getElementById('hiddenCityName')?.value || '';
+    const dist = document.getElementById('hiddenDistrictName')?.value || '';
+    const vill = document.getElementById('hiddenVillageName')?.value || '';
+    const addr = document.getElementById('inputAddress')?.value.trim() || '';
+
+    // Map ONLY displays if BOTH location (prov + city) AND address are provided!
+    if (!addr || !prov || !city) {
+        updatePkiMap(null, null);
+        return;
+    }
+
+    let coords = null;
+    if (vill && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[vill]) {
+        coords = ID_COORDINATES[vill];
+    } else if (dist && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[dist]) {
+        coords = ID_COORDINATES[dist];
+    } else if (city && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[city]) {
+        coords = ID_COORDINATES[city];
+    } else if (prov && typeof ID_COORDINATES !== 'undefined' && ID_COORDINATES[prov]) {
+        coords = ID_COORDINATES[prov];
+    }
+
+    if (coords) {
+        updatePkiMap(coords[0], coords[1]);
+    } else {
+        const existingLat = document.getElementById('inputLat')?.value;
+        const existingLng = document.getElementById('inputLng')?.value;
+        if (existingLat && existingLng) {
+            updatePkiMap(existingLat, existingLng);
+        } else {
+            updatePkiMap(null, null);
+        }
+    }
+}
+
+function initHierarchicalLocationSelector() {
+    const trigger = document.getElementById('locationBoxTrigger');
+    const display = document.getElementById('locationBoxDisplay');
+    const caret = document.getElementById('locationBoxCaret');
+    const panel = document.getElementById('locationDropdownPanel');
+    const breadcrumb = document.getElementById('locationBreadcrumbHeader');
+    const levelTitle = document.getElementById('locationLevelTitleBar');
+    const optionsList = document.getElementById('locationOptionsContainer');
+
+    const hidProv = document.getElementById('hiddenProvinceName');
+    const hidCity = document.getElementById('hiddenCityName');
+    const hidDomCity = document.getElementById('hiddenDomicileCityId');
+    const hidDist = document.getElementById('hiddenDistrictName');
+    const hidVill = document.getElementById('hiddenVillageName');
+    const postalInput = document.getElementById('inputPostalCode');
+
+    if (!trigger || !panel || !optionsList) return;
+
+    let selectedProv = hidProv?.value || '';
+    let selectedCity = hidCity?.value || '';
+    let selectedDist = hidDist?.value || '';
+    let selectedVill = hidVill?.value || '';
+    let currentLevel = 1;
+
+    function renderPanel() {
+        if (currentLevel === 1) {
+            if (breadcrumb) breadcrumb.style.display = 'none';
+            if (levelTitle) levelTitle.textContent = 'Pilih Provinsi';
+            const provinces = typeof ID_LOCATIONS !== 'undefined' ? Object.keys(ID_LOCATIONS) : [];
+            optionsList.innerHTML = provinces.map(p => {
+                const isSel = p === selectedProv;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${p}" data-loc-type="prov">
+                    <span>${isSel ? '●' : '○'} ${p}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        } else if (currentLevel === 2) {
+            if (breadcrumb) {
+                breadcrumb.style.display = 'flex';
+                breadcrumb.innerHTML = `<span class="crumb-btn" data-crumb-lvl="1">${selectedProv}</span>`;
+            }
+            if (levelTitle) levelTitle.textContent = 'Pilih Kabupaten / Kota';
+            const cities = (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]) ? Object.keys(ID_LOCATIONS[selectedProv]) : [];
+            optionsList.innerHTML = cities.map(c => {
+                const isSel = c === selectedCity;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${c}" data-loc-type="city">
+                    <span>${isSel ? '●' : '○'} ${c}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        } else if (currentLevel === 3) {
+            if (breadcrumb) {
+                breadcrumb.style.display = 'flex';
+                breadcrumb.innerHTML = `<span class="crumb-btn" data-crumb-lvl="1">${selectedProv}</span> › <span class="crumb-btn" data-crumb-lvl="2">${selectedCity}</span>`;
+            }
+            if (levelTitle) levelTitle.textContent = 'Pilih Kecamatan';
+            const districts = (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]?.[selectedCity]) ? Object.keys(ID_LOCATIONS[selectedProv][selectedCity]) : [];
+            optionsList.innerHTML = districts.map(d => {
+                const isSel = d === selectedDist;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${d}" data-loc-type="dist">
+                    <span>${isSel ? '●' : '○'} ${d}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        } else if (currentLevel === 4) {
+            if (breadcrumb) {
+                breadcrumb.style.display = 'flex';
+                breadcrumb.innerHTML = `<span class="crumb-btn" data-crumb-lvl="1">${selectedProv}</span> › <span class="crumb-btn" data-crumb-lvl="2">${selectedCity}</span> › <span class="crumb-btn" data-crumb-lvl="3">${selectedDist}</span>`;
+            }
+            if (levelTitle) levelTitle.textContent = 'Pilih Kelurahan / Desa';
+            const villages = (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]?.[selectedCity]?.[selectedDist]) ? Object.keys(ID_LOCATIONS[selectedProv][selectedCity][selectedDist]) : [];
+            optionsList.innerHTML = villages.map(v => {
+                const isSel = v === selectedVill;
+                return `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-loc-val="${v}" data-loc-type="vill">
+                    <span>${isSel ? '●' : '○'} ${v}</span>
+                    ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                </div>`;
+            }).join('');
+        }
+    }
+
+    function togglePanel() {
+        const isOpen = panel.style.display === 'block';
+        if (isOpen) {
+            panel.style.display = 'none';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+        } else {
+            // Determine level to open
+            if (selectedProv && selectedCity && selectedDist && selectedVill) {
+                currentLevel = 4; // Open directly at Kelurahan / Desa!
+            } else if (selectedProv && selectedCity && selectedDist) {
+                currentLevel = 4;
+            } else if (selectedProv && selectedCity) {
+                currentLevel = 3;
+            } else if (selectedProv) {
+                currentLevel = 2;
+            } else {
+                currentLevel = 1;
+            }
+            renderPanel();
+            panel.style.display = 'block';
+            if (caret) caret.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePanel();
+    });
+
+    panel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const crumb = e.target.closest('[data-crumb-lvl]');
+        if (crumb) {
+            currentLevel = parseInt(crumb.dataset.crumbLvl, 10);
+            renderPanel();
+            return;
+        }
+
+        const opt = e.target.closest('[data-loc-val]');
+        if (!opt) return;
+
+        const val = opt.dataset.locVal;
+        const type = opt.dataset.locType;
+
+        if (type === 'prov') {
+            if (selectedProv !== val) {
+                selectedProv = val;
+                selectedCity = '';
+                selectedDist = '';
+                selectedVill = '';
+            }
+            currentLevel = 2;
+            renderPanel();
+        } else if (type === 'city') {
+            if (selectedCity !== val) {
+                selectedCity = val;
+                selectedDist = '';
+                selectedVill = '';
+            }
+            if (hidCity) hidCity.value = val;
+            if (hidDomCity) hidDomCity.value = val;
+            currentLevel = 3;
+            renderPanel();
+        } else if (type === 'dist') {
+            if (selectedDist !== val) {
+                selectedDist = val;
+                selectedVill = '';
+            }
+            if (hidDist) hidDist.value = val;
+            currentLevel = 4;
+            renderPanel();
+        } else if (type === 'vill') {
+            selectedVill = val;
+            if (hidProv) hidProv.value = selectedProv;
+            if (hidCity) hidCity.value = selectedCity;
+            if (hidDomCity) hidDomCity.value = selectedCity;
+            if (hidDist) hidDist.value = selectedDist;
+            if (hidVill) hidVill.value = selectedVill;
+
+            if (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selectedProv]?.[selectedCity]?.[selectedDist]?.[selectedVill]) {
+                const pCode = ID_LOCATIONS[selectedProv][selectedCity][selectedDist][selectedVill];
+                if (postalInput && pCode) postalInput.value = pCode;
+            }
+
+            if (display) {
+                display.innerHTML = `${selectedVill}, ${selectedDist}, ${selectedCity}, ${selectedProv}`;
+                display.style.color = '#0f172a';
+                display.style.fontWeight = '600';
+            }
+
+            panel.style.display = 'none';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+
+            autoGeocodeLocation();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (panel.style.display === 'block' && !panel.contains(e.target) && !trigger.contains(e.target)) {
+            panel.style.display = 'none';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+        }
+    });
+}
+
+function initEmployerProfileForm() {
+    const nikInput = document.getElementById('inputNik');
+    const nikError = document.getElementById('nikErrorMsg');
+    const addrInput = document.getElementById('inputAddress');
+    const cbSameLoc = document.getElementById('cbSameLocation');
+    const noticeLoc = document.getElementById('siapkerjaLocNotice');
+    const docInput = document.getElementById('inputPermitDoc');
+    const photoInput = document.getElementById('inputWorkplacePhoto');
+    const form = document.getElementById('formEmployerProfile');
+
+    if (nikInput) {
+        nikInput.addEventListener('input', () => {
+            nikInput.value = nikInput.value.replace(/\D/g, '').slice(0, 16);
+            if (nikInput.value.length === 16) {
+                if (nikError) nikError.style.display = 'none';
+                nikInput.setCustomValidity('');
+            }
+        });
+        nikInput.addEventListener('blur', () => {
+            if (nikInput.value.length !== 16 && nikInput.value.length > 0) {
+                if (nikError) nikError.style.display = 'block';
+                nikInput.setCustomValidity('NIK harus terdiri dari 16 digit angka.');
+            } else {
+                if (nikError) nikError.style.display = 'none';
+                nikInput.setCustomValidity('');
+            }
+        });
+    }
+
+    if (addrInput) {
+        addrInput.addEventListener('input', () => {
+            autoGeocodeLocation();
+        });
+    }
+
+    if (cbSameLoc) {
+        cbSameLoc.addEventListener('change', () => {
+            if (cbSameLoc.checked) {
+                if (noticeLoc) noticeLoc.style.display = 'block';
+            } else {
+                if (noticeLoc) noticeLoc.style.display = 'none';
+            }
+        });
+    }
+
+    if (docInput) {
+        docInput.addEventListener('change', () => {
+            const preview = document.getElementById('permitDocPreview');
+            const nameEl = document.getElementById('permitDocName');
+            if (docInput.files && docInput.files[0]) {
+                if (nameEl) nameEl.textContent = '📄 ' + docInput.files[0].name;
+                if (preview) preview.style.display = 'flex';
+            }
+        });
+    }
+
+    if (photoInput) {
+        photoInput.addEventListener('change', () => {
+            const preview = document.getElementById('workplacePhotoPreview');
+            const nameEl = document.getElementById('workplacePhotoName');
+            if (photoInput.files && photoInput.files[0]) {
+                if (nameEl) nameEl.textContent = '📷 ' + photoInput.files[0].name;
+                if (preview) preview.style.display = 'flex';
+            }
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            if (nikInput && nikInput.value.length !== 16) {
+                e.preventDefault();
+                if (nikError) nikError.style.display = 'block';
+                nikInput.setCustomValidity('NIK harus terdiri dari 16 digit angka.');
+                nikInput.reportValidity();
+                return false;
+            }
+        });
+    }
+
+    // Initial map check
+    const initialLat = document.getElementById('inputLat')?.value;
+    const initialLng = document.getElementById('inputLng')?.value;
+    if (initialLat && initialLng) {
+        updatePkiMap(initialLat, initialLng);
+    } else {
+        autoGeocodeLocation();
+    }
 }
 
 function initRichEditors(root) {
@@ -239,14 +835,15 @@ function initRichEditors(root) {
             });
         });
 
-        const blockSelect = editor.querySelector('[data-block]');
-        if (blockSelect) {
-            blockSelect.addEventListener('change', () => {
+        editor.querySelectorAll('[data-cmd-select]').forEach((select) => {
+            select.addEventListener('change', () => {
                 area.focus();
-                document.execCommand('formatBlock', false, blockSelect.value);
+                document.execCommand(select.dataset.cmdSelect, false, select.value);
                 sync();
             });
-        }
+        });
+
+
 
         area.addEventListener('input', sync);
         area.addEventListener('blur', sync);
@@ -353,6 +950,36 @@ function initJobCreateWizard() {
     initChipField(modal, 'skills');
     initChipField(modal, 'contacts');
 
+    const chkSameDomicile = modal.querySelector('#chkSameDomicile');
+    const jobLocationInput = modal.querySelector('#jobLocationInput');
+
+    if (chkSameDomicile && jobLocationInput) {
+        let savedManualLocation = '';
+        chkSameDomicile.addEventListener('change', () => {
+            if (chkSameDomicile.checked) {
+                savedManualLocation = jobLocationInput.value;
+                const domAddr = chkSameDomicile.getAttribute('data-domicile-address') || '';
+                jobLocationInput.value = domAddr;
+            } else {
+                jobLocationInput.value = savedManualLocation;
+            }
+        });
+    }
+
+    const chkDisability = modal.querySelector('#chkDisability');
+    const disabilityGroup = modal.querySelector('#disabilityExcludedGroup');
+
+    const updateDisabilityGroupVisibility = () => {
+        if (disabilityGroup) {
+            disabilityGroup.style.display = (chkDisability && chkDisability.checked) ? 'flex' : 'none';
+        }
+    };
+
+    if (chkDisability) {
+        chkDisability.addEventListener('change', updateDisabilityGroupVisibility);
+        updateDisabilityGroupVisibility();
+    }
+
     const syncRichText = () => {
         modal.querySelectorAll('[data-rich-editor]').forEach((editor) => {
             const area = editor.querySelector('.rich-area');
@@ -384,6 +1011,25 @@ function initJobCreateWizard() {
             return;
         }
 
+        if (mode === 'edit' || mode === 'draft') {
+            if (titleEl) {
+                titleEl.textContent = 'Edit Lowongan';
+            }
+            if (subtitleEl) {
+                subtitleEl.textContent = 'Data sebelumnya sudah terisi. Perbarui informasi lowongan, lalu simpan.';
+            }
+            if (btnSubmit) {
+                btnSubmit.textContent = 'Simpan Lowongan';
+            }
+            if (banner) {
+                banner.hidden = true;
+            }
+            if (bannerText) {
+                bannerText.textContent = '';
+            }
+            return;
+        }
+
         if (titleEl) {
             titleEl.textContent = 'Tambah Lowongan';
         }
@@ -406,7 +1052,15 @@ function initJobCreateWizard() {
         if (!field) {
             return;
         }
-        field.value = value == null ? '' : String(value);
+        const valStr = value == null ? '' : String(value);
+        if (field.tagName === 'SELECT' && valStr) {
+            const exists = Array.from(field.options).some((opt) => opt.value === valStr);
+            if (!exists) {
+                const opt = new Option(valStr, valStr, true, true);
+                field.add(opt);
+            }
+        }
+        field.value = valStr;
     };
 
     const setCheckboxGroup = (name, selected) => {
@@ -490,7 +1144,7 @@ function initJobCreateWizard() {
             const index = Number(label.dataset.stepLabel);
             label.classList.toggle('active', index === current);
             label.classList.toggle('done', index < current);
-            const bubble = label.querySelector('.bubble');
+            const bubble = label.querySelector('.step-badge');
             if (bubble) {
                 bubble.innerHTML = index < current ? '<i class="fa-solid fa-check"></i>' : String(index);
             }
@@ -617,41 +1271,49 @@ function initJobCreateWizard() {
         setStep(1);
     });
 
-    document.querySelectorAll('[data-revise-job]').forEach((button) => {
-        button.addEventListener('click', () => {
-            const jobId = button.dataset.reviseJob;
-            const hidden = document.getElementById('reviseJobId');
-            fetch(`dashboard.php?job_json=${encodeURIComponent(jobId)}`)
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error('not found');
-                    }
-                    return response.json();
-                })
-                .then((payload) => {
-                    if (!payload?.ok || !payload.data) {
-                        throw new Error('invalid');
-                    }
-                    modal.dataset.jobFormMode = 'revise';
-                    modal.dataset.skipReset = 'true';
-                    if (hidden) {
-                        hidden.value = String(payload.data.id || jobId);
-                    }
-                    fillJobCreateForm(payload.data);
-                    setJobCreateMode('revise', payload.data.admin_notes);
-                    modal.classList.add('open');
-                    modal.dispatchEvent(new CustomEvent('modal:open'));
-                })
-                .catch(() => {
-                    window.alert('Data lowongan tidak dapat dimuat. Silakan coba lagi.');
-                });
-        });
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-revise-job], [data-edit-draft]');
+        if (!button) {
+            return;
+        }
+        const jobId = button.dataset.reviseJob || button.dataset.editDraft;
+        const hidden = document.getElementById('reviseJobId');
+        fetch(`dashboard.php?job_json=${encodeURIComponent(jobId)}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('not found');
+                }
+                return response.json();
+            })
+            .then((payload) => {
+                if (!payload?.ok || !payload.data) {
+                    throw new Error('invalid');
+                }
+                const isDraftMode = Boolean(button.dataset.editDraft) || payload.data.status === 'Draft';
+                const formMode = isDraftMode ? 'edit' : 'revise';
+                modal.dataset.jobFormMode = formMode;
+                modal.dataset.skipReset = 'true';
+                if (hidden) {
+                    hidden.value = String(payload.data.id || jobId);
+                }
+                fillJobCreateForm(payload.data);
+                setJobCreateMode(formMode, payload.data.admin_notes);
+                modal.classList.add('open');
+                modal.dispatchEvent(new CustomEvent('modal:open'));
+            })
+            .catch(() => {
+                window.alert('Data lowongan tidak dapat dimuat. Silakan coba lagi.');
+            });
     });
 
     setStep(1);
 }
 
-function initHashRouting(defaultPage) {
+function initHashRouting(defaultPage = 'dashboard') {
+    const dataPages = document.querySelectorAll('.page[data-page], .page[id^="page-"]');
+    if (dataPages.length === 0) {
+        return;
+    }
     const initialPage = (window.location.hash || `#${defaultPage}`).slice(1);
     setActivePage(initialPage || defaultPage);
 
@@ -664,14 +1326,64 @@ function initHashRouting(defaultPage) {
 function initSidebarToggle() {
     const sidebar = document.querySelector('.sidebar');
     const toggle = document.getElementById('sidebarToggle');
-    if (!sidebar || !toggle || toggle.dataset.bound === 'true') {
-        return;
+    if (sidebar && toggle && toggle.dataset.bound !== 'true') {
+        toggle.dataset.bound = 'true';
+        toggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
     }
-    toggle.dataset.bound = 'true';
-    toggle.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
-    });
+
+    const railToggleBtn = document.getElementById('railToggleBtn');
+    if (railToggleBtn && railToggleBtn.dataset.bound !== 'true') {
+        railToggleBtn.dataset.bound = 'true';
+        railToggleBtn.addEventListener('click', toggleDrawer);
+    }
+
+    const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+    if (drawerCloseBtn && drawerCloseBtn.dataset.bound !== 'true') {
+        drawerCloseBtn.dataset.bound = 'true';
+        drawerCloseBtn.addEventListener('click', closeDrawer);
+    }
+
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    if (drawerBackdrop && drawerBackdrop.dataset.bound !== 'true') {
+        drawerBackdrop.dataset.bound = 'true';
+        drawerBackdrop.addEventListener('click', closeDrawer);
+    }
 }
+
+function openDrawer(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const drawer = document.getElementById('navDrawer');
+    const backdrop = document.getElementById('drawerBackdrop');
+    if (drawer) drawer.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+}
+
+function closeDrawer(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const drawer = document.getElementById('navDrawer');
+    const backdrop = document.getElementById('drawerBackdrop');
+    if (drawer) drawer.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+}
+
+function toggleDrawer(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const drawer = document.getElementById('navDrawer');
+    if (drawer && drawer.classList.contains('open')) {
+        closeDrawer(e);
+    } else {
+        openDrawer(e);
+    }
+}
+
+window.openDrawer = openDrawer;
+window.closeDrawer = closeDrawer;
+window.toggleDrawer = toggleDrawer;
+window.openNavDrawer = openDrawer;
+window.closeNavDrawer = closeDrawer;
+window.toggleNavDrawer = toggleDrawer;
 
 function bindAdminReviewForm(form) {
     if (!form || form.dataset.bound === 'true') {
@@ -858,25 +1570,154 @@ function initSeekerJobFilters() {
 }
 
 function initNotifications() {
-    const wrap = document.querySelector('.notif-wrap');
-    if (!wrap) {
+    const wraps = document.querySelectorAll('.notif-wrap');
+    if (!wraps.length) {
         return;
     }
-    const button = wrap.querySelector('[data-notif-toggle]');
-    const panel = wrap.querySelector('.notif-panel');
-    if (!button || !panel) {
-        return;
-    }
-    button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        panel.hidden = !panel.hidden;
-        if (!panel.hidden) {
-            fetch('notif-read.php').catch(() => {});
-            button.classList.remove('has-unread');
+    wraps.forEach((wrap) => {
+        const button = wrap.querySelector('[data-notif-toggle], .notif');
+        const panel = wrap.querySelector('.notif-panel');
+        if (!button || !panel) {
+            return;
+        }
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const isCurrentlyHidden = panel.hidden;
+            // Close other open panels first
+            document.querySelectorAll('.notif-panel').forEach(p => { if (p !== panel) p.hidden = true; });
+            panel.hidden = !isCurrentlyHidden;
+            if (!panel.hidden) {
+                fetch('notif-read.php').catch(() => {});
+                button.classList.remove('has-unread');
+            }
+        });
+        panel.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+    });
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.notif-panel').forEach(p => p.hidden = true);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.notif-panel').forEach(p => p.hidden = true);
         }
     });
-    document.addEventListener('click', () => {
-        panel.hidden = true;
+}
+
+function initPengajuanVerifikasiChart() {
+    const wrap = document.getElementById('chartCanvasWrap');
+    const svg = document.getElementById('pvChartSvg');
+    const tooltip = document.getElementById('pvChartTooltip');
+    const hoverLine = document.getElementById('pvHoverLine');
+    const hoverDot = document.getElementById('pvHoverDot');
+    if (!wrap || !svg || !tooltip) {
+        return;
+    }
+
+    const monthlyData = [
+        { month: 'Apr', x: 46, dotY: 167, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 2, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'May', x: 154, dotY: 188, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 0, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Jun', x: 262, dotY: 178, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 1, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Jul', x: 370, dotY: 178, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 0, Ditangguhkan: 0, Ditutup: 1, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Aug', x: 478, dotY: 114, Draft: 0, Menunggu: 0, Revisi: 0, Ditolak: 0, Terjadwal: 0, Tayang: 1, Ditangguhkan: 0, Ditutup: 5, Kedaluwarsa: 0, Diblokir: 0 },
+        { month: 'Sep', x: 586, dotY: 20, Draft: 0, Menunggu: 1, Revisi: 2, Ditolak: 1, Terjadwal: 0, Tayang: 11, Ditangguhkan: 0, Ditutup: 139, Kedaluwarsa: 7, Diblokir: 3 }
+    ];
+
+    const xTicks = svg.querySelectorAll('.pv-x-tick');
+
+    function showTooltipForIndex(index) {
+        if (index < 0 || index >= monthlyData.length) return;
+        const d = monthlyData[index];
+
+        document.getElementById('pvTtMonth').textContent = d.month;
+        document.getElementById('pvTtDraft').textContent = d.Draft;
+        document.getElementById('pvTtMenunggu').textContent = d.Menunggu;
+        document.getElementById('pvTtRevisi').textContent = d.Revisi;
+        document.getElementById('pvTtDitolak').textContent = d.Ditolak;
+        document.getElementById('pvTtTerjadwal').textContent = d.Terjadwal;
+        document.getElementById('pvTtTayang').textContent = d.Tayang;
+        document.getElementById('pvTtDitangguhkan').textContent = d.Ditangguhkan;
+        document.getElementById('pvTtDitutup').textContent = d.Ditutup;
+        document.getElementById('pvTtKedaluwarsa').textContent = d.Kedaluwarsa;
+        document.getElementById('pvTtDiblokir').textContent = d.Diblokir;
+
+        // Position guideline & dot
+        if (hoverLine) {
+            hoverLine.setAttribute('x1', d.x);
+            hoverLine.setAttribute('x2', d.x);
+            hoverLine.setAttribute('opacity', '1');
+        }
+        if (hoverDot) {
+            hoverDot.setAttribute('cx', d.x);
+            hoverDot.setAttribute('cy', d.dotY);
+            hoverDot.setAttribute('opacity', '1');
+        }
+
+        // Highlight x-axis tick
+        xTicks.forEach((tick, i) => {
+            if (i === index) {
+                tick.classList.add('active');
+                tick.setAttribute('font-weight', '700');
+            } else {
+                tick.classList.remove('active');
+                tick.removeAttribute('font-weight');
+            }
+        });
+
+        // Position tooltip relative to wrap
+        const wrapRect = wrap.getBoundingClientRect();
+        let posX = (d.x / 620) * wrapRect.width;
+        let posY = 10;
+
+        if (posX > wrapRect.width - 200) {
+            tooltip.style.left = 'auto';
+            tooltip.style.right = Math.max(10, wrapRect.width - posX + 15) + 'px';
+        } else {
+            tooltip.style.left = Math.max(10, posX + 15) + 'px';
+            tooltip.style.right = 'auto';
+        }
+        tooltip.style.top = posY + 'px';
+        tooltip.style.display = 'block';
+    }
+
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+        if (hoverLine) hoverLine.setAttribute('opacity', '0');
+        if (hoverDot) hoverDot.setAttribute('opacity', '0');
+        xTicks.forEach(tick => {
+            tick.classList.remove('active');
+            tick.removeAttribute('font-weight');
+        });
+    }
+
+    wrap.addEventListener('mousemove', (e) => {
+        const wrapRect = wrap.getBoundingClientRect();
+        const relX = (e.clientX - wrapRect.left) / wrapRect.width;
+        const svgX = relX * 620;
+
+        let closestIndex = 0;
+        let minDiff = Infinity;
+        monthlyData.forEach((d, idx) => {
+            const diff = Math.abs(d.x - svgX);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestIndex = idx;
+            }
+        });
+
+        showTooltipForIndex(closestIndex);
+    });
+
+    wrap.addEventListener('mouseleave', () => {
+        hideTooltip();
+    });
+
+    xTicks.forEach((tick, idx) => {
+        tick.addEventListener('mouseenter', () => {
+            showTooltipForIndex(idx);
+        });
     });
 }
 
@@ -884,20 +1725,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     bindPageSwitchers();
     bindModalsAndDrawers();
-    bindCascadingLocation();
+    if (typeof bindCascadingLocation === 'function') {
+        bindCascadingLocation();
+    }
 
-<<<<<<< HEAD
     const defaultPage = document.body.dataset.defaultPage || 'dashboard';
     initHashRouting(defaultPage);
-=======
-    bindModal('[data-open-modal="job-create"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
-    bindModal('[data-open-modal="job-create-mobile"]', '[data-close-modal="job-create"]', '[data-modal="job-create"]');
     initJobCreateWizard();
     initAdminJobReview();
     initJobReviewDrawer();
     initSeekerJobFilters();
     initSidebarToggle();
+    initPopovers();
     initNotifications();
+    initPengajuanVerifikasiChart();
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
         '&': '&amp;',
         '<': '&lt;',
@@ -971,12 +1812,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.querySelectorAll('[data-close-modal="applicant-profile"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            document.querySelector('[data-modal="applicant-profile"]')?.classList.remove('open');
-        });
-    });
-
     const expandApplicants = document.querySelector('[data-expand-applicants]');
     if (expandApplicants) {
         expandApplicants.addEventListener('click', () => {
@@ -987,9 +1822,678 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (document.body.dataset.useAppJs === 'true' && document.body.dataset.defaultPage) {
-        initHashRouting(document.body.dataset.defaultPage);
-    }
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
 });
 
+// Schedule View Switcher (Bulanan, Mingguan, Harian)
+let currentScheduleView = 'bulanan';
+let currentSchedulePeriodOffset = 0;
+
+function setScheduleView(mode) {
+    currentScheduleView = mode;
+    
+    // Update pill buttons active state
+    document.querySelectorAll('.sched-pill[data-sched-pill]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.schedPill === mode);
+    });
+
+    // Toggle panes
+    const paneBulanan = document.getElementById('schedViewBulanan');
+    const paneMingguan = document.getElementById('schedViewMingguan');
+    const paneHarian = document.getElementById('schedViewHarian');
+
+    if (paneBulanan) paneBulanan.style.display = (mode === 'bulanan') ? 'block' : 'none';
+    if (paneMingguan) paneMingguan.style.display = (mode === 'mingguan') ? 'block' : 'none';
+    if (paneHarian) paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
+
+    updateSchedulePeriodTitle();
+}
+
+function updateSchedulePeriodTitle() {
+    const titleEl = document.getElementById('schedPeriodTitle');
+    if (!titleEl) return;
+
+    if (currentScheduleView === 'bulanan') {
+        titleEl.textContent = 'September 2026';
+    } else if (currentScheduleView === 'mingguan') {
+        titleEl.textContent = '14 Sep – 20 Sep 2026';
+    } else if (currentScheduleView === 'harian') {
+        titleEl.textContent = 'Senin, 14 September 2026';
+    }
+}
+
+function navigateSchedule(delta) {
+    currentSchedulePeriodOffset += delta;
+    const titleEl = document.getElementById('schedPeriodTitle');
+    if (!titleEl) return;
+    
+    if (currentScheduleView === 'bulanan') {
+        const months = ['Agustus 2026', 'September 2026', 'Oktober 2026', 'November 2026'];
+        const baseIdx = 1;
+        const targetIdx = Math.max(0, Math.min(months.length - 1, baseIdx + currentSchedulePeriodOffset));
+        titleEl.textContent = months[targetIdx];
+    } else if (currentScheduleView === 'mingguan') {
+        titleEl.textContent = currentSchedulePeriodOffset === 0 ? '14 Sep – 20 Sep 2026' : (currentSchedulePeriodOffset > 0 ? '21 Sep – 27 Sep 2026' : '7 Sep – 13 Sep 2026');
+    } else if (currentScheduleView === 'harian') {
+        titleEl.textContent = currentSchedulePeriodOffset === 0 ? 'Senin, 14 September 2026' : (currentSchedulePeriodOffset > 0 ? 'Selasa, 15 September 2026' : 'Minggu, 13 September 2026');
+    }
+}
+
+function resetScheduleToday() {
+    currentSchedulePeriodOffset = 0;
+    updateSchedulePeriodTitle();
+}
+
+function toggleScheduleFilter(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('schedFilterPopover');
+    const btn = document.getElementById('schedFilterBtn');
+    if (!popover) return;
+    
+    const isOpen = popover.classList.contains('open');
+    popover.classList.toggle('open', !isOpen);
+    if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+function toggleFilterOption(itemEl, type) {
+    if (!itemEl) return;
+    itemEl.classList.toggle('active');
+}
+
+// Close filter popover on clicking outside
+document.addEventListener('click', (e) => {
+    const wrap = document.querySelector('.sched-filter-wrap');
+    const popover = document.getElementById('schedFilterPopover');
+    const btn = document.getElementById('schedFilterBtn');
+    if (popover && wrap && !wrap.contains(e.target)) {
+        popover.classList.remove('open');
+        if (btn) btn.classList.remove('active');
+    }
+});
+
+// Sidebar Rail Popovers (Tema Tampilan & Akun Pengguna)
+function toggleThemeMenu(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('railThemePopover');
+    const accountPopover = document.getElementById('railAccountPopover');
+    if (accountPopover) accountPopover.classList.remove('open');
+    if (popover) {
+        popover.classList.toggle('open');
+    }
+}
+
+function toggleAccountMenu(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('railAccountPopover');
+    const themePopover = document.getElementById('railThemePopover');
+    if (themePopover) themePopover.classList.remove('open');
+    if (popover) {
+        popover.classList.toggle('open');
+    }
+}
+
+function closeRailPopovers() {
+    const themePopover = document.getElementById('railThemePopover');
+    const accountPopover = document.getElementById('railAccountPopover');
+    if (themePopover) themePopover.classList.remove('open');
+    if (accountPopover) accountPopover.classList.remove('open');
+}
+
+function selectThemeOption(theme) {
+    setTheme(theme);
+    closeRailPopovers();
+}
+
+function initPopovers() {
+    const themeBtn = document.getElementById('themeToggleBtn');
+    if (themeBtn && themeBtn.dataset.bound !== 'true') {
+        themeBtn.dataset.bound = 'true';
+        themeBtn.addEventListener('click', toggleThemeMenu);
+    }
+
+    const avatarBtn = document.getElementById('sidebarAvatar');
+    if (avatarBtn && avatarBtn.dataset.bound !== 'true') {
+        avatarBtn.dataset.bound = 'true';
+        avatarBtn.addEventListener('click', toggleAccountMenu);
+    }
+
+    document.querySelectorAll('[data-theme-val]').forEach(btn => {
+        if (btn.dataset.bound !== 'true') {
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', () => {
+                selectThemeOption(btn.dataset.themeVal);
+            });
+        }
+    });
+
+    document.querySelectorAll('.sched-pill[data-sched-pill]').forEach(btn => {
+        if (btn.dataset.bound !== 'true') {
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', () => {
+                setScheduleView(btn.dataset.schedPill);
+            });
+        }
+    });
+}
+
+// Global click outside listener for rail popovers & filter popover
+document.addEventListener('click', (e) => {
+    const wrapTheme = document.getElementById('railThemePopover');
+    const btnTheme = document.getElementById('themeToggleBtn');
+    const wrapAccount = document.getElementById('railAccountPopover');
+    const btnAccount = document.getElementById('sidebarAvatar');
+
+    if (wrapTheme && wrapTheme.classList.contains('open') && !wrapTheme.contains(e.target) && !btnTheme?.contains(e.target)) {
+        wrapTheme.classList.remove('open');
+    }
+    if (wrapAccount && wrapAccount.classList.contains('open') && !wrapAccount.contains(e.target) && !btnAccount?.contains(e.target)) {
+        wrapAccount.classList.remove('open');
+    }
+});
+
+// Interactive date selection for schedule month & week views
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.month-day-cell:not(.other-month)').forEach(cell => {
+        cell.addEventListener('click', () => {
+            document.querySelectorAll('.month-day-cell .day-num').forEach(d => d.classList.remove('today-badge'));
+            const numEl = cell.querySelector('.day-num');
+            if (numEl) numEl.classList.add('today-badge');
+        });
+    });
+
+    document.querySelectorAll('.week-head-cell').forEach(cell => {
+        cell.addEventListener('click', () => {
+            document.querySelectorAll('.week-head-cell .week-head-num').forEach(d => d.classList.remove('today-badge'));
+            const numEl = cell.querySelector('.week-head-num');
+            if (numEl) numEl.classList.add('today-badge');
+        });
+    });
+});
+
+window.setScheduleView = setScheduleView;
+window.navigateSchedule = navigateSchedule;
+window.resetScheduleToday = resetScheduleToday;
+
+/* ─── FORM PROFIL PEMBERI KERJA INDIVIDU & HIERARCHICAL LOCATION SELECTOR ─── */
+
+const PKI_FORM_LOCATIONS = {
+    "Aceh": {
+        "Kota Banda Aceh": {
+            "Kuta Alam": ["Beurawe", "Bandar Baru", "Kota Baru", "Keuramat", "Lambaro Skep"],
+            "Baiturrahman": ["Neusu Aceh", "Peunitia", "Ateuk Pabuat", "Sukaramai"],
+            "Banda Raya": ["Lamlagang", "Geuceu Komplek", "Geuceu Ineum"],
+            "Jaya Baru": ["Punge Blang Cut", "Lampoh Daya", "Empee Trieng"]
+        },
+        "Kota Sabang": {
+            "Sukakarya": ["Aneuk Laot", "Iboih", "Krueng Raya"],
+            "Sukajaya": ["Anoi Itam", "Balohan", "Cot Abeuk"]
+        },
+        "Kab. Aceh Besar": {
+            "Ingin Jaya": ["Lambaro", "Aneyuk Batee", "Lubok Sukon"],
+            "Darul Imarah": ["Lampeuneurut", "Punieu", "Gue Gajah"]
+        },
+        "Kab. Pidie": {
+            "Sigli": ["Blang Paseh", "Kuala Pidie", "Kramat Luar"]
+        }
+    },
+    "DKI Jakarta": {
+        "Kota Jakarta Selatan": {
+            "Kebayoran Baru": ["Senayan", "Rawa Barat", "Melawai", "Gandaria Utara"],
+            "Cilandak": ["Cilandak Barat", "Pondok Labu", "Lebak Bulus"]
+        },
+        "Kota Jakarta Pusat": {
+            "Gambir": ["Gambir", "Cideng", "Petojo Selatan"],
+            "Menteng": ["Menteng", "Cikini", "Gondangdia"]
+        }
+    },
+    "Jawa Barat": {
+        "Kota Bekasi": {
+            "Bekasi Selatan": ["Pekayon Jaya", "Kayuringin Jaya", "Jatibening"],
+            "Bekasi Barat": ["Kranji", "Kota Baru", "Bintara"]
+        },
+        "Kota Bandung": {
+            "Coblong": ["Dago", "Lebak Siliwangi", "Sadang Serang"],
+            "Cicendo": ["Pasirkaliki", "Arjuna", "Susuinan"]
+        }
+    },
+    "Jawa Tengah": {
+        "Kota Semarang": {
+            "Semarang Selatan": ["Peterongan", "Randusari", "Pleburan"],
+            "Gajahmungkur": ["Bendan Ngisor", "Petompon"]
+        }
+    },
+    "Jawa Timur": {
+        "Kota Surabaya": {
+            "Tegalsari": ["Dr. Soetomo", "Kedungdoro", "Wonorejo"],
+            "Gubeng": ["Airlangga", "Mojo", "Kertajaya"]
+        }
+    }
+};
+
+let currentLocLevel = 1; // 1: Prov, 2: City, 3: District, 4: Village
+let selProv = '';
+let selCity = '';
+let selDistrict = '';
+let selVillage = '';
+let pkiMapInstance = null;
+
+function initHierarchicalLocationSelector() {
+    const locInput = document.getElementById('hierarchicalLocationInput');
+    const locDropdown = document.getElementById('hierarchicalLocDropdown');
+    const locDisplay = document.getElementById('locDisplayValue');
+    const locCaret = document.getElementById('locCaret');
+    const breadcrumbs = document.getElementById('locBreadcrumbs');
+    const optionsList = document.getElementById('locOptionsList');
+
+    if (!locInput || !locDropdown) return;
+
+    // Load saved values from hidden inputs
+    selProv = document.getElementById('hiddenProvince')?.value || '';
+    selCity = document.getElementById('hiddenCity')?.value || '';
+    selDistrict = document.getElementById('hiddenDistrict')?.value || '';
+    selVillage = document.getElementById('hiddenVillage')?.value || '';
+
+    // Click trigger field
+    locInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = locDropdown.style.display === 'block';
+        if (isOpen) {
+            closeLocDropdown();
+        } else {
+            openLocDropdown();
+        }
+    });
+
+    // Prevent closing when clicking inside dropdown
+    locDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!locInput.contains(e.target) && !locDropdown.contains(e.target)) {
+            closeLocDropdown();
+        }
+    });
+
+    function openLocDropdown() {
+        locDropdown.style.display = 'block';
+        if (locCaret) {
+            locCaret.classList.remove('fa-chevron-down');
+            locCaret.classList.add('fa-chevron-up');
+        }
+
+        // Check behavior requirement:
+        // If already fully selected, open directly at Level 4 (Kelurahan / Desa)
+        if (selProv && selCity && selDistrict && selVillage && PKI_FORM_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
+            currentLocLevel = 4;
+        } else if (selProv && selCity && selDistrict && PKI_FORM_LOCATIONS[selProv]?.[selCity]?.[selDistrict]) {
+            currentLocLevel = 4;
+        } else if (selProv && selCity && PKI_FORM_LOCATIONS[selProv]?.[selCity]) {
+            currentLocLevel = 3;
+        } else if (selProv && PKI_FORM_LOCATIONS[selProv]) {
+            currentLocLevel = 2;
+        } else {
+            currentLocLevel = 1;
+        }
+
+        renderLocationView();
+    }
+
+    function closeLocDropdown() {
+        locDropdown.style.display = 'none';
+        if (locCaret) {
+            locCaret.classList.remove('fa-chevron-up');
+            locCaret.classList.add('fa-chevron-down');
+        }
+    }
+
+    function renderLocationView() {
+        renderBreadcrumbs();
+        renderOptions();
+    }
+
+    function renderBreadcrumbs() {
+        if (!breadcrumbs) return;
+        let html = '';
+
+        if (currentLocLevel === 1) {
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(1)">Pilih Provinsi</span>`;
+        } else if (currentLocLevel === 2) {
+            html += `<span class="crumb-btn" onclick="switchLocLevel(1)">${selProv}</span> › `;
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(2)">Pilih Kabupaten / Kota</span>`;
+        } else if (currentLocLevel === 3) {
+            html += `<span class="crumb-btn" onclick="switchLocLevel(1)">${selProv}</span> › `;
+            html += `<span class="crumb-btn" onclick="switchLocLevel(2)">${selCity}</span> › `;
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(3)">Pilih Kecamatan</span>`;
+        } else if (currentLocLevel === 4) {
+            html += `<span class="crumb-btn" onclick="switchLocLevel(1)">${selProv}</span> › `;
+            html += `<span class="crumb-btn" onclick="switchLocLevel(2)">${selCity}</span> › `;
+            html += `<span class="crumb-btn" onclick="switchLocLevel(3)">${selDistrict}</span> › `;
+            html += `<span class="crumb-btn active" onclick="switchLocLevel(4)">Pilih Kelurahan / Desa</span>`;
+        }
+        breadcrumbs.innerHTML = html;
+    }
+
+    function renderOptions() {
+        if (!optionsList) return;
+        let html = '';
+
+        if (currentLocLevel === 1) {
+            const provinces = Object.keys(PKI_FORM_LOCATIONS);
+            provinces.forEach(prov => {
+                const isSel = prov === selProv;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectProv('${prov}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${prov}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        } else if (currentLocLevel === 2) {
+            const cities = Object.keys(PKI_FORM_LOCATIONS[selProv] || {});
+            cities.forEach(city => {
+                const isSel = city === selCity;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectCity('${city}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${city}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        } else if (currentLocLevel === 3) {
+            const districts = Object.keys(PKI_FORM_LOCATIONS[selProv]?.[selCity] || {});
+            districts.forEach(dist => {
+                const isSel = dist === selDistrict;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectDistrict('${dist}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${dist}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        } else if (currentLocLevel === 4) {
+            const villages = PKI_FORM_LOCATIONS[selProv]?.[selCity]?.[selDistrict] || [];
+            villages.forEach(vill => {
+                const isSel = vill === selVillage;
+                html += `
+                    <div class="loc-opt-row ${isSel ? 'selected' : ''}" onclick="selectVillage('${vill}')">
+                        <div style="display:flex; align-items:center;">
+                            <span class="radio-bullet"></span>
+                            <span>${vill}</span>
+                        </div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>
+                `;
+            });
+        }
+        optionsList.innerHTML = html;
+    }
+
+    window.switchLocLevel = function(lvl) {
+        currentLocLevel = lvl;
+        renderLocationView();
+    };
+
+    window.selectProv = function(prov) {
+        if (selProv !== prov) {
+            selProv = prov;
+            selCity = '';
+            selDistrict = '';
+            selVillage = '';
+            updateHiddenFields();
+        }
+        currentLocLevel = 2;
+        renderLocationView();
+    };
+
+    window.selectCity = function(city) {
+        if (selCity !== city) {
+            selCity = city;
+            selDistrict = '';
+            selVillage = '';
+            updateHiddenFields();
+        }
+        currentLocLevel = 3;
+        renderLocationView();
+    };
+
+    window.selectDistrict = function(dist) {
+        if (selDistrict !== dist) {
+            selDistrict = dist;
+            selVillage = '';
+            updateHiddenFields();
+        }
+        currentLocLevel = 4;
+        renderLocationView();
+    };
+
+    window.selectVillage = function(vill) {
+        selVillage = vill;
+        updateHiddenFields();
+        updateDisplayField();
+        closeLocDropdown();
+        autoGeocodeLocation();
+    };
+
+    function updateHiddenFields() {
+        document.getElementById('hiddenProvince').value = selProv;
+        document.getElementById('hiddenCity').value = selCity;
+        document.getElementById('hiddenDistrict').value = selDistrict;
+        document.getElementById('hiddenVillage').value = selVillage;
+        document.getElementById('hiddenDomicileCityId').value = selCity;
+    }
+
+    function updateDisplayField() {
+        if (selVillage && selDistrict && selCity && selProv) {
+            locDisplay.textContent = `${selVillage}, ${selDistrict}, ${selCity}, ${selProv}`;
+            locDisplay.classList.remove('placeholder');
+        } else {
+            locDisplay.textContent = 'Pilih lokasi domisili';
+            locDisplay.classList.add('placeholder');
+        }
+    }
+}
+
+// Global Document Upload helper
+window.removeUploadedDoc = function(type) {
+    if (type === 'permit') {
+        const container = document.getElementById('docPermitContainer');
+        if (container) {
+            container.innerHTML = `<input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;" required>`;
+        }
+    } else if (type === 'photo') {
+        const container = document.getElementById('docPhotoContainer');
+        if (container) {
+            container.innerHTML = `<input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">`;
+        }
+    }
+};
+
+function initEmployerProfileForm() {
+    // NIK validation (16 digits only)
+    const inputNik = document.getElementById('inputNik');
+    const nikErr = document.getElementById('nikErrorMsg');
+
+    if (inputNik) {
+        inputNik.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 16);
+            if (this.value.length === 16) {
+                if (nikErr) nikErr.style.display = 'none';
+            }
+        });
+        inputNik.addEventListener('blur', function() {
+            if (this.value.length > 0 && this.value.length !== 16) {
+                if (nikErr) nikErr.style.display = 'block';
+            } else {
+                if (nikErr) nikErr.style.display = 'none';
+            }
+        });
+    }
+
+    // SIAPKerja checkbox notices
+    const cbSameLoc = document.getElementById('cbSameLocation');
+    const cbSameAddr = document.getElementById('cbSameAddress');
+    const noticeLoc = document.getElementById('siapkerjaLocNotice');
+    const noticeAddr = document.getElementById('siapkerjaAddrNotice');
+
+    if (cbSameLoc && noticeLoc) {
+        cbSameLoc.addEventListener('change', function() {
+            noticeLoc.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    if (cbSameAddr && noticeAddr) {
+        cbSameAddr.addEventListener('change', function() {
+            noticeAddr.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    // Address input triggers geocoding map
+    const inputAddress = document.getElementById('inputAddress');
+    if (inputAddress) {
+        inputAddress.addEventListener('input', function() {
+            autoGeocodeLocation();
+        });
+    }
+
+    // Form submit validation
+    const form = document.getElementById('formEmployerProfile');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (inputNik && inputNik.value.length !== 16) {
+                e.preventDefault();
+                if (nikErr) nikErr.style.display = 'block';
+                inputNik.focus();
+                alert('NIK harus terdiri dari 16 digit angka.');
+                return false;
+            }
+            const cbConsent = document.getElementById('cbUserConsent');
+            if (cbConsent && !cbConsent.checked) {
+                e.preventDefault();
+                alert('Anda harus menyetujui pernyataan persetujuan sebelum mengajukan verifikasi.');
+                return false;
+            }
+        });
+    }
+
+    // Initial map check
+    autoGeocodeLocation();
+}
+
+const CITY_COORDINATES = {
+    "Kota Banda Aceh": [5.5483, 95.3238],
+    "Kota Sabang": [5.8944, 95.3242],
+    "Kab. Aceh Besar": [5.4628, 95.4216],
+    "Kab. Pidie": [5.3831, 95.9602],
+    "Kota Jakarta Selatan": [-6.2615, 106.8106],
+    "Kota Jakarta Pusat": [-6.1805, 106.8284],
+    "Kota Bekasi": [-6.2383, 106.9756],
+    "Kota Bandung": [-6.9175, 107.6191],
+    "Kota Semarang": [-6.9667, 110.4167],
+    "Kota Surabaya": [-7.2575, 112.7521]
+};
+
+let pkiMarkerInstance = null;
+
+function autoGeocodeLocation() {
+    const hiddenVillage = document.getElementById('hiddenVillage')?.value;
+    const hiddenCity = document.getElementById('hiddenCity')?.value;
+    const hiddenProv = document.getElementById('hiddenProvince')?.value;
+    const address = document.getElementById('inputAddress')?.value?.trim();
+
+    const placeholder = document.getElementById('mapPlaceholder');
+    const leafletBox = document.getElementById('leafletMap');
+    const openLinkWrap = document.getElementById('mapOpenLinkWrapper');
+    const btnOpenMap = document.getElementById('btnOpenMap');
+
+    if (!placeholder || !leafletBox) return;
+
+    // Peta HANYA dimuat jika Lokasi Domisili DAN Alamat Lengkap terisi!
+    if ((hiddenVillage || hiddenCity) && address && address.length > 3) {
+        placeholder.style.display = 'none';
+        leafletBox.style.display = 'block';
+        if (openLinkWrap) openLinkWrap.style.display = 'block';
+
+        const fullQuery = `${address}, ${hiddenVillage || ''}, ${hiddenCity || ''}, ${hiddenProv || ''}, Indonesia`;
+        if (btnOpenMap) {
+            btnOpenMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullQuery)}`;
+        }
+
+        const targetCoords = CITY_COORDINATES[hiddenCity] || [-6.2088, 106.8456];
+
+        const inputLat = document.getElementById('inputLat');
+        const inputLng = document.getElementById('inputLng');
+        if (inputLat) inputLat.value = targetCoords[0];
+        if (inputLng) inputLng.value = targetCoords[1];
+
+        // Initialize or update Leaflet map
+        if (window.L && document.getElementById('leafletMap')) {
+            if (!pkiMapInstance) {
+                pkiMapInstance = L.map('leafletMap', {
+                    dragging: true,
+                    zoomControl: true,
+                    scrollWheelZoom: false
+                }).setView(targetCoords, 14);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(pkiMapInstance);
+
+                pkiMarkerInstance = L.marker(targetCoords, { interactive: false }).addTo(pkiMapInstance);
+            } else {
+                pkiMapInstance.setView(targetCoords, 14);
+                if (pkiMarkerInstance) {
+                    pkiMarkerInstance.setLatLng(targetCoords);
+                }
+            }
+            setTimeout(() => {
+                pkiMapInstance.invalidateSize();
+            }, 200);
+        } else {
+            leafletBox.innerHTML = `
+                <div style="height:100%; width:100%; background:#e2e8f0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px;">
+                    <div style="font-size:28px; color:#ef4444; margin-bottom:4px;"><i class="fa-solid fa-location-dot"></i></div>
+                    <div style="font-weight:700; color:#0f172a; font-size:13px;">${e(address)}</div>
+                    <div style="font-size:11px; color:#475569; margin-top:2px;">${e(hiddenVillage || '')} ${e(hiddenCity || '')}, ${e(hiddenProv || '')}</div>
+                </div>
+            `;
+        }
+    } else {
+        placeholder.style.display = 'flex';
+        leafletBox.style.display = 'none';
+        if (openLinkWrap) openLinkWrap.style.display = 'none';
+    }
+}
+
+// Global helper to dismiss activation notification
+window.dismissActivationNotif = function() {
+    const banner = document.getElementById('notifAktivasiBanner');
+    if (banner) {
+        banner.style.display = 'none';
+        localStorage.setItem('hide_notif_aktivasi_pki', '1');
+    }
+};
+
+// Helper escape HTML string function for app.js
+function e(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initHierarchicalLocationSelector();
+    initEmployerProfileForm();
+    if (localStorage.getItem('hide_notif_aktivasi_pki') === '1') {
+        const banner = document.getElementById('notifAktivasiBanner');
+        if (banner) banner.style.display = 'none';
+    }
+});

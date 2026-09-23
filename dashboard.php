@@ -1,36 +1,203 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-//test
-
 $user = require_role('employer');
-
-// Handle context switch request
-if (isset($_GET['switch_context']) && $_GET['switch_context'] === 'seeker') {
-    set_active_context('seeker');
-    redirect('seeker.php');
-}
-
+//test
 // Fetch Employer Profile
 $profileStatement = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
 $profileStatement->execute([$user['id']]);
 $profile = $profileStatement->fetch() ?: [];
+
+// Fetch Seeker Profile (SIAPkerja data)
+$seekerStatement = db()->prepare('SELECT * FROM seeker_profiles WHERE user_id = ? LIMIT 1');
+$seekerStatement->execute([$user['id']]);
+$seekerProfile = $seekerStatement->fetch() ?: [];
 
 // Fetch Jobs
 $jobsStatement = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER BY id DESC');
 $jobsStatement->execute([$user['id']]);
 $jobs = $jobsStatement->fetchAll() ?: [];
 
-// Status calculation logic according to FSD Final
+// Helper Indonesian date formatter
+if (!function_exists('format_indo_date')) {
+    function format_indo_date($dt, $format = 'long') {
+        if (!$dt) return '-';
+        if (!($dt instanceof DateTime)) {
+            try {
+                $dt = new DateTime($dt);
+            } catch (Exception $e) {
+                return '-';
+            }
+        }
+        $day = $dt->format('j');
+        $monthNum = (int)$dt->format('n');
+        $year = $dt->format('Y');
+
+        $monthsLong = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        $monthsShort = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        if ($format === 'short') {
+            return $day . ' ' . ($monthsShort[$monthNum] ?? '') . ' ' . $year;
+        } elseif ($format === 'day_month') {
+            return $day . ' ' . ($monthsShort[$monthNum] ?? '');
+        }
+        return $day . ' ' . ($monthsLong[$monthNum] ?? '') . ' ' . $year;
+    }
+}
+
+// Status calculation logic according to FSD Final & Step 4/5 specification
 $verificationStatus = $profile['verification_status'] ?? 'NOT_SUBMITTED';
 if (empty($profile)) {
     $verificationStatus = 'NOT_SUBMITTED';
 } elseif ($verificationStatus === 'NOT_SUBMITTED' && !empty($profile['owner_name'])) {
-    $verificationStatus = $profile['verified'] ? 'APPROVED' : 'PENDING';
+    $verificationStatus = !empty($profile['verified']) ? 'APPROVED' : 'PENDING';
 }
 
-<<<<<<< HEAD
-=======
+$activeUntilRaw = $profile['active_until'] ?? null;
+$now = new DateTime();
+$activeUntil = $activeUntilRaw ? new DateTime($activeUntilRaw) : null;
+
+$daysRemaining = 0;
+$isExpired = false;
+$isTransitionPeriod = false;
+$isFullDisable = false;
+
+if (in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED', 'FULL_DISABLED'], true)) {
+    if ($activeUntil) {
+        if ($now <= $activeUntil) {
+            $diff = $now->diff($activeUntil);
+            $daysRemaining = (int)$diff->days;
+            $verificationStatus = 'ACTIVE_VERIFIED';
+            $isExpired = false;
+        } else {
+            $nowTs = $now->getTimestamp();
+            $actUntilTs = $activeUntil->getTimestamp();
+            $diffSec = $nowTs - $actUntilTs;
+            $isExpired = true;
+            $daysPast = (int)floor($diffSec / 86400);
+            $daysRemaining = -$daysPast;
+
+            // 7 days transition period (exact second math)
+            if ($diffSec <= (7 * 86400)) {
+                $verificationStatus = 'TRANSITION_LIMITED';
+                $isTransitionPeriod = true;
+            } else {
+                $verificationStatus = 'FULL_DISABLED';
+                $isFullDisable = true;
+            }
+        }
+    } else {
+        $verificationStatus = 'ACTIVE_VERIFIED';
+    }
+}
+
+// Lifecycle date calculation & formatting
+$startDate = null;
+if (!empty($profile['last_activated_at'])) {
+    try {
+        $startDate = new DateTime($profile['last_activated_at']);
+    } catch (Exception $e) {
+        $startDate = null;
+    }
+}
+
+$hasValidDates = ($startDate !== null && $activeUntil !== null);
+$totalDays = null;
+$elapsedDays = null;
+$progressPct = 0;
+$isH7 = false;
+$isLastDay = false;
+
+if ($hasValidDates) {
+    $totalDays = max(1, (int)$startDate->diff($activeUntil)->days);
+
+    if ($now <= $activeUntil) {
+        $elapsedSec = max(0, $now->getTimestamp() - $startDate->getTimestamp());
+        $elapsedDays = max(1, min($totalDays, (int)floor($elapsedSec / 86400) + 1));
+
+        $diffRem = $now->diff($activeUntil);
+        $daysRemaining = max(0, (int)$diffRem->days);
+        if ($now->getTimestamp() + 86400 >= $activeUntil->getTimestamp() && $daysRemaining <= 0) {
+            $daysRemaining = 0;
+            $isLastDay = true;
+            $elapsedDays = $totalDays;
+        } elseif ($daysRemaining <= 7) {
+            $isH7 = true;
+        }
+
+        $progressPct = max(0, min(100, (int)round(($elapsedDays / $totalDays) * 100)));
+    } else {
+        $elapsedDays = $totalDays;
+        $progressPct = 100;
+        $daysRemaining = 0;
+    }
+} else {
+    $daysRemaining = null;
+}
+
+// Transition calculations (Masa Transisi maksimal 7 hari)
+$transElapsed = 1;
+$transRemain = 7;
+$transProgressPct = 0;
+$transEndDate = null;
+if ($activeUntil) {
+    $transEndDate = (clone $activeUntil)->modify('+7 days');
+    if ($now > $activeUntil) {
+        $secInTrans = max(0, $now->getTimestamp() - $activeUntil->getTimestamp());
+        $transElapsed = max(1, min(7, (int)floor($secInTrans / 86400) + 1));
+        $transRemain = max(0, 7 - (int)floor($secInTrans / 86400));
+        $transProgressPct = max(0, min(100, (int)round(($transElapsed / 7) * 100)));
+    }
+}
+
+$lastActivatedLong = format_indo_date($startDate, 'long');
+$lastActivatedFormatted = format_indo_date($startDate, 'short');
+$lastActivatedShort = format_indo_date($startDate, 'day_month');
+$activeUntilLong = format_indo_date($activeUntil, 'long');
+$activeUntilFormatted = format_indo_date($activeUntil, 'short');
+$activeUntilShort = format_indo_date($activeUntil, 'day_month');
+$transEndFormatted = format_indo_date($transEndDate, 'long');
+$extStat = $profile['extension_status'] ?? 'NONE';
+
+// Reactivation eligibility: must have at least 1 candidate accepted in previous cycle (not whole history)
+$isEligibleForReactivation = false;
+if ($isFullDisable && !empty($profile['active_until'])) {
+    $cycleStart = !empty($profile['last_activated_at'])
+        ? $profile['last_activated_at']
+        : date('Y-m-d H:i:s', strtotime($profile['active_until'] . ' -3 months'));
+    $cycleEnd = date('Y-m-d H:i:s', strtotime($profile['active_until'] . ' +7 days'));
+
+    $accCandidateStmt = db()->prepare('
+        SELECT COUNT(*) FROM job_applications a
+        JOIN job_posts j ON j.id = a.job_id
+        WHERE j.user_id = ? AND a.status = "Diterima"
+          AND a.accepted_at BETWEEN ? AND ?
+    ');
+    $accCandidateStmt->execute([$user['id'], $cycleStart, $cycleEnd]);
+    $isEligibleForReactivation = ((int)$accCandidateStmt->fetchColumn() > 0);
+}
+
+// Reactivated employer detection (for active cycle dashboard banner)
+$isReactivatedEmployer = false;
+if (!empty($profile['last_activated_at'])) {
+    try {
+        $checkAudit = db()->prepare("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'employer' AND entity_id = ? AND action IN ('REACTIVATE_EMPLOYER_ACCESS', 'REACTIVATION_APPROVED', 'REACTIVATION_REQUESTED')");
+        $checkAudit->execute([$user['id']]);
+        $isReactivatedEmployer = ((int)$checkAudit->fetchColumn() > 0);
+    } catch (Throwable $e) {
+        $isReactivatedEmployer = false;
+    }
+}
+
+// --- API / JSON HANDLERS ---
 if (isset($_GET['read_notif'])) {
     mark_notifications_read((int) $user['id']);
     header('Content-Type: application/json');
@@ -64,7 +231,7 @@ if (isset($_GET['applicant_json'])) {
 
 if (isset($_GET['job_json'])) {
     $jobId = (int) $_GET['job_json'];
-    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" LIMIT 1');
+    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? AND status IN ("Perlu Direvisi", "Perlu Revisi", "Draft") LIMIT 1');
     $jobStmt->execute([$jobId, $user['id']]);
     $job = $jobStmt->fetch();
     header('Content-Type: application/json');
@@ -74,8 +241,8 @@ if (isset($_GET['job_json'])) {
         exit;
     }
 
-    if (empty($job['revision_opened_at'])) {
-        db()->prepare('UPDATE job_posts SET revision_opened_at = NOW() WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" AND revision_opened_at IS NULL')
+    if (in_array($job['status'], ['Perlu Direvisi', 'Perlu Revisi'], true) && empty($job['revision_opened_at'])) {
+        db()->prepare('UPDATE job_posts SET revision_opened_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status IN ("Perlu Direvisi", "Perlu Revisi") AND revision_opened_at IS NULL')
             ->execute([$jobId, $user['id']]);
     }
 
@@ -83,54 +250,686 @@ if (isset($_GET['job_json'])) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_application_status'])) {
-    $applicationId = (int) ($_POST['application_id'] ?? 0);
-    $nextStatus = normalize_application_status($_POST['status'] ?? '');
-    if (!in_array($nextStatus, application_statuses(), true)) {
-        flash('error', 'Status pelamar tidak valid.');
+// --- POST HANDLERS ---
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    // 1. UPDATE STATUS PELAMAR (Diizinkan saat ACTIVE_VERIFIED dan TRANSITION_LIMITED)
+    if (isset($_POST['update_application_status'])) {
+        if ($isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan atau tidak aktif.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        $applicationId = (int) ($_POST['application_id'] ?? 0);
+        $nextStatus = normalize_application_status($_POST['status'] ?? '');
+        if (!in_array($nextStatus, application_statuses(), true)) {
+            flash('error', 'Status pelamar tidak valid.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        $owned = db()->prepare('SELECT a.id, a.job_id, a.seeker_id, j.title FROM job_applications a JOIN job_posts j ON j.id = a.job_id WHERE a.id = ? AND j.user_id = ?');
+        $owned->execute([$applicationId, $user['id']]);
+        $application = $owned->fetch();
+        if (!$application) {
+            flash('error', 'Pelamar tidak ditemukan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        if ($nextStatus === 'Diterima') {
+            db()->prepare('UPDATE job_applications SET status = ?, accepted_at = COALESCE(accepted_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$nextStatus, $applicationId]);
+        } else {
+            db()->prepare('UPDATE job_applications SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$nextStatus, $applicationId]);
+        }
+
+        // Recalculate accepted_count for parent job
+        $jobIdForApp = (int)$application['job_id'];
+        $accStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
+        $accStmt->execute([$jobIdForApp]);
+        $accCount = (int)$accStmt->fetchColumn();
+        db()->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$accCount, $jobIdForApp]);
+
+        notify_user((int) $application['seeker_id'], 'Status lamaran diperbarui', 'Status lamaran Anda untuk "' . $application['title'] . '" sekarang: ' . $nextStatus . '.', 'info', $applicationId);
+        flash('success', 'Status pelamar diperbarui menjadi ' . $nextStatus . '.');
         redirect('dashboard.php#lowongan');
+        exit;
     }
 
-    $owned = db()->prepare('SELECT a.id, a.seeker_id, j.title FROM job_applications a JOIN job_posts j ON j.id = a.job_id WHERE a.id = ? AND j.user_id = ?');
-    $owned->execute([$applicationId, $user['id']]);
-    $application = $owned->fetch();
-    if (!$application) {
-        flash('error', 'Pelamar tidak ditemukan.');
-        redirect('dashboard.php#lowongan');
+    // 2. SIMPAN & AJUKAN PROFIL PEMBERI KERJA INDIVIDU (ONBOARDING / REVISION / REACTIVATION)
+    if (isset($_POST['submit_profile'])) {
+        if ($verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan. Pembaharuan profil tidak dapat dilakukan.');
+            redirect('dashboard.php?open_profile=1');
+            exit;
+        }
+        $ownerName   = trim($_POST['owner_name'] ?? '');
+        $nik         = trim($_POST['nik'] ?? '');
+        $phone       = trim($_POST['phone'] ?? '');
+        $whatsapp    = trim($_POST['whatsapp'] ?? '');
+        $profession  = trim($_POST['profession'] ?? '');
+        $npwp        = trim($_POST['npwp'] ?? '');
+        
+        $linkedin    = trim($_POST['linkedin'] ?? '');
+        $facebook    = trim($_POST['facebook'] ?? '');
+        $instagram   = trim($_POST['instagram'] ?? '');
+
+        $sameLoc     = isset($_POST['same_location_siapkerja']) ? 1 : 0;
+        $province    = trim($_POST['province'] ?? '');
+        $city        = trim($_POST['city'] ?? '');
+        $district    = trim($_POST['district'] ?? '');
+        $village     = trim($_POST['village'] ?? '');
+        $postalCode  = trim($_POST['postal_code'] ?? '');
+
+        $sameAddr    = isset($_POST['same_address_siapkerja']) ? 1 : 0;
+        $address     = trim($_POST['address'] ?? '');
+        $addressDetail = trim($_POST['address_detail'] ?? '');
+
+        $latitude    = trim($_POST['latitude'] ?? '');
+        $longitude   = trim($_POST['longitude'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $consent     = isset($_POST['user_consent']) ? 1 : 0;
+
+        if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || !$consent) {
+            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Profesi, NPWP) dan centang persetujuan pengguna.');
+            redirect('dashboard.php?open_profile=1');
+            exit;
+        }
+
+        // Check if user is in FULL_DISABLED state: must be eligible to submit reactivation online
+        if ($isFullDisable && !$isEligibleForReactivation) {
+            flash('error', 'Pengajuan reaktivasi online tidak tersedia karena tidak memenuhi syarat (minimal 1 pelamar diterima pada siklus sebelumnya). Silakan ikuti proses melalui Dinas Tenaga Kerja setempat.');
+            redirect('dashboard.php');
+            exit;
+        }
+
+        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
+        $permitDoc = $permitDoc ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null);
+        $workplacePhoto = $workplacePhoto ?: ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? null);
+
+        if (empty($permitDoc)) {
+            flash('error', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.');
+            redirect('dashboard.php?open_profile=1');
+            exit;
+        }
+
+        $isReactivation = ($isFullDisable || ($profile['verification_status'] ?? '') === 'FULL_DISABLED');
+
+        if ($profile) {
+            $stmt = db()->prepare('UPDATE employer_profiles SET 
+                owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
+                linkedin = ?, facebook = ?, instagram = ?,
+                same_location_siapkerja = ?, province = ?, city = ?, district = ?, village = ?, postal_code = ?,
+                same_address_siapkerja = ?, address = ?, address_detail = ?,
+                latitude = ?, longitude = ?, permit_document = ?, doc_permission = ?,
+                workplace_photo = ?, doc_location_photo = ?,
+                description = ?, user_consent = ?, consent_accepted = ?,
+                verification_status = "PENDING", verified = 0, active_until = NULL,
+                extension_requested = 0, extension_status = "NONE",
+                assigned_to = NULL, assigned_at = NULL, verifier_notes = NULL, verification_checklist = NULL,
+                manual_review_status = NULL, rejection_count = 0, consent_data_hash = NULL, consent_agreed = 0,
+                updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = ?');
+            $stmt->execute([
+                $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
+                $linkedin, $facebook, $instagram,
+                $sameLoc, $province, $city, $district, $village, $postalCode,
+                $sameAddr, $address, $addressDetail,
+                $latitude, $longitude, $permitDoc, $permitDoc,
+                $workplacePhoto, $workplacePhoto,
+                $description, $consent, $consent,
+                $user['id']
+            ]);
+        } else {
+            $stmt = db()->prepare('INSERT INTO employer_profiles (
+                user_id, owner_name, nik, phone, whatsapp, profession, npwp,
+                linkedin, facebook, instagram,
+                same_location_siapkerja, province, city, district, village, postal_code,
+                same_address_siapkerja, address, address_detail,
+                latitude, longitude, permit_document, doc_permission, workplace_photo, doc_location_photo,
+                description, user_consent, consent_accepted,
+                verification_status, verified, active_until, extension_requested, extension_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0, NULL, 0, "NONE")');
+            $stmt->execute([
+                $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
+                $linkedin, $facebook, $instagram,
+                $sameLoc, $province, $city, $district, $village, $postalCode,
+                $sameAddr, $address, $addressDetail,
+                $latitude, $longitude, $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
+                $description, $consent, $consent
+            ]);
+        }
+
+        db()->prepare('UPDATE users SET name = ?, profile_complete = 1 WHERE id = ?')->execute([$ownerName, $user['id']]);
+
+        if ($isReactivation) {
+            record_audit_log('employer', $user['id'], 'REACTIVATION_REQUESTED', 'Mengajukan permohonan reaktivasi Hak Akses Pemberi Kerja Individu secara online.', $user['name'], 'employer');
+            flash('pending_popup', 'Permohonan reaktivasi Hak Akses Pemberi Kerja Individu berhasil diajukan dan sedang menunggu verifikasi.');
+        } else {
+            flash('pending_popup', 'Profil Anda berhasil diajukan! Status Profil: Menunggu Verifikasi.');
+        }
+        redirect('dashboard.php');
+        exit;
     }
 
-    db()->prepare('UPDATE job_applications SET status = ?, updated_at = NOW() WHERE id = ?')->execute([$nextStatus, $applicationId]);
-    notify_user((int) $application['seeker_id'], 'Status lamaran diperbarui', 'Status lamaran Anda untuk "' . $application['title'] . '" sekarang: ' . $nextStatus . '.', 'info', $applicationId);
-    flash('success', 'Status pelamar diperbarui menjadi ' . $nextStatus . '.');
-    redirect('dashboard.php#lowongan');
+    // 3. TAMBAH / UPDATE DRAFT LOWONGAN (SELALU Draft, TANPA Rules Engine)
+    if (isset($_POST['save_job']) || isset($_POST['update_job'])) {
+        if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi atau terkunci. Tidak dapat membuat atau mengubah lowongan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        $jobId = (int)($_POST['job_id'] ?? 0);
+        $title = trim($_POST['job_title'] ?? $_POST['title'] ?? '');
+        $location = trim($_POST['job_location'] ?? $_POST['location'] ?? '');
+        $jobType = trim($_POST['job_type'] ?? '');
+        $industry = trim($_POST['industry'] ?? $_POST['job_field'] ?? '');
+        $kbjiCode = trim($_POST['kbji_code'] ?? '');
+        $minEducation = trim($_POST['min_education'] ?? $_POST['education_required'] ?? '');
+        $minExperience = trim($_POST['min_experience'] ?? $_POST['experience_required'] ?? '');
+        $quota = (int)($_POST['quota'] ?? 1);
+        $description = trim($_POST['job_description'] ?? $_POST['description'] ?? '');
+
+        $salaryMin = isset($_POST['salary_min']) && $_POST['salary_min'] !== '' ? (int)$_POST['salary_min'] : null;
+        $salaryMax = isset($_POST['salary_max']) && $_POST['salary_max'] !== '' ? (int)$_POST['salary_max'] : null;
+
+        $physicalConditions = isset($_POST['physical_condition']) ? array_values((array)$_POST['physical_condition']) : ['Non Disabilitas'];
+        $genders = isset($_POST['gender']) ? array_values((array)$_POST['gender']) : ['Laki-laki', 'Perempuan'];
+        $maritalStatuses = isset($_POST['marital_status']) ? array_values((array)$_POST['marital_status']) : ['Telah Menikah', 'Lajang / Belum Menikah'];
+
+        $skillsRaw = $_POST['skills'] ?? '';
+        $skills = is_array($skillsRaw) ? $skillsRaw : array_values(array_filter(array_map('trim', explode(',', (string)$skillsRaw))));
+
+        $contactsRaw = $_POST['contacts'] ?? '';
+        $contacts = is_array($contactsRaw) ? $contactsRaw : array_values(array_filter(array_map('trim', explode(',', (string)$contactsRaw))));
+
+        $detailsData = [
+            'job_field' => trim($_POST['job_field'] ?? $_POST['industry'] ?? ''),
+            'physical_conditions' => $physicalConditions,
+            'genders' => $genders,
+            'disability_excluded' => trim($_POST['disability_excluded'] ?? ''),
+            'show_salary' => !empty($_POST['show_salary']),
+            'is_remote' => !empty($_POST['is_remote']),
+            'is_limited' => !empty($_POST['is_limited']),
+            'expiry_days' => (int)($_POST['expiry_days'] ?? 30),
+            'education_required' => $minEducation,
+            'experience_required' => $minExperience,
+            'marital_statuses' => $maritalStatuses,
+            'age_min' => isset($_POST['age_min']) && $_POST['age_min'] !== '' ? (int)$_POST['age_min'] : 18,
+            'age_max' => isset($_POST['age_max']) && $_POST['age_max'] !== '' ? (int)$_POST['age_max'] : 45,
+            'special_requirements' => trim($_POST['special_requirements'] ?? ''),
+            'skills' => $skills,
+            'contacts' => $contacts,
+        ];
+        $detailsJson = json_encode($detailsData, JSON_UNESCAPED_UNICODE);
+
+        if ($title !== '' && $location !== '' && $kbjiCode !== '' && $quota > 0 && $description !== '') {
+            if ($jobId > 0) {
+                // Update existing job maintaining its identity and draft/revision status
+                $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, salary_min = ?, salary_max = ?, details = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status IN ("Draft", "Perlu Direvisi", "Perlu Revisi")');
+                $stmt->execute([$title, $location, $jobType, $industry, $kbjiCode, $minEducation, $minExperience, $quota, $description, $salaryMin, $salaryMax, $detailsJson, $jobId, $user['id']]);
+                flash('success', 'Draft lowongan berhasil diperbarui.');
+            } else {
+                // Always create as Draft with NO rules engine checks
+                $stmt = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code, min_education, min_experience, salary_min, salary_max, details, created_at) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Draft", ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)');
+                $stmt->execute([$user['id'], $title, $description, $location, $jobType, $industry, $quota, $kbjiCode, $minEducation, $minExperience, $salaryMin, $salaryMax, $detailsJson]);
+                $jobId = (int)db()->lastInsertId();
+                flash('success', 'Lowongan berhasil disimpan sebagai Draft.');
+            }
+            redirect('dashboard.php#lowongan');
+            exit;
+        } else {
+            flash('error', 'Lengkapi semua field wajib pada form lowongan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+    }
+
+    // 4. KIRIM LOWONGAN (VALIDATION + RULES ENGINE 3 LAYERS)
+    if (isset($_POST['send_job'])) {
+        if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi atau terkunci. Tidak dapat mengirim lowongan baru.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        $jobId = (int)$_POST['job_id'];
+        
+        $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
+        $jobStmt->execute([$jobId, $user['id']]);
+        $targetJob = $jobStmt->fetch();
+
+        if (!$targetJob) {
+            flash('error', 'Lowongan tidak ditemukan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        if (empty($targetJob['title']) || empty($targetJob['location']) || empty($targetJob['kbji_code']) || empty($targetJob['description'])) {
+            flash('error', 'Informasi lowongan belum lengkap. Harap perbarui draft Anda.');
+            redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+            exit;
+        }
+
+        $isChildRepost = !empty($targetJob['parent_job_id']);
+        $rulesResult = check_pki_job_rules_engine(
+            db(),
+            (int)$user['id'],
+            (string)$targetJob['kbji_code'],
+            (int)($targetJob['quota'] ?? 1),
+            $jobId,
+            $isChildRepost
+        );
+
+        if (!$rulesResult['allowed']) {
+            if ($rulesResult['layer'] === 1) {
+                $_SESSION['kbji_duplicate_error'] = [
+                    'job_id' => $jobId,
+                    'kbji_code' => $targetJob['kbji_code'],
+                    'active_job_id' => $rulesResult['conflict_job']['id'] ?? 0,
+                    'active_job_title' => $rulesResult['conflict_job']['title'] ?? '',
+                    'active_job_status' => $rulesResult['conflict_job']['status'] ?? ''
+                ];
+                redirect('dashboard.php?kbji_conflict=1&draft_id=' . $jobId . '#lowongan');
+                exit;
+            } else {
+                // Layer 3: Monthly quota exceeded (>10)
+                flash('error', $rulesResult['error_message']);
+                redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+                exit;
+            }
+        }
+
+        $additionalDocRequired = !empty($rulesResult['additional_doc_required']) ? 1 : 0;
+
+        if ($additionalDocRequired) {
+            // Lowongan ke-4+ KBJI sama: Jangan buat job_verifications case dulu, ubah status ke ADDITIONAL_DOCUMENT_PENDING
+            $update = db()->prepare('UPDATE job_posts SET status = "ADDITIONAL_DOCUMENT_PENDING", additional_doc_required = 1, additional_doc_status = "PENDING_UPLOAD", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+            $update->execute([$jobId, $user['id']]);
+
+            try {
+                $docStmt = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, status, doc_reviewed, field_visit, created_at) VALUES (?, ?, ?, "PENDING_UPLOAD", "Tidak", "Tidak", CURRENT_TIMESTAMP)');
+                $docStmt->execute([$jobId, $user['id'], $targetJob['kbji_code']]);
+            } catch (Throwable $ignored) {}
+
+            record_audit_log('job', $jobId, 'ADDITIONAL_DOC_REQUIRED', "Lowongan ke-4+ untuk KBJI {$targetJob['kbji_code']} bulan ini membutuhkan Dokumen/Keterangan Tambahan sebelum verifikasi lowongan.", $user['name']);
+
+            flash('warning', 'Pengajuan publikasi ini masuk kuota ke-4+ untuk KBJI ' . $targetJob['kbji_code'] . ' bulan ini (Status: ADDITIONAL_DOCUMENT_PENDING). Harap unggah Dokumen/Keterangan Tambahan untuk ditinjau oleh Admin.');
+        } else {
+            $layerFlag = $isChildRepost ? 'REPOST_CONTINUATION' : null;
+            // Normal flow: update to Menunggu Verifikasi and create job_verifications case
+            $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_required = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+            $update->execute([$jobId, $user['id']]);
+
+            try {
+                $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, additional_doc_required, layer_flags) VALUES (?, ?, ?, "PENDING", 0, ?)');
+                $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code'], $layerFlag]);
+            } catch (Throwable $ignored) {}
+
+            record_audit_log('job', $jobId, 'SUBMITTED', "Lowongan diajukan untuk diverifikasi.", $user['name']);
+            flash('success', 'Lowongan berhasil dikirim dan sedang Menunggu Verifikasi.');
+        }
+        redirect('dashboard.php#lowongan');
+        exit;
+    }
+
+    // UPLOAD DOKUMEN TAMBAHAN UNTUK LOWONGAN KE-4+ KBJI SAMA
+    if (isset($_POST['upload_additional_doc'])) {
+        if ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi, ditangguhkan, atau terkunci. Tidak dapat mengunggah dokumen tambahan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+        $jobId = (int)$_POST['job_id'];
+        $notes = trim($_POST['additional_notes'] ?? '');
+        
+        $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
+        $jobStmt->execute([$jobId, $user['id']]);
+        $targetJob = $jobStmt->fetch();
+
+        if (!$targetJob || $targetJob['status'] !== 'ADDITIONAL_DOCUMENT_PENDING') {
+            flash('error', 'Lowongan tidak valid untuk pengunggahan dokumen tambahan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        $filePath = null;
+        if (!empty($_FILES['additional_file']['name'])) {
+            $filePath = store_upload('additional_file', 'additional_docs', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
+        }
+
+        if (!$filePath && $notes === '') {
+            flash('error', 'Harap lampirkan berkas dokumen atau masukkan keterangan tambahan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        try {
+            $stmt = db()->prepare('UPDATE job_additional_documents SET document_file = COALESCE(?, document_file), description = ?, status = "SUBMITTED" WHERE job_id = ?');
+            $stmt->execute([$filePath, $notes, $jobId]);
+        } catch (Throwable $ignored) {}
+        
+        $upJob = db()->prepare('UPDATE job_posts SET additional_doc_file = COALESCE(?, additional_doc_file), additional_doc_notes = ?, additional_doc_status = "SUBMITTED", updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $upJob->execute([$filePath, $notes, $jobId]);
+
+        record_audit_log('job', $jobId, 'ADDITIONAL_DOC_SUBMITTED', "Pemberi kerja mengunggah dokumen/keterangan tambahan: {$notes}", $user['name']);
+
+        flash('success', 'Dokumen/keterangan tambahan berhasil dikirim dan sedang menunggu peninjauan oleh Admin.');
+        redirect('dashboard.php#lowongan');
+        exit;
+    }
+
+    // 5. TUTUP LOWONGAN & POSTING ULANG SISA KUOTA (ATOMIC TRANSACTION)
+    if (isset($_POST['close_job'])) {
+        if ($isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan atau tidak aktif. Tidak dapat mengubah atau menutup lowongan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+        $jobId = (int)$_POST['job_id'];
+        $repost = ($_POST['repost'] ?? '0') === '1';
+        $reasons = $_POST['reasons'] ?? [];
+        $lainnya = trim($_POST['reason_lainnya'] ?? '');
+        
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        try {
+            // Lock source row inside transaction with FOR UPDATE to prevent race conditions / concurrent requests
+            $jobStmt = $pdo->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? FOR UPDATE');
+            $jobStmt->execute([$jobId, $user['id']]);
+            $oldJob = $jobStmt->fetch();
+
+            if (!$oldJob) {
+                $pdo->rollBack();
+                flash('error', 'Lowongan tidak ditemukan.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            if ($oldJob['status'] === 'Ditutup') {
+                $pdo->rollBack();
+                flash('error', 'Lowongan ini sudah berstatus Ditutup dan tidak dapat diproses ulang.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            // Check if source job already has a child repost (prevent double-submit creating multiple children)
+            $childCheck = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE parent_job_id = ?');
+            $childCheck->execute([$jobId]);
+            if ((int)$childCheck->fetchColumn() > 0) {
+                $pdo->rollBack();
+                flash('error', 'Lowongan sumber ini sudah memiliki posting turunan sisa kuota dan tidak dapat diproses ulang.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            // Calculate accepted_count and remaining_quota
+            $accStmt = $pdo->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
+            $accStmt->execute([$jobId]);
+            $acceptedCount = (int)$accStmt->fetchColumn();
+            $requestedQuota = (int)($oldJob['quota'] ?? 1);
+            $sisaKuota = max(0, $requestedQuota - $acceptedCount);
+
+            // Update accepted_count on source job
+            $pdo->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$acceptedCount, $jobId]);
+
+            // Scenario 1: remaining_quota == 0 -> Directly close without requiring reasons or reposting
+            if ($sisaKuota <= 0) {
+                $stmt = $pdo->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = "Kuota Terpenuhi" WHERE id = ? AND user_id = ?');
+                $stmt->execute([$jobId, $user['id']]);
+                $pdo->commit();
+                flash('success', 'Lowongan telah berhasil Ditutup (Kuota Terpenuhi).');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            // Scenario 2: remaining_quota > 0 -> Requires reasons & repost selection
+            if ($repost && ($isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED')) {
+                $pdo->rollBack();
+                flash('error', 'Hak Akses Pemberi Kerja Individu dalam Masa Transisi atau terkunci. Tidak dapat memposting ulang sisa kuota.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+            
+            if (empty($reasons)) {
+                $pdo->rollBack();
+                flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            $validReasons = pki_close_reasons();
+            foreach ($reasons as $r) {
+                if (!in_array($r, $validReasons, true)) {
+                    $pdo->rollBack();
+                    flash('error', 'Alasan penutupan tidak valid.');
+                    redirect('dashboard.php#lowongan');
+                    exit;
+                }
+            }
+
+            if (in_array('Lainnya', $reasons, true) && $lainnya === '') {
+                $pdo->rollBack();
+                flash('error', 'Alasan "Lainnya" wajib diisi.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            $reasonStr = implode(', ', $reasons);
+            if (in_array('Lainnya', $reasons, true)) {
+                $reasonStr .= ' - ' . $lainnya;
+            }
+
+            // Close original job with reason (Source job remains Ditutup)
+            $stmt = $pdo->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = ? WHERE id = ? AND user_id = ?');
+            $stmt->execute([$reasonStr, $jobId, $user['id']]);
+
+            if ($repost) {
+                // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi (no auto-publish), copying ONLY business fields (original title preserved without suffix).
+                // Verification state is RESET (compliance_checklist = NULL, additional_doc_* = NULL/0) so child enters verification as a clean case.
+                $insert = $pdo->prepare('INSERT INTO job_posts (
+                    user_id, title, description, location, job_type, industry, entity_type, status,
+                    salary_min, salary_max, quota, accepted_count, kbji_code, details, min_education, min_experience,
+                    additional_doc_required, additional_doc_file, additional_doc_notes, additional_doc_status,
+                    parent_job_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, "Menunggu Verifikasi", ?, ?, ?, 0, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, CURRENT_TIMESTAMP)');
+                $insert->execute([
+                    $user['id'], 
+                    $oldJob['title'], 
+                    $oldJob['description'], 
+                    $oldJob['location'], 
+                    $oldJob['job_type'], 
+                    $oldJob['industry'], 
+                    $oldJob['entity_type'] ?? 'Individu',
+                    $oldJob['salary_min'] ?? null,
+                    $oldJob['salary_max'] ?? null,
+                    $sisaKuota, 
+                    $oldJob['kbji_code'], 
+                    $oldJob['details'] ?? null,
+                    $oldJob['min_education'] ?? '', 
+                    $oldJob['min_experience'] ?? '', 
+                    $jobId
+                ]);
+                $childId = (int)$pdo->lastInsertId();
+
+                // Create Job Verification Case for child (WITHOUT catch ignore; exception will trigger transaction rollback!)
+                $caseStmt = $pdo->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, layer_flags, created_at) VALUES (?, ?, ?, "PENDING", "REPOST_CONTINUATION", CURRENT_TIMESTAMP)');
+                $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
+
+                $pdo->commit();
+                flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
+            } else {
+                $pdo->commit();
+                flash('success', 'Lowongan berhasil Ditutup.');
+            }
+
+            redirect('dashboard.php#lowongan');
+            exit;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal memproses penutupan/posting ulang lowongan: ' . $e->getMessage());
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+    }
+
+    // 6. AJUKAN PERPANJANGAN HAK AKSES PEMBERI KERJA INDIVIDU (1x, 1-3 HARI)
+    if (isset($_POST['request_extension'])) {
+        if ($verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan. Perpanjangan Hak Akses tidak dapat diajukan.');
+            redirect('dashboard.php');
+            exit;
+        }
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        try {
+            // Refresh & lock employer profile row inside transaction
+            $profStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+            $profStmt->execute([$user['id']]);
+            $currProfile = $profStmt->fetch() ?: [];
+
+            if (empty($currProfile)) {
+                $pdo->rollBack();
+                flash('error', 'Profil Pemberi Kerja tidak ditemukan.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            // 1. Strict time-based eligibility: active_until < NOW <= active_until + 7 hari
+            $cActiveUntilRaw = $currProfile['active_until'] ?? null;
+            if (empty($cActiveUntilRaw)) {
+                $pdo->rollBack();
+                flash('error', 'Perpanjangan Hak Akses Pemberi Kerja Individu tidak dapat diajukan karena masa aktif belum ditentukan.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            $cNow = new DateTime();
+            $cActiveUntil = new DateTime($cActiveUntilRaw);
+            $activeUntilTs = $cActiveUntil->getTimestamp();
+            $nowTs = $cNow->getTimestamp();
+            $sevenDaysTs = $activeUntilTs + (7 * 86400);
+
+            if ($nowTs <= $activeUntilTs) {
+                $pdo->rollBack();
+                flash('error', 'Hak Akses Anda masih aktif. Perpanjangan hanya dapat diajukan saat masa aktif telah berakhir dan masuk Masa Transisi.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            if ($nowTs > $sevenDaysTs) {
+                $pdo->rollBack();
+                flash('error', 'Jendela Masa Transisi (7 hari) telah terlewati. Perpanjangan Hak Akses Pemberi Kerja Individu tidak dapat diajukan.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            // 2. Max 1x validation: Must not have requested previously
+            if (($currProfile['extension_requested'] ?? 0) != 0 || ($currProfile['extension_status'] ?? 'NONE') !== 'NONE') {
+                $pdo->rollBack();
+                flash('error', 'Pengajuan perpanjangan Hak Akses Pemberi Kerja Individu hanya dapat dilakukan maksimal 1 kali.');
+                redirect('dashboard.php');
+                exit;
+            }
+
+            // 3. Duration validation: 1 to 3 days
+            if (isset($_POST['extension_days']) || isset($_POST['requested_days'])) {
+                $rawDays = $_POST['extension_days'] ?? $_POST['requested_days'];
+                if (!is_numeric($rawDays) || (int)$rawDays < 1 || (int)$rawDays > 3 || (int)$rawDays != $rawDays) {
+                    $pdo->rollBack();
+                    flash('error', 'Durasi perpanjangan Hak Akses Pemberi Kerja Individu tidak valid. Pilihan durasi harus antara 1 sampai 3 hari.');
+                    redirect('dashboard.php');
+                    exit;
+                }
+                $reqDays = (int)$rawDays;
+            } else {
+                $reqDays = 3;
+            }
+
+            // 4. Update status without altering active_until (active_until will only be updated upon Admin Dinas/Pusat approval)
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET extension_requested = 1, extension_status = "REQUESTED" WHERE user_id = ?');
+            $stmt->execute([$user['id']]);
+
+            // Record audit log INSIDE transaction before commit (strict mode for atomic rollback)
+            record_audit_log('employer', $user['id'], 'EXTENSION_REQUESTED', "Mengajukan permohonan perpanjangan Hak Akses Pemberi Kerja Individu selama {$reqDays} hari.", $user['name'], 'employer', true);
+
+            $pdo->commit();
+
+            flash('success', 'Permohonan perpanjangan Hak Akses Pemberi Kerja Individu berhasil diajukan dan sedang menunggu verifikasi.');
+            redirect('dashboard.php');
+            exit;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal mengajukan perpanjangan: ' . $e->getMessage());
+            redirect('dashboard.php');
+            exit;
+        }
+    }
+
+    // 7. HAPUS DRAFT LOWONGAN
+    if (isset($_POST['delete_job'])) {
+        if ($isFullDisable || $verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan atau tidak aktif. Tidak dapat menghapus lowongan.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+        $jobId = (int)$_POST['job_id'];
+        $stmt = db()->prepare('DELETE FROM job_posts WHERE id = ? AND user_id = ? AND status = "Draft"');
+        $stmt->execute([$jobId, $user['id']]);
+        flash('success', 'Draft lowongan berhasil dihapus.');
+        redirect('dashboard.php#lowongan');
+        exit;
+    }
+
+    // 8. BERIKAN CONSENT (JALUR MANUAL DINAS)
+    if (isset($_POST['give_manual_dinas_consent'])) {
+        if ($verificationStatus === 'SUSPENDED') {
+            flash('error', 'Hak Akses Pemberi Kerja Individu sedang ditangguhkan. Persetujuan consent tidak dapat diproses.');
+            redirect('dashboard.php');
+            exit;
+        }
+        $stmtEmp = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
+        $stmtEmp->execute([$user['id']]);
+        $emp = $stmtEmp->fetch();
+
+        if ($emp && $emp['manual_review_status'] === 'CONSENT_PENDING') {
+            $stmt = db()->prepare('UPDATE employer_profiles SET manual_review_status = "CONSENT_GIVEN", consent_agreed = 1, consent_given_at = datetime("now") WHERE user_id = ?');
+            try {
+                $stmt->execute([$user['id']]);
+            } catch (Throwable $e) {
+                $stmt = db()->prepare('UPDATE employer_profiles SET manual_review_status = "CONSENT_GIVEN", consent_agreed = 1, consent_given_at = NOW() WHERE user_id = ?');
+                $stmt->execute([$user['id']]);
+            }
+            record_audit_log('employer', $user['id'], 'CONSENT_GIVEN', 'Pemohon telah membaca dan menyetujui perubahan data profil yang diajukan oleh Petugas Dinas.', $user['name'], 'employer');
+            flash('success', 'Terima kasih! Persetujuan (Consent) Anda telah berhasil diberikan. Petugas Dinas akan segera menyelesaikan verifikasi dan mengaktifkan akun Anda.');
+        } else {
+            flash('error', 'Status permohonan consent tidak valid atau telah diperbarui.');
+        }
+        redirect('dashboard.php');
+        exit;
+    }
 }
 
 $ownerName = $profile['owner_name'] ?? $user['name'];
 $profession = $profile['profession'] ?? 'Kuliner';
 $city = $profile['city'] ?? 'Kota Bekasi';
 
-// Guard: active_until bisa NULL untuk employer baru yang belum diverifikasi
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
-$activeUntilRaw = $profile['active_until'] ?? null;
-$now = new DateTime();
-$activeUntil = $activeUntilRaw ? new DateTime($activeUntilRaw) : null;
-
-$daysRemaining = 0;
-$isExpired = false;
-$isTransitionPeriod = false;
-$isFullDisable = false;
-
-if ($verificationStatus === 'APPROVED' && $activeUntil) {
-    $diff = $now->diff($activeUntil);
-    $isExpired = $activeUntil < $now;
-    $daysRemaining = $isExpired ? -$diff->days : $diff->days;
-
-<<<<<<< HEAD
-=======
 // Ambil flash message SEBELUM ob_start (karena session harus dibaca dulu)
 $flashData = get_flash();
 $flashHtml = '';
-if ($flashData) {
+$pendingPopupMessage = null;
+if ($flashData && $flashData['type'] === 'pending_popup') {
+    $pendingPopupMessage = $flashData['message'];
+    $flashData = null;
+} elseif ($flashData) {
     $flashType = $flashData['type'] === 'success' ? 'success' : 'error';
     $flashIcon = $flashType === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
     $flashColor = $flashType === 'success'
@@ -143,13 +942,34 @@ if ($flashData) {
     $flashHtml .= '</div>';
 }
 
+$kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
+unset($_SESSION['kbji_duplicate_error']);
+
+if (isset($_GET['open_profile']) && $_GET['open_profile'] == '1') {
+    $showProfileModal = true;
+} else {
+    $showProfileModal = false;
+}
+
+$selectedJobId = isset($_GET['job_detail']) ? (int)$_GET['job_detail'] : 0;
+$detailJob = null;
+$detailData = null;
+if ($selectedJobId > 0) {
+    $stmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
+    $stmt->execute([$selectedJobId, $user['id']]);
+    $detailJob = $stmt->fetch() ?: null;
+    if ($detailJob) {
+        $detailData = job_to_form_data($detailJob);
+    }
+}
+
 ob_start();
 include __DIR__ . '/Index.html';
 $html = ob_get_clean();
 
 // Sisipkan flash toast ke dalam body
 if ($flashHtml) {
-    $html = str_replace('<body', $flashHtml . '<body', $html);
+    $html = preg_replace('/(<body[^>]*>)/i', '$1' . "\n" . $flashHtml, $html, 1);
 }
 
 $initials = mb_strtoupper(mb_substr($ownerName, 0, 1));
@@ -161,1021 +981,1049 @@ if (str_contains($ownerName, ' ')) {
 $replacements = [
     'Karirhub - Pemberi Kerja Individu'   => 'Karirhub - ' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
     'Halo nama Pemberi Kerja Individu'    => 'Halo ' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
-    // Sidebar profile card
-    'id="sidebarName">Pemberi Kerja Individu' => 'id="sidebarName">' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
-    'id="sidebarProfession">Profesi: Kuliner'  => 'id="sidebarProfession">Profesi: ' . htmlspecialchars($profession, ENT_QUOTES, 'UTF-8'),
+    'Halo PT. Pandu Jaya'                 => 'Halo ' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    // Sidebar & Topbar
     'id="sidebarAvatar">PI'               => 'id="sidebarAvatar">' . $initials,
-    // Topbar chip
-    '<strong>Pemberi Kerja Individu</strong>' => '<strong>' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8') . '</strong>',
-    '<span>Profesi: Kuliner</span>'        => '<span>Profesi: ' . htmlspecialchars($profession, ENT_QUOTES, 'UTF-8') . '</span>',
-    // Profile page
-    'PT. Pandu Jaya'                       => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
-    'Kota Bekasi'                          => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
-    '<strong>Sisa 87 hari</strong>'        => '<strong>Sisa ' . max(0, $daysRemaining) . ' hari</strong>',
+    'id="topbarAvatar">PI'                => 'id="topbarAvatar">' . $initials,
+    'id="topbarCompName">PT. Pandu Jaya'  => 'id="topbarCompName">' . htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    'id="topbarCompType">Perusahaan'      => 'id="topbarCompType">' . htmlspecialchars($profession, ENT_QUOTES, 'UTF-8'),
+    // Profile page & Popover
+    'Pandu Isdiyanto, S.T., M.M.'         => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    'ppandfoee@gmail.com'                 => htmlspecialchars($user['email'] ?? 'ppandfoee@gmail.com', ENT_QUOTES, 'UTF-8'),
+    '3402153112760034'                    => htmlspecialchars($profile['nik'] ?? ($seekerProfile['nik'] ?? '3402153112760034'), ENT_QUOTES, 'UTF-8'),
+    'PT. Pandu Jaya'                      => htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'),
+    'Kota Bekasi'                         => htmlspecialchars($city, ENT_QUOTES, 'UTF-8'),
+    '<strong>Sisa 87 hari</strong>'       => '<strong>Sisa ' . (int)max(0, $daysRemaining ?? 0) . ' hari</strong>',
 ];
-
-$alertKey = 'Akun Anda telah aktif dan berlaku selama 3 bulan. Anda kini dapat mempublikasikan lowongan kerja.<br>' . "\r\n" . '                        <strong>Catatan penting: Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan/posisi yang berbeda. Namun, Anda tidak dapat membuat lowongan baru untuk jabatan/posisi yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.</strong>';
-
-if (empty($profile['verified'])) {
-    $replacements[$alertKey] = '<strong style="color:orange"><i class="fa-solid fa-clock"></i> Menunggu Verifikasi Admin:</strong> Profil Anda sedang dalam tahap peninjauan. Fitur posting lowongan belum dapat diakses sebelum akun disetujui.';
-    // Disable Add Button
-    $html = str_replace('<button class="action-chip"><i class="fa-solid fa-plus"></i> Tambah</button>', '<button class="action-chip" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
-} else if ($isTransitionPeriod) {
-    $btnPerpanjangan = '';
-    if ($profile['extension_requested'] == 0) {
-        $btnPerpanjangan = '<form method="post" action="dashboard.php" style="margin-top:10px;"><input type="hidden" name="request_extension" value="1"><button type="submit" class="ghost-btn" style="border:1px solid red; color:red; padding:4px 12px; font-size:12px;"><i class="fa-solid fa-clock-rotate-left"></i> Ajukan Perpanjangan Waktu (1x)</button></form>';
-    }
-    $replacements[$alertKey] = '<strong style="color:red">Masa Transisi (Akses Dibatasi):</strong> Masa aktif Anda telah habis. Akses saat ini difokuskan untuk menyelesaikan rekrutmen. Tombol posting lowongan telah dinonaktifkan.<br>Sisa masa transisi: ' . (7 + $daysRemaining) . ' hari.' . $btnPerpanjangan;
-    // Disable Add Button
-    $html = str_replace('<button class="action-chip"><i class="fa-solid fa-plus"></i> Tambah</button>', '<button class="action-chip" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
-} else if ($daysRemaining <= 7) {
-    $btnPerpanjangan = '';
-    if ($profile['extension_requested'] == 0) {
-        $btnPerpanjangan = '<form method="post" action="dashboard.php" style="margin-top:10px;"><input type="hidden" name="request_extension" value="1"><button type="submit" class="ghost-btn" style="border:1px solid orange; color:orange; padding:4px 12px; font-size:12px;"><i class="fa-solid fa-clock-rotate-left"></i> Ajukan Perpanjangan Waktu (1x)</button></form>';
-    }
-    $replacements[$alertKey] = '<strong style="color:orange">Pengingat:</strong> Masa aktif akun Anda akan berakhir dalam ' . $daysRemaining . ' hari. Segera selesaikan rekrutmen Anda sebelum masa transisi dimulai.' . $btnPerpanjangan;
-}
-
 
 $html = str_replace(array_keys($replacements), array_values($replacements), $html);
 
 $modalStyles = <<<'CSS'
-        .modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            display: none;
-            align-items: center;
-            justify-content: flex-end;
-            z-index: 1000;
-            padding: 16px;
+        /* ═══════════════════════════════════════════════════════════════
+           JOB CREATE DRAWER — injected AFTER app.css via </body>
+           ASCII wireframe spec: 40-45% viewport width, 100vh, sticky
+           header+footer, scrollable body only.
+           ═══════════════════════════════════════════════════════════════ */
+
+        /* ── Backdrop: dark overlay left, panel flush-right ── */
+        .modal-backdrop[data-modal="job-create"] {
+            position: fixed !important;
+            inset: 0 !important;
+            background: rgba(15, 23, 42, 0.50) !important;
+            display: none !important;
+            align-items: stretch !important;
+            justify-content: flex-end !important;
+            padding: 0 !important;
+            z-index: 1050 !important;
         }
-        .modal-backdrop.open {
-            display: flex;
+        .modal-backdrop[data-modal="job-create"].open {
+            display: flex !important;
         }
-        .modal-panel {
-            width: min(720px, 100%);
-            max-height: calc(100vh - 32px);
-            overflow: auto;
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
-        }
+
+        /* ── Panel: 40-45% viewport, full height, white, flush right ── */
         .job-create-panel {
-            width: min(860px, 100%);
-            height: calc(100vh - 32px);
-            max-height: calc(100vh - 32px);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-height: 0;
+            width: clamp(400px, 44vw, 680px) !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            min-height: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: -4px 0 32px rgba(15, 23, 42, 0.18) !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            flex-shrink: 0 !important;
         }
+
+        /* ── Form: flex column to fill panel ── */
         .job-create-panel form {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
         }
-        .modal-header,
-        .modal-footer {
-            padding: 20px 24px 16px;
-            border-bottom: 1px solid #eef2f7;
-            flex-shrink: 0;
-        }
+
+        /* ── Header: sticky top, no scroll ── */
         .job-create-panel .modal-header {
-            position: relative;
-            padding-right: 56px;
+            flex-shrink: 0 !important;
+            padding: 20px 24px 14px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            background: #ffffff !important;
+            position: relative !important;
+            display: block !important;
         }
-        .modal-footer {
-            border-bottom: none;
-            border-top: 1px solid #eef2f7;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            padding: 14px 24px;
+        .job-create-panel .modal-title {
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin: 0 0 4px 0 !important;
+            padding-right: 40px !important;
+            line-height: 1.3 !important;
+            display: block !important;
         }
-        .modal-title {
-            font-size: 20px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 4px;
-            color: #111827;
+        .job-create-panel .modal-subtitle {
+            font-size: 13px !important;
+            color: #64748b !important;
+            margin: 0 !important;
+            display: block !important;
+            line-height: 1.4 !important;
         }
-        .modal-subtitle {
-            color: #6b7280;
-            font-size: 13px;
+        .job-create-panel .modal-close {
+            position: absolute !important;
+            top: 18px !important;
+            right: 20px !important;
+            width: 30px !important;
+            height: 30px !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 50% !important;
+            background: #f8fafc !important;
+            color: #64748b !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            font-size: 14px !important;
+            transition: all 0.15s !important;
         }
+        .job-create-panel .modal-close:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+
+        /* ── Revision Banner ── */
         .revision-banner {
-            margin-top: 12px;
-            padding: 12px 14px;
-            border-radius: 12px;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
             background: #fff7ed;
             border: 1px solid #fed7aa;
             color: #9a3412;
-        }
-        .revision-banner strong {
-            display: block;
             font-size: 12px;
-            margin-bottom: 4px;
         }
-        .revision-banner p {
-            margin: 0;
-            font-size: 13px;
-            line-height: 1.45;
-            white-space: pre-wrap;
+        .revision-banner strong { display: block; font-size: 11px; margin-bottom: 3px; }
+        .revision-banner p { margin: 0; font-size: 12px; line-height: 1.4; }
+
+        /* ── Step Progress Bar: sticky below header ── */
+        .step-progress-wizard {
+            display: flex !important;
+            align-items: center !important;
+            padding: 12px 24px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            background: #ffffff !important;
+            flex-shrink: 0 !important;
         }
-        .modal-close {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            width: 32px;
-            height: 32px;
-            border: none;
-            background: transparent;
-            color: #6b7280;
-            cursor: pointer;
-            border-radius: 8px;
-            display: grid;
-            place-items: center;
-            font-size: 18px;
-        }
-        .modal-close:hover {
-            background: #f3f4f6;
-            color: #111827;
-        }
-        .stepper {
+        .step-progress-item {
             display: flex;
             align-items: center;
-            gap: 0;
-            margin-top: 20px;
-        }
-        .step {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #9ca3af;
+            gap: 7px;
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
+            color: #94a3b8;
             white-space: nowrap;
         }
-        .step .bubble {
-            width: 26px;
-            height: 26px;
+        .step-progress-item.active { color: #0284c7; font-weight: 700; }
+        .step-progress-item.done  { color: #0284c7; font-weight: 600; }
+        .step-progress-item .step-badge {
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: #e5e7eb;
-            display: grid;
-            place-items: center;
-            color: #6b7280;
-            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e2e8f0;
+            color: #64748b;
+            font-size: 11px;
             font-weight: 700;
             flex-shrink: 0;
+            transition: all 0.2s;
         }
-        .step.active {
-            color: #1e97c4;
-        }
-        .step.active .bubble {
-            background: #1e97c4;
-            color: #fff;
-        }
-        .step.done {
-            color: #16a34a;
-        }
-        .step.done .bubble {
-            background: #16a34a;
-            color: #fff;
-        }
-        .step-line {
+        .step-progress-item.active .step-badge { background: #0ea5e9; color: #fff; }
+        .step-progress-item.done .step-badge   { background: #0ea5e9; color: #fff; }
+        .step-progress-line {
             flex: 1;
-            height: 2px;
-            background: #e5e7eb;
-            margin: 0 14px;
-            min-width: 24px;
+            height: 1.5px;
+            background: #e2e8f0;
+            margin: 0 10px;
+            transition: background 0.3s;
         }
-        .step-line.done {
-            background: #16a34a;
-        }
-        .modal-body {
-            padding: 8px 24px 20px;
-        }
+        .step-progress-line.done { background: #0ea5e9; }
+
+        /* ── Modal Body: ONLY this section scrolls ── */
         .job-create-panel .modal-body {
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow-y: auto;
-            overflow-x: hidden;
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
+            flex: 1 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 24px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 20px !important;
+            min-height: 0 !important;
+            background: #f8fafc !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #cbd5e1 transparent !important;
         }
-        .job-create-panel [hidden] {
-            display: none !important;
+        .job-create-panel .modal-body::-webkit-scrollbar { width: 5px; }
+        .job-create-panel .modal-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1; border-radius: 3px;
         }
-        .modal-section {
-            margin-bottom: 8px;
-            padding: 18px 0 8px;
+
+        /* ── Section Cards ── */
+        .form-section-card {
+            background: #ffffff;
+            border: 1px solid #e8edf3;
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
-        .section-heading {
+        .form-section-header {
             display: flex;
             align-items: flex-start;
             gap: 12px;
-            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #f1f5f9;
         }
-        .section-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: #e8f7fc;
-            color: #1e97c4;
-            display: grid;
-            place-items: center;
-            flex-shrink: 0;
-            font-size: 15px;
-        }
-        .section-title {
-            font-size: 15px;
-            font-weight: 800;
-            margin-bottom: 2px;
-            color: #111827;
-        }
-        .section-text {
-            font-size: 12px;
-            color: #6b7280;
-            line-height: 1.45;
-        }
-        .job-create-panel .field {
-            margin-bottom: 16px;
-        }
-        .job-create-panel .field label,
-        .job-create-panel .field-label {
+        .form-section-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: #e0f2fe;
+            color: #0284c7;
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #1f2937;
-        }
-        .req {
-            color: #ef4444;
-            font-weight: 800;
-        }
-        .field-hint {
-            display: block;
-            margin-top: 6px;
-            font-size: 12px;
-            color: #9ca3af;
-            font-weight: 500;
-        }
-        .job-create-panel .field input[type="text"],
-        .job-create-panel .field input[type="number"],
-        .job-create-panel .field input[type="email"],
-        .job-create-panel .field select,
-        .job-create-panel .field textarea {
-            width: 100%;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 11px 14px;
-            background: #fff;
-            color: #111827;
-            font-size: 13px;
-            outline: none;
-            transition: border-color .15s ease, box-shadow .15s ease;
-            appearance: none;
-        }
-        .job-create-panel .field select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1.4.8 6 5.4 10.6.8 12 2.2 6 8.2 0 2.2z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
-            padding-right: 36px;
-        }
-        .job-create-panel .field input:focus,
-        .job-create-panel .field select:focus,
-        .job-create-panel .field textarea:focus {
-            border-color: #30aed8;
-            box-shadow: 0 0 0 3px rgba(48, 174, 216, 0.12);
-        }
-        .field-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px 16px;
-        }
-        .field-grid .field {
-            margin-bottom: 0;
-        }
-        .span-2 {
-            grid-column: span 2;
-        }
-        .affix-input {
-            display: flex;
-            align-items: stretch;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #fff;
-        }
-        .affix-input:focus-within {
-            border-color: #30aed8;
-            box-shadow: 0 0 0 3px rgba(48, 174, 216, 0.12);
-        }
-        .affix-input .affix {
-            display: grid;
-            place-items: center;
-            min-width: 48px;
-            padding: 0 12px;
-            background: #f3f4f6;
-            color: #6b7280;
-            font-size: 13px;
-            font-weight: 700;
-            border-right: 1px solid #e5e7eb;
-        }
-        .affix-input.suffix .affix {
-            border-right: none;
-            border-left: 1px solid #e5e7eb;
-        }
-        .affix-input input {
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            min-width: 0;
-        }
-        .check-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 18px 28px;
-        }
-        .check-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            cursor: pointer;
-            max-width: 100%;
-        }
-        .check-item input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .check-box {
-            width: 18px;
-            height: 18px;
-            border: 1.5px solid #d1d5db;
-            border-radius: 4px;
-            display: grid;
-            place-items: center;
-            margin-top: 1px;
+            justify-content: center;
+            font-size: 14px;
             flex-shrink: 0;
-            background: #fff;
-            color: transparent;
-            font-size: 11px;
         }
-        .check-item input:checked + .check-box {
-            background: #1e97c4;
-            border-color: #1e97c4;
-            color: #fff;
+        .section-title, .form-section-title {
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin: 0 0 2px 0 !important;
+            line-height: 1.3 !important;
         }
-        .check-copy {
+        .section-subtitle, .form-section-subtitle {
+            font-size: 12px !important;
+            color: #64748b !important;
+            margin: 0 !important;
+            line-height: 1.4 !important;
+        }
+
+        /* ── Form Elements ── */
+        .form-group {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 6px;
         }
-        .check-copy strong {
+        .form-group label {
             font-size: 13px;
-            font-weight: 700;
-            color: #1f2937;
+            font-weight: 600;
+            color: #334155;
+            line-height: 1.3;
         }
-        .check-copy span {
-            font-size: 12px;
-            color: #9ca3af;
+        .form-group label .req { color: #ef4444; margin-left: 2px; }
+        .field-hint {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        /* ── Text / Select Inputs ── */
+        .form-control-custom {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #0f172a;
+            background: #ffffff;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            appearance: none;
+        }
+        .form-control-custom:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
+        }
+        select.form-control-custom {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2394a3b8' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+            cursor: pointer;
+        }
+
+        /* ── Addon inputs (Rp prefix, Tahun/Orang suffix) ── */
+        .input-addon-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .input-addon-group:focus-within {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
+        }
+        .input-addon-group .addon-text {
+            padding: 9px 11px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            border-right: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .input-addon-group .addon-suffix {
+            padding: 9px 11px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            border-left: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .input-addon-group input {
+            flex: 1;
+            border: none;
+            padding: 9px 12px;
+            font-size: 13px;
+            outline: none;
+            background: transparent;
+            min-width: 0;
+        }
+
+        /* ── Pill Radio / Checkbox (Kondisi Fisik, Jenis Kelamin, Status Pernikahan) ── */
+        .pill-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pill-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            border: 1.5px solid #d1d5db;
+            background: #fff;
+            color: #475569;
+            font-size: 13px;
             font-weight: 500;
-            line-height: 1.4;
+            cursor: pointer;
+            user-select: none;
+            transition: border-color 0.15s, background 0.15s, color 0.15s;
         }
-        .rich-editor {
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
+        .pill-option:hover { border-color: #0ea5e9; }
+        .pill-option input[type="checkbox"],
+        .pill-option input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid #9ca3af;
+            border-radius: 50%;
+            outline: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .pill-option input[type="checkbox"]:checked,
+        .pill-option input[type="radio"]:checked {
+            background: #0ea5e9;
+            border-color: #0ea5e9;
+        }
+        .pill-option input[type="checkbox"]:checked::after,
+        .pill-option input[type="radio"]:checked::after {
+            content: "";
+            display: block;
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: #fff;
+        }
+        .pill-option:has(input:checked) {
+            border-color: #0ea5e9;
+            background: #f0f9ff;
+            color: #0369a1;
+            font-weight: 600;
+        }
+
+        /* ── Card Toggle (Tampilkan Gaji, Remote, Terbatas) ── */
+        .card-toggle-group { display: flex; flex-direction: column; gap: 8px; }
+        .card-toggle-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 11px 14px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            user-select: none;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .card-toggle-item:hover { border-color: #0ea5e9; }
+        .card-toggle-item:has(input:checked) { border-color: #0ea5e9; background: #f0f9ff; }
+        .card-toggle-item input[type="checkbox"],
+        .card-toggle-item input[type="radio"] {
+            margin-top: 2px;
+            accent-color: #0ea5e9;
+            width: 15px; height: 15px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .card-toggle-content { display: flex; flex-direction: column; gap: 2px; }
+        .card-toggle-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+        .card-toggle-desc  { font-size: 12px; color: #64748b; line-height: 1.4; }
+
+        /* ── Rich Text Editor ── */
+        .rich-editor-shell {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
             overflow: hidden;
             background: #fff;
+        }
+        .rich-editor-shell:focus-within {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
         }
         .rich-toolbar {
             display: flex;
+            align-items: center;
             flex-wrap: wrap;
             gap: 2px;
-            padding: 8px 10px;
-            border-bottom: 1px solid #eef2f7;
-            background: #fafafa;
+            padding: 5px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            background: #f8fafc;
         }
-        .rich-toolbar button,
-        .rich-toolbar select {
-            height: 28px;
-            min-width: 28px;
+        .rich-btn {
             border: none;
             background: transparent;
-            color: #4b5563;
-            border-radius: 6px;
+            color: #475569;
+            border-radius: 4px;
+            padding: 3px 5px;
+            font-size: 11px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            min-width: 22px;
+            height: 22px;
         }
-        .rich-toolbar select {
-            font-size: 12px;
-            padding: 0 6px;
+        .rich-btn:hover { background: #e2e8f0; }
+        .rich-btn-select {
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 11px;
+            color: #475569;
             background: #fff;
-            border: 1px solid #e5e7eb;
-        }
-        .rich-toolbar button:hover {
-            background: #eef2f7;
-            color: #111827;
+            height: 22px;
         }
         .rich-area {
-            min-height: 160px;
-            padding: 12px 14px;
+            min-height: 130px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 11px 13px;
+            outline: none;
             font-size: 13px;
             line-height: 1.6;
-            outline: none;
+            color: #0f172a;
         }
-        .rich-area:empty:before {
+        .rich-area:empty::before {
             content: attr(data-placeholder);
             color: #9ca3af;
+            pointer-events: none;
         }
-        .chip-list {
+
+        /* ── Chips ── */
+        .choice-chip-wrap {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
+            gap: 6px;
+            min-height: 10px;
         }
         .choice-chip {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: #e8f7fc;
-            color: #0f6f93;
-            border-radius: 999px;
-            padding: 6px 10px 6px 12px;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: #dbeafe;
+            color: #1d4ed8;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 600;
         }
         .choice-chip button {
             border: none;
             background: transparent;
             color: inherit;
             cursor: pointer;
+            padding: 0;
             font-size: 14px;
             line-height: 1;
+            opacity: 0.7;
         }
-        .modal-footer .ghost-btn,
-        .modal-footer .primary-btn {
-            height: 42px;
-            padding: 0 18px;
-            border-radius: 10px;
-            min-width: 120px;
+        .choice-chip button:hover { opacity: 1; }
+
+        /* ── Footer: sticky bottom, shows correct buttons per step ── */
+        .job-create-panel [hidden] {
+            display: none !important;
         }
-        .modal-footer .ghost-btn {
-            border: 1px solid #e5e7eb;
+        .job-create-panel .modal-footer {
+            flex-shrink: 0 !important;
+            padding: 14px 24px !important;
+            border-top: 1px solid #f1f5f9 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 10px !important;
+            background: #ffffff !important;
+        }
+        .btn-secondary-custom {
+            padding: 9px 20px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
             background: #fff;
-            color: #111827;
-        }
-        .info-tip {
-            color: #9ca3af;
-            font-size: 12px;
-            cursor: help;
-        }
-        .applicant-profile-panel {
-            width: min(640px, 100%);
-        }
-        .applicant-profile-grid {
-            display: grid;
-            gap: 10px;
-        }
-        .applicant-profile-grid .summary-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
+            color: #374151;
             font-size: 13px;
-            border-bottom: 1px solid #eef2f7;
-            padding-bottom: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s, border-color 0.15s;
         }
-        .profile-block {
-            margin-top: 14px;
-        }
-        .profile-block h4 {
+        .btn-secondary-custom:hover { background: #f9fafb; border-color: #9ca3af; }
+        .btn-primary-custom {
+            padding: 9px 22px;
+            border-radius: 8px;
+            border: none;
+            background: #0ea5e9;
+            color: #fff;
             font-size: 13px;
-            margin-bottom: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s;
+            box-shadow: 0 1px 3px rgba(14,165,233,0.3);
         }
-        .status-select {
-            width: 100%;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 10px 12px;
-            font: inherit;
-        }
-        .record-item {
-            border: 1px solid #edf1f6;
-            background: #fafcff;
-            border-radius: 12px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
-        }
-        .record-item strong { display: block; font-size: 13px; }
-        .record-item span { font-size: 11px; color: #64748b; }
-        @media (max-width: 760px) {
-            .modal-backdrop {
-                justify-content: center;
-                padding: 8px;
-            }
-            .modal-panel,
-            .job-create-panel {
-                width: 100%;
-                height: calc(100vh - 16px);
-                max-height: calc(100vh - 16px);
-            }
-            .field-grid,
-            .field-grid .span-2 {
-                grid-template-columns: 1fr;
-                grid-column: auto;
-            }
-            .step {
-                font-size: 11px;
-            }
-        }
+        .btn-primary-custom:hover { background: #0284c7; }
 CSS;
 
-$html = str_replace('</style>', $modalStyles . "\n    </style>", $html);
+// Inject drawer CSS just before </body> so it loads AFTER app.css and wins the cascade
+$drawerStyleTag = "<style id='job-create-drawer-css'>\n" . $modalStyles . "\n</style>";
+
+$domicileParts = array_filter([
+    $profile['address'] ?? '',
+    $profile['village'] ?? '',
+    $profile['district'] ?? '',
+    $profile['city'] ?? '',
+    $profile['province'] ?? ''
+]);
+$employerDomicileAddress = !empty($domicileParts) ? implode(', ', $domicileParts) : ($profile['city'] ?? '');
+$employerDomicileEsc = htmlspecialchars($employerDomicileAddress, ENT_QUOTES, 'UTF-8');
+
+$kbjiList = [];
+try {
+    $kbjiList = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY kode_kbji ASC')->fetchAll() ?: [];
+} catch (Throwable $e) {}
 
 $kbjiOptionsHtml = '<option value="">Pilih jabatan sesuai KBJI</option>';
-try {
-    db()->query('SELECT 1 FROM kbji_data LIMIT 1');
-} catch (Throwable $kbjiMissing) {
-    db()->exec('CREATE TABLE IF NOT EXISTS kbji_data (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        kode_kbji VARCHAR(20) NOT NULL UNIQUE,
-        nama_jabatan VARCHAR(255) NOT NULL
-    )');
-    db()->exec("INSERT IGNORE INTO kbji_data (kode_kbji, nama_jabatan) VALUES
-        ('2512.01', 'Pengembang Perangkat Lunak'),
-        ('2512.02', 'Programmer (Programmer Komputer)'),
-        ('2511.01', 'Analis Sistem Komputer'),
-        ('5120.01', 'Koki'),
-        ('5230.01', 'Kasir'),
-        ('3322.01', 'Tenaga Penjualan (Sales)'),
-        ('4111.01', 'Staf Administrasi Umum'),
-        ('4312.01', 'Staf Entri Data'),
-        ('2141.01', 'Insinyur Industri dan Produksi'),
-        ('2421.01', 'Analis Manajemen'),
-        ('3411.01', 'Petugas Bantuan Hukum'),
-        ('5131.01', 'Pramusaji'),
-        ('2411.01', 'Akuntan'),
-        ('4311.01', 'Staf Akuntansi'),
-        ('5411.01', 'Petugas Keamanan (Satpam)'),
-        ('9111.01', 'Asisten Rumah Tangga'),
-        ('8322.01', 'Pengemudi Mobil Barang (Sopir)'),
-        ('3333.01', 'Agen Penyalur Tenaga Kerja'),
-        ('2211.01', 'Dokter Umum'),
-        ('2221.01', 'Perawat Profesional')");
+if (!empty($kbjiList)) {
+    foreach ($kbjiList as $kbji) {
+        $code = htmlspecialchars($kbji['kode_kbji']);
+        $name = htmlspecialchars($kbji['nama_jabatan']);
+        $kbjiOptionsHtml .= "<option value=\"{$code}\">{$code} - {$name}</option>";
+    }
+} else {
+    $kbjiOptionsHtml .= '<option value="5120.01">5120.01 - Juru Masak / Koki</option>'
+        . '<option value="5131.00">5131.00 - Pelayan Restoran / Kafe</option>'
+        . '<option value="5151.01">5151.01 - Pengurus Rumah Tangga / ART</option>'
+        . '<option value="8322.01">8322.01 - Pengemudi Mobil Pribadi</option>'
+        . '<option value="5322.00">5322.00 - Pengasuh Anak / Babysitter</option>'
+        . '<option value="5414.01">5414.01 - Penjaga Keamanan / Satpam</option>';
 }
-
-$kbjiStmt = db()->query('SELECT kode_kbji, nama_jabatan FROM kbji_data ORDER BY nama_jabatan ASC');
-foreach ($kbjiStmt as $kbjiRow) {
-    $kbjiOptionsHtml .= '<option value="' . e($kbjiRow['kode_kbji']) . '">' . e($kbjiRow['nama_jabatan']) . ' (' . e($kbjiRow['kode_kbji']) . ')</option>';
-}
-
-$employerEmail = e($user['email'] ?? '');
 
 $modal = <<<HTML
     <div class="modal-backdrop" data-modal="job-create">
-        <div class="modal-panel job-create-panel" role="dialog" aria-modal="true" aria-labelledby="jobCreateTitle">
+        <div class="modal-panel job-create-panel" role="dialog" aria-modal="true">
             <div class="modal-header">
                 <button type="button" class="modal-close" data-close-modal="job-create" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
                 <div class="modal-title" id="jobCreateTitle">Tambah Lowongan</div>
                 <div class="modal-subtitle" id="jobCreateSubtitle">Lengkapi form berikut untuk mengisi lowongan</div>
                 <div class="revision-banner" id="revisionBanner" hidden>
-                    <strong>Catatan Admin (Perlu Revisi)</strong>
+                    <strong><i class="fa-solid fa-triangle-exclamation"></i> Catatan Revisi dari Admin</strong>
                     <p id="revisionBannerText"></p>
                 </div>
-                <div class="stepper" data-job-stepper>
-                    <span class="step active" data-step-label="1"><span class="bubble">1</span> Informasi Loker</span>
-                    <span class="step-line" data-step-line="1"></span>
-                    <span class="step" data-step-label="2"><span class="bubble">2</span> Persyaratan</span>
-                    <span class="step-line" data-step-line="2"></span>
-                    <span class="step" data-step-label="3"><span class="bubble">3</span> Tambahan</span>
+            </div>
+            <div class="step-progress-wizard" aria-hidden="true">
+                <div class="step-progress-item active" data-step-label="1">
+                    <span class="step-badge">1</span>
+                    <span>Informasi Loker</span>
+                </div>
+                <div class="step-progress-line" data-step-line="1"></div>
+                <div class="step-progress-item" data-step-label="2">
+                    <span class="step-badge">2</span>
+                    <span>Persyaratan</span>
+                </div>
+                <div class="step-progress-line" data-step-line="2"></div>
+                <div class="step-progress-item" data-step-label="3">
+                    <span class="step-badge">3</span>
+                    <span>Tambahan</span>
                 </div>
             </div>
-            <form method="post" action="dashboard.php" novalidate data-job-create-form>
-                <input type="hidden" name="create_job" value="1">
-                <input type="hidden" name="revise_job_id" id="reviseJobId" value="">
-                <input type="hidden" name="status" value="Menunggu Verifikasi">
+            <form method="post" action="dashboard.php" data-job-create-form>
+                <input type="hidden" name="save_job" value="1">
+                <input type="hidden" name="job_action" value="save">
+                <input type="hidden" name="job_id" id="reviseJobId" value="">
                 <div class="modal-body">
-                    <div class="job-step" data-job-step="1">
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-briefcase"></i></div>
+                    <!-- Step 1: Informasi Loker -->
+                    <div class="form-step active" data-job-step="1">
+                        <!-- Section 1: Informasi Loker -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-briefcase"></i></div>
                                 <div>
-                                    <div class="section-title">Informasi Loker</div>
-                                    <div class="section-text">Judul, lokasi, hingga jenis disabilitas loker</div>
+                                    <h3 class="section-title">Informasi Loker</h3>
+                                    <p class="section-subtitle">Judul, lokasi, hingga jenis disabilitas loker</p>
                                 </div>
                             </div>
-                            <div class="field">
+
+                            <div class="form-group">
                                 <label>Judul loker <span class="req">*</span></label>
-                                <input type="text" name="job_title" placeholder="Masukkan judul loker" required>
+                                <input type="text" name="job_title" class="form-control-custom" placeholder="Masukkan judul loker" required>
                             </div>
-                            <div class="field">
+
+                            <div class="form-group">
                                 <label>Deskripsi loker <span class="req">*</span></label>
-                                <div class="rich-editor" data-rich-editor>
+                                <div class="rich-editor-shell" data-rich-editor>
                                     <div class="rich-toolbar">
-                                        <button type="button" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
-                                        <button type="button" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
-                                        <select data-block>
+                                        <button type="button" class="rich-btn" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="fullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="removeFormat" title="Hapus Format"><i class="fa-solid fa-eraser"></i></button>
+                                        <select class="rich-btn-select" data-cmd-select="formatBlock">
                                             <option value="p">Paragraph</option>
-                                            <option value="h3">Heading</option>
+                                            <option value="h1">Heading 1</option>
+                                            <option value="h2">Heading 2</option>
+                                            <option value="h3">Heading 3</option>
                                         </select>
-                                        <button type="button" data-cmd="bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
-                                        <button type="button" data-cmd="italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
-                                        <button type="button" data-cmd="underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
-                                        <button type="button" data-cmd="strikeThrough" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
-                                        <button type="button" data-cmd="justifyLeft" title="Rata kiri"><i class="fa-solid fa-align-left"></i></button>
-                                        <button type="button" data-cmd="justifyCenter" title="Rata tengah"><i class="fa-solid fa-align-center"></i></button>
-                                        <button type="button" data-cmd="justifyRight" title="Rata kanan"><i class="fa-solid fa-align-right"></i></button>
-                                        <button type="button" data-cmd="insertUnorderedList" title="Bullet"><i class="fa-solid fa-list-ul"></i></button>
-                                        <button type="button" data-cmd="insertOrderedList" title="Number"><i class="fa-solid fa-list-ol"></i></button>
-                                        <button type="button" data-cmd="indent" title="Indent"><i class="fa-solid fa-indent"></i></button>
-                                        <button type="button" data-cmd="outdent" title="Outdent"><i class="fa-solid fa-outdent"></i></button>
-                                        <button type="button" data-cmd="createLink" title="Tautan"><i class="fa-solid fa-link"></i></button>
+                                        <select class="rich-btn-select" data-cmd-select="fontSize">
+                                            <option value="3">Default</option>
+                                            <option value="2">Kecil</option>
+                                            <option value="4">Besar</option>
+                                        </select>
+                                        <button type="button" class="rich-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                                        <button type="button" class="rich-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                                        <button type="button" class="rich-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                                        <button type="button" class="rich-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                                        <button type="button" class="rich-btn" data-cmd="foreColor" title="Warna Teks"><span style="text-decoration:underline; font-weight:bold;">T</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="hiliteColor" title="Warna Sorot"><span style="background:#fef08a; padding:0 2px; font-weight:bold;">A</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertUnorderedList" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertOrderedList" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyLeft" title="Rata Kiri"><i class="fa-solid fa-align-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyCenter" title="Rata Tengah"><i class="fa-solid fa-align-center"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyRight" title="Rata Kanan"><i class="fa-solid fa-align-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="indent" title="Tambah Inden"><i class="fa-solid fa-indent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="outdent" title="Kurangi Inden"><i class="fa-solid fa-outdent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="createLink" title="Sisipkan Tautan"><i class="fa-solid fa-link"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertHorizontalRule" title="Garis Horisontal"><i class="fa-solid fa-minus"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertCode" title="Kode">&lt;&gt;</button>
+                                        <button type="button" class="rich-btn" data-cmd="insertTableCol" title="Tabel"><i class="fa-solid fa-table-cells"></i></button>
                                     </div>
                                     <div class="rich-area" contenteditable="true" data-placeholder="Masukkan deskripsi loker"></div>
-                                    <textarea name="job_description" required hidden></textarea>
+                                    <textarea name="job_description" hidden></textarea>
                                 </div>
                             </div>
-                            <div class="field">
+
+                            <div class="form-group">
                                 <label>Jabatan sesuai KBJI <span class="req">*</span></label>
-                                <select name="kbji_code" required>{$kbjiOptionsHtml}</select>
+                                <select name="kbji_code" class="form-control-custom" required>
+                                    {$kbjiOptionsHtml}
+                                </select>
                             </div>
-                            <div class="field">
+
+                            <div class="form-group">
                                 <label>Lokasi loker <span class="req">*</span></label>
-                                <select name="job_location" required>
-                                    <option value="">Pilih lokasi loker</option>
-                                    <option>Kota Bekasi</option>
-                                    <option>Kabupaten Bekasi</option>
-                                    <option>Kota Jakarta Pusat</option>
-                                    <option>Kota Jakarta Selatan</option>
-                                    <option>Kota Jakarta Timur</option>
-                                    <option>Kota Jakarta Barat</option>
-                                    <option>Kota Jakarta Utara</option>
-                                    <option>Kota Bandung</option>
-                                    <option>Kota Surabaya</option>
-                                    <option>Kota Semarang</option>
-                                    <option>Kota Yogyakarta</option>
-                                    <option>Kota Depok</option>
-                                    <option>Kota Tangerang</option>
-                                    <option>Kota Tangerang Selatan</option>
-                                    <option>Kota Medan</option>
-                                    <option>Kota Makassar</option>
-                                    <option>Kota Denpasar</option>
-                                </select>
+                                <input type="text" name="job_location" id="jobLocationInput" class="form-control-custom" placeholder="Pilih lokasi loker" required>
+                                <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:13px; font-weight:normal; color:#475569; cursor:pointer; user-select:none;">
+                                    <input type="checkbox" id="chkSameDomicile" data-domicile-address="{$employerDomicileEsc}">
+                                    <span>Alamat loker sama dengan alamat domisili pemberi kerja</span>
+                                </label>
                             </div>
-                            <div class="field-grid">
-                                <div class="field">
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
                                     <label>Jenis pekerjaan <span class="req">*</span></label>
-                                    <select name="job_type" required>
+                                    <select name="job_type" class="form-control-custom" required>
                                         <option value="">Pilih jenis pekerjaan</option>
-                                        <option>Penuh Waktu</option>
-                                        <option>Paruh Waktu</option>
-                                        <option>Kontrak</option>
-                                        <option>Magang</option>
-                                        <option>Freelance</option>
-                                        <option>Harian</option>
+                                        <option value="Penuh Waktu" selected>Penuh Waktu</option>
+                                        <option value="Paruh Waktu">Paruh Waktu</option>
+                                        <option value="Kontrak">Kontrak</option>
+                                        <option value="Harian Lepas">Harian Lepas</option>
+                                        <option value="Magang">Magang</option>
                                     </select>
                                 </div>
-                                <div class="field">
+                                <div class="form-group">
                                     <label>Bidang pekerjaan <span class="req">*</span></label>
-                                    <select name="job_field" required>
+                                    <select name="job_field" class="form-control-custom" required>
                                         <option value="">Pilih bidang pekerjaan</option>
-                                        <option>Teknologi Informasi</option>
-                                        <option>Administrasi</option>
-                                        <option>Keuangan &amp; Akuntansi</option>
-                                        <option>Penjualan &amp; Marketing</option>
-                                        <option>Kuliner &amp; Hospitality</option>
-                                        <option>Kesehatan</option>
-                                        <option>Pendidikan</option>
-                                        <option>Teknik &amp; Manufaktur</option>
-                                        <option>Logistik</option>
-                                        <option>Keamanan</option>
-                                        <option>Lainnya</option>
+                                        <option value="Akuntansi & Keuangan">Akuntansi & Keuangan</option>
+                                        <option value="Administrasi & Sekretaris">Administrasi & Sekretaris</option>
+                                        <option value="Rumah Tangga & ART / Pengasuh">Rumah Tangga & ART / Pengasuh</option>
+                                        <option value="Kuliner & Katering / Restoran">Kuliner & Katering / Restoran</option>
+                                        <option value="Keamanan & Kebersihan">Keamanan & Kebersihan</option>
+                                        <option value="Logistik, Pengemudi & Kurir">Logistik, Pengemudi & Kurir</option>
+                                        <option value="Penjualan, Kasir & Marketing">Penjualan, Kasir & Marketing</option>
+                                        <option value="Teknologi Informasi & Komputer">Teknologi Informasi & Komputer</option>
+                                        <option value="Teknik, Pemeliharaan & Konstruksi">Teknik, Pemeliharaan & Konstruksi</option>
+                                        <option value="Kesehatan & Perawatan">Kesehatan & Perawatan</option>
+                                        <option value="Pendidikan & Pelatihan">Pendidikan & Pelatihan</option>
+                                        <option value="Jasa Perorangan & Umum">Jasa Perorangan & Umum</option>
+                                        <option value="Lainnya">Lainnya</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="field">
-                                <label>Industri / Sektor <span class="req">*</span></label>
-                                <select name="industry" required>
-                                    <option value="">Pilih industri / sektor</option>
-                                    <option>Informasi dan Komunikasi</option>
-                                    <option>Penyediaan Akomodasi dan Makan Minum</option>
-                                    <option>Jasa Keuangan dan Asuransi</option>
-                                    <option>Industri Pengolahan</option>
-                                    <option>Perdagangan Besar dan Eceran</option>
-                                    <option>Jasa Kesehatan dan Kegiatan Sosial</option>
-                                    <option>Pendidikan</option>
-                                    <option>Konstruksi</option>
-                                    <option>Transportasi dan Pergudangan</option>
-                                    <option>Aktivitas Jasa Lainnya</option>
+
+                            <div class="form-group">
+                                <label>Industri / sektor <span class="req">*</span></label>
+                                <select name="industry" class="form-control-custom" required>
+                                    <option value="">Pilih Industri / Sektor Pekerjaan</option>
+                                    <option value="Rumah Tangga & Jasa Perorangan">Rumah Tangga & Jasa Perorangan</option>
+                                    <option value="Kuliner & Katering / Restoran">Kuliner & Katering / Restoran</option>
+                                    <option value="Retail & Perdagangan">Retail & Perdagangan</option>
+                                    <option value="Transportasi & Logistik">Transportasi & Logistik</option>
+                                    <option value="Keamanan & Kebersihan">Keamanan & Kebersihan</option>
+                                    <option value="Jasa Profesional & Administrasi">Jasa Profesional & Administrasi</option>
+                                    <option value="Konstruksi & Properti">Konstruksi & Properti</option>
+                                    <option value="Lainnya">Lainnya</option>
                                 </select>
                             </div>
-                            <div class="field">
-                                <div class="field-label">Kondisi fisik <span class="req">*</span></div>
-                                <div class="check-row" data-required-group="Pilih minimal satu kondisi fisik">
-                                    <label class="check-item">
-                                        <input type="checkbox" name="physical_condition[]" value="Disabilitas" checked>
-                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                        <span class="check-copy"><strong>Disabilitas</strong></span>
-                                    </label>
-                                    <label class="check-item">
-                                        <input type="checkbox" name="physical_condition[]" value="Non Disabilitas" checked>
-                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                        <span class="check-copy"><strong>Non Disabilitas</strong></span>
-                                    </label>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Kondisi fisik <span class="req">*</span></label>
+                                    <div class="pill-group" data-required-group="Pilih minimal satu kondisi fisik.">
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="physical_condition[]" id="chkDisability" value="Disabilitas">
+                                            <span>Disabilitas</span>
+                                        </label>
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="physical_condition[]" value="Non Disabilitas" checked>
+                                            <span>Non Disabilitas</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Jenis kelamin <span class="req">*</span></label>
+                                    <div class="pill-group" data-required-group="Pilih minimal satu jenis kelamin.">
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="gender[]" value="Laki-laki" checked>
+                                            <span>Laki-laki</span>
+                                        </label>
+                                        <label class="pill-option">
+                                            <input type="checkbox" name="gender[]" value="Perempuan" checked>
+                                            <span>Perempuan</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="field">
-                                <div class="field-label">Jenis kelamin <span class="req">*</span></div>
-                                <div class="check-row" data-required-group="Pilih minimal satu jenis kelamin">
-                                    <label class="check-item">
-                                        <input type="checkbox" name="gender[]" value="Laki-laki" checked>
-                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                        <span class="check-copy"><strong>Laki-laki</strong></span>
-                                    </label>
-                                    <label class="check-item">
-                                        <input type="checkbox" name="gender[]" value="Perempuan" checked>
-                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                        <span class="check-copy"><strong>Perempuan</strong></span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="field">
-                                <label>Jenis disabilitas tidak diperbolehkan <i class="fa-solid fa-circle-info info-tip" title="Kosongkan jika seluruh jenis disabilitas diperbolehkan"></i></label>
-                                <select name="disability_excluded">
+
+                            <div class="form-group" id="disabilityExcludedGroup" style="display:none;">
+                                <label>Jenis disabilitas tidak diperbolehkan</label>
+                                <select name="disability_excluded" class="form-control-custom">
                                     <option value="">Pilih jenis disabilitas</option>
-                                    <option>Tuna Netra</option>
-                                    <option>Tuna Rungu</option>
-                                    <option>Tuna Wicara</option>
-                                    <option>Tuna Daksa</option>
-                                    <option>Tuna Grahita</option>
-                                    <option>Autisme</option>
-                                    <option>Disabilitas Ganda</option>
+                                    <option value="Tidak Ada">Tidak Ada (Semua diperbolehkan)</option>
+                                    <option value="Disabilitas Fisik / Sensorik Berat">Disabilitas Fisik / Sensorik Berat</option>
+                                    <option value="Disabilitas Intelektual">Disabilitas Intelektual</option>
+                                    <option value="Disabilitas Netra">Disabilitas Netra (Tunanetra)</option>
+                                    <option value="Disabilitas Rungu">Disabilitas Rungu / Wicara</option>
+                                    <option value="Disabilitas Mental">Disabilitas Mental</option>
                                 </select>
-                                <span class="field-hint">Pilih jenis disabilitas yang tidak diperbolehkan untuk melamar.</span>
+                                <div class="field-hint"><i class="fa-regular fa-circle-info"></i> Pilih jenis disabilitas yang tidak diperbolehkan untuk melamar.</div>
                             </div>
                         </div>
 
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <!-- Section 2: Preferensi Gaji -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                                 <div>
-                                    <div class="section-title">Preferensi Gaji</div>
-                                    <div class="section-text">Besaran dan pengaturan gaji pada loker</div>
+                                    <h3 class="section-title">Preferensi Gaji</h3>
+                                    <p class="section-subtitle">Besaran dan pengaturan gaji pada loker</p>
                                 </div>
                             </div>
-                            <div class="field-grid">
-                                <div class="field">
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
                                     <label>Gaji minimal <span class="req">*</span></label>
-                                    <div class="affix-input">
-                                        <span class="affix">Rp</span>
-                                        <input type="number" name="salary_min" min="0" step="1000" placeholder="Isi minimal gaji..." required>
+                                    <div class="input-addon-group">
+                                        <span class="addon-text">Rp</span>
+                                        <input type="number" name="salary_min" placeholder="Isi minimal gaji yang akan diberikan" required min="0">
                                     </div>
                                 </div>
-                                <div class="field">
+                                <div class="form-group">
                                     <label>Gaji maksimal <span class="req">*</span></label>
-                                    <div class="affix-input">
-                                        <span class="affix">Rp</span>
-                                        <input type="number" name="salary_max" min="0" step="1000" placeholder="Isi maksimal gaji..." required>
+                                    <div class="input-addon-group">
+                                        <span class="addon-text">Rp</span>
+                                        <input type="number" name="salary_max" placeholder="Isi maksimal gaji yang akan diberikan" required min="0">
                                     </div>
                                 </div>
                             </div>
-                            <div class="field">
-                                <label class="check-item">
-                                    <input type="checkbox" name="show_salary" value="1">
-                                    <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                    <span class="check-copy">
-                                        <strong>Tampilkan gaji</strong>
-                                        <span>Fun facts: Berbagi rentang gaji meningkatkan klik posting pekerjaan kamu.</span>
-                                    </span>
+
+                            <div class="card-toggle-group">
+                                <label class="card-toggle-item">
+                                    <input type="checkbox" name="show_salary" value="1" checked>
+                                    <div class="card-toggle-content">
+                                        <span class="card-toggle-title">Tampilkan gaji</span>
+                                        <span class="card-toggle-desc">Fun facts: Berbagi rentang gaji meningkatkan klik posting pekerjaan kamu.</span>
+                                    </div>
                                 </label>
                             </div>
                         </div>
 
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <!-- Section 3: Preferensi Lainnya -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-sliders"></i></div>
                                 <div>
-                                    <div class="section-title">Preferensi Lainnya</div>
-                                    <div class="section-text">Tentukan preferensi lainnya untuk lowongan pekerjaan</div>
+                                    <h3 class="section-title">Preferensi Lainnya</h3>
+                                    <p class="section-subtitle">Tentukan preferensi lainnya untuk lowongan pekerjaan</p>
                                 </div>
                             </div>
-                            <div class="field">
-                                <label class="check-item">
+
+                            <div class="card-toggle-group">
+                                <label class="card-toggle-item">
                                     <input type="checkbox" name="is_remote" value="1">
-                                    <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                    <span class="check-copy">
-                                        <strong>Remote working</strong>
-                                        <span>Dapat bekerja secara remote (jarak jauh)</span>
-                                    </span>
+                                    <div class="card-toggle-content">
+                                        <span class="card-toggle-title">Remote working</span>
+                                        <span class="card-toggle-desc">Dapat bekerja secara remote (jarak jauh)</span>
+                                    </div>
                                 </label>
-                            </div>
-                            <div class="field">
-                                <label class="check-item">
+                                <label class="card-toggle-item">
                                     <input type="checkbox" name="is_limited" value="1">
-                                    <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                    <span class="check-copy">
-                                        <strong>Terbatas</strong>
-                                        <span>Loker tidak dipublikasikan secara umum</span>
-                                    </span>
+                                    <div class="card-toggle-content">
+                                        <span class="card-toggle-title">Terbatas</span>
+                                        <span class="card-toggle-desc">Loker tidak dipublikasikan secara umum</span>
+                                    </div>
                                 </label>
                             </div>
                         </div>
 
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                        <!-- Section 4: Durasi Tayang & Kuota Loker -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-calendar-days"></i></div>
                                 <div>
-                                    <div class="section-title">Durasi Tayang &amp; Kuota Loker</div>
-                                    <div class="section-text">Tentukan berapa lama loker tayang setelah diverifikasi dan jumlah kuota yang diperlukan</div>
+                                    <h3 class="section-title">Durasi Tayang & Kuota Loker</h3>
+                                    <p class="section-subtitle">Tentukan berapa lama loker tayang setelah diverifikasi dan jumlah kuota yang diperlukan</p>
                                 </div>
                             </div>
-                            <div class="field">
+
+                            <div class="form-group">
                                 <label>Lama expired loker <span class="req">*</span></label>
-                                <select name="expiry_days" required>
+                                <select name="expiry_days" class="form-control-custom" required>
                                     <option value="">Pilih lama expired loker</option>
-                                    <option value="7">7 hari</option>
-                                    <option value="14">14 hari</option>
-                                    <option value="30">30 hari</option>
-                                    <option value="60">60 hari</option>
-                                    <option value="90">90 hari</option>
+                                    <option value="14">14 Hari</option>
+                                    <option value="30" selected>30 Hari</option>
+                                    <option value="60">60 Hari</option>
                                 </select>
                             </div>
-                            <div class="field">
+
+                            <div class="form-group">
                                 <label>Jumlah lowongan <span class="req">*</span></label>
-                                <div class="affix-input suffix">
-                                    <input type="number" name="quota" min="1" value="1" placeholder="Isi jumlah lowongan" required>
-                                    <span class="affix">Orang</span>
+                                <div class="input-addon-group">
+                                    <input type="number" name="quota" value="1" min="1" placeholder="Isi jumlah lowongan pada loker" required>
+                                    <span class="addon-suffix">Orang</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="job-step" data-job-step="2" hidden>
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                    <!-- Step 2: Persyaratan -->
+                    <div class="form-step" data-job-step="2" hidden>
+                        <!-- Section 1: Persyaratan Umum -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-file-lines"></i></div>
                                 <div>
-                                    <div class="section-title">Persyaratan Umum</div>
-                                    <div class="section-text">Informasi pendidikan, pengalaman, status pernikahan, dan usia.</div>
+                                    <h3 class="section-title">Persyaratan Umum</h3>
+                                    <p class="section-subtitle">Informasi pendidikan, pengalaman, status pernikahan, dan usia</p>
                                 </div>
                             </div>
-                            <div class="field-grid">
-                                <div class="field">
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
                                     <label>Pendidikan minimal <span class="req">*</span></label>
-                                    <select name="education_required" required>
+                                    <select name="education_required" class="form-control-custom" required>
                                         <option value="">Pilih pendidikan minimal</option>
-                                        <option>SD</option>
-                                        <option>SMP</option>
-                                        <option>SMA / SMK</option>
-                                        <option>D1</option>
-                                        <option>D2</option>
-                                        <option>D3</option>
-                                        <option>D4 / S1</option>
-                                        <option>S2</option>
-                                        <option>S3</option>
+                                        <option value="Tidak Ada Minimal">Tidak Ada Minimal</option>
+                                        <option value="SD">SD Sederajat</option>
+                                        <option value="SMP">SMP Sederajat</option>
+                                        <option value="SMA/SMK" selected>SMA/SMK Sederajat</option>
+                                        <option value="Diploma">Diploma (D3)</option>
+                                        <option value="Sarjana">Sarjana (S1)</option>
                                     </select>
                                 </div>
-                                <div class="field">
+                                <div class="form-group">
                                     <label>Pengalaman dibutuhkan <span class="req">*</span></label>
-                                    <select name="experience_required" required>
+                                    <select name="experience_required" class="form-control-custom" required>
                                         <option value="">Pilih pengalaman</option>
-                                        <option>Tanpa pengalaman</option>
-                                        <option>Kurang dari 1 tahun</option>
-                                        <option>1 - 2 tahun</option>
-                                        <option>3 - 5 tahun</option>
-                                        <option>Lebih dari 5 tahun</option>
+                                        <option value="Fresh Graduate / Pemula">Fresh Graduate / Pemula</option>
+                                        <option value="Kurang dari 1 tahun">Kurang dari 1 tahun</option>
+                                        <option value="1 - 3 tahun" selected>1 - 3 tahun</option>
+                                        <option value="Lebih dari 3 tahun">Lebih dari 3 tahun</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="field">
-                                <div class="field-label">Status pernikahan <span class="req">*</span></div>
-                                <div class="check-row" data-required-group="Pilih minimal satu status pernikahan">
-                                    <label class="check-item">
+
+                            <div class="form-group">
+                                <label>Status Pernikahan <span class="req">*</span></label>
+                                <div class="pill-group" data-required-group="Pilih minimal satu status pernikahan.">
+                                    <label class="pill-option">
                                         <input type="checkbox" name="marital_status[]" value="Telah Menikah" checked>
-                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                        <span class="check-copy"><strong>Telah Menikah</strong></span>
+                                        <span>Telah Menikah</span>
                                     </label>
-                                    <label class="check-item">
+                                    <label class="pill-option">
                                         <input type="checkbox" name="marital_status[]" value="Lajang / Belum Menikah" checked>
-                                        <span class="check-box"><i class="fa-solid fa-check"></i></span>
-                                        <span class="check-copy"><strong>Lajang / Belum Menikah</strong></span>
+                                        <span>Lajang / Belum Menikah</span>
                                     </label>
                                 </div>
                             </div>
-                            <div class="field-grid">
-                                <div class="field">
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
                                     <label>Usia minimal <span class="req">*</span></label>
-                                    <div class="affix-input suffix">
-                                        <input type="number" name="age_min" min="15" max="70" placeholder="Isi usia minimal" required>
-                                        <span class="affix">Tahun</span>
+                                    <div class="input-addon-group">
+                                        <input type="number" name="age_min" placeholder="Isi usia minimal" required min="17" max="80" value="18">
+                                        <span class="addon-suffix">Tahun</span>
                                     </div>
                                 </div>
-                                <div class="field">
+                                <div class="form-group">
                                     <label>Usia maksimal <span class="req">*</span></label>
-                                    <div class="affix-input suffix">
-                                        <input type="number" name="age_max" min="15" max="70" placeholder="Isi usia maksimal" required>
-                                        <span class="affix">Tahun</span>
+                                    <div class="input-addon-group">
+                                        <input type="number" name="age_max" placeholder="Isi usia maksimal" required min="17" max="80" value="45">
+                                        <span class="addon-suffix">Tahun</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                        <!-- Section 2: Persyaratan Khusus -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-file-signature"></i></div>
                                 <div>
-                                    <div class="section-title">Persyaratan Khusus</div>
-                                    <div class="section-text">Masukkan persyaratan khusus untuk loker ini.</div>
+                                    <h3 class="section-title">Persyaratan Khusus</h3>
+                                    <p class="section-subtitle">Masukkan persyaratan khusus untuk loker ini</p>
                                 </div>
                             </div>
-                            <div class="field">
-                                <div class="rich-editor" data-rich-editor>
+
+                            <div class="form-group">
+                                <div class="rich-editor-shell" data-rich-editor>
                                     <div class="rich-toolbar">
-                                        <button type="button" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
-                                        <button type="button" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
-                                        <select data-block>
+                                        <button type="button" class="rich-btn" data-cmd="undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="redo" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="fullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="removeFormat" title="Hapus Format"><i class="fa-solid fa-eraser"></i></button>
+                                        <select class="rich-btn-select" data-cmd-select="formatBlock">
                                             <option value="p">Paragraph</option>
-                                            <option value="h3">Heading</option>
+                                            <option value="h1">Heading 1</option>
+                                            <option value="h2">Heading 2</option>
+                                            <option value="h3">Heading 3</option>
                                         </select>
-                                        <button type="button" data-cmd="bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
-                                        <button type="button" data-cmd="italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
-                                        <button type="button" data-cmd="underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
-                                        <button type="button" data-cmd="strikeThrough" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
-                                        <button type="button" data-cmd="justifyLeft" title="Rata kiri"><i class="fa-solid fa-align-left"></i></button>
-                                        <button type="button" data-cmd="justifyCenter" title="Rata tengah"><i class="fa-solid fa-align-center"></i></button>
-                                        <button type="button" data-cmd="justifyRight" title="Rata kanan"><i class="fa-solid fa-align-right"></i></button>
-                                        <button type="button" data-cmd="insertUnorderedList" title="Bullet"><i class="fa-solid fa-list-ul"></i></button>
-                                        <button type="button" data-cmd="insertOrderedList" title="Number"><i class="fa-solid fa-list-ol"></i></button>
-                                        <button type="button" data-cmd="createLink" title="Tautan"><i class="fa-solid fa-link"></i></button>
+                                        <select class="rich-btn-select" data-cmd-select="fontSize">
+                                            <option value="3">Default</option>
+                                            <option value="2">Kecil</option>
+                                            <option value="4">Besar</option>
+                                        </select>
+                                        <button type="button" class="rich-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                                        <button type="button" class="rich-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                                        <button type="button" class="rich-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                                        <button type="button" class="rich-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                                        <button type="button" class="rich-btn" data-cmd="foreColor" title="Warna Teks"><span style="text-decoration:underline; font-weight:bold;">T</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="hiliteColor" title="Warna Sorot"><span style="background:#fef08a; padding:0 2px; font-weight:bold;">A</span><small>▾</small></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertUnorderedList" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertOrderedList" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyLeft" title="Rata Kiri"><i class="fa-solid fa-align-left"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyCenter" title="Rata Tengah"><i class="fa-solid fa-align-center"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="justifyRight" title="Rata Kanan"><i class="fa-solid fa-align-right"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="indent" title="Tambah Inden"><i class="fa-solid fa-indent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="outdent" title="Kurangi Inden"><i class="fa-solid fa-outdent"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="createLink" title="Sisipkan Tautan"><i class="fa-solid fa-link"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertHorizontalRule" title="Garis Horisontal"><i class="fa-solid fa-minus"></i></button>
+                                        <button type="button" class="rich-btn" data-cmd="insertCode" title="Kode">&lt;&gt;</button>
+                                        <button type="button" class="rich-btn" data-cmd="insertTableCol" title="Tabel"><i class="fa-solid fa-table-cells"></i></button>
                                     </div>
-                                    <div class="rich-area" contenteditable="true" data-placeholder="Masukkan persyaratan khusus"></div>
+                                    <div class="rich-area" contenteditable="true" data-placeholder="Masukkan persyaratan khusus untuk loker ini"></div>
                                     <textarea name="special_requirements" hidden></textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="job-step" data-job-step="3" hidden>
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <!-- Step 3: Tambahan -->
+                    <div class="form-step" data-job-step="3" hidden>
+                        <!-- Section 1: Skill / Keahlian -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-graduation-cap"></i></div>
                                 <div>
-                                    <div class="section-title">Skill / Keahlian</div>
-                                    <div class="section-text">Keahlian sangat berpengaruh untuk sistem pencocokan dengan pencari kerja.</div>
+                                    <h3 class="section-title">Skill / Keahlian</h3>
+                                    <p class="section-subtitle">Keahlian sangat berpengaruh untuk sistem pencocokan dengan pencari kerja.</p>
                                 </div>
                             </div>
-                            <div class="field">
-                                <select data-chip-select="skills">
-                                    <option value="">Pilih keahlian</option>
-                                    <option>Microsoft Office</option>
-                                    <option>Komunikasi</option>
-                                    <option>Pelayanan Pelanggan</option>
-                                    <option>Administrasi</option>
-                                    <option>Memasak</option>
-                                    <option>Mengemudi</option>
-                                    <option>Bahasa Inggris</option>
-                                    <option>Komputer</option>
-                                    <option>Penjualan</option>
-                                    <option>Akuntansi</option>
-                                    <option>Desain Grafis</option>
-                                    <option>Pemrograman</option>
-                                    <option>Manajemen Waktu</option>
-                                    <option>Kerja Tim</option>
-                                </select>
-                                <div class="chip-list" data-chip-list="skills"></div>
-                                <input type="hidden" name="skills" data-chip-value="skills" required>
+
+                            <div class="form-group">
+                                <input type="text" data-chip-input="skills" class="form-control-custom" placeholder="Pilih keahlian">
+                                <input type="hidden" name="skills" data-chip-value="skills">
+                                <div class="choice-chip-wrap" data-chip-list="skills" style="margin-top:8px;"></div>
                             </div>
                         </div>
-                        <div class="modal-section">
-                            <div class="section-heading">
-                                <div class="section-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+
+                        <!-- Section 2: Kontak -->
+                        <div class="form-section-card">
+                            <div class="form-section-header">
+                                <div class="form-section-icon"><i class="fa-solid fa-address-book"></i></div>
                                 <div>
-                                    <div class="section-title">Kontak</div>
-                                    <div class="section-text">Kami akan mengirimkan email ke daftar email di bawah ini untuk setiap lamaran yang masuk.</div>
+                                    <h3 class="section-title">Kontak</h3>
+                                    <p class="section-subtitle">Kami akan mengirimkan email ke daftar email di bawah ini untuk setiap lamaran yang masuk.</p>
                                 </div>
                             </div>
-                            <div class="field">
-                                <input type="email" data-chip-input="contacts" placeholder="Klik untuk menambahkan kontak">
-                                <div class="chip-list" data-chip-list="contacts"></div>
-                                <input type="hidden" name="contacts" data-chip-value="contacts" value="{$employerEmail}" required>
+
+                            <div class="form-group">
+                                <input type="text" data-chip-input="contacts" class="form-control-custom" placeholder="Klik untuk menambahkan kontak">
+                                <input type="hidden" name="contacts" data-chip-value="contacts">
+                                <div class="choice-chip-wrap" data-chip-list="contacts" style="margin-top:8px;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="ghost-btn" data-job-cancel data-close-modal="job-create">Batal</button>
-                    <button type="button" class="ghost-btn" data-job-back hidden><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-                    <button type="button" class="primary-btn" data-job-next>Selanjutnya</button>
-                    <button type="submit" class="primary-btn" data-job-submit hidden>Tambah Loker</button>
+                    <button type="button" class="btn-secondary-custom" data-job-cancel data-close-modal="job-create">Batal</button>
+                    <button type="button" class="btn-secondary-custom" data-job-back hidden><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+                    <button type="button" class="btn-primary-custom" data-job-next>Selanjutnya <i class="fa-solid fa-arrow-right"></i></button>
+                    <button type="submit" class="btn-primary-custom" data-job-submit hidden><i class="fa-solid fa-paper-plane"></i> Tambah Loker</button>
                 </div>
             </form>
         </div>
@@ -1196,10 +2044,11 @@ $modal = <<<HTML
                             Anda menetapkan kandidat kurang dari kuota yang tersedia. Mohon pilih alasan mengapa sisa kuota belum terpenuhi (pilih minimal 1):
                         </div>
                         <div style="display:flex; flex-direction:column; gap:8px; margin-bottom: 16px;">
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar tidak sesuai kualifikasi"> Pelamar tidak sesuai kualifikasi</label>
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar menolak tawaran"> Pelamar menolak tawaran</label>
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kebutuhan perusahaan berubah"> Kebutuhan perusahaan berubah</label>
-                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kandidat dari luar sistem"> Kandidat dari luar sistem</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Jumlah pelamar belum mencukupi"> Jumlah pelamar belum mencukupi</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar belum sesuai kompetensi/kualifikasi"> Pelamar belum sesuai kompetensi/kualifikasi</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Pelamar mengundurkan diri"> Pelamar mengundurkan diri</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kandidat tidak hadir/tidak melanjutkan proses seleksi"> Kandidat tidak hadir/tidak melanjutkan proses seleksi</label>
+                            <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Kesepakatan kerja tidak tercapai"> Kesepakatan kerja tidak tercapai</label>
                             <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Lainnya" onchange="document.getElementById('reason_lainnya').style.display = this.checked ? 'block' : 'none'"> Lainnya</label>
                             <textarea id="reason_lainnya" name="reason_lainnya" placeholder="Tulis alasan spesifik Anda..." style="display:none; font-size:13px; padding:8px; border:1px solid #dbe7f0; border-radius:8px; min-height:60px; margin-top:4px;"></textarea>
                         </div>
@@ -1257,369 +2106,22 @@ $modal = <<<HTML
     </div>
 HTML;
 
-$html = str_replace('</body>', $modal . "\n</body>", $html);
+// Inject modal HTML + drawer CSS (AFTER app.css) before </body>
+$html = str_replace('</body>', $drawerStyleTag . "\n" . $modal . "\n</body>", $html);
 
-$html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', '<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', $html);
-$html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', '<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', $html);
-$html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i> Tambah Lowongan', '<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan', $html);
+$html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i> Tambah</button>', '<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
+$html = str_replace('<button class="primary-btn"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', '<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
 
-if (empty($profile['verified']) || $isTransitionPeriod) {
-    $html = str_replace('<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', '<button class="primary-btn" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', $html);
-    $html = str_replace('<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan', '<button class="primary-btn" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah Lowongan', $html);
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_job'])) {
-    if (empty($profile['verified'])) {
-        flash('error', 'Tidak dapat membuat lowongan karena profil Anda belum diverifikasi oleh Admin.');
-        redirect('dashboard.php#lowongan');
-        exit;
-    }
-    
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
-    if ($isExpired) {
-        if ($daysRemaining >= -7) {
-            $verificationStatus = 'TRANSITION_LIMITED';
-            $isTransitionPeriod = true;
-        } else {
-            $verificationStatus = 'FULL_DISABLED';
-            $isFullDisable = true;
-        }
-    }
+if (empty($profile['verified']) || $isTransitionPeriod || $isFullDisable || $verificationStatus === 'SUSPENDED') {
+    $html = str_replace('<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah</button>', '<button class="primary-btn" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
+    $html = str_replace('<button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>', '<button class="primary-btn" style="opacity:0.5;cursor:not-allowed;" disabled><i class="fa-solid fa-plus"></i> Tambah</button>', $html);
 }
 
 // Lock state logic
-$isDashboardLocked = in_array($verificationStatus, ['NOT_SUBMITTED', 'PENDING', 'SUSPENDED', 'FULL_DISABLED']);
-if (isset($_GET['open_profile']) && $_GET['open_profile'] == '1') {
-    $showProfileModal = true;
-} else {
-    $showProfileModal = ($verificationStatus === 'NOT_SUBMITTED');
-}
+$isDashboardLocked = in_array($verificationStatus, ['NOT_SUBMITTED', 'PENDING', 'SUSPENDED', 'FULL_DISABLED'], true);
 
-// --- POST HANDLERS ---
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    
-    // 1. SIMPAN & AJUKAN PROFIL PEMBERI KERJA INDIVIDU
-    if (isset($_POST['submit_profile'])) {
-        $ownerName   = trim($_POST['owner_name'] ?? '');
-        $nik         = trim($_POST['nik'] ?? '');
-        $phone       = trim($_POST['phone'] ?? '');
-        $whatsapp    = trim($_POST['whatsapp'] ?? '');
-        $profession  = trim($_POST['profession'] ?? '');
-        $npwp        = trim($_POST['npwp'] ?? '');
-        
-        $linkedin    = trim($_POST['linkedin'] ?? '');
-        $facebook    = trim($_POST['facebook'] ?? '');
-        $instagram   = trim($_POST['instagram'] ?? '');
-
-        $sameLoc     = isset($_POST['same_location_siapkerja']) ? 1 : 0;
-        $province    = trim($_POST['province'] ?? '');
-        $city        = trim($_POST['city'] ?? '');
-        $district    = trim($_POST['district'] ?? '');
-        $village     = trim($_POST['village'] ?? '');
-        $postalCode  = trim($_POST['postal_code'] ?? '');
-
-        $sameAddr    = isset($_POST['same_address_siapkerja']) ? 1 : 0;
-        $address     = trim($_POST['address'] ?? '');
-        $addressDetail = trim($_POST['address_detail'] ?? '');
-
-        $latitude    = trim($_POST['latitude'] ?? '-6.241586');
-        $longitude   = trim($_POST['longitude'] ?? '106.992416');
-        $description = trim($_POST['description'] ?? '');
-        $consent     = isset($_POST['user_consent']) ? 1 : 0;
-
-        if ($ownerName === '' || $nik === '' || $phone === '' || $profession === '' || $npwp === '' || $province === '' || $city === '' || $address === '' || !$consent) {
-            flash('error', 'Lengkapi semua field wajib dan centang persetujuan pengguna.');
-            redirect('dashboard.php?open_profile=1');
-            exit;
-        }
-
-        if ($profile) {
-            $stmt = db()->prepare('UPDATE employer_profiles SET 
-                owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
-                linkedin = ?, facebook = ?, instagram = ?,
-                same_location_siapkerja = ?, province = ?, city = ?, district = ?, village = ?, postal_code = ?,
-                same_address_siapkerja = ?, address = ?, address_detail = ?,
-                latitude = ?, longitude = ?, description = ?, user_consent = ?,
-                verification_status = "PENDING", verified = 0, updated_at = NOW()
-                WHERE user_id = ?');
-            $stmt->execute([
-                $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
-                $linkedin, $facebook, $instagram,
-                $sameLoc, $province, $city, $district, $village, $postalCode,
-                $sameAddr, $address, $addressDetail,
-                $latitude, $longitude, $description, $consent,
-                $user['id']
-            ]);
-        } else {
-            $stmt = db()->prepare('INSERT INTO employer_profiles (
-                user_id, owner_name, nik, phone, whatsapp, profession, npwp,
-                linkedin, facebook, instagram,
-                same_location_siapkerja, province, city, district, village, postal_code,
-                same_address_siapkerja, address, address_detail,
-                latitude, longitude, description, user_consent,
-                verification_status, verified
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0)');
-            $stmt->execute([
-                $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
-                $linkedin, $facebook, $instagram,
-                $sameLoc, $province, $city, $district, $village, $postalCode,
-                $sameAddr, $address, $addressDetail,
-                $latitude, $longitude, $description, $consent
-            ]);
-        }
-
-        db()->prepare('UPDATE users SET name = ?, profile_complete = 1 WHERE id = ?')->execute([$ownerName, $user['id']]);
-
-        flash('pending_popup', 'Profil Anda berhasil diajukan! Status Profil: Menunggu Verifikasi.');
-        redirect('dashboard.php');
-        exit;
-    }
-
-<<<<<<< HEAD
-    // 2. BUAT LOWONGAN BARU (SELALU STATUS DRAFT)
-    if (isset($_POST['create_job'])) {
-        if ($verificationStatus !== 'APPROVED') {
-            flash('error', 'Tidak dapat membuat lowongan. Akun Anda belum terverifikasi atau dalam status terkunci.');
-=======
-    $title = trim($_POST['job_title'] ?? '');
-    $description = trim(strip_tags($_POST['job_description'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>'));
-    $location = trim($_POST['job_location'] ?? '');
-    $jobType = trim($_POST['job_type'] ?? '');
-    $industry = trim($_POST['industry'] ?? '');
-    $kbjiCode = trim($_POST['kbji_code'] ?? '');
-    $quota = max(1, (int) ($_POST['quota'] ?? 1));
-    $status = 'Menunggu Verifikasi';
-    $reviseJobId = (int) ($_POST['revise_job_id'] ?? 0);
-    $salaryMin = ($_POST['salary_min'] ?? '') !== '' ? (int) $_POST['salary_min'] : null;
-    $salaryMax = ($_POST['salary_max'] ?? '') !== '' ? (int) $_POST['salary_max'] : null;
-    $details = json_encode([
-        'job_field' => trim($_POST['job_field'] ?? ''),
-        'physical_conditions' => array_values(array_filter((array) ($_POST['physical_condition'] ?? []))),
-        'genders' => array_values(array_filter((array) ($_POST['gender'] ?? []))),
-        'disability_excluded' => trim($_POST['disability_excluded'] ?? ''),
-        'show_salary' => !empty($_POST['show_salary']),
-        'is_remote' => !empty($_POST['is_remote']),
-        'is_limited' => !empty($_POST['is_limited']),
-        'expiry_days' => (int) ($_POST['expiry_days'] ?? 0),
-        'education_required' => trim($_POST['education_required'] ?? ''),
-        'experience_required' => trim($_POST['experience_required'] ?? ''),
-        'marital_statuses' => array_values(array_filter((array) ($_POST['marital_status'] ?? []))),
-        'age_min' => ($_POST['age_min'] ?? '') !== '' ? (int) $_POST['age_min'] : null,
-        'age_max' => ($_POST['age_max'] ?? '') !== '' ? (int) $_POST['age_max'] : null,
-        'special_requirements' => trim(strip_tags($_POST['special_requirements'] ?? '', '<p><br><b><strong><i><em><u><s><ul><ol><li><h3><a>')),
-        'skills' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['skills'] ?? ''))))),
-        'contacts' => array_values(array_filter(array_map('trim', explode(',', (string) ($_POST['contacts'] ?? ''))))),
-    ], JSON_UNESCAPED_UNICODE);
-
-    if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
-        $jobColumns = array_column(db()->query('SHOW COLUMNS FROM job_posts')->fetchAll(), 'Field');
-        $neededColumns = [
-            'kbji_code' => 'VARCHAR(20) NULL',
-            'details' => 'TEXT NULL',
-            'parent_job_id' => 'INT NULL',
-            'unfulfilled_reason' => 'TEXT NULL',
-        ];
-        foreach ($neededColumns as $columnName => $columnDef) {
-            if (!in_array($columnName, $jobColumns, true)) {
-                db()->exec('ALTER TABLE job_posts ADD COLUMN ' . $columnName . ' ' . $columnDef);
-            }
-        }
-
-        $cekDuplicate = db()->prepare('SELECT id FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Menunggu Verifikasi", "Tayang") AND id != ? LIMIT 1');
-        $cekDuplicate->execute([$user['id'], $kbjiCode, $reviseJobId]);
-        if ($cekDuplicate->fetch()) {
-            flash('error', 'Anda tidak dapat membuat lowongan baru untuk jabatan yang sama selama masih terdapat lowongan aktif untuk posisi tersebut.');
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-
-<<<<<<< HEAD
-        $title = trim($_POST['job_title'] ?? '');
-        $description = trim($_POST['job_description'] ?? '');
-        $location = trim($_POST['job_location'] ?? '');
-        $jobType = trim($_POST['job_type'] ?? '');
-        $industry = trim($_POST['industry'] ?? '');
-        $kbjiCode = trim($_POST['kbji_code'] ?? '');
-        $quota = max(1, (int) ($_POST['quota'] ?? 1));
-=======
-        if ($reviseJobId > 0) {
-            $owned = db()->prepare('SELECT id FROM job_posts WHERE id = ? AND user_id = ? AND status = "Perlu Revisi" LIMIT 1');
-            $owned->execute([$reviseJobId, $user['id']]);
-            if (!$owned->fetch()) {
-                flash('error', 'Lowongan revisi tidak ditemukan atau sudah dikirim ulang.');
-                redirect('dashboard.php#lowongan');
-                exit;
-            }
-            $statement = db()->prepare('UPDATE job_posts SET title=?, description=?, location=?, job_type=?, industry=?, status=?, salary_min=?, salary_max=?, quota=?, kbji_code=?, details=?, admin_notes=NULL, revision_opened_at=NULL, updated_at=NOW() WHERE id=? AND user_id=?');
-            $statement->execute([$title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details, $reviseJobId, $user['id']]);
-            flash('success', 'Revisi lowongan berhasil dikirim ulang ke Admin.');
-        } else {
-            $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, status, salary_min, salary_max, quota, kbji_code, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $status, $salaryMin, $salaryMax, $quota, $kbjiCode, $details]);
-            flash('success', 'Lowongan baru berhasil dikirim dan menunggu tinjauan Admin.');
-        }
-        redirect('dashboard.php#lowongan');
-    } else {
-        flash('error', 'Lengkapi judul, deskripsi, lokasi, jenis pekerjaan, dan KBJI.');
-        redirect('dashboard.php#lowongan');
-    }
-}
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
-
-        if ($title !== '' && $description !== '' && $location !== '' && $jobType !== '' && $kbjiCode !== '') {
-            $statement = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Draft", ?, ?)');
-            $statement->execute([$user['id'], $title, $description, $location, $jobType, $industry, $quota, $kbjiCode]);
-            flash('success', 'Lowongan baru berhasil dibuat dan disimpan sebagai Draft.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        } else {
-            flash('error', 'Mohon lengkapi judul, deskripsi, lokasi, jenis pekerjaan, dan KBJI.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-    }
-
-    // 3. KIRIM LOWONGAN (RULES ENGINE KBJI)
-    if (isset($_POST['send_job'])) {
-        $jobId = (int)$_POST['job_id'];
-        
-        $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
-        $jobStmt->execute([$jobId, $user['id']]);
-        $targetJob = $jobStmt->fetch();
-
-        if (!$targetJob) {
-            flash('error', 'Lowongan tidak ditemukan.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-
-        // Cek duplicate active job for SAME KBJI
-        $cekDuplicate = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Tayang", "Dikirim/Menunggu Verifikasi") AND id != ? LIMIT 1');
-        $cekDuplicate->execute([$user['id'], $targetJob['kbji_code'], $jobId]);
-        $activeDuplicate = $cekDuplicate->fetch();
-
-        if ($activeDuplicate) {
-            $_SESSION['kbji_duplicate_error'] = [
-                'job_id' => $jobId,
-                'kbji_code' => $targetJob['kbji_code'],
-                'active_job_id' => $activeDuplicate['id'],
-                'active_job_title' => $activeDuplicate['title'],
-                'active_job_status' => $activeDuplicate['status']
-            ];
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-
-        // If valid, submit for verification
-        $update = db()->prepare('UPDATE job_posts SET status = "Dikirim/Menunggu Verifikasi" WHERE id = ? AND user_id = ?');
-        $update->execute([$jobId, $user['id']]);
-        flash('success', 'Lowongan berhasil dikirim dan sedang Menunggu Verifikasi.');
-        redirect('dashboard.php#lowongan');
-        exit;
-    }
-
-    // 4. TUTUP LOWONGAN & POSTING ULANG SISA KUOTA
-    if (isset($_POST['close_job'])) {
-        $jobId = (int)$_POST['job_id'];
-        $sisaKuota = (int)$_POST['sisa_kuota'];
-        $repost = ($_POST['repost'] ?? '0') === '1';
-        $reasons = $_POST['reasons'] ?? [];
-        $lainnya = trim($_POST['reason_lainnya'] ?? '');
-        
-        if (empty($reasons)) {
-            flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-
-        if (in_array('Lainnya', $reasons) && $lainnya === '') {
-            flash('error', 'Alasan "Lainnya" wajib diisi.');
-            redirect('dashboard.php#lowongan');
-            exit;
-        }
-
-        $reasonStr = implode(', ', $reasons);
-        if (in_array('Lainnya', $reasons)) {
-            $reasonStr .= ' - ' . $lainnya;
-        }
-
-        // Close original job
-        $stmt = db()->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = ? WHERE id = ? AND user_id = ?');
-        $stmt->execute([$reasonStr, $jobId, $user['id']]);
-
-        if ($repost) {
-            $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ?');
-            $jobStmt->execute([$jobId]);
-            $oldJob = $jobStmt->fetch();
-
-            if ($oldJob) {
-                $insert = db()->prepare('INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, kbji_code, parent_job_id) VALUES (?, ?, ?, ?, ?, ?, "Individu", "Dikirim/Menunggu Verifikasi", ?, ?, ?)');
-                $insert->execute([
-                    $user['id'], 
-                    $oldJob['title'] . ' (Posting Ulang)', 
-                    $oldJob['description'], 
-                    $oldJob['location'], 
-                    $oldJob['job_type'], 
-                    $oldJob['industry'], 
-                    $sisaKuota, 
-                    $oldJob['kbji_code'], 
-                    $jobId
-                ]);
-                flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ') berhasil dibuat dan Menunggu Verifikasi.');
-            }
-        } else {
-            flash('success', 'Lowongan berhasil ditutup.');
-        }
-
-        redirect('dashboard.php#lowongan');
-        exit;
-    }
-
-    // 5. AJUKAN PERPANJANGAN WAKTU
-    if (isset($_POST['request_extension'])) {
-        if (($profile['extension_requested'] ?? 0) == 0) {
-            $stmt = db()->prepare('UPDATE employer_profiles SET extension_requested = 1, extension_status = "REQUESTED" WHERE user_id = ?');
-            $stmt->execute([$user['id']]);
-            flash('success', 'Permohonan perpanjangan masa aktif (1x) berhasil dikirim ke Admin Dinas. Silakan menunggu persetujuan.');
-        } else {
-            flash('error', 'Anda sudah pernah mengajukan perpanjangan masa aktif.');
-        }
-        redirect('dashboard.php');
-        exit;
-    }
-
-    // 6. HAPUS DRAFT LOWONGAN
-    if (isset($_POST['delete_job'])) {
-        $jobId = (int)$_POST['job_id'];
-        $stmt = db()->prepare('DELETE FROM job_posts WHERE id = ? AND user_id = ? AND status = "Draft"');
-        $stmt->execute([$jobId, $user['id']]);
-        flash('success', 'Draft lowongan berhasil dihapus.');
-        redirect('dashboard.php#lowongan');
-        exit;
-    }
-}
-
-// Flash toast notification
-$flashData = get_flash();
-$pendingPopupMessage = null;
-
-if ($flashData && $flashData['type'] === 'pending_popup') {
-    $pendingPopupMessage = $flashData['message'];
-    $flashData = null;
-}
-
-<<<<<<< HEAD
-$kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
-unset($_SESSION['kbji_duplicate_error']);
-
-// Load HTML Prototype Template
-ob_start();
-include __DIR__ . '/Index.html';
-$html = ob_get_clean();
-=======
-if (!str_contains($html, 'src="assets/app.js"')) {
-    $html = str_replace('</body>', '<script src="assets/app.js"></script>' . "\n</body>", $html);
+if (!str_contains($html, 'src="./assets/app.js"') && !str_contains($html, 'src="assets/app.js"')) {
+    $html = str_replace('</body>', '<script src="./assets/app.js"></script>' . "\n</body>", $html);
 }
 
 if (!str_contains($html, 'window.testCloseJob')) {
@@ -1628,6 +2130,44 @@ if (!str_contains($html, 'window.testCloseJob')) {
     window.testCloseJob = function(jobId, sisaKuota) {
         document.getElementById("close_job_id").value = jobId;
         document.getElementById("close_sisa_kuota").value = sisaKuota;
+        if (parseInt(sisaKuota, 10) <= 0) {
+            let form = document.getElementById("direct_close_form");
+            if (!form) {
+                form = document.createElement("form");
+                form.id = "direct_close_form";
+                form.method = "POST";
+                form.action = "dashboard.php#lowongan";
+                
+                const inputClose = document.createElement("input");
+                inputClose.type = "hidden";
+                inputClose.name = "close_job";
+                inputClose.value = "1";
+                form.appendChild(inputClose);
+                
+                const inputJobId = document.createElement("input");
+                inputJobId.type = "hidden";
+                inputJobId.name = "job_id";
+                inputJobId.id = "direct_close_job_id";
+                form.appendChild(inputJobId);
+                
+                const inputSisa = document.createElement("input");
+                inputSisa.type = "hidden";
+                inputSisa.name = "sisa_kuota";
+                inputSisa.value = "0";
+                form.appendChild(inputSisa);
+
+                const inputRepost = document.createElement("input");
+                inputRepost.type = "hidden";
+                inputRepost.name = "repost";
+                inputRepost.value = "0";
+                form.appendChild(inputRepost);
+
+                document.body.appendChild(form);
+            }
+            document.getElementById("direct_close_job_id").value = jobId;
+            form.submit();
+            return;
+        }
         const modal = document.querySelector("[data-modal='job-close']");
         if (modal) modal.classList.add("open");
     };
@@ -1639,35 +2179,89 @@ JS, $html);
 $employerJobs = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER BY created_at DESC');
 $employerJobs->execute([$user['id']]);
 $employerJobs = $employerJobs->fetchAll();
-$jobCounts = ['Draft' => 0, 'Menunggu Verifikasi' => 0, 'Perlu Revisi' => 0, 'Tayang' => 0];
+
+$jobCounts = [
+    'Draft' => 0, 
+    'Menunggu Verifikasi' => 0, 
+    'ADDITIONAL_DOCUMENT_PENDING' => 0,
+    'Perlu Direvisi' => 0, 
+    'Tayang' => 0,
+    'Ditolak' => 0,
+    'Ditutup' => 0
+];
 foreach ($employerJobs as $row) {
-    if (isset($jobCounts[$row['status']])) {
-        $jobCounts[$row['status']]++;
+    $cStat = normalize_job_status($row['status'] ?? '');
+    if (isset($jobCounts[$cStat])) {
+        $jobCounts[$cStat]++;
     }
 }
 
 $jobRowsHtml = '';
+$additionalDocModalsHtml = '';
 if (!$employerJobs) {
-    $jobRowsHtml = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:28px">Belum ada lowongan. Klik Tambah Lowongan untuk mengirim ke Admin.</td></tr>';
+    $jobRowsHtml = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:28px">Belum ada lowongan. Klik Tambah Lowongan untuk membuat postingan baru.</td></tr>';
 } else {
     foreach ($employerJobs as $row) {
         $meta = job_status_meta($row['status']);
         $countStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
         $countStmt->execute([$row['id']]);
         $appCount = (int) $countStmt->fetchColumn();
-        $reviseBtn = $row['status'] === 'Perlu Revisi'
-            ? '<button type="button" class="ghost-btn" data-revise-job="' . (int) $row['id'] . '">Revisi</button>'
-            : '-';
-        $adminNoteHtml = '';
-        if ($row['status'] === 'Perlu Revisi' && trim((string) ($row['admin_notes'] ?? '')) !== '') {
-            $adminNoteHtml = '<div class="tiny" style="color:#b45309">Catatan admin: ' . e($row['admin_notes']) . '</div>';
+        $actionBtn = '-';
+        if (in_array($row['status'], ['Perlu Direvisi', 'Perlu Revisi'], true)) {
+            $actionBtn = '<button type="button" class="ghost-btn" data-revise-job="' . (int) $row['id'] . '">Revisi</button>';
+        } elseif ($row['status'] === 'ADDITIONAL_DOCUMENT_PENDING') {
+            $hasSubmitted = !empty($row['additional_doc_file']) || !empty($row['additional_doc_notes']);
+            $btnText = $hasSubmitted ? 'Ubah Dokumen' : 'Unggah Dokumen';
+            $actionBtn = '<button type="button" class="ghost-btn" style="color:#0284c7;border-color:#bae6fd;background:#f0f9ff;" data-open-modal="modal-doc-' . (int)$row['id'] . '"><i class="fa-solid fa-upload"></i> ' . $btnText . '</button>';
+            
+            $additionalDocModalsHtml .= '
+            <div class="modal" data-modal="modal-doc-' . (int)$row['id'] . '">
+                <div class="modal-backdrop" data-close-modal="modal-doc-' . (int)$row['id'] . '"></div>
+                <div class="modal-panel" style="max-width:540px;">
+                    <div class="modal-header">
+                        <h3>Unggah Dokumen Tambahan</h3>
+                        <button type="button" class="icon-btn" data-close-modal="modal-doc-' . (int)$row['id'] . '"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form method="post" action="dashboard.php" enctype="multipart/form-data" style="padding:20px;">
+                        <input type="hidden" name="upload_additional_doc" value="1">
+                        <input type="hidden" name="job_id" value="' . (int)$row['id'] . '">
+                        <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:12px; border-radius:8px; font-size:13px; margin-bottom:16px;">
+                            <strong>Pengajuan Lowongan ke-4+ (KBJI: ' . e($row['kbji_code']) . ')</strong><br>
+                            Posisi: <strong>' . e($row['title']) . '</strong><br>
+                            Harap lampirkan berkas dokumen pendukung (Surat Izin/Keterangan Tempat Kerja/Justifikasi) atau catatan keterangan untuk ditinjau oleh Admin.
+                        </div>
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">Berkas Dokumen Pendukung (PDF/JPG/PNG):</label>
+                            <input type="file" name="additional_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;">
+                            ' . (!empty($row['additional_doc_file']) ? '<div class="tiny" style="color:#0284c7; margin-top:4px;">Berkas tersimpan: <a href="' . e($row['additional_doc_file']) . '" target="_blank" style="color:#0284c7; text-decoration:underline;">Lihat Berkas</a></div>' : '') . '
+                        </div>
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">Keterangan / Justifikasi Kebutuhan Tenaga Kerja:</label>
+                            <textarea name="additional_notes" rows="4" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;" placeholder="Jelaskan kebutuhan tenaga kerja tambahan untuk posisi ini...">' . e($row['additional_doc_notes'] ?? '') . '</textarea>
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; gap:10px;">
+                            <button type="button" class="secondary-btn" data-close-modal="modal-doc-' . (int)$row['id'] . '">Batal</button>
+                            <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Kirim Dokumen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>';
         }
-        $jobRowsHtml .= '<tr><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div>' . $adminNoteHtml . '</td>'
+        $adminNoteHtml = '';
+        if (in_array($row['status'], ['Perlu Direvisi', 'Perlu Revisi'], true) && trim((string) ($row['admin_notes'] ?? '')) !== '') {
+            $adminNoteHtml = '<div class="tiny" style="color:#b45309">Catatan admin: ' . e($row['admin_notes']) . '</div>';
+        } elseif ($row['status'] === 'ADDITIONAL_DOCUMENT_PENDING') {
+            $hasSubmitted = !empty($row['additional_doc_file']) || !empty($row['additional_doc_notes']);
+            $adminNoteHtml = $hasSubmitted 
+                ? '<div class="tiny" style="color:#0284c7;">Dokumen tambahan telah dikirim · Menunggu peninjauan Admin</div>'
+                : '<div class="tiny" style="color:#b45309;">Silakan unggah dokumen tambahan agar dapat diproses Admin</div>';
+        }
+        $jobRowsHtml .= '<tr data-job-row data-title="' . e($row['title']) . '" data-status="' . e($meta['label']) . '" data-created="' . e($row['created_at']) . '"><td><strong>' . e($row['title']) . '</strong><div class="tiny">Dibuat ' . e(date('d M Y', strtotime($row['created_at']))) . '</div>' . $adminNoteHtml . '</td>'
             . '<td>' . e($row['location']) . '</td>'
             . '<td>' . (int) $row['quota'] . ' orang</td>'
             . '<td>' . $appCount . ' pelamar</td>'
             . '<td><span class="status ' . e($meta['class']) . '">' . e($meta['label']) . '</span></td>'
-            . '<td>' . $reviseBtn . '</td></tr>';
+            . '<td>' . $actionBtn . '</td></tr>';
     }
 }
 
@@ -1740,7 +2334,7 @@ $unread = unread_notification_count((int) $user['id']);
 $html = str_replace('<div class="notif"><i class="fa-regular fa-bell"></i></div>', render_notif_dropdown($notifications, $unread), $html);
 $html = preg_replace('/<h3>Draft<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Draft</h3><div class="value">' . $jobCounts['Draft'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Dikirim<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Dikirim</h3><div class="value">' . $jobCounts['Menunggu Verifikasi'] . '</div>', $html, 1);
-$html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Perlu Direvisi</h3><div class="value">' . $jobCounts['Perlu Revisi'] . '</div>', $html, 1);
+$html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Perlu Direvisi</h3><div class="value">' . $jobCounts['Perlu Direvisi'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Lowongan Aktif<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Lowongan Aktif</h3><div class="value">' . $jobCounts['Tayang'] . '</div>', $html, 1);
 $html = str_replace('<!--JOB_TABLE_ROWS-->', $jobRowsHtml, $html);
 $html = str_replace('<!--JOB_APPLICANTS-->', $applicantHtml, $html);
@@ -1751,6 +2345,6 @@ $html = preg_replace('/<h3>Lowongan<\/h3>\s*<div class="value">\d+<\/div>/', '<h
 $html = preg_replace('/<h3>Pelamar<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Pelamar</h3><div class="value">' . $totalApplicants . '</div>', $html, 1);
 $html = preg_replace('/<h3>Wawancara<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Wawancara</h3><div class="value">' . $stageCounts['Wawancara'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Diterima<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Diterima</h3><div class="value">' . $stageCounts['Diterima'] . '</div>', $html, 1);
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
+$html = str_replace('</body>', $additionalDocModalsHtml . "\n</body>", $html);
 
 echo $html;

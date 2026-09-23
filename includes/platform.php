@@ -8,6 +8,9 @@ function ensure_platform_schema(): void
     }
     $done = true;
     $pdo = db();
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'mysql') {
+        return;
+    }
 
     $employerColumns = array_column($pdo->query('SHOW COLUMNS FROM employer_profiles')->fetchAll(), 'Field');
     $employerAdds = [
@@ -23,6 +26,7 @@ function ensure_platform_schema(): void
         'workplace_photo' => 'VARCHAR(255) NULL',
         'consent_accepted' => 'TINYINT(1) NOT NULL DEFAULT 0',
         'active_until' => 'DATETIME NULL',
+        'last_activated_at' => 'DATETIME NULL',
         'extension_requested' => 'TINYINT(1) NOT NULL DEFAULT 0',
     ];
     foreach ($employerAdds as $name => $definition) {
@@ -47,9 +51,8 @@ function ensure_platform_schema(): void
     }
 
     try {
-        $pdo->exec("ALTER TABLE job_posts MODIFY status ENUM('Draft','Menunggu Verifikasi','Perlu Revisi','Tayang','Ditutup','Ditolak','Penuh') NOT NULL DEFAULT 'Draft'");
+        $pdo->exec("ALTER TABLE job_posts MODIFY status VARCHAR(60) NOT NULL DEFAULT 'Draft'");
     } catch (Throwable $ignored) {
-        // ENUM may already include the extra values.
     }
 
     $pdo->exec('CREATE TABLE IF NOT EXISTS notifications (
@@ -75,10 +78,14 @@ function ensure_platform_schema(): void
     )');
 
     $appColumns = array_column($pdo->query('SHOW COLUMNS FROM job_applications')->fetchAll(), 'Field');
+    if (!in_array('accepted_at', $appColumns, true)) {
+        $pdo->exec('ALTER TABLE job_applications ADD COLUMN accepted_at DATETIME NULL AFTER status');
+    }
     if (!in_array('updated_at', $appColumns, true)) {
         $pdo->exec('ALTER TABLE job_applications ADD COLUMN updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP');
     }
     $pdo->exec("UPDATE job_applications SET status = 'Lamaran Masuk' WHERE status IN ('Dilamar', 'Applied', '')");
+    $pdo->exec("UPDATE job_applications SET accepted_at = COALESCE(updated_at, created_at) WHERE status = 'Diterima' AND accepted_at IS NULL");
 }
 
 function notify_user(int $userId, string $title, string $message, string $type = 'info', ?int $jobId = null): void
@@ -136,16 +143,67 @@ function store_upload(string $field, string $subdir, array $allowedExt): ?string
     return 'uploads/' . trim($subdir, '/') . '/' . $filename;
 }
 
+function canonical_job_statuses(): array
+{
+    return [
+        'Draft',
+        'Menunggu Verifikasi',
+        'ADDITIONAL_DOCUMENT_PENDING',
+        'Perlu Direvisi',
+        'Ditolak',
+        'CANCELED',
+        'Terjadwal Tayang',
+        'Tayang',
+        'Ditangguhkan',
+        'Ditutup',
+        'Kedaluwarsa',
+        'Diblokir',
+    ];
+}
+
+function normalize_job_status(string $status): string
+{
+    $trimmed = trim($status);
+    return match ($trimmed) {
+        'Dikirim/Menunggu Verifikasi', 'Dikirim', 'Menunggu Persetujuan', 'PENDING_JOB_VERIFICATION' => 'Menunggu Verifikasi',
+        'ADDITIONAL_DOCUMENT_PENDING', 'Menunggu Dokumen Tambahan', 'Dokumen Tambahan Diperlukan', 'Dokumen Tambahan' => 'ADDITIONAL_DOCUMENT_PENDING',
+        'Perlu Revisi', 'Revisi' => 'Perlu Direvisi',
+        'Lowongan Aktif', 'Disetujui', 'Aktif' => 'Tayang',
+        'Tutup' => 'Ditutup',
+        'Expired' => 'Kedaluwarsa',
+        'Suspended' => 'Ditangguhkan',
+        'Blocked' => 'Diblokir',
+        'CANCELED', 'Dibatalkan', 'Batal' => 'CANCELED',
+        'Draft' => 'Draft',
+        'Menunggu Verifikasi' => 'Menunggu Verifikasi',
+        'Perlu Direvisi' => 'Perlu Direvisi',
+        'Ditolak' => 'Ditolak',
+        'Terjadwal Tayang' => 'Terjadwal Tayang',
+        'Tayang' => 'Tayang',
+        'Ditangguhkan' => 'Ditangguhkan',
+        'Ditutup' => 'Ditutup',
+        'Kedaluwarsa' => 'Kedaluwarsa',
+        'Diblokir' => 'Diblokir',
+        default => in_array($trimmed, canonical_job_statuses(), true) ? $trimmed : 'Draft',
+    };
+}
+
 function job_status_meta(string $status): array
 {
-    return match ($status) {
+    $canonical = normalize_job_status($status);
+    return match ($canonical) {
         'Draft' => ['label' => 'Draft', 'class' => 'draft'],
         'Menunggu Verifikasi' => ['label' => 'Menunggu Verifikasi', 'class' => 'pending'],
-        'Perlu Revisi' => ['label' => 'Perlu Revisi', 'class' => 'revision'],
-        'Tayang' => ['label' => 'Disetujui', 'class' => 'live'],
-        'Ditutup' => ['label' => 'Ditutup', 'class' => 'closed'],
+        'ADDITIONAL_DOCUMENT_PENDING' => ['label' => 'Dokumen Tambahan Diperlukan', 'class' => 'warning'],
+        'Perlu Direvisi' => ['label' => 'Perlu Direvisi', 'class' => 'revision'],
         'Ditolak' => ['label' => 'Ditolak', 'class' => 'rejected'],
-        'Penuh' => ['label' => 'Penuh', 'class' => 'full'],
+        'CANCELED' => ['label' => 'Dibatalkan (CANCELED)', 'class' => 'rejected'],
+        'Terjadwal Tayang' => ['label' => 'Terjadwal Tayang', 'class' => 'scheduled'],
+        'Tayang' => ['label' => 'Tayang', 'class' => 'live'],
+        'Ditangguhkan' => ['label' => 'Ditangguhkan', 'class' => 'suspended'],
+        'Ditutup' => ['label' => 'Ditutup', 'class' => 'closed'],
+        'Kedaluwarsa' => ['label' => 'Kedaluwarsa', 'class' => 'expired'],
+        'Diblokir' => ['label' => 'Diblokir', 'class' => 'blocked'],
         default => ['label' => $status, 'class' => 'draft'],
     };
 }
@@ -442,14 +500,14 @@ function parse_job_details(?string $json): array
 
 function job_decision_editable(array $job): bool
 {
-    $status = (string) ($job['status'] ?? '');
-    if (!in_array($status, ['Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditolak'], true)) {
+    $status = normalize_job_status((string) ($job['status'] ?? ''));
+    if (!in_array($status, ['Menunggu Verifikasi', 'Perlu Direvisi', 'Tayang', 'Ditolak'], true)) {
         return false;
     }
 
     // After the employer opens and works on the revision form, the saved
     // decision can no longer be changed until they resubmit.
-    if ($status === 'Perlu Revisi' && !empty($job['revision_opened_at'])) {
+    if ($status === 'Perlu Direvisi' && !empty($job['revision_opened_at'])) {
         return false;
     }
 
@@ -600,4 +658,695 @@ function profession_options(): array
         'Keuangan',
         'Lainnya',
     ];
+}
+
+function pki_close_reasons(): array
+{
+    return [
+        'Jumlah pelamar belum mencukupi',
+        'Pelamar belum sesuai kompetensi/kualifikasi',
+        'Pelamar mengundurkan diri',
+        'Kandidat tidak hadir/tidak melanjutkan proses seleksi',
+        'Kesepakatan kerja tidak tercapai',
+        'Lainnya',
+    ];
+}
+
+function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int $requestedQuota, ?int $jobId = null, bool $isRepost = false): array
+{
+    // LAYER 1: Active Duplicate KBJI Check (status IN ('Tayang', 'Terjadwal Tayang'))
+    $stmtL1 = $pdo->prepare('SELECT id, title, status FROM job_posts WHERE user_id = ? AND kbji_code = ? AND status IN ("Tayang", "Terjadwal Tayang", "Lowongan Aktif") AND id != ? LIMIT 1');
+    $stmtL1->execute([$userId, $kbjiCode, $jobId ?? 0]);
+    $activeSameKbji = $stmtL1->fetch();
+
+    if ($activeSameKbji) {
+        return [
+            'allowed' => false,
+            'layer' => 1,
+            'error_code' => 'ACTIVE_KBJI_DUPLICATE',
+            'error_message' => 'Anda masih memiliki lowongan aktif yang sedang Tayang dengan kode KBJI yang sama (' . $kbjiCode . ': "' . $activeSameKbji['title'] . '"). Selesaikan atau tutup lowongan tersebut sebelum mengajukan lowongan baru dengan KBJI yang sama.',
+            'additional_doc_required' => false,
+            'conflict_job' => $activeSameKbji,
+        ];
+    }
+
+    // FSD: Continuation repost does not consume additional monthly quota or count towards same-KBJI monthly frequency
+    if ($isRepost) {
+        return [
+            'allowed' => true,
+            'layer' => 0,
+            'additional_doc_required' => false,
+            'is_repost' => true,
+        ];
+    }
+
+    $startOfMonth = date('Y-m-01 00:00:00');
+    $endOfMonth = date('Y-m-t 23:59:59');
+
+    // LAYER 2: Monthly publication frequency of same-KBJI (1-3: normal, 4+: ADDITIONAL_DOCUMENT_PENDING)
+    // Only count PUBLISHED jobs this month (Draft, Pending, Perlu Direvisi, Ditolak do not count).
+    // STRICTLY use published_at — no created_at fallback.
+    // Child reposts (parent_job_id IS NOT NULL) do not count towards same-KBJI frequency.
+    $stmtL2 = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE user_id = ? AND kbji_code = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND id != ?');
+    $stmtL2->execute([$userId, $kbjiCode, $startOfMonth, $endOfMonth, $jobId ?? 0]);
+    $publishedSameKbjiCount = (int)$stmtL2->fetchColumn();
+
+    $additionalDocRequired = ($publishedSameKbjiCount >= 3);
+
+    // LAYER 3: Monthly total requested quota limit (max 10)
+    // Sum quota of original PUBLISHED jobs in current month + new requested quota.
+    // Continuation reposts do not add to monthly quota counter.
+    // STRICTLY use published_at — no created_at fallback.
+    $stmtL3 = $pdo->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND id != ?');
+    $stmtL3->execute([$userId, $startOfMonth, $endOfMonth, $jobId ?? 0]);
+    $currentMonthlyPublishedQuota = (int)$stmtL3->fetchColumn();
+
+    $totalQuota = $currentMonthlyPublishedQuota + $requestedQuota;
+    if ($totalQuota > 10) {
+        return [
+            'allowed' => false,
+            'layer' => 3,
+            'error_code' => 'MONTHLY_QUOTA_EXCEEDED',
+            'error_message' => 'Total kuota lowongan yang dipublikasikan bulan ini melebihi batas maksimal 10 posisi (saat ini terpakai: ' . $currentMonthlyPublishedQuota . ' posisi, diminta: ' . $requestedQuota . ' posisi, total: ' . $totalQuota . ' posisi). Pengajuan lowongan dibatalkan/ditahan sesuai aturan FSD.',
+            'additional_doc_required' => $additionalDocRequired,
+            'current_monthly_quota' => $currentMonthlyPublishedQuota,
+            'requested_quota' => $requestedQuota,
+            'total_quota' => $totalQuota,
+        ];
+    }
+
+    return [
+        'allowed' => true,
+        'layer' => $additionalDocRequired ? 2 : 0,
+        'additional_doc_required' => $additionalDocRequired,
+        'published_same_kbji_count' => $publishedSameKbjiCount,
+        'current_monthly_quota' => $currentMonthlyPublishedQuota,
+        'requested_quota' => $requestedQuota,
+        'total_quota' => $totalQuota,
+    ];
+}
+
+function record_audit_log(string $entityType, int $entityId, string $action, ?string $details = null, string $actorName = 'Admin Pusat', string $actorRole = 'admin', bool $strict = false): void
+{
+    try {
+        $pdo = db();
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = $pdo->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))');
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+        }
+        $stmt->execute([$entityType, $entityId, $actorName, $actorRole, $action, $details]);
+    } catch (Throwable $e) {
+        if ($strict) {
+            throw $e;
+        }
+    }
+}
+
+function fetch_audit_logs(string $entityType, int $entityId): array
+{
+    try {
+        $stmt = db()->prepare('SELECT * FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id ASC');
+        $stmt->execute([$entityType, $entityId]);
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function calculate_employer_consent_hash(array $p): string
+{
+    $fields = [
+        $p['owner_name'] ?? '',
+        $p['nik'] ?? '',
+        $p['profession'] ?? '',
+        $p['phone'] ?? '',
+        $p['whatsapp'] ?? '',
+        $p['npwp'] ?? '',
+        $p['province'] ?? '',
+        $p['city'] ?? '',
+        $p['district'] ?? '',
+        $p['village'] ?? '',
+        $p['postal_code'] ?? '',
+        $p['address'] ?? '',
+        $p['address_detail'] ?? '',
+        $p['description'] ?? '',
+    ];
+    return hash('sha256', implode('|#|', $fields));
+}
+
+
+function compliance_categories(): array
+{
+    return [
+        'Data tidak lengkap',
+        'Tidak sesuai substansi',
+        'Tidak sesuai dengan aturan',
+        'Tidak sesuai dengan aturan anti diskriminasi',
+    ];
+}
+
+/**
+ * Suspend an Individual Employer's access rights.
+ * Allowed ONLY if profile is verified (verified = 1), active_until is present, and current lifecycle is ACTIVE (APPROVED) or TRANSITION_LIMITED.
+ * Mandatory reason required; scope checked for Admin Dinas (exact domicile_city_id match without city fallback) while Admin Pusat is national.
+ * Atomic transaction with SELECT FOR UPDATE and strict audit logging.
+ */
+function suspend_employer_access(PDO $pdo, int $targetUserId, string $reason, array $actorUser): array
+{
+    $reason = trim($reason);
+    if ($reason === '') {
+        return ['success' => false, 'error' => 'Alasan Penangguhan Hak Akses Pemberi Kerja Individu WAJIB diisi.'];
+    }
+
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+        $empStmt->execute([$targetUserId]);
+        $targetEmp = $empStmt->fetch();
+
+        if (!$targetEmp) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu tidak ditemukan.'];
+        }
+
+        // Scope check: Admin Dinas matches exact domicile_city_id (no fallback to city)
+        $adminDomicileCity = (string)($actorUser['domicile_city_id'] ?? '');
+        $role = $actorUser['role'] ?? 'admin';
+        if ($role === 'admin_dinas' || ($adminDomicileCity !== '' && $role !== 'admin' && $role !== 'admin_pusat')) {
+            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                if (!$inTx && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return [
+                    'success' => false,
+                    'error' => 'Akses ditolak: Hak Akses Pemberi Kerja Individu ini di luar wilayah kewenangan Dinas Anda (' . $adminDomicileCity . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.'
+                ];
+            }
+        }
+
+        $currentStatus = $targetEmp['verification_status'] ?? 'NOT_SUBMITTED';
+        $activeUntilRaw = $targetEmp['active_until'] ?? null;
+
+        // Lifecycle evaluation: Check if profile is active or in transition period based on active_until
+        $now = new DateTime();
+        $isWithinTimeWindow = false;
+
+        if ($activeUntilRaw) {
+            $activeUntil = new DateTime($activeUntilRaw);
+            if ($now <= $activeUntil) {
+                $isWithinTimeWindow = true;
+            } else {
+                $diffSec = $now->getTimestamp() - $activeUntil->getTimestamp();
+                if ($diffSec <= (7 * 86400)) {
+                    $isWithinTimeWindow = true;
+                }
+            }
+        }
+
+        // Strict SIMULTANEOUS Eligibility:
+        // 1. verified == 1
+        // 2. active_until is present
+        // 3. verification_status is explicitly APPROVED, ACTIVE_VERIFIED, or TRANSITION_LIMITED
+        // 4. time evaluation is active or within 7-day Transition Period
+        $isExplicitStatusAllowed = in_array($currentStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED'], true);
+        $isEligibleForSuspend = !empty($targetEmp['verified'])
+            && !empty($activeUntilRaw)
+            && $isExplicitStatusAllowed
+            && $isWithinTimeWindow;
+
+        if (!$isEligibleForSuspend || $currentStatus === 'SUSPENDED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if ($currentStatus === 'SUSPENDED') {
+                return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu ini sudah dalam status Ditangguhkan (SUSPENDED).'];
+            }
+            return [
+                'success' => false,
+                'error' => 'Penangguhan Hak Akses Pemberi Kerja Individu hanya dapat dilakukan pada Hak Akses Pemberi Kerja Individu yang telah terverifikasi dengan masa aktif yang valid (berstatus Aktif atau Masa Transisi).'
+            ];
+        }
+
+        $stmt = $pdo->prepare('UPDATE employer_profiles SET verification_status = "SUSPENDED", suspension_reason = ? WHERE user_id = ?');
+        $stmt->execute([$reason, $targetUserId]);
+
+        record_audit_log(
+            'employer',
+            $targetUserId,
+            'SUSPENDED',
+            "Hak Akses Pemberi Kerja Individu ditangguhkan. Alasan: {$reason}",
+            $actorUser['name'] ?? 'Admin',
+            $actorUser['role'] ?? 'admin',
+            true // strict mode: throws exception if audit log insert fails, triggering transaction rollback
+        );
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return ['success' => true, 'message' => 'Hak Akses Pemberi Kerja Individu berhasil ditangguhkan.'];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['success' => false, 'error' => 'Gagal menangguhkan Hak Akses Pemberi Kerja Individu: ' . $e->getMessage()];
+    }
+}
+
+/**
+ * Unsuspend an Individual Employer's access rights with active_until recalculation.
+ * Scope checked for Admin Dinas (exact domicile_city_id match without city fallback) while Admin Pusat is national.
+ * Atomic transaction with SELECT FOR UPDATE and strict audit logging.
+ * Status recalculated based on active_until:
+ * - active_until valid (now <= active_until) -> APPROVED
+ * - active_until passed, but <= 7 days ago (Masa Transisi) -> TRANSITION_LIMITED
+ * - active_until passed > 7 days ago -> FULL_DISABLED
+ * - active_until empty/null -> REJECTED with safe error message (never grant active access without active_until)
+ */
+function unsuspend_employer_access(PDO $pdo, int $targetUserId, array $actorUser, ?string $refTime = null): array
+{
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+        $empStmt->execute([$targetUserId]);
+        $targetEmp = $empStmt->fetch();
+
+        if (!$targetEmp) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu tidak ditemukan.'];
+        }
+
+        // State Check: Must currently be SUSPENDED
+        if (($targetEmp['verification_status'] ?? '') !== 'SUSPENDED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Pembatalan penangguhan hanya dapat dilakukan jika Hak Akses Pemberi Kerja Individu berstatus SUSPENDED.'];
+        }
+
+        // Scope check: Admin Dinas matches exact domicile_city_id (no fallback to city)
+        $adminDomicileCity = (string)($actorUser['domicile_city_id'] ?? '');
+        $role = $actorUser['role'] ?? 'admin';
+        if ($role === 'admin_dinas' || ($adminDomicileCity !== '' && $role !== 'admin' && $role !== 'admin_pusat')) {
+            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                if (!$inTx && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return [
+                    'success' => false,
+                    'error' => 'Akses ditolak: Hak Akses Pemberi Kerja Individu ini di luar wilayah kewenangan Dinas Anda (' . $adminDomicileCity . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.'
+                ];
+            }
+        }
+
+        $activeUntilRaw = $targetEmp['active_until'] ?? null;
+
+        // If active_until is empty/null, reject unsuspend safely
+        if (empty($activeUntilRaw)) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Pembatalan penangguhan tidak dapat dilakukan karena masa berlaku Hak Akses Pemberi Kerja Individu (active_until) tidak dapat ditentukan.'
+            ];
+        }
+
+        $now = $refTime ? new DateTime($refTime) : new DateTime();
+        $activeUntil = new DateTime($activeUntilRaw);
+        if ($now <= $activeUntil) {
+            $newStatus = 'APPROVED';
+        } else {
+            $nowTs = $now->getTimestamp();
+            $actUntilTs = $activeUntil->getTimestamp();
+            $diffSec = $nowTs - $actUntilTs;
+            if ($diffSec <= (7 * 86400)) {
+                $newStatus = 'TRANSITION_LIMITED';
+            } else {
+                $newStatus = 'FULL_DISABLED';
+            }
+        }
+
+        $stmt = $pdo->prepare('UPDATE employer_profiles SET verification_status = ?, suspension_reason = NULL WHERE user_id = ?');
+        $stmt->execute([$newStatus, $targetUserId]);
+
+        record_audit_log(
+            'employer',
+            $targetUserId,
+            'UNSUSPENDED',
+            "Penangguhan Hak Akses Pemberi Kerja Individu dibatalkan. Status dikembalikan ke {$newStatus} berdasarkan masa aktif (active_until: {$activeUntilRaw}).",
+            $actorUser['name'] ?? 'Admin',
+            $actorUser['role'] ?? 'admin',
+            true // strict mode: throws exception if audit log insert fails, triggering transaction rollback
+        );
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return [
+            'success' => true,
+            'new_status' => $newStatus,
+            'message' => "Penangguhan Hak Akses Pemberi Kerja Individu berhasil dibatalkan. Status dikembalikan ke {$newStatus}."
+        ];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['success' => false, 'error' => 'Gagal membatalkan penangguhan Hak Akses Pemberi Kerja Individu: ' . $e->getMessage()];
+    }
+}
+
+/**
+ * Format date string into Indonesian formatted date.
+ * E.g. '2026-09-22' -> '22 September 2026'
+ */
+function format_indo_date(?string $dateRaw): string
+{
+    if (empty($dateRaw)) {
+        return '-';
+    }
+    try {
+        $d = new DateTime($dateRaw);
+        $monthsLong = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        return $d->format('j') . ' ' . $monthsLong[(int)$d->format('n')] . ' ' . $d->format('Y');
+    } catch (Exception $e) {
+        return '-';
+    }
+}
+
+/**
+ * Format date range into Indonesian cycle format.
+ * E.g. ('2026-09-21', '2026-12-21') -> '21 Sep – 21 Des 2026'
+ */
+function format_cycle_range(?string $startDateRaw, ?string $endDateRaw): string
+{
+    if (empty($startDateRaw) || empty($endDateRaw)) {
+        return '-';
+    }
+    try {
+        $start = new DateTime($startDateRaw);
+        $end = new DateTime($endDateRaw);
+        $months = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+        $sDay = $start->format('j');
+        $sMonth = $months[(int)$start->format('n')];
+        $sYear = $start->format('Y');
+
+        $eDay = $end->format('j');
+        $eMonth = $months[(int)$end->format('n')];
+        $eYear = $end->format('Y');
+
+        if ($sYear === $eYear) {
+            return "{$sDay} {$sMonth} – {$eDay} {$eMonth} {$eYear}";
+        }
+        return "{$sDay} {$sMonth} {$sYear} – {$eDay} {$eMonth} {$eYear}";
+    } catch (Exception $e) {
+        return '-';
+    }
+}
+
+/**
+ * Resolve effective lifecycle status for an individual employer.
+ */
+function get_employer_access_status(array $profile, ?string $refTime = null): array
+{
+    $verStatus = $profile['verification_status'] ?? 'NOT_SUBMITTED';
+    $activeUntilRaw = $profile['active_until'] ?? null;
+    $hasLastActivated = !empty($profile['last_activated_at']);
+    $now = $refTime ? new DateTime($refTime) : new DateTime();
+
+    if ($verStatus === 'SUSPENDED') {
+        return [
+            'status' => 'SUSPENDED',
+            'label' => 'Ditangguhkan',
+            'badge_class' => 'suspended',
+            'is_active' => false,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => false,
+            'is_online_reactivation_pending' => false,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    if ($verStatus === 'PENDING') {
+        $isOnlinePending = $hasLastActivated;
+        return [
+            'status' => 'PENDING',
+            'label' => $isOnlinePending ? 'Menunggu Verifikasi (Reaktivasi Online)' : 'Menunggu Verifikasi',
+            'badge_class' => 'pending',
+            'is_active' => false,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => true,
+            'is_online_reactivation_pending' => $isOnlinePending,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    if ($verStatus === 'NEEDS_REVISION') {
+        return [
+            'status' => 'NEEDS_REVISION',
+            'label' => 'Perlu Diperbaiki',
+            'badge_class' => 'revision',
+            'is_active' => false,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => false,
+            'is_online_reactivation_pending' => false,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    if (in_array($verStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED', 'FULL_DISABLED'], true)) {
+        if ($activeUntilRaw) {
+            $actUntil = new DateTime($activeUntilRaw);
+            if ($now <= $actUntil) {
+                return [
+                    'status' => 'ACTIVE',
+                    'label' => 'Aktif',
+                    'badge_class' => 'verified',
+                    'is_active' => true,
+                    'is_disabled' => false,
+                    'is_transition' => false,
+                    'is_pending' => false,
+                    'is_online_reactivation_pending' => false,
+                    'can_direct_reactivate' => false,
+                ];
+            }
+            $diffSec = $now->getTimestamp() - $actUntil->getTimestamp();
+            if ($diffSec <= (7 * 86400)) {
+                return [
+                    'status' => 'TRANSITION_LIMITED',
+                    'label' => 'Masa Transisi',
+                    'badge_class' => 'warning',
+                    'is_active' => false,
+                    'is_disabled' => false,
+                    'is_transition' => true,
+                    'is_pending' => false,
+                    'is_online_reactivation_pending' => false,
+                    'can_direct_reactivate' => false,
+                ];
+            }
+            // Expired past 7 days -> FULL_DISABLED (Tidak Aktif)
+            return [
+                'status' => 'FULL_DISABLED',
+                'label' => 'Tidak Aktif',
+                'badge_class' => 'disabled',
+                'is_active' => false,
+                'is_disabled' => true,
+                'is_transition' => false,
+                'is_pending' => false,
+                'is_online_reactivation_pending' => false,
+                'can_direct_reactivate' => true,
+            ];
+        }
+        return [
+            'status' => 'ACTIVE',
+            'label' => 'Aktif',
+            'badge_class' => 'verified',
+            'is_active' => true,
+            'is_disabled' => false,
+            'is_transition' => false,
+            'is_pending' => false,
+            'is_online_reactivation_pending' => false,
+            'can_direct_reactivate' => false,
+        ];
+    }
+
+    return [
+        'status' => 'NOT_SUBMITTED',
+        'label' => 'Belum Mengajukan',
+        'badge_class' => 'neutral',
+        'is_active' => false,
+        'is_disabled' => false,
+        'is_transition' => false,
+        'is_pending' => false,
+        'is_online_reactivation_pending' => false,
+        'can_direct_reactivate' => false,
+    ];
+}
+
+/**
+ * Direct Reactivation of Individual Employer Access by Admin Dinas.
+ * - Atomic transaction with SELECT FOR UPDATE
+ * - Scope check: admin_dinas.domicile_city_id === employer.domicile_city_id exact (no city string fallback)
+ * - State check: Must be FULL_DISABLED (Tidak Aktif). Not allowed if ACTIVE, TRANSITION_LIMITED, SUSPENDED, or PENDING.
+ * - Concurrency protection: If status is already ACTIVE, rejects second request.
+ * - Collision protection: If online reactivation is PENDING, rejects with clear error message.
+ * - Directly transitions to ACTIVE / APPROVED with new 3-month cycle (no secondary verification case or approval).
+ * - Sets last_activated_at = now, active_until = now + 3 months.
+ * - Strict audit logging: action = 'REACTIVATE_EMPLOYER_ACCESS', source = 'ADMIN_DINAS'.
+ */
+function reactivate_employer_access_by_admin_dinas(PDO $pdo, int $targetUserId, array $actorUser, ?string $refTime = null): array
+{
+    $inTx = $pdo->inTransaction();
+    if (!$inTx) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $lockSql = $driver === 'sqlite' ? 'SELECT * FROM employer_profiles WHERE user_id = ?' : 'SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE';
+        $empStmt = $pdo->prepare($lockSql);
+        $empStmt->execute([$targetUserId]);
+        $targetEmp = $empStmt->fetch();
+
+        if (!$targetEmp) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'error' => 'Hak Akses Pemberi Kerja Individu tidak ditemukan.'];
+        }
+
+        // Scope check: Admin Dinas matches exact domicile_city_id (no fallback to city string)
+        $adminDomicileCity = (string)($actorUser['domicile_city_id'] ?? '');
+        $role = $actorUser['role'] ?? 'admin';
+        if ($role === 'admin_dinas' || ($adminDomicileCity !== '' && $role !== 'admin' && $role !== 'admin_pusat')) {
+            $empDomicileCity = (string)($targetEmp['domicile_city_id'] ?? '');
+            if ($empDomicileCity === '' || $empDomicileCity !== $adminDomicileCity) {
+                if (!$inTx && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return [
+                    'success' => false,
+                    'error' => 'Akses ditolak: Hak Akses Pemberi Kerja Individu ini di luar wilayah kewenangan Dinas Anda (' . $adminDomicileCity . '). Scope Admin Dinas mengikuti domicile_city_id Pemberi Kerja secara persis.'
+                ];
+            }
+        }
+
+        // State check: Resolve current effective status
+        $statusInfo = get_employer_access_status($targetEmp, $refTime);
+        $currentStatus = $statusInfo['status'];
+
+        // Collision Protection: If online reactivation is PENDING
+        if ($statusInfo['is_pending']) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses ditolak: Permohonan reaktivasi online sedang dalam proses verifikasi.'
+            ];
+        }
+
+        // Concurrency / State Protection: If already ACTIVE
+        if ($statusInfo['is_active']) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses gagal: Hak Akses Pemberi Kerja Individu sudah dalam status Aktif.'
+            ];
+        }
+
+        // Suspended or Transition Protection
+        if ($statusInfo['status'] === 'SUSPENDED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses gagal: Hak Akses Pemberi Kerja Individu sedang dalam status Ditangguhkan (SUSPENDED).'
+            ];
+        }
+        if ($statusInfo['is_transition']) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses gagal: Hak Akses Pemberi Kerja Individu masih berada dalam Masa Transisi.'
+            ];
+        }
+
+        if ($statusInfo['status'] !== 'FULL_DISABLED') {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => 'Reaktivasi Hak Akses hanya dapat dilakukan untuk Hak Akses yang telah berakhir (FULL_DISABLED).'
+            ];
+        }
+
+        // Apply mutation: directly active with new 3-month cycle
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
+        } else {
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
+        }
+        $stmt->execute([$targetUserId]);
+        $pdo->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
+
+        $nowFormatted = format_indo_date(date('Y-m-d'));
+        $newActiveUntilFormatted = format_indo_date(date('Y-m-d', strtotime('+3 months')));
+        $prevActiveUntil = $targetEmp['active_until'] ? date('d M Y', strtotime($targetEmp['active_until'])) : '-';
+
+        $auditDetails = "Hak Akses Pemberi Kerja Individu direaktivasi langsung oleh Admin Dinas. Previous Status: {$currentStatus}, New Status: ACTIVE, Previous Active Until: {$prevActiveUntil}, New Activated At: " . date('Y-m-d H:i:s') . ", New Active Until: " . date('Y-m-d H:i:s', strtotime('+3 months')) . " | Source: ADMIN_DINAS";
+        record_audit_log('employer', $targetUserId, 'REACTIVATE_EMPLOYER_ACCESS', $auditDetails, $actorUser['name'] ?? 'Admin Dinas', $actorUser['role'] ?? 'admin_dinas', true);
+
+        notify_user($targetUserId, 'Hak Akses Diaktifkan Kembali', 'Hak Akses Pemberi Kerja Individu Anda telah diaktifkan kembali oleh Dinas Tenaga Kerja selama 3 bulan.', 'success');
+
+        if (!$inTx && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+
+        return [
+            'success' => true,
+            'activated_at' => $nowFormatted,
+            'active_until' => $newActiveUntilFormatted,
+            'employer_name' => $targetEmp['owner_name'] ?: 'Pemberi Kerja',
+            'message' => 'Hak Akses berhasil direaktivasi. Hak Akses Pemberi Kerja Individu telah langsung aktif kembali.'
+        ];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['success' => false, 'error' => 'Gagal mereaktivasi Hak Akses: ' . $e->getMessage()];
+    }
 }

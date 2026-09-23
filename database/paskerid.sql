@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS `pasker-id` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `pasker-id`;
+CREATE DATABASE IF NOT EXISTS `paskerid` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `paskerid`;
 
 DROP TABLE IF EXISTS kbji_data;
 DROP TABLE IF EXISTS job_posts;
@@ -23,7 +23,9 @@ CREATE TABLE users (
     name VARCHAR(120) NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'employer', 'seeker') NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    domicile_city_id VARCHAR(120) NULL,
+    city VARCHAR(120) NULL,
     profile_complete TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
@@ -36,28 +38,12 @@ CREATE TABLE employer_profiles (
     nik VARCHAR(30) NULL,
     profession VARCHAR(120) NOT NULL,
     phone VARCHAR(30) NOT NULL,
-<<<<<<< HEAD
     whatsapp VARCHAR(30) NULL,
     npwp VARCHAR(30) NULL,
     linkedin VARCHAR(255) NULL,
     facebook VARCHAR(255) NULL,
     instagram VARCHAR(255) NULL,
     same_location_siapkerja TINYINT(1) DEFAULT 1,
-=======
-    nik VARCHAR(30) NULL,
-    whatsapp VARCHAR(30) NULL,
-    linkedin VARCHAR(255) NULL,
-    facebook VARCHAR(255) NULL,
-    instagram VARCHAR(255) NULL,
-    npwp VARCHAR(40) NULL,
-    latitude VARCHAR(40) NULL,
-    longitude VARCHAR(40) NULL,
-    permit_document VARCHAR(255) NULL,
-    workplace_photo VARCHAR(255) NULL,
-    consent_accepted TINYINT(1) NOT NULL DEFAULT 0,
-    address TEXT NOT NULL,
-    city VARCHAR(120) NOT NULL,
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     province VARCHAR(120) NOT NULL,
     city VARCHAR(120) NOT NULL,
     district VARCHAR(120) NULL,
@@ -79,6 +65,7 @@ CREATE TABLE employer_profiles (
     verification_checklist TEXT NULL,
     suspension_reason TEXT NULL,
     active_until DATETIME NULL DEFAULT NULL,
+    last_activated_at DATETIME NULL DEFAULT NULL,
     extension_requested TINYINT(1) NOT NULL DEFAULT 0,
     extension_status ENUM('NONE', 'REQUESTED', 'APPROVED', 'REJECTED') DEFAULT 'NONE',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -161,12 +148,8 @@ CREATE TABLE job_posts (
     location VARCHAR(150) NOT NULL,
     job_type VARCHAR(80) NOT NULL,
     industry VARCHAR(120) NULL,
-<<<<<<< HEAD
     entity_type ENUM('Perusahaan', 'Individu') DEFAULT 'Individu',
     status ENUM('Draft', 'Dikirim/Menunggu Verifikasi', 'Perlu Direvisi', 'Ditolak', 'Terjadwal Tayang', 'Tayang', 'Ditangguhkan', 'Ditutup', 'Kedaluwarsa', 'Diblokir') NOT NULL DEFAULT 'Draft',
-=======
-    status ENUM('Draft', 'Menunggu Verifikasi', 'Perlu Revisi', 'Tayang', 'Ditutup', 'Ditolak', 'Penuh') NOT NULL DEFAULT 'Draft',
->>>>>>> 01e7e4a850539192fb3ca2821081beeb0bc6fefa
     salary_min INT NULL,
     salary_max INT NULL,
     quota INT NOT NULL DEFAULT 1,
@@ -185,10 +168,11 @@ CREATE TABLE job_posts (
     CONSTRAINT fk_job_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-INSERT INTO users (name, email, password_hash, role, profile_complete) VALUES
-('Admin Pusat', 'admin@pasker-id.test', '$2y$10$6oyYT1H5LbMGUPCDKGQlVefo1D07I3CDkNNDQur49Vw0RpoEc9UU6', 'admin', 1),
-('Perorangan Demo', 'perorangan@pasker-id.test', '$2y$10$aW5VNKZZF8jblGzaMduEG.gpZse5bFWEB8QvhO88CGOshtvOLhkAm', 'employer', 1),
-('Pencari Kerja Demo', 'seeker@pasker-id.test', '$2y$10$xRt/tkNkvzp2qtMsDhqdjOE2HJfN5RqqowsgsjVFPhWTHAgLpbGGa', 'seeker', 1);
+INSERT INTO users (name, email, password_hash, role, domicile_city_id, city, profile_complete) VALUES
+('Admin Pusat', 'admin@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin', NULL, NULL, 1),
+('Admin Dinas Kota Bandung', 'admin.bandung@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin_dinas', 'Kota Bandung', 'Kota Bandung', 1),
+('Perorangan Demo', 'perorangan@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'employer', NULL, NULL, 1),
+('Pencari Kerja Demo', 'seeker@paskerid.test', '$2y$10$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'seeker', NULL, NULL, 1);
 
 INSERT INTO employer_profiles (
     user_id, owner_name, nik, profession, phone, whatsapp, npwp, linkedin, facebook, instagram,
@@ -243,7 +227,9 @@ CREATE TABLE IF NOT EXISTS job_applications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     job_id INT NOT NULL,
     seeker_id INT NOT NULL,
-    status VARCHAR(40) NOT NULL DEFAULT 'Dilamar',
+    status VARCHAR(40) NOT NULL DEFAULT 'Lamaran Masuk',
+    accepted_at DATETIME NULL DEFAULT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uniq_job_seeker (job_id, seeker_id)
 );
