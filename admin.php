@@ -2610,6 +2610,186 @@ document.addEventListener('click', function(e) {
             <!-- 2. VERIFIKASI PEMBERI KERJA (VERIFICATION WORKFLOW) -->
             <!-- ========================================== -->
             <?php if ($view === 'verifikasi_employer'): ?>
+                <?php
+                $pemeriksaMasterList = [
+                    "A. Dimas, Se", "A. Fajar Wahyu", "A. RAHMAT FAJAR", "A.a. Putra Wirasanjaya", "ABD Halim", "ABD. WAHAB, S.Pd", "ABDUL BASYIR", "ABDUL HAMID TUASALAMONY", "ABDUL SALAM LAUMA, S.Sos", "ACHMAD RAJA NASUTION",
+                    "ADE KURNIA GUNAWAN", "ADE SUDARSO, ST", "ADMARINA YESTI, SE", "ADRI RANTUNG", "ADY RAHMAT", "AFDHAL NAUFAL SOFYAN", "AFRIZAL, SE", "AGUNG BACHRI, S.H", "AGUNG PRIONO", "AGUNG SURYO NUGROHO",
+                    "AGUS SALIM", "AGUS ZULIARDI, S.E", "AGUSMAN ZEBUA", "AHMAD GALIH DWICAHYA", "AHMAD IQBAL, S. Sos., M.M", "AHMAD JANI, ST", "AISAH DWI ANJANI", "AISYAH DARWIS", "AJI UTAMA, S.Psi.", "AKBAR, S.Sos, MM",
+                    "ALFITRA AJI NUGROHO", "ALFRED J WORABAI", "AMALIA KHAIRIDA", "AMALYA RAMADINI SAFITRI", "AMIN SUSANTO, S.E., M.M.", "AMINAH", "AMIR SAMSURIJAL", "ANDI BATARI.S.Sos.MM", "ANDI LINDA", "ANDI SULHA RAHMAN",
+                    "ANDIK TAMA", "ANDRI PRATAMA", "ANDY HAMDALILAH", "ANEKA SUPIAWATI, SE", "ANGGA DARA NUGRAHA, S.STP, M.Si", "ANGGA KUSUMA WARDANI", "ANGGER GEBYARING WASKITO, S.E.", "ANNISA", "ANNISA ULHIDAYAH DWIYANTI", "ANTOK DEKI TRIANTO",
+                    "ANY NOORSIAH", "APRILIANA RAHMAWATI KURDANI", "ARDIANSYAH PUTRA HALOMOAN HARAHAP", "ARGHA YONATHAN SETYAWAN KUNCORO", "ARI SAPUTRA, SE, M.Si", "ARIEF RACHMAN", "ARIES DIAN KRISTANTO, S. Sos", "ARIF SUPRAPTO", "ASDHIN PAMA", "ASMURI.S.IP",
+                    "ASTI MANAO", "ASTRID YUNIAR NURBAITY", "Aa Ahmad Riswandi", "Abdi Sasra Patriyandi", "Abdul Karim", "Abdul Aziz Halim, S.IP", "Abdul Bar Zimam Rajabi", "Abdul Halim Mantau", "Abdul Rohmat", "Achmad Amrullah Yoga Priyo Darmawan",
+                    "Achmad Eko Prabowo", "Achmad Rizky Mauludi", "Ade Hendri", "Ade Masynta", "Ade Riswanto", "Ade Sudrajat, S.IP", "Adelia Sekar Apsari", "Adhi Nugroho", "Adi Hendarto", "Adi Supriadi",
+                    "Adib Bahari S.H.,M.E.", "Adison Sebayang", "Aditya Aprian Suari", "Aditya Irza Pahany, SE", "Aditya Nugraha Putra", "Adriana Arrung", "Adriansyah, S.hi", "Adrianto Wibowo", "Afriani Pramawati", "Afrida Susanti",
+                    "Afriyani, S.Sos", "Agata Hartati", "Agoestin Faridijani, Sh.", "Agung Setiawan", "Agus", "Agus Dyanto", "Agus Firmansyah", "Agus Hadi Saputra", "Agus Haerul Rizal", "Agus Isnanto",
+                    "Agus Junaidi", "Agus Suherman, S.IP", "Agus Tomi, SE", "Agustina", "Agustini", "Agustiyardi, ST. M. Si", "Agustya Dewi Kharisma", "Ahadrin", "Ahmad Fatihin", "Ahmad Hafizy Anshari",
+                    "Ahmad Irfanza", "Ahmad Rifani", "Ahmad Sadili", "Ahmad Taufan Taufani, S.H.", "Aji Mohd. Afriansyah", "Ajis Suleman", "Al Muttaqin, S.T.", "Alan Maulana", "Aldestia", "Aldhila Mahati",
+                    "Aldo Weldia, SH", "Alen Pandeiroth", "Alfian Agusqurrohman, SE", "Alfius Kambu", "Alfridha Nahwiyar Azis", "Ali Hasan, S.Sos", "Alif Munandar", "Alimuddin", "Alka Christo Posawa, S.Sos", "Alpian Indra Gumilar, S. Psi",
+                    "Alung Juanda, SE.", "Alvin Vigo Pratama", "Amanda Yulina Putri Rahayu", "Aminuddin", "Amrah Sakti", "Amrina Rosyida", "Anak Agung Eka Dharma Kusumawati", "Andi Dian Nata", "Andi Nurdiana", "Andi Setiandy",
+                    "Andi mappasukki.S.sos", "Andini andantia sonya", "Andreas Satria Wicaksana", "Andrie Lesmana", "Andry Martin", "Anestesia", "Angga Lesmana", "Anggar Wahyu Hadiyatullah, S.Kom", "Anggi Novriadi", "Anih Purwanti",
+                    "Anik Estiningsih, S.I.Kom.", "Anin Khoirunnisa'", "Anitaningsi. S.Sos., M.AP", "Anna Kurnianingsih,Stp,Mm", "Annisa Dewi Hajar Satiti", "Annisa Irdhania", "Annisa Nururrohmah", "Annisa Salsabila Aulia", "Anom Yusuf", "Antares Gita Kencana, S.Pd",
+                    "Anton Amau Zegar", "Antonius Syaffriel L", "Anwar Laide", "Apit Yuri Pramono", "Apri Melda, S.E", "Apriawan", "Apridayani", "April Kusuma Dwi Riwayati", "Aprillia Ayu Restiani", "Ardhi Wardhani",
+                    "Ardian Muhjid Permana", "Ardiansyah. R", "Arief Wana Subagja, S.I.P.", "Arif Susanto", "Arifa Kartikasari", "Arip Rohman", "Aris Budi Setiarso", "Aristrina Sugiyanti", "Arjani Kurniansyah", "Armegi Sidik, SE",
+                    "Arne Saputra BBPVP Semarang", "Arofah Kurniawan", "Artaty Pasande Runtuk, S.T.", "Arum Dwi Rahayu, Sh", "Aryanti Dwiastuti", "Aryo Brotoseno N", "Asep Kurniawan, M.PD", "Asep Saepudin", "Asep Sukandar", "Asep juhara",
+                    "Ashdiqo", "Asih Setiyorini", "Asnah Kristiani Utami", "Asnawi,SE.ME", "Asniwati Br Sembiring", "Aspriani Tinambunan", "Asrianti", "Astiti Lasalutu", "Astri Liswanti", "Atika Sangadji, SE",
+                    "Atirah", "Aulia Oktaviani", "Aulia ikram pulungan", "Aulifah Rachmawati", "Ayu Anisah Jayanti, S.Pd.", "Ayu Dwi Putri", "Azis Fitrianto, S.Psi.", "Azizah, S.E", "BAKTIAR,S.Sos", "BAMBANG SUMIANTO",
+                    "BARLI SAPUTRA UTAMA, SH", "BARNABAS AGUS HARSOWIDIGDDO.S.E,", "BATARA MANGGALA SIANTURI", "BENYAMIN BENY NUBA", "BETTI YUDHASTUTI RETNANINGRUM", "BISMAN", "BONI GILANG KHARISMA", "BRESMAN ANDEL SARAGIH", "BUDI SETIAWAN", "Bahri",
+                    "Baidhawi", "Baikuni W A Pasaribu", "Balgis Alkatiri", "Bararatul Hasanah", "Basaria Silitonga", "Baskoro Putra Aditya", "Beata Vilkanova Seraphin Waja", "Bela Merdianingsih", "Beni Yuli santoso", "Benih Subagio",
+                    "Berlian", "Berton Pasaribu", "Bety Ayu Juprianti", "Bezanolo Harefa", "Bhi Anggoro Anunghadi", "Bob Santoso Abadi", "Bobby Eka Syafutra", "Bonardo Amudinta Parluhutan Marpaung", "Bram Darussalam", "Brian Fatchur Rochman",
+                    "Budi Hartono", "Budi Santoso", "Budi Syafputra", "Bukhari", "Bukhori, Sh", "Bulman Muda Sidi, ST", "CASWIN.S.AN", "CAYARANI SYARIF", "Cahya Yuly Artika", "Cahyadi Maulana S.M",
+                    "Cahyaning Widhi", "Calvaryneke Hanna Wantania, SH., M.Si", "Candra Dewi Hasibuan", "Carlena, S.E", "Chaeri Razikin", "Chairuddin O Mona", "Chandra Joenoes", "Chandra Setia Eswanto", "Chandra Sihotang", "Chandra Sugara",
+                    "Chelsia Rorintulus", "Chintya Chandra Adella", "Chris Yudho Sih Kurniawan", "Christian Reddy Wibisono", "Christianus Kia Da Gomes", "Christy Windy Lapod", "Cicilia Srihartanti,Se", "Cipto Saputra N", "Citra Anggraini", "Citra Anggriyani",
+                    "Clara Theresia Sonia Seran", "Cokorda Gede Surya Putra Trisnu, SE", "Cris Kuntadi", "Cyntia Puspita Sari, S. IP", "D. Jumiati. A.s", "DADANG KOMARA", "DANANG DWI HANANTO", "DARWIS SIREGAR, S.E", "DAVID SETIAWAN, SE., M.Si", "DEBY TWARI JASSICA TANDY",
+                    "DESI AYU NINGSIH", "DESI MARLINDA SARI, S.IP", "DEWI FITRIYANA, S.Sos.", "DEWI NOFIANI, S.Sos", "DEWI PARAS UTAMI", "DIAH RIZKY PARDANI JUNAEDI", "DIANA SAKURA, S.A.P", "DIANA SUSILOWATI", "DIDIT HARTOMO", "DODI",
+                    "DONY TANJUNG MUTIARA", "DRA.HENY RULIANTI MASNAWI", "DUMARIA EVI MAWARTIKU PALAMARTA BR GULTOM", "DUS DUS", "DWI BUDI SETIONO", "DWI HARTATIK", "DWI HENDARTO", "DWI PUSPA AGUSTINA, SE.MM.", "DWI UTARTI", "Dadun Kohar",
+                    "Dahliana Harahap", "Dandon Anggono Putro", "Danial El Amin, S.Hut., M.E.", "Daniel Seru, SE", "Dantia Mahanani", "Darmanto,", "Darsani Sahalem", "De Safari Natadikarya, S.Kom.,M.Si.", "Dea roza ayuningtias", "Deddy Agus Pranata Harefa",
+                    "Deddy Danga Rantelino", "Deddy Wilistyan, SE, MAP", "Dede Andreas, S.IP", "Dedi Candra", "Dedy Cahyadi", "Dedy Harianto", "Dedy Kurniawan", "Dedy Maryadi", "Delina Asriyani", "Delisa",
+                    "Dendy Indrawan Karno Putranto", "Deni Kustiawan", "Denny Agustiansyah", "Denok Utari", "Desi Cahyandari", "Desi Liyani", "Desi Nofiyati", "Desi Rano Sulle", "Desi pangalinan", "Desniati",
+                    "Desnita Thamrin S. Sos", "Dessi Dewi Yani", "Desta Trinata Amalo", "Deta Pratiwi", "Devi Nurrahayu", "Devi virayati malangkase", "Dewi Andalusia", "Dewi Asdar Purwaningsih", "Dewi Eva Kiranti", "Dewi Patriasari Sutarya, SH",
+                    "Dewi Puspasari", "Dewi Sartika", "Dhanu Indra Bhaswara", "Dhian Eka Sulistiawati", "Dhina Novita Rahmaulfa", "Dhiyah Moerdhaniyati", "Dhony Suherman Putra", "Diah Ayu Novitasari,S.Pd", "Dian Dewinta", "Dian Islamiyati",
+                    "Dian Mardianah", "Dian Novi Yanti", "Dian Retnowati", "Diana Eka Damayanti", "Diana Puspita Dewi", "Diana Reni Ambarwati", "Diane Prisillya Thenu", "Dianita", "Dicky Surya Pradana", "Didi Musriadi",
+                    "Dies Ekaprasetya Putra", "Diky Mochamad Ramdan", "Dina Hadiani Sadarwati", "Dina Nuraeni", "Dini Munawwaroh,S.tp", "Dinul Mu'arif", "Diogenes Gedion Thonak", "Dion Ruben Timotius", "Dita Fatmawati", "Djandjang Purwanti",
+                    "Doddy Danan Jaya", "Dominggus Umbu Deta", "Donna Yurika Nasution", "Dra CATUR PANGESTUNINGSIH, M.Si", "Dra. Heni Maesaroh", "Dra. Hj. Nining Herlina, M.Si", "Drs Aris Wahyudi, M.si", "Drs. Edia, M.SI", "Drs. HERMANSYAH", "Drs. MUSTAFA",
+                    "Dussel Sodup Pangon Banjar Nahor", "Dwi Bambang Susanto", "Dwi Bekti Faizal", "Dwi Dis Setiyawati", "Dwi Puspa Rini", "Dwi Septina Rahayu", "Dwi Setyo Aribowo", "Dwi Susanti", "EDI SUSANTO, S.E.", "EDI WINARKO",
+                    "EDINA FITRIA RAHMAN, S.STP.MM", "EDY SUYONO", "EGA EDGARDA USMAN, SE", "EKA PRASETIA ZEBUA", "ELIS MULIA SUNDAWATI, S.Pd, SH", "ELLEN CRISTIE PATTINAMA, S.Pt", "ENDAH NOVITASARI, S.Sos", "ENDAH RUHANA", "ENDANG TRI HASTOTI", "ERVAN",
+                    "ERWAN S.A.P", "ESNI YULITA", "EVENTIUS PATERNUS", "EVI SUSANTI, S.Pd, M.Si", "Edhie Catur Prayitno", "Edisson Cornelis Bali", "Edwin Edzuardy", "Edwin Nugraha", "Effendi", "Efriyeni",
+                    "Eka Andri Yaksa", "Eka Angelieva S", "Eka Elvira", "Eka Fajar Juniar", "Eka Permatasari", "Eka Rosmiyati, SP", "Eka Yudha Sudrajad,", "Eka michelina", "Eki Kusumadewi", "Eko Darmanto",
+                    "Eko Hardiyanto", "Eko Wijayatno", "Eko bayu nugraha A Tarsi", "Eko budi setyono", "Elena Fitriyani Tjaya", "Elfried Harteguh", "Elia Susanti Titin", "Eliosa br Pinem", "Ellanda Ollivia Lesa", "Elly Safitri",
+                    "Elsa Rochito Subara", "Elvi Diana Putri, S.Psi", "Elviarita Yenti", "Elviyani", "Ema Prihatini", "Emildu Azhari", "Emilia El Yunusiyah", "Emma Yunita, S.Pd.", "Endah Juli Wulandari, S.AB.", "Endah Setiawati, S.sos",
+                    "Endi Mardiansyah", "Endrawati", "Erma Yustiyah", "Ermalinda Lodja", "Ernawan", "Erni Haerani", "Ernij Christin Lase", "Erniza Puspita Ningsih", "Ervin Jongguran Marajohan", "Erwin Dodengo",
+                    "Erwinda Nora", "Esmet Vahlevi Cantiago", "Essie Wineri", "Esti Rohana, S.Si", "Estie Susanti", "Etik Hendarti, S.p", "Etika alistyaningsih", "Eurica Firdha Ramandita", "Eva Celia Alberthina Homer", "Eva novalinda",
+                    "Everlince Yarisetouw", "Eydet Rientje Siwabessy", "FACHRUL ROSYID", "FAHMEL TRIADI", "FAHMI SAPUTRA", "FAISAL AMRI TAMPUBOLON", "FANDIAJI", "FARIDA FARADIBA", "FARIDA HOTMA,SH,.M.Si", "FARIDHA",
+                    "FAUZI RAHMAN HUTABARAT", "FEKOLIMA LASE", "FERAWATY A.K DUNGGA,SS.MH", "FERRI ANDRIADI", "FIAN ISMAYADI SUSILA,SE", "FIRDAUS", "FRAN DAROMES ALIDA", "Fadilah", "Fadli Hidayat Septriana", "Fadly Syahrial",
+                    "Fahruddin", "Fahrur Rozi", "Faisal Amir", "Faisal Firman", "Faisarni Namudat", "Faizal Singgih, S.I.Kom.", "Fajar Alamsyah", "Fajar Prambudi Setyagraha", "Fajrin Amin", "Farida Yulika Artati",
+                    "Fariskianto Hakiki", "Fariz Bagus Pradana", "Farizal Arif Prajanto", "Farningotan siahaan", "Fatma Ramadhini, SE, MSi.", "Fatmawati", "Fatmawati", "Fatmawaty Ahmad", "Fauzan Indra Kusumah", "Fazlurrahman, S.STP",
+                    "Febriza Ihsan", "Feibry Timbowo", "Felix Faro Kameubun", "Fenty Usman", "Fernanda Yogaswara Tegar Wibowo", "Ferry Gunawan M Tampubolon", "Ferry Hamonangan", "Fetriana Lestary, ST", "Fida Suherna", "Fifi Zuniarti",
+                    "Finsen Demianus Furay", "Finsensius Fererius Due", "Fiora. SH", "Firdaus Gulo", "Firdaus, S.Sos, M.M", "Firdausi Nuzula", "Firman Rengga Adi Nugroho", "Firmansyah", "Firmansyah", "Fitra Rizky Yosa",
+                    "Fitrah aidin", "Fitri Astuti, S.psi", "Fitri Efendi", "Fitria Ratna Sari", "Fitria Sedjati", "Fitriani", "Fitriansyah Kurniawan", "Fitrya Faradevi", "Florensa Yenialiska Ndonalia", "Foresta Siswoharsono, S.H",
+                    "Frans Laurensus Sinaga", "Fredy Harry Marthonis, S.Pt., M.Si", "Frendy Nurhadi Saputra", "Frengki Tiboyong", "Fresdia Febri Yenita", "Frisca Putri Prihandini", "Fritson Patty Damo, S.I.Kom", "Fuad Kurniawan, S.H",
+                    "Fuad Ramadan, S.IP", "GITA INDAH PERMATA SARI", "GUSTI ZAINAL HASAN", "GUSTIAH, S.Sos", "Galih Agan Pambayun", "Galih Pratama, S.Psi", "Gangan Ganda Somantri M.pd", "Gede Wira Pradnya", "Gemal Pramana", "Gerson Yakob Warisal",
+                    "Gesta Diniarti", "Gian Jauhari Ghofiqi", "Gilang Anggi Puspita Sari", "Gilang Ikhsanul Amri", "Ginanjar Budhi Utomo", "Gita Mahartini", "Gita Rahmatillah Apsari", "Glen Pietersz, SE", "Gogo Kurnia Butar Butar", "Gracia Yanida Rachmawati",
+                    "Guldhian Syahputra", "Gun Gun Agung Gumilar", "Gus Gus Taofik Hidayat", "Gusti Ayu Komang Indrayanti,S. KOM", "H. EDDY IRSON, S.T, M.Si", "HADRAYANTI", "HAIRUL AZHARI", "HAJOPAN IRIANTO ARITONANG", "HAMDAN WIDAKDO", "HANDAYANI EXTANTA RIAWATI NINGSIH",
+                    "HAPPY FANTRISLA LIOW", "HARMI, SH", "HARYANTI TANAI, S.IP", "HASNI B. IBRAHIM", "HASRIADY FAMSA", "HELPINA HT. S.Sos., M.Si", "HENDRA DARMAWAN,ST.,MT", "HENDRICA MATRONA UN", "HENDRIK LOKOLLO", "HENINGSIH, S.Sos.",
+                    "HENY DIANE YUSNITA, S.T., M.M.", "HEPI RAHMAWATI", "HERLINA, SE", "HERONIMUS RUMYARU", "HERRY SUSANTO", "HETTI SETIAWATI MALAKA", "Hadida Samanery, SE", "Hafiz Ansyari, S.Psi", "Haikal", "Halimatun Sa'diah",
+                    "Hamidun", "Hamsiah Yahya", "Hanna Noveria Lumban Batu", "Hardi Suprapto", "Hari Fitriana, SE", "Hari Setiawan, S. Stp", "Harimukti Surya Wirawan", "Hariyani Fitrianingsih", "Hariyanto, S AP", "Hariyati",
+                    "Harmawansyah", "Harmono Nugroho", "Harry Haijiwada", "Hartanto,SE", "Hartantyo Wahyu Sardono, SH", "Harun Al Rasyid, S.Si.", "Hasia Paputungan", "Hasna Rusydiani", "Hasniati", "Hatimulhusna",
+                    "Hedyana Mardatina", "Hendra Buranna", "Hendra Djuanda", "Hendri", "Hendri Febrian S.Kom", "Hendriana.B,SE", "Hendrianto", "Heni Iryaningsih", "Heni Mariati", "Heni Septinawati",
+                    "Heni Susilowati", "Henni Fariha", "Henny Fadilla", "Henri permana", "Herawati", "Heria, S.Pd.I", "Herlan Santoso", "Herman Rubiyansah", "Hermon Iswandi", "Herry Supriatna",
+                    "Heru Setiyanto", "Heruwibowo", "Herwin Jabir", "Herwin Setiawan, S.Sos", "Hesni yuningsih, S.Kom", "Hesti Agustini", "Hestin atas asih", "Hesty Wirayati Turan", "Hidayah Fiqih Utama", "Hidayat,S.I.P",
+                    "Hisyam", "Hj. ALUSMAWATI, SE", "Hj. Daryati Ratna", "Hj. Hasnun Akmal", "Hj. Jumriati.S,SE,MM", "Hj. Mukarromah", "Husran", "I Gede Agus Sudaneyasa", "I Gede Ekananda Hartika", "I Gusti Ayu Diah Kurniasari",
+                    "I Gusti Ayu Made Oktavia Utami Dewi", "I KETUT ADI NATHA, S.E, M.A.P", "I Ketut Ardana", "I Ketut Suartika", "I Komang Suardana, SH", "I Made Agus Wira Wijaya", "I Made Bambang Suliastono, SE.,MAP.", "I Made Dwi Etmo Cahyono Supraptha, S.H.", "I Made Ngurah Bangun Jayadi Putra", "I Made Reta",
+                    "I PUTU SUBRATA", "I Putu Sumardika", "I gede kartanayasa", "I. Syafii", "ICHWAN HAFNI, ST, MM", "IKA SETIANINGRUM", "IKHWANTI ABDUL GANI", "ILDA SUTOPO,SP", "INA WIDIAWATI, S.H.", "INSYIRA SUBAGIA",
+                    "INTAN KUSUMA WARDANI", "IRAWATI,SE", "IRENE SETYANINGRUM, S.IP., M.Si.", "IRSAD ADI LAZUARDI", "IRWAN ,SE", "IRWAN KURNIAWAN", "IRWAN PRIMA HARTAWAN", "IRWANDHANI", "IRWANTI, SH", "IRWIN SETIAWAN,SH.MM",
+                    "ISHAK MAULANA", "ISKANDAR, S.Kom.,MM", "ISNAENI DE ANDREOTTI", "ISWADI", "ISWANDI,SKM", "ISWARADJATI", "IVAN SEPTIANTO. S.E.,M.M", "Ibnu Aulia Hanif", "Ibnu khaldun Sahabuddin, S.Sos", "Ichsan Singi, S.Sos",
+                    "Ida Ayu Mirah Setiawati", "Ida Ayu Ratih Mayuni", "Ida Bagus Agung Andi Bhisma M.", "Ida Bagus Pidada Adi Putra", "Ida Sanjaya", "Idrus, S.Sos", "Idul Aguscik, S.H, M.M", "Iehsan tri kurnia", "Ihpan Siregar", "Ika Ardiyanto",
+                    "Ikhrawan", "Ikmal Hananto", "Ilham Hadikusuma", "Ilham Ramadhan", "Ilham iskandar", "Imam Mu'aziz", "Imam Robani", "Iman Rajiman", "Imanuel Yohanes Lande", "Imas Masitoh",
+                    "Imawan Sujianto", "Ina Rhomy", "Inas Azzahra", "Indah Ernawati", "Indah Kurnia Lestari", "Indah Sri Wahyuni", "Indah Tri Rahayu", "Indah joelianti", "Indarti", "Indra Sahputra",
+                    "Indri Chevalia", "Intan Maria Rumantir Sinambela", "Intan Priyandini", "Ir. ARIF SOEDJANARTA, MM", "Ir. I Gusti Ayu Yuliari Ratrini", "Ira Ramadhani", "Irdha Yanti Musyawarah", "Irene Kusuma Palmarani", "Irfan Risnandi", "Irma Hendriyanti",
+                    "Irma Widiastuti", "Irna asih astuti", "Isal Firdaus", "Iskandar", "Islahun Nihayah", "Ismartini", "Ismi Putri", "Isti Wasono S.Pt", "Iswady", "Ivan Valentino",
+                    "Iwan Hendrawan", "Iwan Widiantoro", "Izza Islamiyah Putri Fayaliq", "JANIA Hi. UMAR", "JASRIL HAKIM, S,Pd", "JEANETTE PRICHILIA SEMEN, SE", "JIMMIE MANOVO", "JONI AFRIZAL, S.E", "JOSE SOARES REGO, S.Sos", "JUARIAH, S.IP",
+                    "JUMADIN", "JUMIASTI RASMAN", "JUNAIDI", "JUNIAR TIGVA BORU", "JUNIATININGSIH S.A.P", "JUNITA FLORIN BUKIT, S.E", "JUNITA JETTY HANNA KUMOWAL", "JUWITA AMELIA DAULAY", "Jahrudin", "Jamila Wael",
+                    "Jandra Jessy Pangemanan", "Janu Didik Santoso", "Jatu Aji Legowo", "Jean Rizal Wijanto", "Jefri Polembi", "Jens Rere", "Jerry Diwitau", "Jetro", "Johana C. Matau", "Joko Prihharjanto, S.Sos",
+                    "Joni Malau", "Joni Palentek", "Jonisten Rajagukguk", "Jordanatha", "Jovan Ferdianto", "Juima Marthen", "Jujun Hidayat", "Jules Jaurat Sibarani", "Julius Andrea Juspongo", "Junaidi Amanda Pasaribu",
+                    "Junaidin", "Juni Aryanto", "Junion Mirasoni Robinson Taga", "Jusman", "KASITA PUTRI YENITA", "KENDRA YUNIAWAN", "KURNIAWAN A. NURZAL, S.Sos", "KUSNANTO", "Kadek Puspita Ratnadewi", "Kadir,S.E",
+                    "Kamalia Sutra Dewi,S.Psi.,M.A.P", "Kariza Dyah Yasmin", "Karjuna", "Karmila", "Karmila Ndajakapraingu", "Kartika Sari", "Kasman Karama", "Kencana Sari", "Ketut Wiratni", "Kevin Tovani",
+                    "Khairina Syafitri", "Khairudin", "Khairunnisah, S.Psi", "Khamsiardi", "Khoirurijaluddin,S.E.", "Khony Wibowo", "Khorina Noviyanti", "Khosim Wongso Suratna", "Khusni", "Komang Eli Susanti",
+                    "Komarudin", "Kris Wibowo", "Kristianus Sugandi Tampar", "Kumala Nindya Pramono", "Kumaya, SE", "Kurniasari", "Kurniati", "Kurrotul aini", "LAILA RAHMI, S.Pi", "LAILATUL MARHAMAH, A.Md.",
+                    "LISTYO RAHAYU", "Lagowe", "Laila Dona Apriani, S.IP.", "Lalu Satria Utama", "Laode Rekesi", "Larasati Azizah Rahimi", "Lastri, S.I.Kom", "Lati Jannani", "Laviena Octora", "Lazuardi Okva Harindra",
+                    "Lenggana Dewi", "Leni Muliana", "Leny Wulandari", "Leviana Agustin", "Liesna Prasetyorini", "Linda Manurung", "Linda Rosida", "Lindasari,Se", "Lindawati", "Lineke Kaeng",
+                    "Lisa", "Lisa Erma Sumarni", "Lisbeth Limbong, SE", "Lisda Dhyniarti Bachtiar", "Lita Mariyani", "Louis Stefani Sriratu, SE, M.Si", "Lubis Polo", "Ludfi", "Luki Rani Ervita, S.S.", "Lukito",
+                    "Lukman", "Luthfi Adi Setiawan", "Luthfi Hariyanto", "M Mustafa Sarinanto", "M ROSIHAN NUR ANWAR, S.E", "M RUSWIYANTO", "M Zaki Dzulfiqar Rosyadi", "M. FADLI SJAH", "M. Geraldi Prihandana", "M. Ichwan",
+                    "M. Jaini", "M. Rizki Ramadhan", "M.SUBHAN, SE", "M.TAHARUDDIN", "M.satrio Pratomo", "MAEMANA, SE.", "MAHENDRI ARIMURTY", "MAIDAH .S.Sos", "MAR'ATUS SOLIKHAH", "MARAGANTI HASIBUAN",
+                    "MARDIYANI", "MARETA FIFIAN DWI ROSANTI", "MARGARETHA, SE", "MARIA SARIYANTI HERAWATI TARMIN", "MARIA SOFI ARDINI", "MARISTHANI", "MARLEN AGUSTIN TAMPI", "MARMIN", "MARSIA INA RAWI, S.E", "MARWIYAH, S.AP",
+                    "MASRITA J. DJ. MOHI", "MAT Shonif", "MATLA'UL ANWAR", "MAYA NURPAICA, SE", "MAYSKER WILIAMSON", "MELFIDYAN GENAKAMA", "MINA BOUTY", "MINARMI", "MIRANTI, ST", "MIRNA NUR ISTIQOMAH",
+                    "MOEHAMMAD ZOECHRI TOBAMBA,ST", "MOH ZAINODDIN", "MOHAMMAD FAIDIL ANWARIE", "MONALISA", "MUHAMAD WIDHIARTO, S.Si., M.Hum", "MUHAMAD YUSUF", "MUHAMMAD FIKRUL ILMI, S.Pd.", "MUHAMMAD GAZALI SYAIDAR", "MUHAMMAD HAMKA, S.A.B", "MUHAMMAD NASIR, S.Sos",
+                    "MUHAMMAD SHOBIRUR RIZQI", "MUHAMMAD SYAUFI IHZA", "MUHRODHI, S.Sos", "MULIADI, Sos., M.Si.", "MUSTAFA KAMAL, SE, M. Si", "Ma'sum Makkawaru", "Madien Hilalah", "Maghfirotun Nisa", "Mahlidar", "Maifendri",
+                    "Maizar, Sh, Mh", "Majarani,SE.,MM", "Maman Fadhilah, SH", "Maman Lukman", "Manake Bambang Triawan", "Mardhatillah H. Polinelo", "Mardiana", "Mardiani SE", "Mardika Belapati", "Marhaeni",
+                    "Marhawia", "Maria Angganitha De Lima", "Maria Efanggelina Fahik", "Maria Legiani", "Marianti Makalalag", "Mariedi Manto", "Marina Putri", "Marjuni", "Marlen Nirahua,SE", "Marliana Agus Mante",
+                    "Marliana Wale Waton, S.Sos", "Marlina", "Marlinah", "Marni Hartati", "Maroeto Yoeli Setiawan", "Marselina Gadu", "Marta Meiliana Tiurmaida Patricia", "Martania Rizki Permatasari", "Martina Amarairu", "Martini Yahya",
+                    "Maryam Karepesina", "Maryati", "Mashudi", "Masianna Pasaribu", "Mateos Maleta", "Maulidar", "Maulidma Muhammad", "Maulina Adelia Pratiwi", "Mawadah Dewi Apriyani", "Maya Nursanti , SE",
+                    "Maya utari", "Medianto", "Meidi H.gunawan S.sos", "Meilanny Margaretha Sondakh", "Melani Fitra Rizkianty, SP, M.Si.", "Melati Putri Mose", "Melly Pebrianti", "Melrytio Junita Sitio", "Merliani", "Merry Wadu",
+                    "Mersi Tangdilassu'", "Mery Yosepha Manik", "Meta Lara Pandini", "Mexon Maiman Purba S.Sos", "Meyrina Pronityastuti", "Mia Aulia", "Miafitri Damanik", "Mikhael Nikodemus Awi", "Mirayulita", "Mirda Datuela",
+                    "Miriansyah", "Mirlie Lenggo Genie", "Mirnawaty Moo", "Mirra Desthari Thiodorra", "Misgianto", "Miss Herlina", "Mita Chairunnisa", "Moch. Yusuf Efendi", "Moch.Royyanudin Mafitri", "Mohamad Ridwan",
+                    "Mohamad Syaiful Amin", "Mohammad Axel Runako", "Mohammad Ido Hendra Wijaya, S.Tr.P", "Mohammad Soko Marhendi", "Mohammad Toha Putra", "Mohammad fadly", "Mokhtar Kusuma Atmaja,Se", "Mona Kiranasih", "Mona Lisa Oktavia", "Muchsin Habib",
+                    "Mugiyani", "Muh Auliyah Nur Yaqin", "Muh Bahri Ikbal", "Muh. Hariadi, S.S.T", "Muhamad Aliudin Rumra", "Muhamad Najmul Fikri", "Muhamad Rifqi Robbani", "Muhamad Said", "Muhamad Taufik", "Muhamad Yani",
+                    "Muhamad Yasil Farabi", "Muhammad Adenin,St", "Muhammad Agus Ilmiawan", "Muhammad Ali Akbar", "Muhammad Dikhatama Yudha", "Muhammad Eka Darmawan, SE", "Muhammad Eric Cahyadi", "Muhammad Faizal", "Muhammad Farid Ardiansyah", "Muhammad Faridhon Sy. ST.,MT",
+                    "Muhammad Faried Risky", "Muhammad Hafidz Alfikri", "Muhammad Hidayatullah", "Muhammad Iksan", "Muhammad Ivandry", "Muhammad Izhar", "Muhammad Kabul, S.Sos", "Muhammad Miftahul Khoir Rahmatullah, S.E", "Muhammad Muajib Ardiansah", "Muhammad Nafarin",
+                    "Muhammad Nur Ihsan", "Muhammad Rinaldy Arif", "Muhammad Rizky Sembiring", "Muhammad Rofiq Kurnia", "Muhammad Rusydi, SH., MM", "Muhammad Sofian Husein", "Muhammad Taswin", "Muhammad Tio Fadillah", "Muhammad Toni Afriady", "Muhammad Wendy Danendra Pohan",
+                    "Muhammad Zuhdi Kurniawan", "Muharyadi , S. Sos", "Muhmmed Khoreiza Qodliya", "Muhtadin Mustafa", "Mujiburahman Saputra", "Munawar", "Muri Kusmahana, S.Kom", "Murni Susianti,SE", "Mursalim S", "Murseto",
+                    "Murwani F", "Muryati, S.Sos.", "Mus Saputra", "Musinah, SH", "Musliono", "Musni Bakar SH", "Mustafa Kamal", "Mustain, SE", "Mutia Astar", "Mutiara Tio Nora Simarmata",
+                    "N Juliawati", "NAJIH NUR FAUZI", "NAPOLEON ENA, S.Sos", "NASIRUDDIN", "NELLIZA", "NI GUSTI AYU OKA PURNAWATI, SE", "NINDING KOSMANA", "NOORHAYANI", "NUNIK INDRAWATI", "NUNIK SUPARTINI",
+                    "NUR ALIYAH", "NUR LAELA PATRIANI", "NUR'AINI,S.Sos", "NURAINY BARDJA", "NURDIN ANWAR, SE", "NURFADHILLAH ARDIYANI NASARU", "NURHEMI RITONGA", "NURMANDIKA BAYU IRAWAN", "NURUL HASANAH", "Nabella Intan Pertiwi",
+                    "Nabilla Mei Larasati", "Nadian Tanora Mirzani", "Nadiatul Humairoh", "Nadya Noor Oktavia", "Nafisa Aulia Fahmi", "Nailul faroh", "Nani Aprizha", "Naomi Fitria Arja", "Naomi Sa'bi", "Nasrullah",
+                    "Nasrullah, SE", "Natalia Ogolmagai", "Natalia isa", "Natya Adi Nugroho", "Nazaria Febiani", "Nazarudin Arif", "Neflianty Birlian", "Nelika", "Ni Kadek Ristawati", "Ni Luh Sudiani,SH",
+                    "Ni Made Dwi Ari Susilawati", "Ni Made Sri Malini,SE", "Ni Wayan Surasmini", "Nia Kurnia", "Niken Candraningrum", "Nikhen Pratiwi Sekar Tanjung", "Nikira Desti Dewati", "Nindya Rachmayanti", "Nisa Arifiana", "Niswatul Rokhma",
+                    "Nita Budi Astuti", "Nitya Dimas Anggara", "Nona Monika Sombolayuk", "Noor Aida Choirunnisa", "Noor Heldayanti, SE", "Nor Aisya Mahdha Heldina", "Novia Dwi Wanti", "Novia Elisabeth Putri Permatasari", "Novia Rosvita Sari", "Novinaristanty Zega",
+                    "Novistasary", "Novrita Karo Karo, SH", "Nugraha Muharafandy", "Nugroho Wijoyo Kusumo", "Nungky Puri Astuti", "Nuni Rahayu, S.Sos", "Nunik Wahyu Rahmawati", "Nunuy Nursamsiah", "Nur Alvi", "Nur Andini, SE",
+                    "Nur Fitri Anasari", "Nur Lailiah", "Nur Wahid Syafarli", "Nur Wahyuni", "Nur Widiastuti", "Nur Widiyaningsih", "Nuranti Eka Oktaviana", "Nurdi Arie wibowo", "Nurfatin Fiqgiya", "Nurhadi",
+                    "Nurkasanah", "Nurkholis", "Nurmina manik", "Nurnismah", "Nursamsi", "Nurul Febiyanti", "Nurul Hasanah Tul Zannah", "Nurullaily", "Nurwiranto, SH", "Nuurin Izzati,S.Hum.", "Nyoman Arsiani",
+                    "OLSJE JANS PIRING", "Octa Prindani", "Okfita Linda Anjasari", "Oki Nugraha", "Oki Oktafri Yatno", "Okta ariyani", "Oliva Yohana Weridity", "Orie Secunda Ayunitantry", "Ovi Utami", "PARIAMAN DAELI",
+                    "PATRICK SERVANDA GROTIUS PARADIK", "PEDI", "PENITAWATI", "PONCO PRANOTO", "PRAWITA DEWI RIANINGRUM", "Pamelia Rahayu S.", "Pamungkas Setyo Utomo", "Panca Retnawati", "Pandu Isdiyanto, S.T., M.M.", "Patmi Sahroni, SP",
+                    "Paulina Maria Songkares", "Pipin Sulistiyaningsih", "Pitriani", "Poni Eka Putra", "Praba Pancala Radya", "Pradina Fitri Maniku,A.Md.Kom", "Pramudhita Ayu Amalia", "Pramudianto, S.H.", "Prasetiyaning Tyas Ari Safitri", "Prasetya Wijayanto",
+                    "Pratiwi Nurdiana", "Prince Alvin Yusuf", "Putri Anggraeni", "Putu Cindy Candra Dewi", "QUDRATULLAH AGAM, S.E", "R DEDY SANTOSO SULUS SE", "R Dani Guntara", "R Nurhidayat", "R. Bambang Dwi Minardi", "R. Deddy Dwiyudha Bakti",
+                    "R. Elly Widianingsih,SE.,M.AP", "RAHDAT HARI", "RAHMAD DILAGA, SH", "RAHMAD HIDAYAT", "RAHMAD MULYADI", "RAHMAD SANDI,S.T", "RAHMAH,S.Pd", "RAHMAT AULIA", "RAMLAH S. LASORE", "RASYIDAN,S.Hut",
+                    "RATNA PRATMAWATI", "REBY RAMBU RITI ROBU", "RENDRA PUTRA DINATA", "RENI KLEMENTIA LASE, SE", "RENIATI, S. Sos", "RENO SAHALA JHON PAULUS PURBA", "RESTU NORO", "RESTUTY", "RETNO ANDAYANI LESTARI", "RETNO WIDHI ASTUTI",
+                    "REZA AFRIANSYAH", "REZA ARIFIN", "RIANA LYZA", "RIBKA MASIE NELCE MELLES", "RICKY IDAMAN SYARFI,SH.MH", "RIDHA ANSHARI", "RIDWAN ILHAMI", "RINATIN", "RIRI FERDINA", "RISNA ARIANI",
+                    "RITA AGUSTINA", "RITA DAMAYANTI", "RITA FADHILAH", "RIZA PAHLEVI", "RIZALUDIN", "RIZKA MAHARDIKA", "ROBERT FRANKY ROOROH", "ROCKY PUTRA ANTAJA GULO, SM", "ROJALI, SE", "ROMDIYAH",
+                    "RONI EKA PRASETIAWAN, S.E.", "RUDIANSYAH", "RUSLAN TARFIN, S.STP", "RUSMIATI", "Rachmat ginanjar", "Raden Roro Mur Oktaviani Swieta Wijayanti, Se", "Rafi'ah Defretes, SH", "Rafki Hadinarto", "Raga Sugih Pangestu", "Rahardian Aditya Maulana",
+                    "Rahel", "Rahenda Ahmad Sanusi", "Rahma Dinda Valentine", "Rahma Fitriati", "Rahma Nurlita", "Rahmani", "Rahmat Juang Kusyari", "Rahmat Waluyo", "Rahmat Widodo", "Rahmayati Br Karo",
+                    "Rahmi Fitria Asril", "Raisha pulukadang", "Raka Dwiman Hudiya", "Rama", "Rama Trijaya Kusuma", "Ramadanni", "Ramadhani", "Ramal Agus Risal, S.E.", "Ramos P. Siagian", "Rangga Yudistia,S.E.,M.Si.",
+                    "Ranti Roezalia Sekti", "Rantini, S.E", "Rasniati", "Rasul", "Ratama Arifin Wibowo", "Ratih Indradiyati", "Ratri Nurinda Kusumawati", "Ratri Wiryani", "Redemta Krisanti Sumiati Laka", "Redie Sumantri, S.Kom",
+                    "Refi Aprisanti", "Refti Betriesva", "Renata Agustina.,S.E", "Rencana Tarigan", "Renna Aprina", "Renny Wahyuni", "Restu Sucipa", "Retno Pangestuti Widianti", "Revita Permana", "Reynhard Hutapea",
+                    "Reza Diki Nisyadin", "Rezky Maharani", "Ria Aggriani Dedtiama", "Rian Rizky", "Rianti Djafar,S.Sos", "Ribka Ambarwati, S.Pd.", "Richat simangunsong", "Richi Agung Ervanto", "Rici Ronaldo", "Ridhayani Aniray",
+                    "Riduansyah", "Ridwan Arif Budiman", "Rijkaard Lasol", "Rika Kurniati", "Rika Nidiya Sari", "Rika Yustika", "Rikahasnita", "Riki Chosyikin", "Riko Ekaputra, S.E, MM", "Riko Tandean",
+                    "Rina", "Rina Endra Astutik", "Rini Martiana", "Riny Karpanisa", "Rio Valentino", "Riri Melanie Rahayu", "Riri Widyawati", "Ririn Martini Rezki, ME", "Rivai Sindring", "Riyanto",
+                    "Rizal Ardi", "Rizka Izzati", "Rizki Al Fahri", "Rizki Putri Anuari, S.I.Kom", "Rizki Rezza Fahlevi", "Rizkia Ramadhan, S.T", "Rizky Adhia Esprila", "Rizky Amalia Ulfa", "Rizqi Meiana Putri", "Rizqi Mutahara",
+                    "Robertius", "Rochmad Effendi", "Rohendi", "Rohiyah", "Rohmah Ahdiyati", "Rohmat Syaefulloh", "Roi Munazir", "Roiyah Arakhman", "Romadi", "Ronald Rotu Ludji",
+                    "Ronaldus Cika Perkasa", "Roose Spiegel Nebore, S.Psi", "Root User", "Rosda, SE., M.A.P", "Rosdiani", "Rosinta Girsang", "Rr. Dhiasty Mahayanti, ST", "Rr. KURNIASIH WILUJENG", "Ruben Calvin Wattimena, SH", "Rudi Hartono, S.IP",
+                    "Rudolfus Kaliang Dendimara", "Ruly Amri", "Rumiyati", "Rusdianto", "Ruslim", "Rustam", "Rustanto", "Ruth Sherina Dama Yanti", "Rutiani Umar", "Ryan Surya Nadapdap",
+                    "Ryas Cahya Annisa", "Rychad Luluk Kuncahyo", "SABAARO MENDROFA, S.Sos", "SAFRANS SABLIMAN ZEGA", "SALMAWATI", "SALWA NOOR AZIZAH", "SAMUEL TANDUNGAN", "SAMURNI", "SANG AYU KETUT SRI ARMONI", "SANUSI BARDENA SEMBIRING",
+                    "SAPTARINI, SE", "SARI SARLITA, S.IP", "SAYFUL ALIWU,ST", "SEBASTIANUS FANULEN,SH", "SEFTI FITRIANI", "SELVARIUS RUDI CAHYANTO, S.E", "SELVINA", "SETIAMAN LASE", "SHIFA SALASIA AGUSTIANA", "SINTYA RATIKA SARI",
+                    "SISKA NURDIN MOHI", "SITI AMINAH", "SITI HARMILLA, S.IP, M.Si", "SITI KHADIJAH KITTA, S.Psi., M.Hum", "SITI SYARIAH", "SOPAN", "SRI ISYAWATI", "SRI RAHAYU", "SRI WIDANARTI PAMUJI RAHAYU", "ST.SYAMSINAR.S.IP,.M.IP.",
+                    "SUBRAN KARNI, S.SY", "SUGIYANTO", "SUHARDI, SE,MM", "SUKADI, SE", "SUKIRAH, SH., M.EC.DEV", "SUMARDAN, SE.", "SUNARTO", "SUPRIYONO, S.Sos, M.M", "SUSALMAWATI, WN", "SUSY ARMAYA TANJUNG",
+                    "SUYANI", "SUZZANA MARIANA DURAND", "SYAHIDAH ASMA AMANINA", "SYANTY", "SYARIFAH SALMA", "Saepul Rohmat", "Safi'i", "Sagita Kusumawardani", "Sahna Putri Aselira", "Sakban simarmata",
+                    "Sakinah, SE", "Sakri Warastrotomo", "Salman Abdurakhman", "Samsir firdaus", "Samsuardi", "Samsul", "Samsul Arief", "Samsyu", "Sandi Tampubolon", "Sandy Florantine Titis Martosudarmo, S.Psi",
+                    "Sapani", "Saprianto", "Sapta Wulandari, Se", "Sarah Reza Maharani", "Sari Dhewi Saraswati", "Sarjono", "Savira Amanda", "Savitria Winariah", "Sawalman", "Sayani",
+                    "Selly lintari", "Selma Almakiya", "Selva Mardinawaty, ST., M.M.", "Sentia Rapika, S.E", "Sentot Tasgunarto", "Senyorita Rosaliana Aronggear", "Septi Rahayu", "Septi Wulandari", "Septian Thahir", "Septiana Vista Dewi",
+                    "Septiani Khaerunnisa", "Septiarni", "Serlina,SE,MM", "Seruni Adhinta Perdana", "Seta Satria Utama", "Setiawan", "Setiono Budi Sopiy", "Shadri saputra", "Shellomita Kusumawardhani", "Shelvy Susanti",
+                    "Shely Marfuah", "Sheylla Aprisca Windiyani", "Shindi Istia Ratyadi", "Shofi Fajriah Ilmi", "Sie Gerrenil Yukgikhanta,", "Sigit Ary Prasetyo", "Simon", "Siti Arfah Husen", "Siti Chumakyah", "Siti Jubaidah",
+                    "Siti Mutoharoh", "Siti Ratna", "Siti Yoanita Adrina", "Siti latifatul mahmudah", "Sitti Zarfina", "Slamet Budiono", "Slamet Riyadi", "Sofia Deslinda", "Sofia Ndao", "Sofiyanti Al Hasanah",
+                    "Sofyan", "Sony maulana", "Sophia Adella", "Sri hartini", "Sri Anitia Fournia", "Sri Handayani", "Sri Hartanti", "Sri Juminarsih", "Sri Oktavianti Porosi, SH.MH", "Sri Rahayu",
+                    "Sri Restanti", "Sri Wahyuni", "Srisiana bunsal", "Stefanie Cicilia zarosa", "Stefanus Richard Marcus", "Stenly Rambitan", "Subhan Syukri Daulay", "Suci Anggraeny Pasaribu, SST", "Suci Islamiya", "Suci Puji Lestari",
+                    "Sudaryatno", "Sudiarto", "Sudiono", "Sudiryo", "Sugeng wiyono", "Sugiman, S.IP", "Sugiyanto", "Suhaimar Alfiandri", "Suharni Bondang", "Suhartoyo", "Suheri",
+                    "Sujarwati", "Sukaria Tarigan", "Sukma dryandi", "Sukmawati Syafwa", "Sulaeman", "Sulistiowati", "Suliyanti", "Sumiati Njau", "Supiandi", "Supriyati",
+                    "Suratimahda", "Suriani", "Surya Lukita Warman, M.Sc.", "Suryani Ningsi Bawiling", "Susanah", "Susantie", "Susiani, S.E", "Susilawati", "Sutri Dahlena, SKM.MSi", "Swari Hadiningsih",
+                    "Syafri agus zulbahri", "Syafruddin, Se", "Syahril N. Hilumalo", "Syahrizal, SE,MM", "Syahromadoni", "Syamsir", "Syamsun Nur Syamsuddin", "Syaqmal Raditya Latarang", "Syarifuddin,S.E.", "Syifa Nurul Azizah",
+                    "Syofik Maizola", "Syukriani, ST", "Syukrizal", "TITIK PURWANI, S.Sos.", "TRI HASTUTI HANDAYANI", "TRIO DORA WANDA MANANEKE", "TURWAPIT, S.IP", "Tamrin. T", "Tantriati", "Tatik Ika Mustika, S.IP, M.Si",
+                    "Tedi Suryo Wibowo", "Teguh Eka Saputro", "Teja dahliawati", "Teni Tanzilal", "Tetty Sinambela", "Theressa Zaratrusha", "Thomas Andrean", "Thomas Bagas Wisnu Putra", "Tiara Ghaitsha Handayani", "Tiara Ramadhani",
+                    "Timbul Tua Panggabean", "Tita herita", "Titan Pancawati", "Titi Nurul Hopipah", "Titiek nansriaty", "Titin Maryati", "Titis Sri Hartopo", "Toto Supriyanto", "Tresy Trinita", "Tri Darmawan Sambodho",
+                    "Tri Martuti Rini Susanti", "Tri Wahyuning Hastuti", "Tri Windari", "Tumpak Boangmanalu", "Tuti Ismawati", "UNTARI MULYANINGSIH,S.E.", "USMADI", "USMAN, SH, M.Si", "Umar Abdul Syukur", "Umi Kadar Utami",
+                    "Uriantono Triwibowo", "Uswah Delsia", "Uun Nurfitriana", "Uyun Fanny Fahraeni, ST.,M.M", "VIRGO ANGELA MARICE LAKE", "VIVI SULVIANTI.SE", "Veni Nur Agustin", "Verawaty Sambine", "Verdi J Pangaribuan", "Veronika susane paula wondal",
+                    "Victoryado Shandez Joseph", "Vini Juliarini Putri", "Viona Azzahra", "Vivi Manisha", "WAHIDAH, A.Md", "WAHYU HARSIKIN", "WAHYUNI", "WAHYUNI J. L. PANGARIBUAN, S.E", "WALFRIK ZEBUA", "WIDARTY",
+                    "WIDHI LESTARI OKTHARINA", "WINDY HIJJRIANTO ILHAMSYAH, S.Stat.", "WISDA NINGSIH SAFITRI", "Wa Ode Hesti Zuhaliman, S.M", "Wa Ode Sumiati Rusli", "Wahab Sugiarto", "Wahyu Efendy", "Wahyu Panca Pamungkas",
+                    "Wahyu Sakti Tri Atmojo", "Wahyu Widiyanto", "Wahyu Yudowibisono", "Wahyuni Lasabuda", "Wahyuniati, S.Sos. M.Si", "Wardaniah Andi Paelori", "Wawan gunawan", "Wayan Ari Sude", "Wayan Sulatri", "Wega Nurhidayah",
+                    "Weli Gustia Putri, SEI", "Wendy Burhannurdin", "Wenny Yuliang Prihatin,S Psi.", "Widiar Wahyudi", "Widiawati, Sh", "Widiyo Handono", "Widya Agsari Rallang", "Wijaya Kesuma", "Wijayanti Purnasari", "Wildani Syifaa",
+                    "Windi Ahmad Hasyimi, S.Sos", "Windi Astuti", "Windi Triana Sari", "Windy Pradita Harma", "Winna Algustin", "Wiryawan", "Witri amelia", "Wiwin Asmianti", "Wiyono", "YAN PIETER RAUBABA",
+                    "YENDRA YADI, S.T.,(ARCH). M.T", "YEYEN TAHIR PALLATJE", "YOESMARFIQ", "YOSI IRAWATI", "YUDHISTARI, SH", "YULIANA TITIARI", "YULISWAN ZN", "YULIUS KARETH", "YURNALIS TITRAWATI TORE, SE", "YUSRIWANTI",
+                    "YUSTARI YUSUF", "Yahya Imansyah Girsang", "Yani Fitriyani, S.sos", "Yanita Uly Br Tarigan", "Yannear Al Reza", "Yanni Maria Cristianti Nahas", "Yanti febrini", "Yarmadanis", "Yasin R., S.E.", "Yen Zubriyani",
+                    "Yenni Narulitha Anggraeni", "Yeny Rudianto", "Yeremias Andreas Amoye", "Yesi Elvi Cahyanti", "Yogautomo Budinugroho", "Yogi Wibowo", "Yogie Noor Hidayat", "Yohana Agustin Wijayantie, S.E.", "Yon Ersa Rewa", "Yonathan Tanna",
+                    "Yoni Oktavia", "Yonita", "Yopi Saproni, SH", "Yori Dharta Wijaya", "Yoseph Moris Magang Sau", "Yova Krisma Hara", "Yovi Yuliana", "Yuda Hardika ,S.sos.", "Yudha Prasetya Maha Putra., SE", "Yudha. S",
+                    "Yudik Hendri Hananto", "Yugita Putra Distriawan", "Yuli Mulyasari", "Yuli Sri Wardani", "Yulia Rani", "Yuliana Elu Nino", "Yuliana Ningsih, S. Pd", "Yuliani Safitri", "Yulianis", "Yulianti",
+                    "Yulita Andiani", "Yuliyadi Christal Leo Taga Lele", "Yumna Basir", "Yungki Kantiana Taqwa", "Yuni Kurnia Putri", "Yuni Kurniawati", "Yuni Wulandari", "Yunian Prihatini", "Yuniarti, Se", "Yuningsih",
+                    "Yunita Dwi Nuraeni, S.Pd", "Yunita Rahmawaty Utami", "Yurida Noerhania", "Yusep Hendarsyah", "Yussiwendi", "Yustina Diana Gama Putri", "Yusuf Ardabili", "Yusuf Fajra Maulia, S.H", "Yusuf Kurniawan", "Yusuf Mochamad",
+                    "Yuyum Puspitaningrum", "ZAILLA NURFAZRIANI PONTO", "Zainah Afrianti", "Zainal Abidin", "Zamzam", "Zul Faizah", "Zulfian Hafni Nazar", "Zulfirayanti Abas", "Zulhendri", "afrizal",
+                    "akhmad gaos", "akhmad gunawan", "aldi", "andiro Maleani", "arie widyotomo", "asrian darma saputra", "aw. budiansyah", "chairul saleh,SE,M.Si", "citro joyo trisno", "dani setiawan",
+    "daniel s dethan", "de viviant", "dian kurniawati subardi, s.ip", "eli fitriani", "esy novialtri", "eta lestari tambunan", "eviyanti", "febrianto", "fitria rozalina, S.Sos", "fitriana wibawanti",
+    "hariyono", "i dewa gede juniartana", "indra", "jana silniodi", "kristina royan", "lilis darojah", "luther ta'dung", "maha rani putri", "meria sari umar", "mochamad fajar sigit rahmanto",
+    "mokhammad farid maruf", "muh irwan hasib, se", "muhammad aris aprianoor", "muhammad farid", "muhammad taufik,S.Ip", "mumsita iryani", "ni luh putu widyantari", "novita sari", "nyoto budhi astoro", "ovi mawaddah",
+    "rahmah gustiha", "rahmi fauziah", "rodianti, S.Sos", "romy andi manik", "salmidawati", "sartono", "saurma rumiris", "sigma kusuma wijaya", "sukardi", "suryani",
+    "suryati", "suryono", "susana margretha thei", "susi marini", "syamsul bahri", "syofian", "titiek suyatni wantogia", "vernny moriane sjultje soputan", "victor yuditara", "waode rosliani",
+    "warliah", "widia apriyanti.S.STP.MM", "yakobus alex yocom", "yudha setyo nugroho", "zainal guzali"
+                ];
+                ?>
                 <?php if ($selectedEmployer): ?>
                     <!-- DETAIL VIEW FOR VERIFIKASI PEMBERI KERJA -->
                     <div style="margin-bottom:16px;">
@@ -2918,11 +3098,11 @@ document.addEventListener('click', function(e) {
                                         <select name="verifier_name" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; background:#ffffff;">
                                             <option value="" disabled selected>Pilih pemeriksa...</option>
                                             <option value="<?php echo e($user['name']); ?>"><?php echo e($user['name']); ?> (Saya)</option>
-                                            <?php if ($user['name'] !== 'Admin Pusat'): ?>
-                                                <option value="Admin Pusat">Admin Pusat</option>
-                                            <?php endif; ?>
-                                            <option value="Petugas Pengawas Wilayah 1">Petugas Pengawas Wilayah 1</option>
-                                            <option value="Petugas Pengawas Wilayah 2">Petugas Pengawas Wilayah 2</option>
+                                            <?php foreach ($pemeriksaMasterList as $pItem): ?>
+                                                <?php if ($pItem !== $user['name']): ?>
+                                                    <option value="<?php echo e($pItem); ?>"><?php echo e($pItem); ?></option>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
                                         </select>
                                     </div>
 
@@ -3216,11 +3396,11 @@ document.addEventListener('click', function(e) {
                                         <label style="font-size:13px; font-weight:700; display:block; margin-bottom:4px;">Pemeriksa:</label>
                                         <select name="verifier_name" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;">
                                             <option value="<?php echo e($user['name']); ?>"><?php echo e($user['name']); ?> (Saya)</option>
-                                            <?php if ($user['name'] !== 'Admin Pusat'): ?>
-                                                <option value="Admin Pusat">Admin Pusat</option>
-            <?php endif; ?>
-                                            <option value="Petugas Pengawas Wilayah 1">Petugas Pengawas Wilayah 1</option>
-                                            <option value="Petugas Pengawas Wilayah 2">Petugas Pengawas Wilayah 2</option>
+                                            <?php foreach ($pemeriksaMasterList as $pItem): ?>
+                                                <?php if ($pItem !== $user['name']): ?>
+                                                    <option value="<?php echo e($pItem); ?>"><?php echo e($pItem); ?></option>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
                                         </select>
                                     </div>
                                     <div style="margin-bottom:12px;">
@@ -3545,18 +3725,7 @@ document.addEventListener('click', function(e) {
                     </div>
 
                     <script>
-                    const VERIFIER_LIST_EMP = [
-                        "A. Dimas, Se",
-                        "A. Fajar Wahyu",
-                        "A. RAHMAT FAJAR",
-                        "A.a. Putra Wirasanjaya",
-                        "ABD Halim",
-                        "ABD. WAHAB, S.Pd",
-                        "ABDUL BASYIR",
-                        "ABDUL HAMID TUASALAMONY",
-                        "ABDUL SALAM LAUMA, S.Sos",
-                        "ACHMAD RAJA NASUTION"
-                    ];
+                    const VERIFIER_LIST_EMP = <?php echo json_encode($pemeriksaMasterList); ?>;
 
                     function toggleFilterPopoverEmp(e) {
                         if (e) e.stopPropagation();
