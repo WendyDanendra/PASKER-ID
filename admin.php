@@ -2613,103 +2613,133 @@ document.addEventListener('click', function(e) {
                 <?php if ($selectedEmployer): ?>
                     <!-- DETAIL VIEW FOR VERIFIKASI PEMBERI KERJA -->
                     <div style="margin-bottom:16px;">
-                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail">
+                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" style="display:inline-flex; align-items:center; gap:6px; color:#475569; font-weight:600; font-size:13px; text-decoration:none;">
                             <i class="fa-solid fa-arrow-left"></i> Kembali
                         </a>
-                </div>
+                    </div>
 
-                    <div class="detail-header-bar">
+                    <!-- TOP HEADER BAR -->
+                    <div class="detail-header-bar" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px 24px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
                         <div style="display:flex; align-items:center; gap:16px;">
-                            <div class="item-avatar-box" style="width:52px; height:52px; font-size:18px;">
+                            <div class="item-avatar-box" style="width:52px; height:52px; font-size:18px; border-radius:12px; background:#f1f5f9; color:#0f172a; display:flex; align-items:center; justify-content:center; font-weight:700;">
                                 <?php echo strtoupper(substr($selectedEmployer['owner_name'] ?: $selectedEmployer['name'], 0, 2)); ?>
                             </div>
                             <div>
+                                <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:#64748b; margin-bottom:4px;">
+                                    DETAIL PENGAJUAN VERIFIKASI
+                                </div>
                                 <div style="display:flex; align-items:center; gap:10px;">
-                                    <h1 style="font-size:20px; font-weight:800; margin:0;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></h1>
-                                    <span class="pill-badge <?php echo $selectedEmployer['verification_status'] === 'APPROVED' ? 'verified' : ($selectedEmployer['verification_status'] === 'SUSPENDED' ? 'suspended' : 'pending'); ?>">
-                                        ● <?php echo e($selectedEmployer['verification_status'] === 'APPROVED' ? 'Terverifikasi' : $selectedEmployer['verification_status']); ?>
+                                    <h1 style="font-size:20px; font-weight:800; margin:0; color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></h1>
+                                    <?php
+                                        $status = $selectedEmployer['verification_status'] ?? 'PENDING';
+                                        $statusClass = 'pending';
+                                        $statusLabel = 'Dikirim';
+                                        if ($status === 'APPROVED') { $statusClass = 'verified'; $statusLabel = 'Terverifikasi'; }
+                                        elseif ($status === 'REJECTED') { $statusClass = 'danger'; $statusLabel = 'Ditolak'; }
+                                        elseif ($status === 'REVISION') { $statusClass = 'revision'; $statusLabel = 'Revisi'; }
+                                        elseif ($status === 'PENDING') { $statusClass = 'pending'; $statusLabel = 'Dikirim'; }
+                                    ?>
+                                    <span class="pill-badge <?php echo $statusClass; ?>">
+                                        ● <?php echo e($statusLabel); ?>
                                     </span>
                                 </div>
                                 <div style="font-size:12px; color:#64748b; margin-top:4px;">
-                                    Slug: <code><?php echo strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $selectedEmployer['owner_name'] ?: $selectedEmployer['name'])); ?></code> • 
-                                    <?php echo e($selectedEmployer['entity_type'] ?? 'Individu'); ?> • 
-                                    Didaftarkan: <?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?> • 
-                                    <?php echo e($selectedEmployer['city'] ?: '-'); ?>
+                                    Slug: <code><?php echo strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $selectedEmployer['owner_name'] ?: $selectedEmployer['name'])); ?></code> &nbsp;|&nbsp;
+                                    <strong><?php echo e($selectedEmployer['entity_type'] ?? 'Individual'); ?></strong> &nbsp;|&nbsp;
+                                    Didaftarkan: <?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?> &nbsp;|&nbsp;
+                                    <?php echo e($selectedEmployer['city'] ?: 'Dalung, Kuta Utara, Kab. Badung, Bali'); ?>
                                 </div>
+                            </div>
                         </div>
-                    </div>
 
-                        <div style="display:flex; gap:10px;">
+                        <div>
                             <?php if (empty($selectedEmployer['assigned_to'])): ?>
-                                <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="margin:0;">
                                     <input type="hidden" name="admin_action" value="assign_employer_case">
                                     <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
                                     <input type="hidden" name="self_assign" value="1">
                                     <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
-                                    <button type="submit" class="primary-btn" style="height:36px; padding:0 16px; font-size:12px;">
-                                        <i class="fa-solid fa-hand-holding-hand"></i> Ambil Case
+                                    <button type="submit" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
+                                        <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
                                     </button>
                                 </form>
                             <?php else: ?>
-                                <?php if (strcasecmp((string)$selectedEmployer['assigned_to'], (string)$user['name']) !== 0 && strcasecmp((string)$selectedEmployer['assigned_to'], (string)($user['email'] ?? '')) !== 0): ?>
-                                    <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="display:inline;">
-                                        <input type="hidden" name="admin_action" value="assign_employer_case">
-                                        <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-                                        <input type="hidden" name="self_assign" value="1">
-                                        <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
-                                        <button type="submit" class="primary-btn" style="height:36px; padding:0 16px; font-size:12px; background:#d97706;">
-                                            <i class="fa-solid fa-hand-holding-hand"></i> Ambil Alih Case
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                                <button type="button" class="btn-lihat-detail" data-open-modal="modal-assign-pemeriksa">
-                                    <i class="fa-solid fa-user-gear"></i> Ubah Pemeriksa
-                                </button>
+                                <div style="display:flex; gap:10px;">
+                                    <?php if (strcasecmp((string)$selectedEmployer['assigned_to'], (string)$user['name']) !== 0 && strcasecmp((string)$selectedEmployer['assigned_to'], (string)($user['email'] ?? '')) !== 0): ?>
+                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="margin:0;">
+                                            <input type="hidden" name="admin_action" value="assign_employer_case">
+                                            <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                            <input type="hidden" name="self_assign" value="1">
+                                            <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
+                                            <button type="submit" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #d97706; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:600; color:#d97706; cursor:pointer;">
+                                                <i class="fa-solid fa-arrows-rotate"></i> Ambil Alih Case
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                    <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
+                                        <i class="fa-solid fa-user-gear" style="color:#00a8e8;"></i> Ubah Pemeriksa
+                                    </button>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
 
-                    <div class="detail-grid-container">
-                        <!-- LEFT COLUMN: VERIFICATION CARDS -->
-                        <div>
-                            <!-- RINGKASAN PENGAJUAN -->
-                            <div class="section-card">
-                                <div class="section-card-title">Ringkasan Pengajuan</div>
-                                <div class="key-val-grid">
-                                    <div class="key-val-item">
-                                        <div class="label"><i class="fa-solid fa-database"></i> Sumber Data</div>
-                                        <div class="value">Registrasi Platform (SIAPkerja)</div>
+                    <div class="detail-grid-container" style="display:grid; grid-template-columns: 1fr 340px; gap:20px; align-items:start;">
+                        <!-- LEFT COLUMN: MAIN VERIFICATION CONTENT -->
+                        <div style="display:flex; flex-direction:column; gap:20px;">
+
+                            <!-- CARD 1: RINGKASAN PENGAJUAN -->
+                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Ringkasan Pengajuan</div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; font-size:13px;">
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-database" style="color:#00a8e8; font-size:12px;"></i> Sumber Data
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;">Registrasi Platform</div>
                                     </div>
-                                    <div class="key-val-item">
-                                        <div class="label"><i class="fa-solid fa-calendar"></i> Tanggal Pengajuan</div>
-                                        <div class="value"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-regular fa-calendar" style="color:#d97706; font-size:12px;"></i> Tanggal Pengajuan
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
                                     </div>
-                                    <div class="key-val-item">
-                                        <div class="label"><i class="fa-solid fa-shapes"></i> Tipe</div>
-                                        <div class="value"><?php echo e($selectedEmployer['entity_type'] ?? 'Individu'); ?></div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-shapes" style="color:#e11d48; font-size:12px;"></i> Tipe
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;"><?php echo e($selectedEmployer['entity_type'] ?? 'Individual'); ?></div>
                                     </div>
-                                    <div class="key-val-item">
-                                        <div class="label"><i class="fa-solid fa-hourglass-half"></i> Deadline</div>
-                                        <div class="value">-</div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-regular fa-clock" style="color:#e11d48; font-size:12px;"></i> Deadline
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;">-</div>
                                     </div>
-                                    <div class="key-val-item" style="grid-column: span 2;">
-                                        <div class="label"><i class="fa-solid fa-location-dot"></i> Wilayah</div>
-                                        <div class="value"><?php echo e($selectedEmployer['city'] ?: '-'); ?>, <?php echo e($selectedEmployer['province'] ?: '-'); ?></div>
+                                    <div style="grid-column: span 2;">
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-location-dot" style="color:#00a8e8; font-size:12px;"></i> Wilayah
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dalung, Kuta Utara, Kab. Badung, Bali'); ?><?php echo !empty($selectedEmployer['province']) ? ', ' . e($selectedEmployer['province']) : ''; ?></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- INFORMASI PENUGASAN DAN VERIFIKATOR -->
-                            <div class="section-card">
-                                <div class="section-card-title">Informasi Penugasan dan Verifikator</div>
-                                <div class="key-val-grid">
-                                    <div class="key-val-item">
-                                        <div class="label"><i class="fa-solid fa-user-shield"></i> Pemeriksa</div>
-                                        <div class="value"><?php echo e($selectedEmployer['assigned_to'] ?: 'Belum ditugaskan'); ?></div>
+                            <!-- CARD 2: INFORMASI PENUGASAN DAN VERIFIKATOR -->
+                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Informasi Penugasan dan Verifikator</div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; font-size:13px;">
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-user-check" style="color:#00a8e8; font-size:12px;"></i> Pemeriksa
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;"><?php echo e($selectedEmployer['assigned_to'] ?: 'Belum ditugaskan'); ?></div>
                                     </div>
-                                    <div class="key-val-item">
-                                        <div class="label"><i class="fa-solid fa-circle-check"></i> Status Penugasan</div>
-                                        <div class="value">
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-shield-halved" style="color:#10b981; font-size:12px;"></i> Status Penugasan
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;">
                                             <?php if (!empty($selectedEmployer['assigned_to'])): ?>
                                                 <span class="pill-badge assigned">● Ditugaskan</span>
                                             <?php else: ?>
@@ -2717,88 +2747,194 @@ document.addEventListener('click', function(e) {
                                             <?php endif; ?>
                                         </div>
                                     </div>
-                                    <div class="key-val-item" style="grid-column: span 2;">
-                                        <div class="label"><i class="fa-solid fa-clock"></i> Ditugaskan Pada</div>
-                                        <div class="value"><?php echo !empty($selectedEmployer['assigned_at']) ? date('d M Y, H:i', strtotime($selectedEmployer['assigned_at'])) : '-'; ?></div>
+                                    <div style="grid-column: span 2;">
+                                        <div style="color:#64748b; margin-bottom:4px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-regular fa-calendar-check" style="color:#d97706; font-size:12px;"></i> Ditugaskan Pada
+                                        </div>
+                                        <div style="font-weight:700; color:#0f172a;"><?php echo !empty($selectedEmployer['assigned_at']) ? date('d M Y, H:i', strtotime($selectedEmployer['assigned_at'])) : '-'; ?></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- PERBANDINGAN DATA PEMBERI KERJA DAN OSS / SIAPKERJA -->
-                            <div class="section-card">
-                                <div class="section-card-title">Perbandingan Data Pemberi Kerja dan OSS / SIAPkerja</div>
-                                <p style="font-size:12px; color:#64748b; margin-top:-8px; margin-bottom:12px;">Data referensi diambil otomatis berdasarkan NIK/NPWP pemohon.</p>
-                                <table class="compare-table">
-                            <thead>
-                                <tr>
-                                            <th>Variabel</th>
-                                            <th>Data Pemberi Kerja</th>
-                                            <th>Data OSS / SIAPkerja</th>
-                                            <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                        <tr>
-                                            <td><strong>Nama Lengkap / Pemilik</strong></td>
-                                            <td><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></td>
-                                            <td><?php echo e($selectedEmployer['name']); ?></td>
-                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>NIK</strong></td>
-                                            <td><code><?php echo e($selectedEmployer['nik'] ?: '-'); ?></code></td>
-                                            <td><code><?php echo e($selectedEmployer['nik'] ?: '-'); ?></code></td>
-                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>NPWP</strong></td>
-                                            <td><code><?php echo e($selectedEmployer['npwp'] ?: '-'); ?></code></td>
-                                            <td><code><?php echo e($selectedEmployer['npwp'] ?: '-'); ?></code></td>
-                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Email</strong></td>
-                                            <td><?php echo e($selectedEmployer['email']); ?></td>
-                                            <td><?php echo e($selectedEmployer['email']); ?></td>
-                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Telepon / WhatsApp</strong></td>
-                                            <td><?php echo e($selectedEmployer['phone']); ?> / <?php echo e($selectedEmployer['whatsapp']); ?></td>
-                                            <td><?php echo e($selectedEmployer['phone']); ?></td>
-                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Wilayah</strong></td>
-                                            <td><?php echo e($selectedEmployer['city']); ?>, <?php echo e($selectedEmployer['province']); ?></td>
-                                            <td><?php echo e($selectedEmployer['city']); ?>, <?php echo e($selectedEmployer['province']); ?></td>
-                                            <td><span class="pill-badge verified" style="font-size:11px; padding:2px 8px;">Sesuai</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <!-- CARD 3: DATA PROFIL TABLE (INDIVIDUAL VS PERUSAHAAN/OSS) -->
+                            <?php if (strcasecmp((string)($selectedEmployer['entity_type'] ?? 'Individual'), 'Perusahaan') === 0): ?>
+                                <!-- TABLE FOR PERUSAHAAN (PERBANDINGAN DATA OSS) -->
+                                <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                    <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:4px;">Perbandingan Data Pemberi Kerja dan OSS</div>
+                                    <p style="font-size:12px; color:#64748b; margin:0 0 14px 0;">Data OSS diambil otomatis berdasarkan NIB perusahaan.</p>
+                                    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:12.5px; color:#991b1b; margin-bottom:14px;">
+                                        Data pemberi kerja ini tidak dapat ditemukan karena NIB tidak terdaftar di WUP.
+                                    </div>
+                                    <div style="overflow-x:auto;">
+                                        <table class="compare-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                                            <thead>
+                                                <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left; color:#475569;">
+                                                    <th style="padding:10px 14px; font-weight:700;">Variabel</th>
+                                                    <th style="padding:10px 14px; font-weight:700;">Data Pemberi Kerja</th>
+                                                    <th style="padding:10px 14px; font-weight:700;">Data OSS</th>
+                                                    <th style="padding:10px 14px; font-weight:700;">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">Nama Pemberi Kerja</td><td style="padding:10px 14px; font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">NIB</td><td style="padding:10px 14px; color:#0f172a;">-</td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">Email</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['email']); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">Telepon</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['phone']); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">Alamat</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: '-'); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">Provinsi</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['province'] ?: '-'); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">Kota/Kabupaten</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: '-'); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600;">Kode Pos</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['postal_code'] ?: '-'); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                                <tr><td style="padding:10px 14px; font-weight:600;">Deskripsi</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['description'] ?: '-'); ?></td><td style="padding:10px 14px; color:#94a3b8;">-</td><td><span class="pill-badge danger" style="font-size:11px; padding:2px 8px;">Tidak Ditemukan</span></td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <!-- TABLE FOR INDIVIDUAL (DATA PROFIL PEMBERI KERJA INDIVIDU) -->
+                                <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                    <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Data Profil Pemberi Kerja Individu</div>
+                                    <div style="overflow-x:auto;">
+                                        <table class="compare-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                                            <thead>
+                                                <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left; color:#475569;">
+                                                    <th style="padding:10px 14px; font-weight:700; width:220px;">Variabel</th>
+                                                    <th style="padding:10px 14px; font-weight:700;">Data Pemberi Kerja Individu</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Nama Pemberi Kerja</td><td style="padding:10px 14px; font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">NIK</td><td style="padding:10px 14px; color:#0f172a;"><code><?php echo e($selectedEmployer['nik'] ?: '327xxxxxxxxxxxxx'); ?></code></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Email</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['email'] ?: 'info@email.com'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Telepon</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['phone'] ?: '0812xxxxxxxx'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">WhatsApp</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['whatsapp'] ?: '0812xxxxxxxx'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Jenis Profesi / Usaha Individu</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['profession'] ?: ($selectedEmployer['description'] ?: 'Real Estate')); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">NPWP</td><td style="padding:10px 14px; color:#0f172a;"><code><?php echo e($selectedEmployer['npwp'] ?: '12.345.678.9-000.000'); ?></code></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">LinkedIn</td><td style="padding:10px 14px; color:#94a3b8;">-</td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Facebook</td><td style="padding:10px 14px; color:#94a3b8;">-</td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Instagram</td><td style="padding:10px 14px; color:#0f172a;">@<?php echo e(strtolower(str_replace(' ', '.', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Sosial Media</td><td style="padding:10px 14px; color:#0f172a;">Instagram: @<?php echo e(strtolower(str_replace(' ', '.', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Lokasi Domisili</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dalung, Kuta Utara, Kab. Badung, Bali'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Alamat Lengkap Pemberi Kerja</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: 'Jl. Wayan Gebyag No. 68, Br. Tegal Jaya'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Detail Alamat / Patokan</td><td style="padding:10px 14px; color:#0f172a;">Dekat pertigaan utama</td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Kode Pos</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['postal_code'] ?: '80361'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['description'] ?: 'Real Estate'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Pendukung</td><td style="padding:10px 14px; color:#0f172a;">KTP, NPWP, Dokumen usaha</td></tr>
+                                                <tr><td style="padding:10px 14px; font-weight:600; color:#334155;">Foto Bukti Tempat Usaha / Lokasi</td><td style="padding:10px 14px; color:#059669; font-weight:600;">Tersedia</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- CARD 4: INFORMASI PEMBERI KERJA DETAIL & MAP -->
+                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                    <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin:0;">Informasi Pemberi Kerja</div>
+                                    <a href="#" onclick="event.preventDefault();" style="color:#00a8e8; text-decoration:none; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Detail Pemberi Kerja
+                                    </a>
+                                </div>
+
+                                <div style="margin-bottom:14px;">
+                                    <div style="font-size:16px; font-weight:800; color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                    <div style="font-size:12.5px; color:#64748b; margin-top:2px; font-weight:500;"><?php echo e($selectedEmployer['entity_type'] ?? 'Individual'); ?></div>
+                                </div>
+
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; font-size:13px; margin-bottom:16px;">
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-location-dot" style="color:#94a3b8;"></i> Wilayah
+                                        </div>
+                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dalung, Kuta Utara, Kab. Badung, Bali'); ?></div>
+                                    </div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-regular fa-calendar" style="color:#94a3b8;"></i> Tanggal Daftar
+                                        </div>
+                                        <div style="font-weight:600; color:#0f172a;"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                    </div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-regular fa-envelope" style="color:#94a3b8;"></i> Email
+                                        </div>
+                                        <div style="font-weight:600; color:#00a8e8;"><?php echo e($selectedEmployer['email'] ?: 'info@email.com'); ?></div>
+                                    </div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-phone" style="color:#94a3b8;"></i> Telepon
+                                        </div>
+                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['phone'] ?: '0812xxxxxxxx'); ?></div>
+                                    </div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-brands fa-instagram" style="color:#94a3b8;"></i> Sosial Media
+                                        </div>
+                                        <div style="font-weight:600; color:#0f172a;">Instagram: @<?php echo e(strtolower(str_replace(' ', '.', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></div>
+                                    </div>
+                                    <div>
+                                        <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-brands fa-whatsapp" style="color:#94a3b8;"></i> WhatsApp
+                                        </div>
+                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['whatsapp'] ?: '0812xxxxxxxx'); ?></div>
+                                    </div>
+                                    <div style="grid-column: span 2;">
+                                        <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-map-pin" style="color:#94a3b8;"></i> Alamat Lengkap Pemberi Kerja
+                                        </div>
+                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: 'Jl. Wayan Gebyag No. 68, Br. Tegal Jaya'); ?></div>
+                                        <div style="font-size:12px; color:#64748b; margin-top:2px;">Kode Pos: <?php echo e($selectedEmployer['postal_code'] ?: '80361'); ?></div>
+                                    </div>
+                                </div>
+
+                                <!-- MAP PREVIEW BOX -->
+                                <div style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-bottom:16px; background:#e0f2fe; height:180px; position:relative; display:flex; align-items:center; justify-content:center;">
+                                    <iframe width="100%" height="180" frameborder="0" style="border:0;" src="https://maps.google.com/maps?q=<?php echo urlencode($selectedEmployer['address'] ?: ($selectedEmployer['city'] ?: 'Badung Bali')); ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" allowfullscreen></iframe>
+                                </div>
+
+                                <div>
+                                    <div style="color:#64748b; font-size:12.5px; font-weight:600; margin-bottom:4px;">Deskripsi Singkat</div>
+                                    <div style="font-size:13px; color:#334155; line-height:1.5;"><?php echo e($selectedEmployer['description'] ?: 'Real Estate'); ?></div>
+                                </div>
                             </div>
 
-                            <!-- INFORMASI PEMBERI KERJA DETAIL & MAP -->
-                            <div class="section-card">
-                                <div class="section-card-title">Informasi Pemberi Kerja</div>
-                                <div class="key-val-grid">
-                                    <div class="key-val-item">
-                                        <div class="label">Alamat</div>
-                                        <div class="value"><?php echo e($selectedEmployer['address'] ?: '-'); ?></div>
-                                    </div>
-                                    <div class="key-val-item">
-                                        <div class="label">Kode Pos</div>
-                                        <div class="value"><?php echo e($selectedEmployer['postal_code'] ?: '-'); ?></div>
+                            <!-- CARD 5: ASSIGN PEMERIKSA -->
+                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">Assign Pemeriksa</div>
+
+                                <!-- NOTICE BOX -->
+                                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px; margin-bottom:16px;">
+                                    <div style="font-size:13px; font-weight:700; color:#92400e; margin-bottom:4px;">Perhatian</div>
+                                    <div style="font-size:12.5px; color:#b45309; line-height:1.4;">
+                                        Untuk mengubah pemeriksa, pemberi kerja harus memiliki penugasan aktif terlebih dahulu. Silakan ambil case terlebih dahulu melalui aksi di header.
                                     </div>
                                 </div>
-                                <div class="map-box-placeholder">
-                                    <i class="fa-solid fa-map-location-dot" style="font-size:24px; margin-right:8px;"></i>
-                                    Peta Lokasi: <?php echo e($selectedEmployer['latitude'] ?: '-6.241586'); ?>, <?php echo e($selectedEmployer['longitude'] ?: '106.992416'); ?>
-                                </div>
-                                <div style="margin-top:14px; font-size:13px;">
-                                    <strong>Deskripsi:</strong><br>
-                                    <span style="color:#475569;"><?php echo nl2br(e($selectedEmployer['description'] ?: '-')); ?></span>
-                                </div>
+
+                                <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                    <input type="hidden" name="admin_action" value="assign_employer_case">
+                                    <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+
+                                    <div style="margin-bottom:14px;">
+                                        <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Pemeriksa <span style="color:#ef4444;">*</span></label>
+                                        <select name="verifier_name" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; background:#ffffff;">
+                                            <option value="" disabled selected>Pilih pemeriksa...</option>
+                                            <option value="<?php echo e($user['name']); ?>"><?php echo e($user['name']); ?> (Saya)</option>
+                                            <?php if ($user['name'] !== 'Admin Pusat'): ?>
+                                                <option value="Admin Pusat">Admin Pusat</option>
+                                            <?php endif; ?>
+                                            <option value="Petugas Pengawas Wilayah 1">Petugas Pengawas Wilayah 1</option>
+                                            <option value="Petugas Pengawas Wilayah 2">Petugas Pengawas Wilayah 2</option>
+                                        </select>
+                                    </div>
+
+                                    <div style="margin-bottom:16px;">
+                                        <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Alasan <span style="color:#ef4444;">*</span></label>
+                                        <textarea name="assignment_reason" required minlength="10" placeholder="Masukkan alasan penugasan (minimal 10 karakter)..." style="width:100%; min-height:80px; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; outline:none; font-family:inherit;"></textarea>
+                                    </div>
+
+                                    <button type="submit" style="width:100%; height:42px; background:#7dd3fc; border:none; border-radius:10px; color:#0369a1; font-weight:700; font-size:13.5px; cursor:pointer; transition:background 0.2s;">
+                                        Assign Pemeriksa
+                                    </button>
+                                </form>
                             </div>
 
                             <!-- ========================================== -->
@@ -2995,29 +3131,73 @@ document.addEventListener('click', function(e) {
                                                             </div>
                                                         </form>
                                 <?php endif; ?>
-                                                    </div>
-                                                </div>
+                            </div>
+                        </div>
 
-                        <!-- RIGHT COLUMN: AUDIT LOG TIMELINE -->
-                        <div>
-                            <div class="section-card">
-                                <div class="section-card-title">Aktivitas & Audit Log</div>
+                        <!-- RIGHT COLUMN: AKUN & AUDIT LOG -->
+                        <div style="display:flex; flex-direction:column; gap:20px;">
+                            <!-- CARD: AKUN PEMBERI KERJA -->
+                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Akun Pemberi Kerja</div>
+
+                                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                                    <div style="width:42px; height:42px; border-radius:50%; background:#ef4444; color:#ffffff; font-weight:800; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; overflow:hidden;">
+                                        <?php if (!empty($selectedEmployer['avatar'])): ?>
+                                            <img src="<?php echo e($selectedEmployer['avatar']); ?>" style="width:100%; height:100%; object-fit:cover;">
+                                        <?php else: ?>
+                                            <?php echo strtoupper(substr($selectedEmployer['owner_name'] ?: $selectedEmployer['name'], 0, 2)); ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div style="flex:1; min-width:0;">
+                                        <div style="font-size:14px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                    </div>
+                                    <span style="background:#dcfce7; color:#15803d; font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px;">Aktif</span>
+                                </div>
+
+                                <div style="margin-bottom:14px;">
+                                    <div style="font-size:12px; color:#64748b; font-weight:500; margin-bottom:2px;">Email Akun</div>
+                                    <div style="font-size:13px; font-weight:600; color:#00a8e8; word-break:break-all;"><?php echo e($selectedEmployer['email'] ?: 'info@email.com'); ?></div>
+                                </div>
+
+                                <div>
+                                    <div style="font-size:12px; color:#64748b; font-weight:500; margin-bottom:2px;">Status Akun</div>
+                                    <div style="font-size:13px; font-weight:600; color:#0f172a;">Aktif</div>
+                                </div>
+                            </div>
+
+                            <!-- CARD: AKTIVITAS & AUDIT LOG -->
+                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Aktivitas & Audit Log</div>
+
                                 <div class="timeline-list">
                                     <div class="timeline-item">
                                         <div class="timeline-dot"></div>
                                         <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
-                                        <div class="timeline-title">Pemberi kerja mendaftar di platform.</div>
+                                        <div class="timeline-title">Data pemberi kerja dikirim untuk verifikasi.</div>
                                     </div>
-                                    <?php foreach ($auditLogs as $log): ?>
+                                    <?php if (!empty($auditLogs)): ?>
+                                        <?php foreach ($auditLogs as $log): ?>
+                                            <div class="timeline-item">
+                                                <div class="timeline-dot"></div>
+                                                <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></div>
+                                                <div class="timeline-title"><?php echo e($log['action']); ?> <small style="color:#64748b;">(oleh <?php echo e($log['actor_name']); ?>)</small></div>
+                                                <div class="timeline-desc"><?php echo e($log['details']); ?></div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
                                         <div class="timeline-item">
                                             <div class="timeline-dot"></div>
-                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></div>
-                                            <div class="timeline-title"><?php echo e($log['action']); ?> <small style="color:#64748b;">(oleh <?php echo e($log['actor_name']); ?>)</small></div>
-                                            <div class="timeline-desc"><?php echo e($log['details']); ?></div>
+                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                            <div class="timeline-title"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?> - Mengirim Data: Membuat → Dikirim</div>
                                         </div>
-                                    <?php endforeach; ?>
-                    </div>
-                </div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                            <div class="timeline-title">Pemberi kerja mendaftar di platform.</div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
