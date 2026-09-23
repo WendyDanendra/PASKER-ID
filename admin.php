@@ -12,6 +12,9 @@ $search = trim($_GET['q'] ?? '');
 $startDate = trim($_GET['start_date'] ?? '');
 $endDate = trim($_GET['end_date'] ?? '');
 $cityFilter = trim($_GET['city_filter'] ?? '');
+$verifierFilter = trim($_GET['verifier_filter'] ?? '');
+$officerFilter = trim($_GET['officer_filter'] ?? '');
+$unassignedFilter = isset($_GET['unassigned']) && $_GET['unassigned'] === '1' ? 1 : 0;
 $detailId = isset($_GET['detail_id']) ? (int)$_GET['detail_id'] : 0;
 
 // --- POST HANDLERS FOR ADMIN ACTIONS ---
@@ -913,7 +916,7 @@ if ($view === 'verifikasi_employer') {
     $params = [];
 
     if ($entity === 'Individu') {
-        $query .= ' WHERE (ep.entity_type = "Individu" OR ep.entity_type IS NULL)';
+        $query .= ' WHERE (ep.entity_type = "Individu" OR ep.entity_type = "Individual" OR ep.entity_type IS NULL)';
     } elseif ($entity === 'Perusahaan') {
         $query .= ' WHERE ep.entity_type = "Perusahaan"';
     } else {
@@ -921,9 +924,35 @@ if ($view === 'verifikasi_employer') {
     }
 
     if ($search !== '') {
-        $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
+        $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.owner_name LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
         $like = '%' . $search . '%';
-        $params = array_merge($params, [$like, $like, $like, $like, $like, $like]);
+        $params = array_merge($params, [$like, $like, $like, $like, $like, $like, $like]);
+    }
+
+    if ($startDate !== '') {
+        $query .= ' AND DATE(u.created_at) >= ?';
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $query .= ' AND DATE(u.created_at) <= ?';
+        $params[] = $endDate;
+    }
+    if ($cityFilter !== '') {
+        $query .= ' AND (ep.city LIKE ? OR ep.province LIKE ? OR ep.district LIKE ? OR ep.address LIKE ?)';
+        $cityLike = '%' . $cityFilter . '%';
+        $params = array_merge($params, [$cityLike, $cityLike, $cityLike, $cityLike]);
+    }
+    if ($verifierFilter !== '') {
+        $query .= ' AND (ep.assigned_to LIKE ? OR ep.verifier_notes LIKE ?)';
+        $vLike = '%' . $verifierFilter . '%';
+        $params = array_merge($params, [$vLike, $vLike]);
+    }
+    if ($officerFilter !== '') {
+        $query .= ' AND ep.officer_name LIKE ?';
+        $params[] = '%' . $officerFilter . '%';
+    }
+    if ($unassignedFilter === 1) {
+        $query .= ' AND (ep.assigned_to IS NULL OR ep.assigned_to = "")';
     }
 
     if ($tab === 'process') {
@@ -945,10 +974,27 @@ if ($view === 'verifikasi_employer') {
         }
     }
 
-    $query .= ' ORDER BY ep.created_at DESC';
+    $sort = $_GET['sort'] ?? 'date_desc';
+    if ($sort === 'name_asc') {
+        $query .= ' ORDER BY ep.owner_name ASC, u.name ASC';
+    } elseif ($sort === 'name_desc') {
+        $query .= ' ORDER BY ep.owner_name DESC, u.name DESC';
+    } elseif ($sort === 'date_asc') {
+        $query .= ' ORDER BY u.created_at ASC';
+    } else {
+        $query .= ' ORDER BY u.created_at DESC';
+    }
+
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $verificationEmployers = $stmt->fetchAll() ?: [];
+
+    $perPage = 20;
+    $totalData = count($verificationEmployers);
+    $totalPages = max(1, (int)ceil($totalData / $perPage));
+    $page = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
+    $offset = ($page - 1) * $perPage;
+    $showingEmployers = array_slice($verificationEmployers, $offset, $perPage);
 
     // If detail_id is requested
     $selectedEmployer = null;
@@ -2342,6 +2388,492 @@ function clearDateRange() {
     resetDatePickerSelection();
 }
 
+const VERIFIER_LIST_EMP = [
+    "A. Dimas, Se",
+    "A. Fajar Wahyu",
+    "A. RAHMAT FAJAR",
+    "A.a. Putra Wirasanjaya",
+    "ABD Halim",
+    "ABD. WAHAB, S.Pd",
+    "ABDUL BASYIR",
+    "ABDUL HAMID TUASALAMONY",
+    "ABDUL SALAM LAUMA, S.Sos",
+    "ACHMAD RAJA NASUTION"
+];
+
+function toggleFilterPopoverEmp(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('filterPopoverEmp');
+    if (!popover) return;
+    const isVisible = popover.style.display === 'block';
+    popover.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+        populateCityOptionsEmp();
+        populateVerifierOptionsEmp();
+        populateOfficerOptionsEmp();
+    }
+}
+
+function toggleAccordionEmp(type) {
+    const bodyMap = {
+        'date': 'dateAccordionBodyEmp',
+        'city': 'cityAccordionBodyEmp',
+        'verifier': 'verifierAccordionBodyEmp',
+        'officer': 'officerAccordionBodyEmp',
+        'unassigned': 'unassignedAccordionBodyEmp'
+    };
+    const chevMap = {
+        'date': 'dateChevronEmp',
+        'city': 'cityChevronEmp',
+        'verifier': 'verifierChevronEmp',
+        'officer': 'officerChevronEmp',
+        'unassigned': 'unassignedChevronEmp'
+    };
+
+    const targetId = bodyMap[type];
+    const targetChevId = chevMap[type];
+    if (!targetId) return;
+
+    const targetBody = document.getElementById(targetId);
+    const targetChev = document.getElementById(targetChevId);
+    if (!targetBody) return;
+
+    const isHidden = targetBody.style.display === 'none';
+    targetBody.style.display = isHidden ? 'block' : 'none';
+    if (targetChev) {
+        targetChev.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    if (type === 'city' && isHidden) {
+        populateCityOptionsEmp();
+    } else if (type === 'verifier' && isHidden) {
+        populateVerifierOptionsEmp();
+    } else if (type === 'officer' && isHidden) {
+        populateOfficerOptionsEmp();
+    }
+}
+
+function toggleCityDropdownEmp(e) {
+    if (e) e.stopPropagation();
+    const card = document.getElementById('cityDropdownListCardEmp');
+    if (!card) return;
+    const isHidden = card.style.display === 'none';
+    card.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+        populateCityOptionsEmp();
+        setTimeout(() => {
+            const input = document.getElementById('citySearchInputEmp');
+            if (input) input.focus();
+        }, 50);
+    }
+}
+
+function populateCityOptionsEmp() {
+    const container = document.getElementById('cityOptionsContainerEmp');
+    if (!container || container.children.length > 0) return;
+    renderCityListEmp(typeof CITY_MASTER !== 'undefined' ? CITY_MASTER : []);
+}
+
+function renderCityListEmp(list) {
+    const container = document.getElementById('cityOptionsContainerEmp');
+    if (!container) return;
+    container.innerHTML = '';
+    const currentVal = document.getElementById('inputCityFilterEmp') ? document.getElementById('inputCityFilterEmp').value : '';
+
+    list.forEach(city => {
+        const item = document.createElement('div');
+        const isSelected = city === currentVal;
+        item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+        item.textContent = city;
+        item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+        item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+        item.onclick = (e) => {
+            e.stopPropagation();
+            selectCityEmp(city);
+        };
+        container.appendChild(item);
+    });
+}
+
+function filterCityOptionsEmp() {
+    const input = document.getElementById('citySearchInputEmp');
+    const query = (input ? input.value : '').toLowerCase().trim();
+    const masterList = typeof CITY_MASTER !== 'undefined' ? CITY_MASTER : [];
+    const filtered = masterList.filter(c => c.toLowerCase().includes(query));
+    renderCityListEmp(filtered);
+}
+
+function selectCityEmp(city) {
+    const input = document.getElementById('inputCityFilterEmp');
+    if (input) input.value = city;
+    const label = document.getElementById('citySelectLabelEmp');
+    if (label) label.textContent = city;
+    const card = document.getElementById('cityDropdownListCardEmp');
+    if (card) card.style.display = 'none';
+    const form = document.getElementById('filterMainFormEmp');
+    if (form) form.submit();
+}
+
+function toggleVerifierDropdownEmp(e) {
+    if (e) e.stopPropagation();
+    const card = document.getElementById('verifierDropdownListCardEmp');
+    if (!card) return;
+    const isHidden = card.style.display === 'none';
+    card.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+        populateVerifierOptionsEmp();
+        setTimeout(() => {
+            const input = document.getElementById('verifierSearchInputEmp');
+            if (input) input.focus();
+        }, 50);
+    }
+}
+
+function populateVerifierOptionsEmp() {
+    const container = document.getElementById('verifierOptionsContainerEmp');
+    if (!container || container.children.length > 0) return;
+    renderVerifierListEmp(VERIFIER_LIST_EMP);
+}
+
+function renderVerifierListEmp(list) {
+    const container = document.getElementById('verifierOptionsContainerEmp');
+    if (!container) return;
+    container.innerHTML = '';
+    const currentVal = document.getElementById('inputVerifierFilterEmp') ? document.getElementById('inputVerifierFilterEmp').value : '';
+
+    list.forEach(name => {
+        const item = document.createElement('div');
+        const isSelected = name === currentVal;
+        item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+        item.textContent = name;
+        item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+        item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+        item.onclick = (e) => {
+            e.stopPropagation();
+            selectVerifierEmp(name);
+        };
+        container.appendChild(item);
+    });
+}
+
+function filterVerifierOptionsEmp() {
+    const input = document.getElementById('verifierSearchInputEmp');
+    const query = (input ? input.value : '').toLowerCase().trim();
+    const filtered = VERIFIER_LIST_EMP.filter(n => n.toLowerCase().includes(query));
+    renderVerifierListEmp(filtered);
+}
+
+function selectVerifierEmp(name) {
+    const input = document.getElementById('inputVerifierFilterEmp');
+    if (input) input.value = name;
+    const label = document.getElementById('verifierSelectLabelEmp');
+    if (label) label.textContent = name;
+    const card = document.getElementById('verifierDropdownListCardEmp');
+    if (card) card.style.display = 'none';
+    const form = document.getElementById('filterMainFormEmp');
+    if (form) form.submit();
+}
+
+function toggleOfficerDropdownEmp(e) {
+    if (e) e.stopPropagation();
+    const card = document.getElementById('officerDropdownListCardEmp');
+    if (!card) return;
+    const isHidden = card.style.display === 'none';
+    card.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+        populateOfficerOptionsEmp();
+        setTimeout(() => {
+            const input = document.getElementById('officerSearchInputEmp');
+            if (input) input.focus();
+        }, 50);
+    }
+}
+
+function populateOfficerOptionsEmp() {
+    const container = document.getElementById('officerOptionsContainerEmp');
+    if (!container || container.children.length > 0) return;
+    renderOfficerListEmp(VERIFIER_LIST_EMP);
+}
+
+function renderOfficerListEmp(list) {
+    const container = document.getElementById('officerOptionsContainerEmp');
+    if (!container) return;
+    container.innerHTML = '';
+    const currentVal = document.getElementById('inputOfficerFilterEmp') ? document.getElementById('inputOfficerFilterEmp').value : '';
+
+    list.forEach(name => {
+        const item = document.createElement('div');
+        const isSelected = name === currentVal;
+        item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+        item.textContent = name;
+        item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+        item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+        item.onclick = (e) => {
+            e.stopPropagation();
+            selectOfficerEmp(name);
+        };
+        container.appendChild(item);
+    });
+}
+
+function filterOfficerOptionsEmp() {
+    const input = document.getElementById('officerSearchInputEmp');
+    const query = (input ? input.value : '').toLowerCase().trim();
+    const filtered = VERIFIER_LIST_EMP.filter(n => n.toLowerCase().includes(query));
+    renderOfficerListEmp(filtered);
+}
+
+function selectOfficerEmp(name) {
+    const input = document.getElementById('inputOfficerFilterEmp');
+    if (input) input.value = name;
+    const label = document.getElementById('officerSelectLabelEmp');
+    if (label) label.textContent = name;
+    const card = document.getElementById('officerDropdownListCardEmp');
+    if (card) card.style.display = 'none';
+    const form = document.getElementById('filterMainFormEmp');
+    if (form) form.submit();
+}
+
+function toggleUnassignedOptionEmp() {
+    const input = document.getElementById('inputUnassignedEmp');
+    const circle = document.getElementById('unassignedRadioCircleEmp');
+    if (!input || !circle) return;
+
+    const isCurrentlyChecked = input.value === '1';
+    if (isCurrentlyChecked) {
+        input.value = '0';
+        circle.style.borderColor = '#cbd5e1';
+        if (circle.firstElementChild) circle.firstElementChild.style.display = 'none';
+    } else {
+        input.value = '1';
+        circle.style.borderColor = '#00a8e8';
+        if (circle.firstElementChild) circle.firstElementChild.style.display = 'block';
+    }
+    const form = document.getElementById('filterMainFormEmp');
+    if (form) form.submit();
+}
+
+/* DUAL MONTH DATE PICKER FUNCTIONS FOR EMP */
+let selectedStartDateEmp = "<?php echo e($startDate); ?>";
+let selectedEndDateEmp = "<?php echo e($endDate); ?>";
+let tempStartDateEmp = selectedStartDateEmp;
+let tempEndDateEmp = selectedEndDateEmp;
+let currentYear1Emp = 2026, currentMonth1Emp = 8;
+let currentYear2Emp = 2026, currentMonth2Emp = 9;
+
+function toggleDatePickerPopoverEmp(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('datePickerPopoverEmp');
+    if (!popover) return;
+    const isVisible = popover.style.display === 'block';
+    popover.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+        initYearSelectsEmp();
+        renderCalendarEmp();
+    }
+}
+
+function initYearSelectsEmp() {
+    const y1 = document.getElementById('y1SelectEmp');
+    const y2 = document.getElementById('y2SelectEmp');
+    const m1 = document.getElementById('m1SelectEmp');
+    const m2 = document.getElementById('m2SelectEmp');
+    if (!y1 || y1.children.length > 0) return;
+
+    const monthList = window.MONTH_NAMES || ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+    const startY = 2020, endY = 2030;
+    for (let y = startY; y <= endY; y++) {
+        y1.add(new Option(y, y, false, y === currentYear1Emp));
+        y2.add(new Option(y, y, false, y === currentYear2Emp));
+    }
+    monthList.forEach((m, idx) => {
+        m1.add(new Option(m, idx, false, idx === currentMonth1Emp));
+        m2.add(new Option(m, idx, false, idx === currentMonth2Emp));
+    });
+}
+
+function prevMonthClusterEmp() {
+    if (currentMonth1Emp === 0) {
+        currentMonth1Emp = 11; currentYear1Emp--;
+    } else {
+        currentMonth1Emp--;
+    }
+    if (currentMonth2Emp === 0) {
+        currentMonth2Emp = 11; currentYear2Emp--;
+    } else {
+        currentMonth2Emp--;
+    }
+    updateSelectValsEmp();
+    renderCalendarEmp();
+}
+
+function nextMonthClusterEmp() {
+    if (currentMonth1Emp === 11) {
+        currentMonth1Emp = 0; currentYear1Emp++;
+    } else {
+        currentMonth1Emp++;
+    }
+    if (currentMonth2Emp === 11) {
+        currentMonth2Emp = 0; currentYear2Emp++;
+    } else {
+        currentMonth2Emp++;
+    }
+    updateSelectValsEmp();
+    renderCalendarEmp();
+}
+
+function updateSelectValsEmp() {
+    const m1 = document.getElementById('m1SelectEmp');
+    const y1 = document.getElementById('y1SelectEmp');
+    const m2 = document.getElementById('m2SelectEmp');
+    const y2 = document.getElementById('y2SelectEmp');
+    if (m1) m1.value = currentMonth1Emp;
+    if (y1) y1.value = currentYear1Emp;
+    if (m2) m2.value = currentMonth2Emp;
+    if (y2) y2.value = currentYear2Emp;
+}
+
+function renderMonthGridEmp(gridId, year, month) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const offset = (firstDay + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    for (let i = offset - 1; i >= 0; i--) {
+        const cell = document.createElement('div');
+        cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+        cell.textContent = prevMonthDays - i;
+        grid.appendChild(cell);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const cell = document.createElement('div');
+        const mStr = String(month + 1).padStart(2, '0');
+        const dStr = String(d).padStart(2, '0');
+        const dateStr = `${year}-${mStr}-${dStr}`;
+
+        let bg = 'transparent';
+        let color = '#1e293b';
+        let fontWeight = '500';
+        let borderRadius = '0';
+
+        if (tempStartDateEmp && tempEndDateEmp) {
+            if (dateStr === tempStartDateEmp) {
+                bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '8px 0 0 8px';
+            } else if (dateStr === tempEndDateEmp) {
+                bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '0 8px 8px 0';
+            } else if (dateStr > tempStartDateEmp && dateStr < tempEndDateEmp) {
+                bg = '#e0f2fe'; color = '#0284c7'; fontWeight = '600';
+            }
+        } else if (tempStartDateEmp && dateStr === tempStartDateEmp) {
+            bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '8px';
+        }
+
+        cell.style.cssText = `padding:6px 0; background:${bg}; color:${color}; border-radius:${borderRadius}; font-weight:${fontWeight}; cursor:pointer; font-size:12.5px; transition:all 0.15s;`;
+        cell.textContent = d;
+        cell.onclick = (e) => {
+            if (e) e.stopPropagation();
+            selectDateEmp(dateStr);
+        };
+        grid.appendChild(cell);
+    }
+
+    const totalCells = offset + daysInMonth;
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let n = 1; n <= remaining; n++) {
+        const cell = document.createElement('div');
+        cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+        cell.textContent = n;
+        grid.appendChild(cell);
+    }
+}
+
+function renderCalendarEmp() {
+    const m1Sel = document.getElementById('m1SelectEmp');
+    const y1Sel = document.getElementById('y1SelectEmp');
+    const m2Sel = document.getElementById('m2SelectEmp');
+    const y2Sel = document.getElementById('y2SelectEmp');
+
+    if (m1Sel && y1Sel && m2Sel && y2Sel) {
+        currentMonth1Emp = parseInt(m1Sel.value);
+        currentYear1Emp = parseInt(y1Sel.value);
+        currentMonth2Emp = parseInt(m2Sel.value);
+        currentYear2Emp = parseInt(y2Sel.value);
+    }
+
+    renderMonthGridEmp('m1DaysGridEmp', currentYear1Emp, currentMonth1Emp);
+    renderMonthGridEmp('m2DaysGridEmp', currentYear2Emp, currentMonth2Emp);
+}
+
+function selectDateEmp(dateStr) {
+    if (!tempStartDateEmp || (tempStartDateEmp && tempEndDateEmp)) {
+        tempStartDateEmp = dateStr;
+        tempEndDateEmp = '';
+    } else if (tempStartDateEmp && !tempEndDateEmp) {
+        if (dateStr >= tempStartDateEmp) {
+            tempEndDateEmp = dateStr;
+        } else {
+            tempEndDateEmp = tempStartDateEmp;
+            tempStartDateEmp = dateStr;
+        }
+    }
+    renderCalendarEmp();
+}
+
+function applyDatePickerSelectionEmp() {
+    selectedStartDateEmp = tempStartDateEmp;
+    selectedEndDateEmp = tempEndDateEmp;
+    const inputStart = document.getElementById('inputStartDateEmp');
+    const inputEnd = document.getElementById('inputEndDateEmp');
+    if (inputStart) inputStart.value = selectedStartDateEmp;
+    if (inputEnd) inputEnd.value = selectedEndDateEmp;
+
+    const label = document.getElementById('dateRangeLabelEmp');
+    const clearBtn = document.getElementById('clearDateBtnEmp');
+
+    if (selectedStartDateEmp && selectedEndDateEmp) {
+        if (label) label.textContent = `${selectedStartDateEmp} - ${selectedEndDateEmp}`;
+        if (clearBtn) clearBtn.style.display = 'inline';
+    } else if (selectedStartDateEmp) {
+        if (label) label.textContent = selectedStartDateEmp;
+        if (clearBtn) clearBtn.style.display = 'inline';
+    } else {
+        if (label) label.textContent = 'Pilih rentang tanggal';
+        if (clearBtn) clearBtn.style.display = 'none';
+    }
+
+    const picker = document.getElementById('datePickerPopoverEmp');
+    if (picker) picker.style.display = 'none';
+    const form = document.getElementById('filterMainFormEmp');
+    if (form) form.submit();
+}
+
+function resetDatePickerSelectionEmp() {
+    tempStartDateEmp = '';
+    tempEndDateEmp = '';
+    selectedStartDateEmp = '';
+    selectedEndDateEmp = '';
+    const inputStart = document.getElementById('inputStartDateEmp');
+    const inputEnd = document.getElementById('inputEndDateEmp');
+    if (inputStart) inputStart.value = '';
+    if (inputEnd) inputEnd.value = '';
+    const label = document.getElementById('dateRangeLabelEmp');
+    const clearBtn = document.getElementById('clearDateBtnEmp');
+    if (label) label.textContent = 'Pilih rentang tanggal';
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderCalendarEmp();
+    const form = document.getElementById('filterMainFormEmp');
+    if (form) form.submit();
+}
+
+function clearDateRangeEmp() {
+    resetDatePickerSelectionEmp();
+}
+
 document.addEventListener('click', function(e) {
     // Individual Filter Popover
     const popover = document.getElementById('filterPopover');
@@ -2373,6 +2905,26 @@ document.addEventListener('click', function(e) {
         if (popoverJob) popoverJob.style.display = 'none';
         if (pickerJob) pickerJob.style.display = 'none';
         if (cityCardJob) cityCardJob.style.display = 'none';
+    }
+
+    // Employer Filter Popover
+    const popoverEmp = document.getElementById('filterPopoverEmp');
+    const filterBtnEmp = document.getElementById('filterToggleBtnEmp');
+    const pickerEmp = document.getElementById('datePickerPopoverEmp');
+    const cityCardEmp = document.getElementById('cityDropdownListCardEmp');
+    const verifierCardEmp = document.getElementById('verifierDropdownListCardEmp');
+    const officerCardEmp = document.getElementById('officerDropdownListCardEmp');
+
+    const isInsidePopoverEmp = popoverEmp && popoverEmp.contains(e.target);
+    const isInsideFilterBtnEmp = filterBtnEmp && filterBtnEmp.contains(e.target);
+    const isInsidePickerEmp = pickerEmp && pickerEmp.contains(e.target);
+
+    if (!isInsidePopoverEmp && !isInsideFilterBtnEmp && !isInsidePickerEmp) {
+        if (popoverEmp) popoverEmp.style.display = 'none';
+        if (pickerEmp) pickerEmp.style.display = 'none';
+        if (cityCardEmp) cityCardEmp.style.display = 'none';
+        if (verifierCardEmp) verifierCardEmp.style.display = 'none';
+        if (officerCardEmp) officerCardEmp.style.display = 'none';
     }
 });
 </script>
@@ -2992,59 +3544,240 @@ document.addEventListener('click', function(e) {
 
                 <?php else: ?>
                     <!-- VERIFIKASI PEMBERI KERJA TABLE VIEW -->
+                    <?php
+                    $filterParamsEmp = ($startDate ? '&start_date=' . urlencode($startDate) : '')
+                        . ($endDate ? '&end_date=' . urlencode($endDate) : '')
+                        . ($cityFilter ? '&city_filter=' . urlencode($cityFilter) : '')
+                        . ($verifierFilter ? '&verifier_filter=' . urlencode($verifierFilter) : '')
+                        . ($officerFilter ? '&officer_filter=' . urlencode($officerFilter) : '')
+                        . ($unassignedFilter ? '&unassigned=1' : '');
+                    ?>
                     <div style="margin-bottom:20px;">
-                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0;">Verifikasi Pemberi Kerja</h1>
-                        <div class="tab-filter-bar">
-                            <div class="status-tab-list">
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=all" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=process" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=revision" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=approved" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Terverifikasi</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
-                </div>
+                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0; color:#0f172a;">Verifikasi Pemberi Kerja</h1>
 
-                            <div class="filter-controls">
-                                <div class="entity-selector-pill">
-                                    <a href="admin.php?view=verifikasi_employer&entity=Semua&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
-                                    <a href="admin.php?view=verifikasi_employer&entity=Perusahaan&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
-                                    <a href="admin.php?view=verifikasi_employer&entity=Individu&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
-                                </div>
-                                <form method="get" action="admin.php" style="display:flex; gap:8px;">
-                                    <input type="hidden" name="view" value="verifikasi_employer">
-                                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
-                                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
-                                    <div class="filter-search-box">
-                                        <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i>
-                                        <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari pemberi kerja...">
-                                    </div>
-                                    <button type="submit" class="filter-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
-                                </form>
+                        <!-- STATUS TAB LIST -->
+                        <div style="border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
+                            <div class="status-tab-list" style="gap:24px;">
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=revision&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=approved&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Terverifikasi</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
                             </div>
                         </div>
+
+                        <!-- FILTER MAIN FORM EMP -->
+                        <form method="get" action="admin.php" id="filterMainFormEmp" style="display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; width:100%; position:relative;">
+                            <input type="hidden" name="view" value="verifikasi_employer">
+                            <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                            <input type="hidden" name="entity" id="inputEntityEmp" value="<?php echo e($entity); ?>">
+                            <?php if ($sort): ?><input type="hidden" name="sort" value="<?php echo e($sort); ?>"><?php endif; ?>
+                            <input type="hidden" name="start_date" id="inputStartDateEmp" value="<?php echo e($startDate); ?>">
+                            <input type="hidden" name="end_date" id="inputEndDateEmp" value="<?php echo e($endDate); ?>">
+                            <input type="hidden" name="city_filter" id="inputCityFilterEmp" value="<?php echo e($cityFilter); ?>">
+                            <input type="hidden" name="verifier_filter" id="inputVerifierFilterEmp" value="<?php echo e($verifierFilter); ?>">
+                            <input type="hidden" name="officer_filter" id="inputOfficerFilterEmp" value="<?php echo e($officerFilter); ?>">
+                            <input type="hidden" name="unassigned" id="inputUnassignedEmp" value="<?php echo $unassignedFilter ? '1' : '0'; ?>">
+
+                            <!-- LEFT CONTAINER: SEARCH BOX & SEGMENTED PILL FILTER -->
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <!-- SEARCH BOX -->
+                                <div class="filter-search-box" style="width:280px; border-radius:999px; height:38px;">
+                                    <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8; font-size:13px;"></i>
+                                    <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari Pemberi Kerja...">
+                                </div>
+
+                                <!-- SEGMENTED PILL FILTER: Semua | Perusahaan | Individual -->
+                                <div style="display:inline-flex; background:#f1f5f9; border-radius:999px; padding:3px; gap:2px;">
+                                    <a href="admin.php?view=verifikasi_employer&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua</a>
+                                    <a href="admin.php?view=verifikasi_employer&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan</a>
+                                    <a href="admin.php?view=verifikasi_employer&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual</a>
+                                </div>
+                            </div>
+
+                            <!-- FILTER BUTTON & POPOVER -->
+                            <div style="position:relative;">
+                                <button type="button" class="filter-btn" id="filterToggleBtnEmp" onclick="toggleFilterPopoverEmp(event)" style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:7px 16px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
+                                    <i class="fa-solid fa-sliders" style="font-size:12px;"></i> Filter
+                                    <?php if ($startDate || $endDate || $cityFilter || $verifierFilter || $officerFilter || $unassignedFilter): ?>
+                                        <span style="background:#0284c7; color:#fff; font-size:10px; border-radius:999px; padding:1px 6px; margin-left:2px;">●</span>
+                                    <?php endif; ?>
+                                </button>
+
+                                <!-- FILTER POPOVER CARD EMP -->
+                                <div id="filterPopoverEmp" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:320px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05); z-index:1000; overflow:visible;">
+
+                                    <!-- ACCORDION 1: TANGGAL PENGAJUAN -->
+                                    <div style="border-bottom:1px solid #f1f5f9;">
+                                        <div onclick="toggleAccordionEmp('date')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#475569;">Tanggal Pengajuan</span>
+                                            <i class="fa-solid fa-chevron-up" id="dateChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                        </div>
+                                        <div id="dateAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px;">
+                                            <div id="dateRangeTriggerEmp" onclick="toggleDatePickerPopoverEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <div style="display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                    <i class="fa-regular fa-calendar" style="color:#94a3b8; font-size:14px;"></i>
+                                                    <span id="dateRangeLabelEmp"><?php echo ($startDate && $endDate) ? e($startDate . ' - ' . $endDate) : ($startDate ? e($startDate) : 'Pilih rentang tanggal'); ?></span>
+                                                </div>
+                                                <i class="fa-regular fa-circle-xmark" id="clearDateBtnEmp" style="color:#cbd5e1; font-size:14px; cursor:pointer; <?php echo ($startDate || $endDate) ? 'display:inline;' : 'display:none;'; ?>" onclick="event.stopPropagation(); clearDateRangeEmp();"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ACCORDION 2: WILAYAH / KOTA -->
+                                    <div style="border-bottom:1px solid #f1f5f9;">
+                                        <div onclick="toggleAccordionEmp('city')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Wilayah / Kota</span>
+                                            <i class="fa-solid fa-chevron-up" id="cityChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                        </div>
+                                        <div id="cityAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px; position:relative;">
+                                            <div id="citySelectTriggerEmp" onclick="toggleCityDropdownEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <span id="citySelectLabelEmp" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $cityFilter ? e($cityFilter) : 'Pilih kota...'; ?></span>
+                                                <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                            </div>
+
+                                            <!-- CITY SEARCHABLE DROPDOWN EMP -->
+                                            <div id="cityDropdownListCardEmp" style="display:none; position:absolute; left:18px; right:18px; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.12); z-index:1005; padding:8px;">
+                                                <input type="text" id="citySearchInputEmp" onkeyup="filterCityOptionsEmp()" placeholder="Cari kota..." style="width:100%; border:1px solid #00a8e8; border-radius:10px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                                <div id="cityOptionsContainerEmp" style="max-height:220px; overflow-y:auto;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ACCORDION 3: VERIFIKATOR -->
+                                    <div style="border-bottom:1px solid #f1f5f9;">
+                                        <div onclick="toggleAccordionEmp('verifier')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Verifikator</span>
+                                            <i class="fa-solid fa-chevron-up" id="verifierChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                        </div>
+                                        <div id="verifierAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px; position:relative;">
+                                            <div id="verifierSelectTriggerEmp" onclick="toggleVerifierDropdownEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <span id="verifierSelectLabelEmp" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $verifierFilter ? e($verifierFilter) : 'Pilih verifikator...'; ?></span>
+                                                <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                            </div>
+
+                                            <!-- VERIFIER SEARCHABLE DROPDOWN EMP -->
+                                            <div id="verifierDropdownListCardEmp" style="display:none; position:absolute; left:18px; right:18px; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.12); z-index:1005; padding:8px;">
+                                                <input type="text" id="verifierSearchInputEmp" onkeyup="filterVerifierOptionsEmp()" placeholder="Cari verifikator..." style="width:100%; border:1px solid #00a8e8; border-radius:10px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                                <div id="verifierOptionsContainerEmp" style="max-height:220px; overflow-y:auto;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ACCORDION 4: PETUGAS PEMERIKSA -->
+                                    <div style="border-bottom:1px solid #f1f5f9;">
+                                        <div onclick="toggleAccordionEmp('officer')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Petugas Pemeriksa</span>
+                                            <i class="fa-solid fa-chevron-up" id="officerChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                        </div>
+                                        <div id="officerAccordionBodyEmp" style="display:block; padding:0 18px 14px 18px; position:relative;">
+                                            <div id="officerSelectTriggerEmp" onclick="toggleOfficerDropdownEmp(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <span id="officerSelectLabelEmp" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $officerFilter ? e($officerFilter) : 'Pilih pemeriksa...'; ?></span>
+                                                <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                            </div>
+
+                                            <!-- OFFICER SEARCHABLE DROPDOWN EMP -->
+                                            <div id="officerDropdownListCardEmp" style="display:none; position:absolute; left:18px; right:18px; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.12); z-index:1005; padding:8px;">
+                                                <input type="text" id="officerSearchInputEmp" onkeyup="filterOfficerOptionsEmp()" placeholder="Cari pemeriksa..." style="width:100%; border:1px solid #00a8e8; border-radius:10px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                                <div id="officerOptionsContainerEmp" style="max-height:220px; overflow-y:auto;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ACCORDION 5: STATUS PENUGASAN -->
+                                    <div>
+                                        <div onclick="toggleAccordionEmp('unassigned')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Status Penugasan</span>
+                                            <i class="fa-solid fa-chevron-up" id="unassignedChevronEmp" style="font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+                                        </div>
+                                        <div id="unassignedAccordionBodyEmp" style="display:block; padding:0 18px 18px 18px;">
+                                            <label onclick="toggleUnassignedOptionEmp()" style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-size:13px; color:#1e293b; font-weight:500;">
+                                                <div id="unassignedRadioCircleEmp" style="width:18px; height:18px; border-radius:50%; border:2px solid <?php echo $unassignedFilter ? '#00a8e8' : '#cbd5e1'; ?>; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                                    <div style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:<?php echo $unassignedFilter ? 'block' : 'none'; ?>;"></div>
+                                                </div>
+                                                <span>Tampilkan yang belum ada pemeriksa</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- DUAL MONTH DATE RANGE PICKER POPOVER EMP -->
+                                <div id="datePickerPopoverEmp" onclick="event.stopPropagation();" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:540px; max-width:90vw; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 15px 35px -5px rgba(0,0,0,0.15); z-index:1010; padding:18px; box-sizing:border-box;">
+                                    <!-- Header row with month/year navigation -->
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                                        <button type="button" onclick="event.stopPropagation(); prevMonthClusterEmp()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-left"></i></button>
+
+                                        <div style="display:flex; gap:24px; align-items:center;">
+                                            <div style="display:flex; gap:6px;">
+                                                <select id="m1SelectEmp" onchange="renderCalendarEmp()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                <select id="y1SelectEmp" onchange="renderCalendarEmp()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                            </div>
+                                            <div style="display:flex; gap:6px;">
+                                                <select id="m2SelectEmp" onchange="renderCalendarEmp()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                <select id="y2SelectEmp" onchange="renderCalendarEmp()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" onclick="event.stopPropagation(); nextMonthClusterEmp()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-right"></i></button>
+                                    </div>
+
+                                    <!-- Dual Month Grids -->
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:16px;">
+                                        <div>
+                                            <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                            </div>
+                                            <div id="m1DaysGridEmp" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                        </div>
+                                        <div>
+                                            <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                            </div>
+                                            <div id="m2DaysGridEmp" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Footer Buttons -->
+                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                                        <button type="button" onclick="applyDatePickerSelectionEmp()" style="width:100%; background:#00a8e8; border:none; border-radius:10px; padding:10px; color:#ffffff; font-size:13.5px; font-weight:700; cursor:pointer;">Simpan</button>
+                                        <button type="button" onclick="resetDatePickerSelectionEmp()" style="width:100%; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; color:#0f172a; font-size:13.5px; font-weight:700; cursor:pointer;">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
 
-                    <div class="console-table-card">
-                        <table class="console-table">
+                    <div class="console-table-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow-x:auto;">
+                        <table class="console-table" style="width:100%; border-collapse:collapse; min-width:1000px;">
                             <thead>
-                                <tr>
-                                    <th>Nama Pemberi Kerja</th>
-                                    <th>Jenis Entitas</th>
-                                    <th>Lokasi</th>
-                                    <th>Telepon</th>
-                                    <th>Status</th>
-                                    <th>Deadline</th>
-                                    <th>Pemeriksa</th>
-                                    <th>Tanggal Daftar</th>
-                                    <th>Aksi</th>
+                                <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left;">
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:200px;">
+                                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'name_asc' ? 'name_desc' : 'name_asc'; ?><?php echo $filterParamsEmp; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                            Nama Pemberi Kerja <i class="fa-solid fa-arrows-up-down" style="font-size:11px; color:#94a3b8;"></i>
+                                        </a>
+                                    </th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569;">Jenis Entitas</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569;">Lokasi</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569;">Telepon</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569;">Status</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569;">Deadline</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569;">Pemeriksa</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569;">
+                                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'date_desc' ? 'date_asc' : 'date_desc'; ?><?php echo $filterParamsEmp; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                            Tanggal Daftar <i class="fa-solid fa-arrow-down" style="font-size:11px; color:#64748b;"></i>
+                                        </a>
+                                    </th>
+                                    <th style="padding:14px 16px; text-align:right;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (!$verificationEmployers): ?>
-                                    <tr><td colspan="9" style="text-align:center; padding:40px; color:#64748b;">Tidak ada antrean verifikasi pemberi kerja.</td></tr>
+                                <?php if (!$showingEmployers): ?>
+                                    <tr><td colspan="9" style="text-align:center; padding:60px 20px; color:#64748b; font-size:13.5px;">Tidak ada data pemberi kerja.</td></tr>
                                 <?php else: ?>
-                                    <?php foreach ($verificationEmployers as $vEmp): ?>
-                                        <tr>
-                                            <td>
+                                    <?php foreach ($showingEmployers as $vEmp): ?>
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                            <td style="padding:14px 16px;">
                                                 <div style="display:flex; align-items:center; gap:12px;">
                                                     <div class="item-avatar-box">
                                                         <?php echo strtoupper(substr($vEmp['owner_name'] ?: $vEmp['name'], 0, 2)); ?>
@@ -3055,10 +3788,10 @@ document.addEventListener('click', function(e) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td><span class="pill-badge verified"><?php echo e($vEmp['entity_type'] ?? 'Individu'); ?></span></td>
-                                            <td><?php echo e($vEmp['city'] ?: '-'); ?></td>
-                                            <td><?php echo e($vEmp['phone'] ?: '0'); ?></td>
-                                            <td>
+                                            <td style="padding:14px 16px;"><span class="pill-badge verified"><?php echo e($vEmp['entity_type'] ?? 'Individu'); ?></span></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($vEmp['city'] ?: '-'); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($vEmp['phone'] ?: '0'); ?></td>
+                                            <td style="padding:14px 16px; font-size:13px; white-space:nowrap;">
                                                 <?php if ($vEmp['verification_status'] === 'APPROVED'): ?>
                                                     <span class="pill-badge verified">● Terverifikasi</span>
                                                 <?php elseif ($vEmp['verification_status'] === 'PENDING'): ?>
@@ -3067,16 +3800,16 @@ document.addEventListener('click', function(e) {
                                                     <span class="pill-badge revision">● <?php echo e($vEmp['verification_status']); ?></span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>-</td>
-                                            <td>
+                                            <td style="padding:14px 16px; color:#64748b; font-size:13px;">-</td>
+                                            <td style="padding:14px 16px; font-size:13px;">
                                                 <?php if (!empty($vEmp['assigned_to'])): ?>
                                                     <span style="font-weight:600; color:#0284c7;"><?php echo e($vEmp['assigned_to']); ?></span>
                                                 <?php else: ?>
                                                     <span style="color:#94a3b8;">-</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?php echo date('d M Y, H:i', strtotime($vEmp['created_at'])); ?></td>
-                                            <td>
+                                            <td style="padding:14px 16px; color:#64748b; font-size:12.5px; white-space:nowrap;"><?php echo date('d M Y, H:i', strtotime($vEmp['created_at'])); ?></td>
+                                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
                                                 <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $vEmp['user_id']; ?>" class="btn-lihat-detail">
                                                     Lihat Detail
                                                 </a>
@@ -3086,6 +3819,35 @@ document.addEventListener('click', function(e) {
                                 <?php endif; ?>
                             </tbody>
                         </table>
+
+                        <?php if ($showingEmployers): ?>
+                            <div class="console-table-footer" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; font-size:13px; color:#64748b; border-top:1px solid #e2e8f0;">
+                                <div>
+                                    Menampilkan <?php echo count($showingEmployers); ?> dari <?php echo $totalData; ?> total data.
+                                </div>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <?php if ($page > 1): ?>
+                                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page - 1; ?><?php echo $filterParamsEmp; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">‹</a>
+                                    <?php else: ?>
+                                        <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">‹</span>
+                                    <?php endif; ?>
+
+                                    <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                                        <?php if ($p == $page): ?>
+                                            <span style="padding:6px 12px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; border:1px solid #0284c7;"><?php echo $p; ?></span>
+                                        <?php else: ?>
+                                            <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $p; ?><?php echo $filterParamsEmp; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;"><?php echo $p; ?></a>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+
+                                    <?php if ($page < $totalPages): ?>
+                                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page + 1; ?><?php echo $filterParamsEmp; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">›</a>
+                                    <?php else: ?>
+                                        <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">›</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
