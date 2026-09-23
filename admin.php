@@ -3472,17 +3472,20 @@ document.addEventListener('click', function(e) {
                             <input type="hidden" name="end_date" id="inputEndDateJob" value="<?php echo e($endDate); ?>">
                             <input type="hidden" name="city_filter" id="inputCityFilterJob" value="<?php echo e($cityFilter); ?>">
 
-                            <!-- SEARCH BOX -->
-                            <div class="filter-search-box" style="width:280px; border-radius:999px; height:38px;">
-                                <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8; font-size:13px;"></i>
-                                <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan...">
-                            </div>
+                            <!-- LEFT CONTAINER: SEARCH BOX & SEGMENTED PILL FILTER -->
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <!-- SEARCH BOX -->
+                                <div class="filter-search-box" style="width:280px; border-radius:999px; height:38px;">
+                                    <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8; font-size:13px;"></i>
+                                    <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan...">
+                                </div>
 
-                            <!-- SEGMENTED PILL FILTER: Semua | Perusahaan | Individual -->
-                            <div style="display:inline-flex; background:#f1f5f9; border-radius:999px; padding:3px; gap:2px;">
-                                <a href="admin.php?view=verifikasi_job&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua</a>
-                                <a href="admin.php?view=verifikasi_job&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan</a>
-                                <a href="admin.php?view=verifikasi_job&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual</a>
+                                <!-- SEGMENTED PILL FILTER: Semua | Perusahaan | Individual -->
+                                <div style="display:inline-flex; background:#f1f5f9; border-radius:999px; padding:3px; gap:2px;">
+                                    <a href="admin.php?view=verifikasi_job&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua</a>
+                                    <a href="admin.php?view=verifikasi_job&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan</a>
+                                    <a href="admin.php?view=verifikasi_job&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual</a>
+                                </div>
                             </div>
 
                             <!-- FILTER BUTTON & POPOVER -->
