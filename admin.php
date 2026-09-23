@@ -148,31 +148,28 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
                 $pdo->commit();
                 flash('success', 'Hak Akses Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 3 Bulan).');
             } elseif ($decision === 'revision') {
-                $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
-                $stmt->execute([$notes, $checklist, $targetUserId]);
-                record_audit_log('employer', $targetUserId, 'REVISION_REQUESTED', "Permintaan perbaikan data dikirim ke pemohon. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
-                notify_user($targetUserId, 'Perbaikan Profil Diperlukan', 'Verifikator meminta perbaikan profil: ' . $notes, 'warning');
+                $currentRev = (int)($targetEmp['revision_count'] ?? ($targetEmp['rejection_count'] ?? 0));
+                $newRevisionCount = min(3, $currentRev + 1);
+
+                try {
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", revision_count = ?, rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt->execute([$newRevisionCount, $newRevisionCount, $notes, $checklist, $targetUserId]);
+                } catch (Throwable $ignore) {
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt->execute([$newRevisionCount, $notes, $checklist, $targetUserId]);
+                }
+                record_audit_log('employer', $targetUserId, 'REVISION_REQUESTED', "Permintaan perbaikan data (Revisi ke-{$newRevisionCount}) dikirim ke pemohon. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
+                notify_user($targetUserId, "Perbaikan Profil Diperlukan (Revisi ke-{$newRevisionCount})", 'Verifikator meminta perbaikan profil: ' . $notes, 'warning');
                 $pdo->commit();
-                flash('success', 'Profil dikembalikan ke pemohon untuk diperbaiki (Perlu Diperbaiki).');
+                flash('success', "Profil dikembalikan ke pemohon untuk diperbaiki (Diminta Revisi ke-{$newRevisionCount}).");
             } elseif ($decision === 'reject') {
                 $newRejectionCount = (int)($targetEmp['rejection_count'] ?? 0) + 1;
-                if ($newRejectionCount >= 3) {
-                    // 3rd rejection triggers MANUAL_DINAS_REVIEW
-                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, manual_review_status = "MANUAL_DINAS_REVIEW", verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
-                    $stmt->execute([$newRejectionCount, $notes, $checklist, $targetUserId]);
-                    record_audit_log('employer', $targetUserId, 'REJECTED_MANUAL_DINAS', "Penolakan ke-3 dicapai. Akun dialihkan ke Jalur Manual Dinas. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
-                    notify_user($targetUserId, 'Penolakan ke-3: Dialihkan ke Manual Dinas', 'Profil Anda telah ditolak 3 kali. Verifikasi dialihkan ke Jalur Manual Dinas untuk pendampingan petugas.', 'error');
-                    $pdo->commit();
-                    flash('warning', 'Penolakan ke-3 telah dicapai. Profil dialihkan ke Jalur Manual Dinas.');
-                } else {
-                    // 1st or 2nd rejection gives chance to fix (NEEDS_REVISION)
-                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
-                    $stmt->execute([$newRejectionCount, $notes, $checklist, $targetUserId]);
-                    record_audit_log('employer', $targetUserId, 'REJECTED', "Profil ditolak (Penolakan ke-{$newRejectionCount}). Kesempatan perbaikan dibuka. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
-                    notify_user($targetUserId, "Profil Belum Disetujui (Penolakan {$newRejectionCount}/3)", 'Verifikator menolak profil: ' . $notes . '. Silahkan perbaiki data Anda.', 'error');
-                    $pdo->commit();
-                    flash('success', "Profil Pemberi Kerja Ditolak (Penolakan ke-{$newRejectionCount}/3). Kesempatan perbaikan dibuka.");
-                }
+                $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "REJECTED", rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                $stmt->execute([$newRejectionCount, $notes, $checklist, $targetUserId]);
+                record_audit_log('employer', $targetUserId, 'REJECTED', "Profil ditolak. Catatan: {$notes}", $user['name'], $user['role'] ?? 'admin', true);
+                notify_user($targetUserId, 'Profil Ditolak', 'Verifikator menolak profil Anda: ' . $notes, 'error');
+                $pdo->commit();
+                flash('success', 'Profil Pemberi Kerja telah Ditolak.');
             }
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -3357,11 +3354,15 @@ document.addEventListener('click', function(e) {
                                             </div>
 
                                             <div style="margin-bottom:16px;">
+                                                <?php
+                                                $currRevCount = (int)($selectedEmployer['revision_count'] ?? ($selectedEmployer['rejection_count'] ?? 0));
+                                                $nextRevStep = min(3, max(1, $currRevCount + 1));
+                                                ?>
                                                 <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
                                                 <select name="decision" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;">
                                                     <option value="approve">Setujui (Profil Terverifikasi 3 Bulan)</option>
-                                                    <option value="revision">Perlu Diperbaiki / Revisi (Membuka Kesempatan Perbaikan)</option>
-                                                    <option value="reject">Tolak Profil (Penolakan ke-<?php echo ((int)$selectedEmployer['rejection_count'] + 1); ?>)</option>
+                                                    <option value="revision">Perlu Diperbaiki / Revisi (Diminta Revisi ke-<?php echo $nextRevStep; ?>)</option>
+                                                    <option value="reject">Tolak Profil</option>
                                                 </select>
                                             </div>
 

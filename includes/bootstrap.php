@@ -140,6 +140,9 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
             if (!in_array('rejection_count', $cols, true)) {
                 $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN rejection_count INTEGER DEFAULT 0');
             }
+            if (!in_array('revision_count', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN revision_count INTEGER DEFAULT 0');
+            }
             if (!in_array('manual_review_status', $cols, true)) {
                 $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN manual_review_status TEXT DEFAULT "NONE"');
             }
