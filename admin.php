@@ -2388,492 +2388,6 @@ function clearDateRange() {
     resetDatePickerSelection();
 }
 
-const VERIFIER_LIST_EMP = [
-    "A. Dimas, Se",
-    "A. Fajar Wahyu",
-    "A. RAHMAT FAJAR",
-    "A.a. Putra Wirasanjaya",
-    "ABD Halim",
-    "ABD. WAHAB, S.Pd",
-    "ABDUL BASYIR",
-    "ABDUL HAMID TUASALAMONY",
-    "ABDUL SALAM LAUMA, S.Sos",
-    "ACHMAD RAJA NASUTION"
-];
-
-function toggleFilterPopoverEmp(e) {
-    if (e) e.stopPropagation();
-    const popover = document.getElementById('filterPopoverEmp');
-    if (!popover) return;
-    const isVisible = popover.style.display === 'block';
-    popover.style.display = isVisible ? 'none' : 'block';
-    if (!isVisible) {
-        populateCityOptionsEmp();
-        populateVerifierOptionsEmp();
-        populateOfficerOptionsEmp();
-    }
-}
-
-function toggleAccordionEmp(type) {
-    const bodyMap = {
-        'date': 'dateAccordionBodyEmp',
-        'city': 'cityAccordionBodyEmp',
-        'verifier': 'verifierAccordionBodyEmp',
-        'officer': 'officerAccordionBodyEmp',
-        'unassigned': 'unassignedAccordionBodyEmp'
-    };
-    const chevMap = {
-        'date': 'dateChevronEmp',
-        'city': 'cityChevronEmp',
-        'verifier': 'verifierChevronEmp',
-        'officer': 'officerChevronEmp',
-        'unassigned': 'unassignedChevronEmp'
-    };
-
-    const targetId = bodyMap[type];
-    const targetChevId = chevMap[type];
-    if (!targetId) return;
-
-    const targetBody = document.getElementById(targetId);
-    const targetChev = document.getElementById(targetChevId);
-    if (!targetBody) return;
-
-    const isHidden = targetBody.style.display === 'none';
-    targetBody.style.display = isHidden ? 'block' : 'none';
-    if (targetChev) {
-        targetChev.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
-
-    if (type === 'city' && isHidden) {
-        populateCityOptionsEmp();
-    } else if (type === 'verifier' && isHidden) {
-        populateVerifierOptionsEmp();
-    } else if (type === 'officer' && isHidden) {
-        populateOfficerOptionsEmp();
-    }
-}
-
-function toggleCityDropdownEmp(e) {
-    if (e) e.stopPropagation();
-    const card = document.getElementById('cityDropdownListCardEmp');
-    if (!card) return;
-    const isHidden = card.style.display === 'none';
-    card.style.display = isHidden ? 'block' : 'none';
-    if (isHidden) {
-        populateCityOptionsEmp();
-        setTimeout(() => {
-            const input = document.getElementById('citySearchInputEmp');
-            if (input) input.focus();
-        }, 50);
-    }
-}
-
-function populateCityOptionsEmp() {
-    const container = document.getElementById('cityOptionsContainerEmp');
-    if (!container || container.children.length > 0) return;
-    renderCityListEmp(typeof CITY_MASTER !== 'undefined' ? CITY_MASTER : []);
-}
-
-function renderCityListEmp(list) {
-    const container = document.getElementById('cityOptionsContainerEmp');
-    if (!container) return;
-    container.innerHTML = '';
-    const currentVal = document.getElementById('inputCityFilterEmp') ? document.getElementById('inputCityFilterEmp').value : '';
-
-    list.forEach(city => {
-        const item = document.createElement('div');
-        const isSelected = city === currentVal;
-        item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
-        item.textContent = city;
-        item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
-        item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
-        item.onclick = (e) => {
-            e.stopPropagation();
-            selectCityEmp(city);
-        };
-        container.appendChild(item);
-    });
-}
-
-function filterCityOptionsEmp() {
-    const input = document.getElementById('citySearchInputEmp');
-    const query = (input ? input.value : '').toLowerCase().trim();
-    const masterList = typeof CITY_MASTER !== 'undefined' ? CITY_MASTER : [];
-    const filtered = masterList.filter(c => c.toLowerCase().includes(query));
-    renderCityListEmp(filtered);
-}
-
-function selectCityEmp(city) {
-    const input = document.getElementById('inputCityFilterEmp');
-    if (input) input.value = city;
-    const label = document.getElementById('citySelectLabelEmp');
-    if (label) label.textContent = city;
-    const card = document.getElementById('cityDropdownListCardEmp');
-    if (card) card.style.display = 'none';
-    const form = document.getElementById('filterMainFormEmp');
-    if (form) form.submit();
-}
-
-function toggleVerifierDropdownEmp(e) {
-    if (e) e.stopPropagation();
-    const card = document.getElementById('verifierDropdownListCardEmp');
-    if (!card) return;
-    const isHidden = card.style.display === 'none';
-    card.style.display = isHidden ? 'block' : 'none';
-    if (isHidden) {
-        populateVerifierOptionsEmp();
-        setTimeout(() => {
-            const input = document.getElementById('verifierSearchInputEmp');
-            if (input) input.focus();
-        }, 50);
-    }
-}
-
-function populateVerifierOptionsEmp() {
-    const container = document.getElementById('verifierOptionsContainerEmp');
-    if (!container || container.children.length > 0) return;
-    renderVerifierListEmp(VERIFIER_LIST_EMP);
-}
-
-function renderVerifierListEmp(list) {
-    const container = document.getElementById('verifierOptionsContainerEmp');
-    if (!container) return;
-    container.innerHTML = '';
-    const currentVal = document.getElementById('inputVerifierFilterEmp') ? document.getElementById('inputVerifierFilterEmp').value : '';
-
-    list.forEach(name => {
-        const item = document.createElement('div');
-        const isSelected = name === currentVal;
-        item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
-        item.textContent = name;
-        item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
-        item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
-        item.onclick = (e) => {
-            e.stopPropagation();
-            selectVerifierEmp(name);
-        };
-        container.appendChild(item);
-    });
-}
-
-function filterVerifierOptionsEmp() {
-    const input = document.getElementById('verifierSearchInputEmp');
-    const query = (input ? input.value : '').toLowerCase().trim();
-    const filtered = VERIFIER_LIST_EMP.filter(n => n.toLowerCase().includes(query));
-    renderVerifierListEmp(filtered);
-}
-
-function selectVerifierEmp(name) {
-    const input = document.getElementById('inputVerifierFilterEmp');
-    if (input) input.value = name;
-    const label = document.getElementById('verifierSelectLabelEmp');
-    if (label) label.textContent = name;
-    const card = document.getElementById('verifierDropdownListCardEmp');
-    if (card) card.style.display = 'none';
-    const form = document.getElementById('filterMainFormEmp');
-    if (form) form.submit();
-}
-
-function toggleOfficerDropdownEmp(e) {
-    if (e) e.stopPropagation();
-    const card = document.getElementById('officerDropdownListCardEmp');
-    if (!card) return;
-    const isHidden = card.style.display === 'none';
-    card.style.display = isHidden ? 'block' : 'none';
-    if (isHidden) {
-        populateOfficerOptionsEmp();
-        setTimeout(() => {
-            const input = document.getElementById('officerSearchInputEmp');
-            if (input) input.focus();
-        }, 50);
-    }
-}
-
-function populateOfficerOptionsEmp() {
-    const container = document.getElementById('officerOptionsContainerEmp');
-    if (!container || container.children.length > 0) return;
-    renderOfficerListEmp(VERIFIER_LIST_EMP);
-}
-
-function renderOfficerListEmp(list) {
-    const container = document.getElementById('officerOptionsContainerEmp');
-    if (!container) return;
-    container.innerHTML = '';
-    const currentVal = document.getElementById('inputOfficerFilterEmp') ? document.getElementById('inputOfficerFilterEmp').value : '';
-
-    list.forEach(name => {
-        const item = document.createElement('div');
-        const isSelected = name === currentVal;
-        item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
-        item.textContent = name;
-        item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
-        item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
-        item.onclick = (e) => {
-            e.stopPropagation();
-            selectOfficerEmp(name);
-        };
-        container.appendChild(item);
-    });
-}
-
-function filterOfficerOptionsEmp() {
-    const input = document.getElementById('officerSearchInputEmp');
-    const query = (input ? input.value : '').toLowerCase().trim();
-    const filtered = VERIFIER_LIST_EMP.filter(n => n.toLowerCase().includes(query));
-    renderOfficerListEmp(filtered);
-}
-
-function selectOfficerEmp(name) {
-    const input = document.getElementById('inputOfficerFilterEmp');
-    if (input) input.value = name;
-    const label = document.getElementById('officerSelectLabelEmp');
-    if (label) label.textContent = name;
-    const card = document.getElementById('officerDropdownListCardEmp');
-    if (card) card.style.display = 'none';
-    const form = document.getElementById('filterMainFormEmp');
-    if (form) form.submit();
-}
-
-function toggleUnassignedOptionEmp() {
-    const input = document.getElementById('inputUnassignedEmp');
-    const circle = document.getElementById('unassignedRadioCircleEmp');
-    if (!input || !circle) return;
-
-    const isCurrentlyChecked = input.value === '1';
-    if (isCurrentlyChecked) {
-        input.value = '0';
-        circle.style.borderColor = '#cbd5e1';
-        if (circle.firstElementChild) circle.firstElementChild.style.display = 'none';
-    } else {
-        input.value = '1';
-        circle.style.borderColor = '#00a8e8';
-        if (circle.firstElementChild) circle.firstElementChild.style.display = 'block';
-    }
-    const form = document.getElementById('filterMainFormEmp');
-    if (form) form.submit();
-}
-
-/* DUAL MONTH DATE PICKER FUNCTIONS FOR EMP */
-let selectedStartDateEmp = "<?php echo e($startDate); ?>";
-let selectedEndDateEmp = "<?php echo e($endDate); ?>";
-let tempStartDateEmp = selectedStartDateEmp;
-let tempEndDateEmp = selectedEndDateEmp;
-let currentYear1Emp = 2026, currentMonth1Emp = 8;
-let currentYear2Emp = 2026, currentMonth2Emp = 9;
-
-function toggleDatePickerPopoverEmp(e) {
-    if (e) e.stopPropagation();
-    const popover = document.getElementById('datePickerPopoverEmp');
-    if (!popover) return;
-    const isVisible = popover.style.display === 'block';
-    popover.style.display = isVisible ? 'none' : 'block';
-    if (!isVisible) {
-        initYearSelectsEmp();
-        renderCalendarEmp();
-    }
-}
-
-function initYearSelectsEmp() {
-    const y1 = document.getElementById('y1SelectEmp');
-    const y2 = document.getElementById('y2SelectEmp');
-    const m1 = document.getElementById('m1SelectEmp');
-    const m2 = document.getElementById('m2SelectEmp');
-    if (!y1 || y1.children.length > 0) return;
-
-    const monthList = window.MONTH_NAMES || ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
-    const startY = 2020, endY = 2030;
-    for (let y = startY; y <= endY; y++) {
-        y1.add(new Option(y, y, false, y === currentYear1Emp));
-        y2.add(new Option(y, y, false, y === currentYear2Emp));
-    }
-    monthList.forEach((m, idx) => {
-        m1.add(new Option(m, idx, false, idx === currentMonth1Emp));
-        m2.add(new Option(m, idx, false, idx === currentMonth2Emp));
-    });
-}
-
-function prevMonthClusterEmp() {
-    if (currentMonth1Emp === 0) {
-        currentMonth1Emp = 11; currentYear1Emp--;
-    } else {
-        currentMonth1Emp--;
-    }
-    if (currentMonth2Emp === 0) {
-        currentMonth2Emp = 11; currentYear2Emp--;
-    } else {
-        currentMonth2Emp--;
-    }
-    updateSelectValsEmp();
-    renderCalendarEmp();
-}
-
-function nextMonthClusterEmp() {
-    if (currentMonth1Emp === 11) {
-        currentMonth1Emp = 0; currentYear1Emp++;
-    } else {
-        currentMonth1Emp++;
-    }
-    if (currentMonth2Emp === 11) {
-        currentMonth2Emp = 0; currentYear2Emp++;
-    } else {
-        currentMonth2Emp++;
-    }
-    updateSelectValsEmp();
-    renderCalendarEmp();
-}
-
-function updateSelectValsEmp() {
-    const m1 = document.getElementById('m1SelectEmp');
-    const y1 = document.getElementById('y1SelectEmp');
-    const m2 = document.getElementById('m2SelectEmp');
-    const y2 = document.getElementById('y2SelectEmp');
-    if (m1) m1.value = currentMonth1Emp;
-    if (y1) y1.value = currentYear1Emp;
-    if (m2) m2.value = currentMonth2Emp;
-    if (y2) y2.value = currentYear2Emp;
-}
-
-function renderMonthGridEmp(gridId, year, month) {
-    const grid = document.getElementById(gridId);
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const offset = (firstDay + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const prevMonthDays = new Date(year, month, 0).getDate();
-
-    for (let i = offset - 1; i >= 0; i--) {
-        const cell = document.createElement('div');
-        cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
-        cell.textContent = prevMonthDays - i;
-        grid.appendChild(cell);
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-        const cell = document.createElement('div');
-        const mStr = String(month + 1).padStart(2, '0');
-        const dStr = String(d).padStart(2, '0');
-        const dateStr = `${year}-${mStr}-${dStr}`;
-
-        let bg = 'transparent';
-        let color = '#1e293b';
-        let fontWeight = '500';
-        let borderRadius = '0';
-
-        if (tempStartDateEmp && tempEndDateEmp) {
-            if (dateStr === tempStartDateEmp) {
-                bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '8px 0 0 8px';
-            } else if (dateStr === tempEndDateEmp) {
-                bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '0 8px 8px 0';
-            } else if (dateStr > tempStartDateEmp && dateStr < tempEndDateEmp) {
-                bg = '#e0f2fe'; color = '#0284c7'; fontWeight = '600';
-            }
-        } else if (tempStartDateEmp && dateStr === tempStartDateEmp) {
-            bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '8px';
-        }
-
-        cell.style.cssText = `padding:6px 0; background:${bg}; color:${color}; border-radius:${borderRadius}; font-weight:${fontWeight}; cursor:pointer; font-size:12.5px; transition:all 0.15s;`;
-        cell.textContent = d;
-        cell.onclick = (e) => {
-            if (e) e.stopPropagation();
-            selectDateEmp(dateStr);
-        };
-        grid.appendChild(cell);
-    }
-
-    const totalCells = offset + daysInMonth;
-    const remaining = (7 - (totalCells % 7)) % 7;
-    for (let n = 1; n <= remaining; n++) {
-        const cell = document.createElement('div');
-        cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
-        cell.textContent = n;
-        grid.appendChild(cell);
-    }
-}
-
-function renderCalendarEmp() {
-    const m1Sel = document.getElementById('m1SelectEmp');
-    const y1Sel = document.getElementById('y1SelectEmp');
-    const m2Sel = document.getElementById('m2SelectEmp');
-    const y2Sel = document.getElementById('y2SelectEmp');
-
-    if (m1Sel && y1Sel && m2Sel && y2Sel) {
-        currentMonth1Emp = parseInt(m1Sel.value);
-        currentYear1Emp = parseInt(y1Sel.value);
-        currentMonth2Emp = parseInt(m2Sel.value);
-        currentYear2Emp = parseInt(y2Sel.value);
-    }
-
-    renderMonthGridEmp('m1DaysGridEmp', currentYear1Emp, currentMonth1Emp);
-    renderMonthGridEmp('m2DaysGridEmp', currentYear2Emp, currentMonth2Emp);
-}
-
-function selectDateEmp(dateStr) {
-    if (!tempStartDateEmp || (tempStartDateEmp && tempEndDateEmp)) {
-        tempStartDateEmp = dateStr;
-        tempEndDateEmp = '';
-    } else if (tempStartDateEmp && !tempEndDateEmp) {
-        if (dateStr >= tempStartDateEmp) {
-            tempEndDateEmp = dateStr;
-        } else {
-            tempEndDateEmp = tempStartDateEmp;
-            tempStartDateEmp = dateStr;
-        }
-    }
-    renderCalendarEmp();
-}
-
-function applyDatePickerSelectionEmp() {
-    selectedStartDateEmp = tempStartDateEmp;
-    selectedEndDateEmp = tempEndDateEmp;
-    const inputStart = document.getElementById('inputStartDateEmp');
-    const inputEnd = document.getElementById('inputEndDateEmp');
-    if (inputStart) inputStart.value = selectedStartDateEmp;
-    if (inputEnd) inputEnd.value = selectedEndDateEmp;
-
-    const label = document.getElementById('dateRangeLabelEmp');
-    const clearBtn = document.getElementById('clearDateBtnEmp');
-
-    if (selectedStartDateEmp && selectedEndDateEmp) {
-        if (label) label.textContent = `${selectedStartDateEmp} - ${selectedEndDateEmp}`;
-        if (clearBtn) clearBtn.style.display = 'inline';
-    } else if (selectedStartDateEmp) {
-        if (label) label.textContent = selectedStartDateEmp;
-        if (clearBtn) clearBtn.style.display = 'inline';
-    } else {
-        if (label) label.textContent = 'Pilih rentang tanggal';
-        if (clearBtn) clearBtn.style.display = 'none';
-    }
-
-    const picker = document.getElementById('datePickerPopoverEmp');
-    if (picker) picker.style.display = 'none';
-    const form = document.getElementById('filterMainFormEmp');
-    if (form) form.submit();
-}
-
-function resetDatePickerSelectionEmp() {
-    tempStartDateEmp = '';
-    tempEndDateEmp = '';
-    selectedStartDateEmp = '';
-    selectedEndDateEmp = '';
-    const inputStart = document.getElementById('inputStartDateEmp');
-    const inputEnd = document.getElementById('inputEndDateEmp');
-    if (inputStart) inputStart.value = '';
-    if (inputEnd) inputEnd.value = '';
-    const label = document.getElementById('dateRangeLabelEmp');
-    const clearBtn = document.getElementById('clearDateBtnEmp');
-    if (label) label.textContent = 'Pilih rentang tanggal';
-    if (clearBtn) clearBtn.style.display = 'none';
-    renderCalendarEmp();
-    const form = document.getElementById('filterMainFormEmp');
-    if (form) form.submit();
-}
-
-function clearDateRangeEmp() {
-    resetDatePickerSelectionEmp();
-}
-
 document.addEventListener('click', function(e) {
     // Individual Filter Popover
     const popover = document.getElementById('filterPopover');
@@ -3849,6 +3363,494 @@ document.addEventListener('click', function(e) {
                             </div>
                         <?php endif; ?>
                     </div>
+
+                    <script>
+                    const VERIFIER_LIST_EMP = [
+                        "A. Dimas, Se",
+                        "A. Fajar Wahyu",
+                        "A. RAHMAT FAJAR",
+                        "A.a. Putra Wirasanjaya",
+                        "ABD Halim",
+                        "ABD. WAHAB, S.Pd",
+                        "ABDUL BASYIR",
+                        "ABDUL HAMID TUASALAMONY",
+                        "ABDUL SALAM LAUMA, S.Sos",
+                        "ACHMAD RAJA NASUTION"
+                    ];
+
+                    function toggleFilterPopoverEmp(e) {
+                        if (e) e.stopPropagation();
+                        const popover = document.getElementById('filterPopoverEmp');
+                        if (!popover) return;
+                        const isVisible = popover.style.display === 'block';
+                        popover.style.display = isVisible ? 'none' : 'block';
+                        if (!isVisible) {
+                            populateCityOptionsEmp();
+                            populateVerifierOptionsEmp();
+                            populateOfficerOptionsEmp();
+                        }
+                    }
+
+                    function toggleAccordionEmp(type) {
+                        const bodyMap = {
+                            'date': 'dateAccordionBodyEmp',
+                            'city': 'cityAccordionBodyEmp',
+                            'verifier': 'verifierAccordionBodyEmp',
+                            'officer': 'officerAccordionBodyEmp',
+                            'unassigned': 'unassignedAccordionBodyEmp'
+                        };
+                        const chevMap = {
+                            'date': 'dateChevronEmp',
+                            'city': 'cityChevronEmp',
+                            'verifier': 'verifierChevronEmp',
+                            'officer': 'officerChevronEmp',
+                            'unassigned': 'unassignedChevronEmp'
+                        };
+
+                        const targetId = bodyMap[type];
+                        const targetChevId = chevMap[type];
+                        if (!targetId) return;
+
+                        const targetBody = document.getElementById(targetId);
+                        const targetChev = document.getElementById(targetChevId);
+                        if (!targetBody) return;
+
+                        const isHidden = targetBody.style.display === 'none';
+                        targetBody.style.display = isHidden ? 'block' : 'none';
+                        if (targetChev) {
+                            targetChev.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+                        }
+
+                        if (type === 'city' && isHidden) {
+                            populateCityOptionsEmp();
+                        } else if (type === 'verifier' && isHidden) {
+                            populateVerifierOptionsEmp();
+                        } else if (type === 'officer' && isHidden) {
+                            populateOfficerOptionsEmp();
+                        }
+                    }
+
+                    function toggleCityDropdownEmp(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('cityDropdownListCardEmp');
+                        if (!card) return;
+                        const isHidden = card.style.display === 'none';
+                        card.style.display = isHidden ? 'block' : 'none';
+                        if (isHidden) {
+                            populateCityOptionsEmp();
+                            setTimeout(() => {
+                                const input = document.getElementById('citySearchInputEmp');
+                                if (input) input.focus();
+                            }, 50);
+                        }
+                    }
+
+                    function populateCityOptionsEmp() {
+                        const container = document.getElementById('cityOptionsContainerEmp');
+                        if (!container || container.children.length > 0) return;
+                        renderCityListEmp(typeof CITY_MASTER !== 'undefined' ? CITY_MASTER : []);
+                    }
+
+                    function renderCityListEmp(list) {
+                        const container = document.getElementById('cityOptionsContainerEmp');
+                        if (!container) return;
+                        container.innerHTML = '';
+                        const currentVal = document.getElementById('inputCityFilterEmp') ? document.getElementById('inputCityFilterEmp').value : '';
+
+                        list.forEach(city => {
+                            const item = document.createElement('div');
+                            const isSelected = city === currentVal;
+                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+                            item.textContent = city;
+                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectCityEmp(city);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterCityOptionsEmp() {
+                        const input = document.getElementById('citySearchInputEmp');
+                        const query = (input ? input.value : '').toLowerCase().trim();
+                        const masterList = typeof CITY_MASTER !== 'undefined' ? CITY_MASTER : [];
+                        const filtered = masterList.filter(c => c.toLowerCase().includes(query));
+                        renderCityListEmp(filtered);
+                    }
+
+                    function selectCityEmp(city) {
+                        const input = document.getElementById('inputCityFilterEmp');
+                        if (input) input.value = city;
+                        const label = document.getElementById('citySelectLabelEmp');
+                        if (label) label.textContent = city;
+                        const card = document.getElementById('cityDropdownListCardEmp');
+                        if (card) card.style.display = 'none';
+                        const form = document.getElementById('filterMainFormEmp');
+                        if (form) form.submit();
+                    }
+
+                    function toggleVerifierDropdownEmp(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('verifierDropdownListCardEmp');
+                        if (!card) return;
+                        const isHidden = card.style.display === 'none';
+                        card.style.display = isHidden ? 'block' : 'none';
+                        if (isHidden) {
+                            populateVerifierOptionsEmp();
+                            setTimeout(() => {
+                                const input = document.getElementById('verifierSearchInputEmp');
+                                if (input) input.focus();
+                            }, 50);
+                        }
+                    }
+
+                    function populateVerifierOptionsEmp() {
+                        const container = document.getElementById('verifierOptionsContainerEmp');
+                        if (!container || container.children.length > 0) return;
+                        renderVerifierListEmp(VERIFIER_LIST_EMP);
+                    }
+
+                    function renderVerifierListEmp(list) {
+                        const container = document.getElementById('verifierOptionsContainerEmp');
+                        if (!container) return;
+                        container.innerHTML = '';
+                        const currentVal = document.getElementById('inputVerifierFilterEmp') ? document.getElementById('inputVerifierFilterEmp').value : '';
+
+                        list.forEach(name => {
+                            const item = document.createElement('div');
+                            const isSelected = name === currentVal;
+                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+                            item.textContent = name;
+                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectVerifierEmp(name);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterVerifierOptionsEmp() {
+                        const input = document.getElementById('verifierSearchInputEmp');
+                        const query = (input ? input.value : '').toLowerCase().trim();
+                        const filtered = VERIFIER_LIST_EMP.filter(n => n.toLowerCase().includes(query));
+                        renderVerifierListEmp(filtered);
+                    }
+
+                    function selectVerifierEmp(name) {
+                        const input = document.getElementById('inputVerifierFilterEmp');
+                        if (input) input.value = name;
+                        const label = document.getElementById('verifierSelectLabelEmp');
+                        if (label) label.textContent = name;
+                        const card = document.getElementById('verifierDropdownListCardEmp');
+                        if (card) card.style.display = 'none';
+                        const form = document.getElementById('filterMainFormEmp');
+                        if (form) form.submit();
+                    }
+
+                    function toggleOfficerDropdownEmp(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('officerDropdownListCardEmp');
+                        if (!card) return;
+                        const isHidden = card.style.display === 'none';
+                        card.style.display = isHidden ? 'block' : 'none';
+                        if (isHidden) {
+                            populateOfficerOptionsEmp();
+                            setTimeout(() => {
+                                const input = document.getElementById('officerSearchInputEmp');
+                                if (input) input.focus();
+                            }, 50);
+                        }
+                    }
+
+                    function populateOfficerOptionsEmp() {
+                        const container = document.getElementById('officerOptionsContainerEmp');
+                        if (!container || container.children.length > 0) return;
+                        renderOfficerListEmp(VERIFIER_LIST_EMP);
+                    }
+
+                    function renderOfficerListEmp(list) {
+                        const container = document.getElementById('officerOptionsContainerEmp');
+                        if (!container) return;
+                        container.innerHTML = '';
+                        const currentVal = document.getElementById('inputOfficerFilterEmp') ? document.getElementById('inputOfficerFilterEmp').value : '';
+
+                        list.forEach(name => {
+                            const item = document.createElement('div');
+                            const isSelected = name === currentVal;
+                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+                            item.textContent = name;
+                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectOfficerEmp(name);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterOfficerOptionsEmp() {
+                        const input = document.getElementById('officerSearchInputEmp');
+                        const query = (input ? input.value : '').toLowerCase().trim();
+                        const filtered = VERIFIER_LIST_EMP.filter(n => n.toLowerCase().includes(query));
+                        renderOfficerListEmp(filtered);
+                    }
+
+                    function selectOfficerEmp(name) {
+                        const input = document.getElementById('inputOfficerFilterEmp');
+                        if (input) input.value = name;
+                        const label = document.getElementById('officerSelectLabelEmp');
+                        if (label) label.textContent = name;
+                        const card = document.getElementById('officerDropdownListCardEmp');
+                        if (card) card.style.display = 'none';
+                        const form = document.getElementById('filterMainFormEmp');
+                        if (form) form.submit();
+                    }
+
+                    function toggleUnassignedOptionEmp() {
+                        const input = document.getElementById('inputUnassignedEmp');
+                        const circle = document.getElementById('unassignedRadioCircleEmp');
+                        if (!input || !circle) return;
+
+                        const isCurrentlyChecked = input.value === '1';
+                        if (isCurrentlyChecked) {
+                            input.value = '0';
+                            circle.style.borderColor = '#cbd5e1';
+                            if (circle.firstElementChild) circle.firstElementChild.style.display = 'none';
+                        } else {
+                            input.value = '1';
+                            circle.style.borderColor = '#00a8e8';
+                            if (circle.firstElementChild) circle.firstElementChild.style.display = 'block';
+                        }
+                        const form = document.getElementById('filterMainFormEmp');
+                        if (form) form.submit();
+                    }
+
+                    /* DUAL MONTH DATE PICKER FUNCTIONS FOR EMP */
+                    let selectedStartDateEmp = "<?php echo e($startDate); ?>";
+                    let selectedEndDateEmp = "<?php echo e($endDate); ?>";
+                    let tempStartDateEmp = selectedStartDateEmp;
+                    let tempEndDateEmp = selectedEndDateEmp;
+                    let currentYear1Emp = 2026, currentMonth1Emp = 8;
+                    let currentYear2Emp = 2026, currentMonth2Emp = 9;
+
+                    function toggleDatePickerPopoverEmp(e) {
+                        if (e) e.stopPropagation();
+                        const popover = document.getElementById('datePickerPopoverEmp');
+                        if (!popover) return;
+                        const isVisible = popover.style.display === 'block';
+                        popover.style.display = isVisible ? 'none' : 'block';
+                        if (!isVisible) {
+                            initYearSelectsEmp();
+                            renderCalendarEmp();
+                        }
+                    }
+
+                    function initYearSelectsEmp() {
+                        const y1 = document.getElementById('y1SelectEmp');
+                        const y2 = document.getElementById('y2SelectEmp');
+                        const m1 = document.getElementById('m1SelectEmp');
+                        const m2 = document.getElementById('m2SelectEmp');
+                        if (!y1 || y1.children.length > 0) return;
+
+                        const monthList = window.MONTH_NAMES || ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+                        const startY = 2020, endY = 2030;
+                        for (let y = startY; y <= endY; y++) {
+                            y1.add(new Option(y, y, false, y === currentYear1Emp));
+                            y2.add(new Option(y, y, false, y === currentYear2Emp));
+                        }
+                        monthList.forEach((m, idx) => {
+                            m1.add(new Option(m, idx, false, idx === currentMonth1Emp));
+                            m2.add(new Option(m, idx, false, idx === currentMonth2Emp));
+                        });
+                    }
+
+                    function prevMonthClusterEmp() {
+                        if (currentMonth1Emp === 0) {
+                            currentMonth1Emp = 11; currentYear1Emp--;
+                        } else {
+                            currentMonth1Emp--;
+                        }
+                        if (currentMonth2Emp === 0) {
+                            currentMonth2Emp = 11; currentYear2Emp--;
+                        } else {
+                            currentMonth2Emp--;
+                        }
+                        updateSelectValsEmp();
+                        renderCalendarEmp();
+                    }
+
+                    function nextMonthClusterEmp() {
+                        if (currentMonth1Emp === 11) {
+                            currentMonth1Emp = 0; currentYear1Emp++;
+                        } else {
+                            currentMonth1Emp++;
+                        }
+                        if (currentMonth2Emp === 11) {
+                            currentMonth2Emp = 0; currentYear2Emp++;
+                        } else {
+                            currentMonth2Emp++;
+                        }
+                        updateSelectValsEmp();
+                        renderCalendarEmp();
+                    }
+
+                    function updateSelectValsEmp() {
+                        const m1 = document.getElementById('m1SelectEmp');
+                        const y1 = document.getElementById('y1SelectEmp');
+                        const m2 = document.getElementById('m2SelectEmp');
+                        const y2 = document.getElementById('y2SelectEmp');
+                        if (m1) m1.value = currentMonth1Emp;
+                        if (y1) y1.value = currentYear1Emp;
+                        if (m2) m2.value = currentMonth2Emp;
+                        if (y2) y2.value = currentYear2Emp;
+                    }
+
+                    function renderMonthGridEmp(gridId, year, month) {
+                        const grid = document.getElementById(gridId);
+                        if (!grid) return;
+                        grid.innerHTML = '';
+
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const offset = (firstDay + 6) % 7;
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const prevMonthDays = new Date(year, month, 0).getDate();
+
+                        for (let i = offset - 1; i >= 0; i--) {
+                            const cell = document.createElement('div');
+                            cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+                            cell.textContent = prevMonthDays - i;
+                            grid.appendChild(cell);
+                        }
+
+                        for (let d = 1; d <= daysInMonth; d++) {
+                            const cell = document.createElement('div');
+                            const mStr = String(month + 1).padStart(2, '0');
+                            const dStr = String(d).padStart(2, '0');
+                            const dateStr = `${year}-${mStr}-${dStr}`;
+
+                            let bg = 'transparent';
+                            let color = '#1e293b';
+                            let fontWeight = '500';
+                            let borderRadius = '0';
+
+                            if (tempStartDateEmp && tempEndDateEmp) {
+                                if (dateStr === tempStartDateEmp) {
+                                    bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '8px 0 0 8px';
+                                } else if (dateStr === tempEndDateEmp) {
+                                    bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '0 8px 8px 0';
+                                } else if (dateStr > tempStartDateEmp && dateStr < tempEndDateEmp) {
+                                    bg = '#e0f2fe'; color = '#0284c7'; fontWeight = '600';
+                                }
+                            } else if (tempStartDateEmp && dateStr === tempStartDateEmp) {
+                                bg = '#00a8e8'; color = '#ffffff'; fontWeight = '700'; borderRadius = '8px';
+                            }
+
+                            cell.style.cssText = `padding:6px 0; background:${bg}; color:${color}; border-radius:${borderRadius}; font-weight:${fontWeight}; cursor:pointer; font-size:12.5px; transition:all 0.15s;`;
+                            cell.textContent = d;
+                            cell.onclick = (e) => {
+                                if (e) e.stopPropagation();
+                                selectDateEmp(dateStr);
+                            };
+                            grid.appendChild(cell);
+                        }
+
+                        const totalCells = offset + daysInMonth;
+                        const remaining = (7 - (totalCells % 7)) % 7;
+                        for (let n = 1; n <= remaining; n++) {
+                            const cell = document.createElement('div');
+                            cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+                            cell.textContent = n;
+                            grid.appendChild(cell);
+                        }
+                    }
+
+                    function renderCalendarEmp() {
+                        const m1Sel = document.getElementById('m1SelectEmp');
+                        const y1Sel = document.getElementById('y1SelectEmp');
+                        const m2Sel = document.getElementById('m2SelectEmp');
+                        const y2Sel = document.getElementById('y2SelectEmp');
+
+                        if (m1Sel && y1Sel && m2Sel && y2Sel) {
+                            currentMonth1Emp = parseInt(m1Sel.value);
+                            currentYear1Emp = parseInt(y1Sel.value);
+                            currentMonth2Emp = parseInt(m2Sel.value);
+                            currentYear2Emp = parseInt(y2Sel.value);
+                        }
+
+                        renderMonthGridEmp('m1DaysGridEmp', currentYear1Emp, currentMonth1Emp);
+                        renderMonthGridEmp('m2DaysGridEmp', currentYear2Emp, currentMonth2Emp);
+                    }
+
+                    function selectDateEmp(dateStr) {
+                        if (!tempStartDateEmp || (tempStartDateEmp && tempEndDateEmp)) {
+                            tempStartDateEmp = dateStr;
+                            tempEndDateEmp = '';
+                        } else if (tempStartDateEmp && !tempEndDateEmp) {
+                            if (dateStr >= tempStartDateEmp) {
+                                tempEndDateEmp = dateStr;
+                            } else {
+                                tempEndDateEmp = tempStartDateEmp;
+                                tempStartDateEmp = dateStr;
+                            }
+                        }
+                        renderCalendarEmp();
+                    }
+
+                    function applyDatePickerSelectionEmp() {
+                        selectedStartDateEmp = tempStartDateEmp;
+                        selectedEndDateEmp = tempEndDateEmp;
+                        const inputStart = document.getElementById('inputStartDateEmp');
+                        const inputEnd = document.getElementById('inputEndDateEmp');
+                        if (inputStart) inputStart.value = selectedStartDateEmp;
+                        if (inputEnd) inputEnd.value = selectedEndDateEmp;
+
+                        const label = document.getElementById('dateRangeLabelEmp');
+                        const clearBtn = document.getElementById('clearDateBtnEmp');
+
+                        if (selectedStartDateEmp && selectedEndDateEmp) {
+                            if (label) label.textContent = `${selectedStartDateEmp} - ${selectedEndDateEmp}`;
+                            if (clearBtn) clearBtn.style.display = 'inline';
+                        } else if (selectedStartDateEmp) {
+                            if (label) label.textContent = selectedStartDateEmp;
+                            if (clearBtn) clearBtn.style.display = 'inline';
+                        } else {
+                            if (label) label.textContent = 'Pilih rentang tanggal';
+                            if (clearBtn) clearBtn.style.display = 'none';
+                        }
+
+                        const picker = document.getElementById('datePickerPopoverEmp');
+                        if (picker) picker.style.display = 'none';
+                        const form = document.getElementById('filterMainFormEmp');
+                        if (form) form.submit();
+                    }
+
+                    function resetDatePickerSelectionEmp() {
+                        tempStartDateEmp = '';
+                        tempEndDateEmp = '';
+                        selectedStartDateEmp = '';
+                        selectedEndDateEmp = '';
+                        const inputStart = document.getElementById('inputStartDateEmp');
+                        const inputEnd = document.getElementById('inputEndDateEmp');
+                        if (inputStart) inputStart.value = '';
+                        if (inputEnd) inputEnd.value = '';
+                        const label = document.getElementById('dateRangeLabelEmp');
+                        const clearBtn = document.getElementById('clearDateBtnEmp');
+                        if (label) label.textContent = 'Pilih rentang tanggal';
+                        if (clearBtn) clearBtn.style.display = 'none';
+                        renderCalendarEmp();
+                        const form = document.getElementById('filterMainFormEmp');
+                        if (form) form.submit();
+                    }
+
+                    function clearDateRangeEmp() {
+                        resetDatePickerSelectionEmp();
+                    }
+                    </script>
                 <?php endif; ?>
             <?php endif; ?>
 
@@ -4762,8 +4764,28 @@ function toggleActionMenu(btn, e) {
         menu.classList.add('show');
     }
 }
-document.addEventListener('click', () => {
+document.addEventListener('click', (e) => {
     document.querySelectorAll('.action-menu-dropdown').forEach(el => el.classList.remove('show'));
+
+    // Employer Filter Popover outside click close
+    const popoverEmp = document.getElementById('filterPopoverEmp');
+    const filterBtnEmp = document.getElementById('filterToggleBtnEmp');
+    const pickerEmp = document.getElementById('datePickerPopoverEmp');
+    const cityCardEmp = document.getElementById('cityDropdownListCardEmp');
+    const verifierCardEmp = document.getElementById('verifierDropdownListCardEmp');
+    const officerCardEmp = document.getElementById('officerDropdownListCardEmp');
+
+    const isInsidePopoverEmp = popoverEmp && popoverEmp.contains(e.target);
+    const isInsideFilterBtnEmp = filterBtnEmp && filterBtnEmp.contains(e.target);
+    const isInsidePickerEmp = pickerEmp && pickerEmp.contains(e.target);
+
+    if (!isInsidePopoverEmp && !isInsideFilterBtnEmp && !isInsidePickerEmp) {
+        if (popoverEmp) popoverEmp.style.display = 'none';
+        if (pickerEmp) pickerEmp.style.display = 'none';
+        if (cityCardEmp) cityCardEmp.style.display = 'none';
+        if (verifierCardEmp) verifierCardEmp.style.display = 'none';
+        if (officerCardEmp) officerCardEmp.style.display = 'none';
+    }
 });
 </script>
 </body>
