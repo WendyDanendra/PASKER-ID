@@ -1,3 +1,12 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
 body {
     background: radial-gradient(circle at top left, #ffffff 0, #f8fbff 35%, #f6f7fb 100%);
     color: #1f2937;
@@ -2583,6 +2592,8 @@ html, body {
     z-index: 40;
     flex-shrink: 0;
     height: 100vh;
+    max-height: 100vh;
+    box-sizing: border-box;
 }
 
 .sidebar-rail-logo {
@@ -2654,14 +2665,16 @@ html, body {
 
 .rail-spacer {
     flex: 1;
+    min-height: 20px;
 }
 
 .rail-bottom {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
+    padding-bottom: 4px;
 }
 
 .rail-avatar-btn {
@@ -2721,7 +2734,7 @@ html, body {
 
 /* Theme Popover */
 .rail-theme-popover {
-    bottom: 58px;
+    bottom: 64px;
     width: 180px;
     padding: 12px 0 6px;
 }
@@ -2788,7 +2801,7 @@ html, body {
 
 /* Account Popover */
 .rail-account-popover {
-    bottom: 12px;
+    bottom: 16px;
     width: 250px;
     padding: 14px 0 6px;
 }
