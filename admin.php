@@ -2833,34 +2833,9 @@ document.addEventListener('click', function(e) {
                         </div>
 
                         <div>
-                            <?php if (empty($selectedEmployer['assigned_to'])): ?>
-                                <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="margin:0;">
-                                    <input type="hidden" name="admin_action" value="assign_employer_case">
-                                    <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-                                    <input type="hidden" name="self_assign" value="1">
-                                    <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
-                                    <button type="submit" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
-                                        <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <div style="display:flex; gap:10px;">
-                                    <?php if (strcasecmp((string)$selectedEmployer['assigned_to'], (string)$user['name']) !== 0 && strcasecmp((string)$selectedEmployer['assigned_to'], (string)($user['email'] ?? '')) !== 0): ?>
-                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="margin:0;">
-                                            <input type="hidden" name="admin_action" value="assign_employer_case">
-                                            <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-                                            <input type="hidden" name="self_assign" value="1">
-                                            <input type="hidden" name="verifier_name" value="<?php echo e($user['name']); ?>">
-                                            <button type="submit" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #d97706; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:600; color:#d97706; cursor:pointer;">
-                                                <i class="fa-solid fa-arrows-rotate"></i> Ambil Alih Case
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                    <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
-                                        <i class="fa-solid fa-user-gear" style="color:#00a8e8;"></i> Ubah Pemeriksa
-                                    </button>
-                                </div>
-                            <?php endif; ?>
+                            <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #00a8e8; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#0284c7; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
+                            </button>
                         </div>
                     </div>
 
