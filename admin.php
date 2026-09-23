@@ -811,11 +811,8 @@ if ($view === 'directory_individual') {
     SQL;
     $params = [];
 
-    if ($entity === 'Individu') {
-        $query .= ' AND (ep.entity_type = "Individu" OR ep.entity_type IS NULL)';
-    } elseif ($entity === 'Perusahaan') {
-        $query .= ' AND ep.entity_type = "Perusahaan"';
-    }
+    // Filter for Individual entity type
+    $query .= ' AND (ep.entity_type = "Individu" OR ep.entity_type IS NULL)';
 
     if ($search !== '') {
         $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
@@ -840,10 +837,27 @@ if ($view === 'directory_individual') {
         }
     }
 
-    $query .= ' ORDER BY u.created_at DESC';
+    $sort = $_GET['sort'] ?? 'date_desc';
+    if ($sort === 'name_asc') {
+        $query .= ' ORDER BY COALESCE(NULLIF(ep.owner_name, ""), u.name) ASC';
+    } elseif ($sort === 'name_desc') {
+        $query .= ' ORDER BY COALESCE(NULLIF(ep.owner_name, ""), u.name) DESC';
+    } elseif ($sort === 'date_asc') {
+        $query .= ' ORDER BY u.created_at ASC';
+    } else {
+        $query .= ' ORDER BY u.created_at DESC';
+    }
+
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $individualList = $stmt->fetchAll() ?: [];
+
+    $perPage = 20;
+    $totalData = count($individualList);
+    $totalPages = max(1, (int)ceil($totalData / $perPage));
+    $page = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
+    $showingList = array_slice($individualList, ($page - 1) * $perPage, $perPage);
+    $showingCount = count($showingList);
 
     // If detail_id is requested, find that employer
     $selectedEmployer = null;
@@ -1211,10 +1225,10 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         <!-- Navigation Icons -->
         <div class="sidebar-rail-nav">
             <a href="admin.php?view=directory_individual" class="rail-btn <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>" title="Individual">
-                <i class="fa-solid fa-building-user"></i>
+                <i class="fa-solid fa-user"></i>
             </a>
-            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>" title="Verifikasi Profil">
-                <i class="fa-solid fa-id-card"></i>
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>" title="Verifikasi Pemberi Kerja">
+                <i class="fa-solid fa-user-check"></i>
             </a>
             <a href="admin.php?view=verifikasi_job&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>" title="Verifikasi Lowongan">
                 <i class="fa-solid fa-briefcase"></i>
@@ -1290,12 +1304,12 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
 
         <div class="drawer-menu-list">
             <a href="admin.php?view=directory_individual" class="drawer-menu-item <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>">
-                <i class="fa-solid fa-building-user"></i>
+                <i class="fa-solid fa-user"></i>
                 <span>Individual</span>
             </a>
             <a href="admin.php?view=verifikasi_employer&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>">
-                <i class="fa-solid fa-id-card"></i>
-                <span>Verifikasi Profil</span>
+                <i class="fa-solid fa-user-check"></i>
+                <span>Verifikasi Pemberi Kerja</span>
             </a>
             <a href="admin.php?view=verifikasi_job&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>">
                 <i class="fa-solid fa-briefcase"></i>
@@ -1317,7 +1331,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                 <span>Beranda</span>
                 <span class="sep">&gt;</span>
                 <?php if ($view === 'directory_individual'): ?>
-                    <a href="admin.php?view=directory_individual" style="color:inherit;text-decoration:none;">Direktori Pemberi Kerja</a>
+                    <a href="admin.php?view=directory_individual" style="color:inherit;text-decoration:none;">Individual</a>
                     <?php if ($selectedEmployer): ?>
                         <span class="sep">&gt;</span>
                         <strong id="crumbCurrent">#<?php echo substr(md5($selectedEmployer['user_id']), 0, 8); ?></strong>
@@ -1343,7 +1357,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                     <input type="hidden" name="view" value="<?php echo e($view); ?>">
                     <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
                     <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
-                    <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan, pemberi kerja, nik, kota..." style="border:none;outline:none;width:100%;background:transparent;font-size:13px;color:var(--text-dark, #0f172a);">
+                    <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan, pemberi kerja, pencari kerja, atau..." style="border:none;outline:none;width:100%;background:transparent;font-size:13px;color:var(--text-dark, #0f172a);">
                 </form>
             </div>
 
@@ -1723,117 +1737,129 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                 <?php else: ?>
                     <!-- DIRECTORY TABLE VIEW (MATCHING VISUAL SCREENSHOT BASELINE) -->
                     <div style="margin-bottom:20px;">
-                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0;">Perusahaan / Pemberi Kerja</h1>
-                        <div class="tab-filter-bar">
-                            <div class="status-tab-list">
-                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=all" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
-                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=verified" class="status-tab-item <?php echo $tab === 'verified' ? 'active' : ''; ?>">Terverifikasi</a>
-                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=process" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Dalam Proses</a>
-                                <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
-                            </div>
+                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0; color:#0f172a;">Individual</h1>
 
-                            <div class="filter-controls">
-                                <div class="entity-selector-pill">
-                                    <a href="admin.php?view=directory_individual&entity=Semua&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
-                                    <a href="admin.php?view=directory_individual&entity=Perusahaan&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
-                                    <a href="admin.php?view=directory_individual&entity=Individu&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
+                        <div style="border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
+                            <div class="status-tab-list" style="gap:24px;">
+                                <a href="admin.php?view=directory_individual&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
+                                <a href="admin.php?view=directory_individual&tab=verified&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'verified' ? 'active' : ''; ?>">Terverifikasi</a>
+                                <a href="admin.php?view=directory_individual&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Dalam Proses</a>
+                                <a href="admin.php?view=directory_individual&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
+                            </div>
                         </div>
-                        <form method="get" action="admin.php" style="display:flex; gap:8px;">
+
+                        <form method="get" action="admin.php" style="display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px;">
                             <input type="hidden" name="view" value="directory_individual">
-                                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
                             <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
-                                    <div class="filter-search-box">
-                                        <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i>
-                                        <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari perusahaan...">
-                                    </div>
-                                    <button type="submit" class="filter-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
-                        </form>
-                            </div>
-                        </div>
-                    </div>
+                            <?php if ($sort): ?><input type="hidden" name="sort" value="<?php echo e($sort); ?>"><?php endif; ?>
 
-                    <div class="console-table-card">
-                        <table class="console-table">
+                            <div class="filter-search-box" style="width:280px; border-radius:999px; height:38px;">
+                                <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8; font-size:13px;"></i>
+                                <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari individual...">
+                            </div>
+
+                            <button type="submit" class="filter-btn" style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:7px 16px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
+                                <i class="fa-solid fa-sliders" style="font-size:12px;"></i> Filter
+                            </button>
+                        </form>
+                                <div class="console-table-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+                        <table class="console-table" style="width:100%; border-collapse:collapse;">
                             <thead>
-                                <tr>
-                                    <th>Nama Pemberi Kerja / Perusahaan</th>
-                                    <th>Status Hak Akses</th>
-                                    <th>Siklus Terakhir</th>
-                                    <th>Email & Kontak</th>
-                                    <th>NIK / NPWP</th>
-                                    <th>Lokasi Domisili</th>
-                                    <th>Tanggal Daftar</th>
-                                    <th style="text-align:center;">Aksi</th>
+                                <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left;">
+                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'name_asc' ? 'name_desc' : 'name_asc'; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                            Nama <i class="fa-solid fa-arrows-up-down" style="font-size:11px; color:#94a3b8;"></i>
+                                        </a>
+                                    </th>
+                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Email</th>
+                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Telepon</th>
+                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Alamat</th>
+                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Lokasi</th>
+                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">Status</th>
+                                    <th style="padding:12px 16px; font-size:12.5px; font-weight:600; color:#475569;">
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'date_desc' ? 'date_asc' : 'date_desc'; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                            Tanggal Daftar <i class="fa-solid fa-arrow-down" style="font-size:11px; color:#64748b;"></i>
+                                        </a>
+                                    </th>
+                                    <th style="padding:12px 16px; width:120px; text-align:right;"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (!$individualList): ?>
-                                    <tr><td colspan="8" style="text-align:center; padding:40px; color:#64748b;">Tidak ada data pemberi kerja ditemukan.</td></tr>
+                                <?php if (!$showingList): ?>
+                                    <tr>
+                                        <td colspan="8" style="text-align:center; padding:60px 20px; color:#64748b; font-size:13.5px;">
+                                            Tidak ada data individual yang tersedia.
+                                        </td>
+                                    </tr>
                                 <?php else: ?>
-                                    <?php foreach ($individualList as $emp):
-                                        $empStatus = get_employer_access_status($emp);
-                                        $siklusTerakhir = format_cycle_range($emp['last_activated_at'] ?? null, $emp['active_until'] ?? null);
-                                        $adminCity = (string)($user['domicile_city_id'] ?? '');
-                                        $isScopeMatch = ($user['role'] === 'admin' || $user['role'] === 'admin_pusat' || empty($adminCity) || ($emp['domicile_city_id'] ?? '') === $adminCity);
-                                        $canReactivate = ($empStatus['can_direct_reactivate'] && $isScopeMatch);
+                                    <?php foreach ($showingList as $emp):
+                                        $nameStr = $emp['owner_name'] ?: $emp['name'];
+                                        $emailStr = $emp['email'];
+                                        $phoneStr = $emp['phone'] ?: ($emp['whatsapp'] ?: '-');
+                                        $addressStr = $emp['address'] ?: ($emp['address_detail'] ?: '-');
+
+                                        $locArr = [];
+                                        if (!empty($emp['city'])) $locArr[] = $emp['city'];
+                                        if (!empty($emp['province'])) $locArr[] = $emp['province'];
+                                        $locationStr = !empty($locArr) ? implode(', ', $locArr) : '-';
+
+                                        $vStatus = $emp['verification_status'] ?? '';
+                                        if ($vStatus === 'APPROVED') {
+                                            $badgeHtml = '<span class="pill-badge verified">● Terverifikasi</span>';
+                                        } elseif ($vStatus === 'REJECTED' || $vStatus === 'NEEDS_REVISION') {
+                                            $badgeHtml = '<span class="pill-badge rejected">● Ditolak</span>';
+                                        } else {
+                                            $badgeHtml = '<span class="pill-badge pending">● Dalam Proses</span>';
+                                        }
+
+                                        $dateStr = date('d M Y, H:i', strtotime($emp['created_at']));
                                     ?>
-                                        <tr>
-                                            <td>
-                                                <div style="display:flex; align-items:center; gap:12px;">
-                                                    <div class="item-avatar-box">
-                                                        <?php echo strtoupper(substr($emp['owner_name'] ?: $emp['name'], 0, 2)); ?>
-                                                    </div>
-                                                    <div>
-                                                        <strong><?php echo e($emp['owner_name'] ?: $emp['name']); ?></strong><br>
-                                                        <small style="color:#94a3b8; font-size:11px;"><?php echo strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $emp['owner_name'] ?: $emp['name'])); ?></small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="pill-badge <?php echo $empStatus['badge_class']; ?>">● <?php echo e($empStatus['label']); ?></span>
-                                            </td>
-                                            <td style="font-size:12.5px; color:#334155; font-weight:500;">
-                                                <?php echo e($siklusTerakhir); ?>
-                                            </td>
-                                            <td>
-                                                <div style="font-size:12.5px;"><?php echo e($emp['email']); ?></div>
-                                                <div style="font-size:11.5px; color:#64748b;"><?php echo e($emp['phone'] ?: '-'); ?></div>
-                                            </td>
-                                            <td><code><?php echo e($emp['npwp'] ?: $emp['nik'] ?: '-'); ?></code></td>
-                                            <td><?php echo e($emp['domicile_city_id'] ?: $emp['city'] ?: '-'); ?></td>
-                                            <td><?php echo date('d M Y', strtotime($emp['created_at'])); ?></td>
-                                            <td style="text-align:center;">
-                                                <div class="action-dropdown">
-                                                    <button type="button" class="btn-action-trigger" onclick="toggleActionMenu(this, event)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 12px; cursor:pointer; color:#475569; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:4px;" title="Menu Aksi">
-                                                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                                                </button>
-                                                    <div class="action-menu-dropdown">
-                                                        <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $emp['user_id']; ?>" style="display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:13px; color:#334155; text-decoration:none;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                                                            <i class="fa-solid fa-eye" style="color:#64748b; width:16px;"></i> Lihat Profil
-                                                        </a>
-                                                        <a href="admin.php?view=directory_individual&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $emp['user_id']; ?>#audit-trail" style="display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:13px; color:#334155; text-decoration:none;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                                                            <i class="fa-solid fa-clock-rotate-left" style="color:#64748b; width:16px;"></i> Riwayat Hak Akses
-                                                        </a>
-                                                        <?php if ($canReactivate): ?>
-                                                            <div style="height:1px; background:#e2e8f0; margin:4px 0;"></div>
-                                                            <button type="button" data-open-modal="modal-reactivate-<?php echo $emp['user_id']; ?>" style="display:flex; width:100%; border:none; background:none; align-items:center; gap:8px; padding:8px 14px; font-size:13px; color:#0284c7; font-weight:600; cursor:pointer; text-align:left;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='transparent'">
-                                                                <i class="fa-solid fa-arrows-rotate" style="color:#0284c7; width:16px;"></i> Reaktivasi Hak Akses
-                                                            </button>
-                                                        <?php elseif ($empStatus['is_online_reactivation_pending']): ?>
-                                                            <div style="height:1px; background:#e2e8f0; margin:4px 0;"></div>
-                                                            <div style="padding:6px 14px; font-size:11px; color:#92400e; background:#fef3c7; line-height:1.3;">
-                                                                <i class="fa-solid fa-hourglass-half"></i> Permohonan reaktivasi online sedang diverifikasi
-                                                        </div>
-                                                            <?php endif; ?>
-                                                    </div>
-                                                </div>
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                            <td style="padding:14px 16px; font-weight:600; color:#0f172a; font-size:13px;"><?php echo e($nameStr); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($emailStr); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($phoneStr); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px; max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($addressStr); ?>"><?php echo e($addressStr); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($locationStr); ?></td>
+                                            <td style="padding:14px 16px; font-size:13px;"><?php echo $badgeHtml; ?></td>
+                                            <td style="padding:14px 16px; color:#64748b; font-size:12.5px;"><?php echo e($dateStr); ?></td>
+                                            <td style="padding:14px 16px; text-align:right;">
+                                                <a href="admin.php?view=directory_individual&detail_id=<?php echo $emp['user_id']; ?>" class="btn-lihat-detail">Lihat Detail</a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
                         </table>
-                    </div>
+
+                        <?php if ($showingList): ?>
+                            <div class="console-table-footer" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; font-size:13px; color:#64748b; border-top:1px solid #e2e8f0;">
+                                <div>
+                                    Menampilkan <?php echo $showingCount; ?> dari <?php echo $totalData; ?> total data.
+                                </div>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <?php if ($page > 1): ?>
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page - 1; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">‹</a>
+                                    <?php else: ?>
+                                        <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">‹</span>
+                                    <?php endif; ?>
+
+                                    <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                                        <?php if ($p == $page): ?>
+                                            <span style="padding:6px 12px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; border:1px solid #0284c7;"><?php echo $p; ?></span>
+                                        <?php else: ?>
+                                            <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $p; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;"><?php echo $p; ?></a>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+
+                                    <?php if ($page < $totalPages): ?>
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page + 1; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">›</a>
+                                    <?php else: ?>
+                                        <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">›</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>              </div>
 
                     <!-- MODALS FOR TABLE VIEW REACTIVATION -->
                     <?php foreach ($individualList as $emp):
