@@ -2818,8 +2818,8 @@ document.addEventListener('click', function(e) {
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Detail Alamat / Patokan</td><td style="padding:10px 14px; color:#0f172a;">Dekat pertigaan utama</td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Kode Pos</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['postal_code'] ?: '80361'); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['description'] ?: 'Real Estate'); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Pendukung</td><td style="padding:10px 14px; color:#0f172a;">KTP, NPWP, Dokumen usaha</td></tr>
-                                                <tr><td style="padding:10px 14px; font-weight:600; color:#334155;">Foto Bukti Tempat Usaha / Lokasi</td><td style="padding:10px 14px; color:#059669; font-weight:600;">Tersedia</td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Pendukung</td><td style="padding:10px 14px;"><a href="<?php echo e(!empty($selectedEmployer['document_url']) ? $selectedEmployer['document_url'] : '#'); ?>" onclick="<?php echo empty($selectedEmployer['document_url']) ? "event.preventDefault(); alert('Dokumen pendukung dapat diakses pada berkas terlampir.');" : ''; ?>" target="_blank" style="color:#00a8e8; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Dokumen</a></td></tr>
+                                                <tr><td style="padding:10px 14px; font-weight:600; color:#334155;">Foto Bukti Tempat Usaha / Lokasi</td><td style="padding:10px 14px;"><a href="<?php echo e(!empty($selectedEmployer['location_photo_url']) ? $selectedEmployer['location_photo_url'] : '#'); ?>" onclick="<?php echo empty($selectedEmployer['location_photo_url']) ? "event.preventDefault(); alert('Foto tempat usaha dapat diakses pada berkas terlampir.');" : ''; ?>" target="_blank" style="color:#00a8e8; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Dokumen</a></td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -3069,8 +3069,8 @@ document.addEventListener('click', function(e) {
                             <!-- ========================================== -->
                             <!-- REGULAR DECISION PANEL (ASSIGNMENT MANDATORY) -->
                             <!-- ========================================== -->
-                            <div class="section-card">
-                                <div class="section-card-title">Checklist & Keputusan Verifikasi Profil</div>
+                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px; margin-top:10px;">
+                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Checklist & Keputusan Verifikasi Profil</div>
 
                                 <?php if (empty($selectedEmployer['assigned_to'])): ?>
                                     <!-- WARNING IF UNASSIGNED -->
