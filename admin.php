@@ -1753,15 +1753,18 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
 
                 <?php else: ?>
                     <!-- DIRECTORY TABLE VIEW (MATCHING VISUAL SCREENSHOT BASELINE) -->
+                    <?php
+                    $filterParams = ($startDate ? '&start_date=' . urlencode($startDate) : '') . ($endDate ? '&end_date=' . urlencode($endDate) : '') . ($cityFilter ? '&city_filter=' . urlencode($cityFilter) : '');
+                    ?>
                     <div style="margin-bottom:20px;">
                         <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0; color:#0f172a;">Individual</h1>
 
                         <div style="border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
                             <div class="status-tab-list" style="gap:24px;">
-                                <a href="admin.php?view=directory_individual&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
-                                <a href="admin.php?view=directory_individual&tab=verified&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'verified' ? 'active' : ''; ?>">Terverifikasi</a>
-                                <a href="admin.php?view=directory_individual&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Dalam Proses</a>
-                                <a href="admin.php?view=directory_individual&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
+                                <a href="admin.php?view=directory_individual&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParams; ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
+                                <a href="admin.php?view=directory_individual&tab=verified&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParams; ?>" class="status-tab-item <?php echo $tab === 'verified' ? 'active' : ''; ?>">Terverifikasi</a>
+                                <a href="admin.php?view=directory_individual&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParams; ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Dalam Proses</a>
+                                <a href="admin.php?view=directory_individual&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParams; ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
                             </div>
                         </div>
 
@@ -1793,13 +1796,13 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <div style="border-bottom:1px solid #f1f5f9;">
                                         <div onclick="toggleAccordion('date')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
                                             <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Tanggal Pendaftaran</span>
-                                            <i class="fa-solid fa-chevron-down" id="dateChevron" style="font-size:11px; color:#64748b; transition:transform 0.2s;"></i>
+                                            <i class="fa-solid fa-chevron-down" id="dateChevron" style="font-size:11px; color:#64748b; transition:transform 0.2s; <?php echo ($startDate || $endDate) ? 'transform:rotate(180deg);' : ''; ?>"></i>
                                         </div>
-                                        <div id="dateAccordionBody" style="display:none; padding:0 18px 14px 18px;">
+                                        <div id="dateAccordionBody" style="display:<?php echo ($startDate || $endDate) ? 'block' : 'none'; ?>; padding:0 18px 14px 18px;">
                                             <div id="dateRangeTrigger" onclick="toggleDatePickerPopover(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
                                                 <div style="display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                                                     <i class="fa-regular fa-calendar" style="color:#94a3b8; font-size:14px;"></i>
-                                                    <span id="dateRangeLabel"><?php echo ($startDate && $endDate) ? e($startDate . ' - ' . $endDate) : 'Pilih rentang tanggal'; ?></span>
+                                                    <span id="dateRangeLabel"><?php echo ($startDate && $endDate) ? e($startDate . ' - ' . $endDate) : ($startDate ? e($startDate) : 'Pilih rentang tanggal'); ?></span>
                                                 </div>
                                                 <i class="fa-regular fa-circle-xmark" id="clearDateBtn" style="color:#cbd5e1; font-size:14px; cursor:pointer; <?php echo ($startDate || $endDate) ? 'display:inline;' : 'display:none;'; ?>" onclick="event.stopPropagation(); clearDateRange();"></i>
                                             </div>
@@ -1810,9 +1813,9 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                     <div>
                                         <div onclick="toggleAccordion('city')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
                                             <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Wilayah / Kota</span>
-                                            <i class="fa-solid fa-chevron-down" id="cityChevron" style="font-size:11px; color:#64748b; transition:transform 0.2s;"></i>
+                                            <i class="fa-solid fa-chevron-down" id="cityChevron" style="font-size:11px; color:#64748b; transition:transform 0.2s; <?php echo $cityFilter ? 'transform:rotate(180deg);' : ''; ?>"></i>
                                         </div>
-                                        <div id="cityAccordionBody" style="display:none; padding:0 18px 14px 18px; position:relative;">
+                                        <div id="cityAccordionBody" style="display:<?php echo $cityFilter ? 'block' : 'none'; ?>; padding:0 18px 14px 18px; position:relative;">
                                             <div id="citySelectTrigger" onclick="toggleCityDropdown(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
                                                 <span id="citySelectLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $cityFilter ? e($cityFilter) : 'Pilih kota...'; ?></span>
                                                 <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
@@ -1829,7 +1832,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                                 </div>
 
                                 <!-- DUAL MONTH DATE RANGE PICKER POPOVER (SIBLING ANCHORED TO RIGHT) -->
-                                <div id="datePickerPopover" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:540px; max-width:90vw; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 15px 35px -5px rgba(0,0,0,0.15); z-index:1010; padding:18px; box-sizing:border-box;">
+                                <div id="datePickerPopover" onclick="event.stopPropagation();" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:540px; max-width:90vw; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 15px 35px -5px rgba(0,0,0,0.15); z-index:1010; padding:18px; box-sizing:border-box;">
                                     <!-- Header row with month/year navigation -->
                                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                                         <button type="button" onclick="prevMonthCluster()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-left"></i></button>
@@ -2021,6 +2024,16 @@ let tempEndDate = selectedEndDate;
 let currentYear1 = 2026, currentMonth1 = 8;
 let currentYear2 = 2026, currentMonth2 = 9;
 
+if (selectedStartDate) {
+    const parts = selectedStartDate.split('-');
+    if (parts.length === 3) {
+        currentYear1 = parseInt(parts[0]);
+        currentMonth1 = parseInt(parts[1]) - 1;
+        currentMonth2 = (currentMonth1 + 1) % 12;
+        currentYear2 = currentMonth1 === 11 ? currentYear1 + 1 : currentYear1;
+    }
+}
+
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
 
 function toggleFilterPopover(e) {
@@ -2209,7 +2222,10 @@ function renderMonthGrid(gridId, year, month) {
 
         cell.style.cssText = `padding:6px 0; background:${bg}; color:${color}; border-radius:${borderRadius}; font-weight:${fontWeight}; cursor:pointer; font-size:12.5px; transition:all 0.15s;`;
         cell.textContent = d;
-        cell.onclick = () => selectDate(dateStr);
+        cell.onclick = (e) => {
+            if (e) e.stopPropagation();
+            selectDate(dateStr);
+        };
         grid.appendChild(cell);
     }
 
@@ -2296,11 +2312,16 @@ function clearDateRange() {
 document.addEventListener('click', function(e) {
     const popover = document.getElementById('filterPopover');
     const filterBtn = document.getElementById('filterToggleBtn');
-    if (popover && filterBtn && !popover.contains(e.target) && !filterBtn.contains(e.target)) {
-        popover.style.display = 'none';
-        const picker = document.getElementById('datePickerPopover');
+    const picker = document.getElementById('datePickerPopover');
+    const cityCard = document.getElementById('cityDropdownListCard');
+
+    const isInsidePopover = popover && popover.contains(e.target);
+    const isInsideFilterBtn = filterBtn && filterBtn.contains(e.target);
+    const isInsidePicker = picker && picker.contains(e.target);
+
+    if (!isInsidePopover && !isInsideFilterBtn && !isInsidePicker) {
+        if (popover) popover.style.display = 'none';
         if (picker) picker.style.display = 'none';
-        const cityCard = document.getElementById('cityDropdownListCard');
         if (cityCard) cityCard.style.display = 'none';
     }
 });
@@ -2310,7 +2331,7 @@ document.addEventListener('click', function(e) {
                             <thead>
                                 <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left;">
                                     <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:160px;">
-                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'name_asc' ? 'name_desc' : 'name_asc'; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'name_asc' ? 'name_desc' : 'name_asc'; ?><?php echo $filterParams; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
                                             Nama <i class="fa-solid fa-arrows-up-down" style="font-size:11px; color:#94a3b8;"></i>
                                         </a>
                                     </th>
@@ -2320,7 +2341,7 @@ document.addEventListener('click', function(e) {
                                     <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:160px;">Lokasi</th>
                                     <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:130px;">Status</th>
                                     <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:150px;">
-                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'date_desc' ? 'date_asc' : 'date_desc'; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'date_desc' ? 'date_asc' : 'date_desc'; ?><?php echo $filterParams; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
                                             Tanggal Daftar <i class="fa-solid fa-arrow-down" style="font-size:11px; color:#64748b;"></i>
                                         </a>
                                     </th>
@@ -2381,7 +2402,7 @@ document.addEventListener('click', function(e) {
                                 </div>
                                 <div style="display:flex; align-items:center; gap:4px;">
                                     <?php if ($page > 1): ?>
-                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page - 1; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">‹</a>
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page - 1; ?><?php echo $filterParams; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">‹</a>
                                     <?php else: ?>
                                         <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">‹</span>
                                     <?php endif; ?>
@@ -2390,12 +2411,12 @@ document.addEventListener('click', function(e) {
                                         <?php if ($p == $page): ?>
                                             <span style="padding:6px 12px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; border:1px solid #0284c7;"><?php echo $p; ?></span>
                                         <?php else: ?>
-                                            <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $p; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;"><?php echo $p; ?></a>
+                                            <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $p; ?><?php echo $filterParams; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;"><?php echo $p; ?></a>
                                         <?php endif; ?>
                                     <?php endfor; ?>
 
                                     <?php if ($page < $totalPages): ?>
-                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page + 1; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">›</a>
+                                        <a href="admin.php?view=directory_individual&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page + 1; ?><?php echo $filterParams; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">›</a>
                                     <?php else: ?>
                                         <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">›</span>
                                     <?php endif; ?>
