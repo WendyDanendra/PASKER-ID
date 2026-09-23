@@ -75,7 +75,7 @@ function setActivePage(pageName) {
         profil: 'Profil Pemberi kerja',
         jobs: 'Lowongan Kerja',
         profile: 'Profil Pencari Kerja',
-        directory_individual: 'Direktori Profil',
+        directory_individual: 'Individual',
         verifikasi_employer: 'Verifikasi Profil',
         verifikasi_job: 'Verifikasi Lowongan'
     };

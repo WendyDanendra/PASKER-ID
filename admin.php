@@ -1210,7 +1210,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
 
         <!-- Navigation Icons -->
         <div class="sidebar-rail-nav">
-            <a href="admin.php?view=directory_individual" class="rail-btn <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>" title="Direktori Profil">
+            <a href="admin.php?view=directory_individual" class="rail-btn <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>" title="Individual">
                 <i class="fa-solid fa-building-user"></i>
             </a>
             <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>" title="Verifikasi Profil">
@@ -1291,7 +1291,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         <div class="drawer-menu-list">
             <a href="admin.php?view=directory_individual" class="drawer-menu-item <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>">
                 <i class="fa-solid fa-building-user"></i>
-                <span>Direktori Profil</span>
+                <span>Individual</span>
             </a>
             <a href="admin.php?view=verifikasi_employer&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>">
                 <i class="fa-solid fa-id-card"></i>
