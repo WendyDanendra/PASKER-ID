@@ -2812,14 +2812,24 @@ document.addEventListener('click', function(e) {
                                     <h1 style="font-size:20px; font-weight:800; margin:0; color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></h1>
                                     <?php
                                         $status = $selectedEmployer['verification_status'] ?? 'PENDING';
+                                        $isRevisionStatus = in_array(strtoupper($status), ['REVISION', 'NEEDS_REVISION']) || ($tab === 'revision');
                                         $statusClass = 'pending';
                                         $statusLabel = 'Dikirim';
-                                        if ($status === 'APPROVED') { $statusClass = 'verified'; $statusLabel = 'Terverifikasi'; }
-                                        elseif ($status === 'REJECTED') { $statusClass = 'danger'; $statusLabel = 'Ditolak'; }
-                                        elseif ($status === 'REVISION') { $statusClass = 'revision'; $statusLabel = 'Revisi'; }
-                                        elseif ($status === 'PENDING') { $statusClass = 'pending'; $statusLabel = 'Dikirim'; }
+                                        if ($isRevisionStatus) {
+                                            $statusClass = 'revision';
+                                            $statusLabel = 'Revisi Diminta';
+                                        } elseif ($status === 'APPROVED') {
+                                            $statusClass = 'verified';
+                                            $statusLabel = 'Terverifikasi';
+                                        } elseif ($status === 'REJECTED') {
+                                            $statusClass = 'danger';
+                                            $statusLabel = 'Ditolak';
+                                        } elseif ($status === 'PENDING') {
+                                            $statusClass = 'pending';
+                                            $statusLabel = 'Dikirim';
+                                        }
                                     ?>
-                                    <span class="pill-badge <?php echo $statusClass; ?>">
+                                    <span class="pill-badge <?php echo $statusClass; ?>" style="<?php echo $isRevisionStatus ? 'background:#fef3c7; color:#d97706; border:1px solid #fde68a;' : ''; ?>">
                                         ● <?php echo e($statusLabel); ?>
                                     </span>
                                 </div>
@@ -2833,9 +2843,11 @@ document.addEventListener('click', function(e) {
                         </div>
 
                         <div>
-                            <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #00a8e8; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#0284c7; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
-                            </button>
+                            <?php if (!$isRevisionStatus): ?>
+                                <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #00a8e8; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#0284c7; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                    <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -2952,31 +2964,81 @@ document.addEventListener('click', function(e) {
                                         <table class="compare-table" style="width:100%; border-collapse:collapse; font-size:13px;">
                                             <thead>
                                                 <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left; color:#475569;">
-                                                    <th style="padding:10px 14px; font-weight:700; width:220px;">Variabel</th>
+                                                    <th style="padding:10px 14px; font-weight:700; width:260px;">Variabel</th>
                                                     <th style="padding:10px 14px; font-weight:700;">Data Pemberi Kerja Individu</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Nama Pemberi Kerja</td><td style="padding:10px 14px; font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">NIK</td><td style="padding:10px 14px; color:#0f172a;"><code><?php echo e($selectedEmployer['nik'] ?: '327xxxxxxxxxxxxx'); ?></code></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Email</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['email'] ?: 'info@email.com'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">NIK</td><td style="padding:10px 14px; color:#0f172a;"><code><?php echo e($selectedEmployer['nik'] ?: '3273xxxxxxxxxxxx'); ?></code></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Email</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['email'] ?: 'ahmad@email.com'); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Telepon</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['phone'] ?: '0812xxxxxxxx'); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">WhatsApp</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['whatsapp'] ?: '0812xxxxxxxx'); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Jenis Profesi / Usaha Individu</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['profession'] ?: ($selectedEmployer['description'] ?: 'Real Estate')); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">NPWP</td><td style="padding:10px 14px; color:#0f172a;"><code><?php echo e($selectedEmployer['npwp'] ?: '12.345.678.9-000.000'); ?></code></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">LinkedIn</td><td style="padding:10px 14px; color:#94a3b8;">-</td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Facebook</td><td style="padding:10px 14px; color:#94a3b8;">-</td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Instagram</td><td style="padding:10px 14px; color:#0f172a;">@<?php echo e(strtolower(str_replace(' ', '.', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Sosial Media</td><td style="padding:10px 14px; color:#0f172a;">Instagram: @<?php echo e(strtolower(str_replace(' ', '.', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Lokasi Domisili</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dalung, Kuta Utara, Kab. Badung, Bali'); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Alamat Lengkap Pemberi Kerja</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: 'Jl. Wayan Gebyag No. 68, Br. Tegal Jaya'); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Detail Alamat / Patokan</td><td style="padding:10px 14px; color:#0f172a;">Dekat pertigaan utama</td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Kode Pos</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['postal_code'] ?: '80361'); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['description'] ?: 'Real Estate'); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Pendukung</td><td style="padding:10px 14px;"><a href="<?php echo e(!empty($selectedEmployer['document_url']) ? $selectedEmployer['document_url'] : '#'); ?>" onclick="<?php echo empty($selectedEmployer['document_url']) ? "event.preventDefault(); alert('Dokumen pendukung dapat diakses pada berkas terlampir.');" : ''; ?>" target="_blank" style="color:#00a8e8; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Dokumen</a></td></tr>
-                                                <tr><td style="padding:10px 14px; font-weight:600; color:#334155;">Foto Bukti Tempat Usaha / Lokasi</td><td style="padding:10px 14px;"><a href="<?php echo e(!empty($selectedEmployer['location_photo_url']) ? $selectedEmployer['location_photo_url'] : '#'); ?>" onclick="<?php echo empty($selectedEmployer['location_photo_url']) ? "event.preventDefault(); alert('Foto tempat usaha dapat diakses pada berkas terlampir.');" : ''; ?>" target="_blank" style="color:#00a8e8; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Dokumen</a></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Jenis Profesi / Usaha Individu</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['profession'] ?: ($selectedEmployer['description'] ?: 'Jasa Desain Grafis')); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">NPWP</td><td style="padding:10px 14px; color:#0f172a;"><code><?php echo e($selectedEmployer['npwp'] ?: '12.345.678.9-123.000'); ?></code></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Sosial Media</td><td style="padding:10px 14px; color:#0f172a;">Instagram: @<?php echo e(strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Lokasi Domisili</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dago, Coblong, Kota Bandung, Jawa Barat'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Alamat Lengkap</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: 'Jl. Ir. H. Juanda No. 25'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Detail Alamat / Patokan</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address_detail'] ?: 'Dekat persimpangan utama'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Kode Pos</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['postal_code'] ?: '40135'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['description'] ?: 'Usaha jasa desain grafis dan digital'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;">
+                                                    <td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Pendukung</td>
+                                                    <td style="padding:10px 14px; color:#0f172a;">
+                                                        <div style="display:flex; align-items:center; gap:10px;">
+                                                            <span>dokumen-usaha.pdf</span>
+                                                            <button type="button" data-open-modal="modal-view-doc" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; color:#0284c7; font-weight:700; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                                                                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i> Lihat Dokumen
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding:10px 14px; font-weight:600; color:#334155;">Foto Bukti Tempat Usaha / Lokasi</td>
+                                                    <td style="padding:10px 14px; color:#0f172a;">
+                                                        <div style="display:flex; align-items:center; gap:10px;">
+                                                            <span>2 Foto</span>
+                                                            <button type="button" data-open-modal="modal-view-photos" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; color:#0284c7; font-weight:700; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                                                                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i> Lihat Foto
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- CARD: HASIL VERIFIKASI (IF REVISI DIMINTA / PROCESSED) -->
+                            <?php if ($isRevisionStatus): ?>
+                                <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
+                                    <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Hasil Verifikasi</div>
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; font-size:13px; margin-bottom:16px;">
+                                        <div>
+                                            <div style="color:#64748b; margin-bottom:4px; font-weight:500;">Status Keputusan</div>
+                                            <div>
+                                                <span style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-weight:700; font-size:12px; padding:4px 10px; border-radius:12px; display:inline-flex; align-items:center; gap:6px;">
+                                                    <span style="width:7px; height:7px; border-radius:50%; background:#f59e0b;"></span> Revisi Diminta (Revisi ke-<?php echo e($selectedEmployer['revision_count'] ?? 1); ?>)
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style="color:#64748b; margin-bottom:4px; font-weight:500;">Tanggal Keputusan</div>
+                                            <div style="font-weight:600; color:#0f172a;"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['updated_at'] ?? '2026-09-24 09:18')); ?></div>
+                                        </div>
+                                        <div style="grid-column: span 2;">
+                                            <div style="color:#64748b; margin-bottom:4px; font-weight:500;">Nama Pemeriksa</div>
+                                            <div style="font-weight:700; color:#0f172a;"><?php echo e($selectedEmployer['assigned_to'] ?: 'Budi Santoso'); ?></div>
+                                        </div>
+                                    </div>
+                                    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px;">
+                                        <div style="font-size:12.5px; font-weight:700; color:#92400e; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-circle-exclamation"></i> Catatan Perbaikan
+                                        </div>
+                                        <div style="font-size:13px; color:#78350f; line-height:1.5;">
+                                            <?php echo e($selectedEmployer['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi foto tempat usaha serta sesuaikan dokumen identitas pendukung dengan alamat domisili terbaru.'); ?>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -2984,15 +3046,15 @@ document.addEventListener('click', function(e) {
                             <!-- CARD 4: INFORMASI PEMBERI KERJA DETAIL & MAP -->
                             <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                                    <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin:0;">Informasi Pemberi Kerja</div>
+                                    <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin:0;">Informasi Pemberi Kerja Individu</div>
                                     <a href="#" onclick="event.preventDefault();" style="color:#00a8e8; text-decoration:none; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
-                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Detail Pemberi Kerja
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Detail
                                     </a>
                                 </div>
 
                                 <div style="margin-bottom:14px;">
                                     <div style="font-size:16px; font-weight:800; color:#0f172a;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
-                                    <div style="font-size:12.5px; color:#64748b; margin-top:2px; font-weight:500;"><?php echo e($selectedEmployer['entity_type'] ?? 'Individual'); ?></div>
+                                    <div style="font-size:12.5px; color:#64748b; margin-top:2px; font-weight:500;"><?php echo e($isIndividual ? 'Individual' : ($selectedEmployer['entity_type'] ?? 'Perusahaan')); ?></div>
                                 </div>
 
                                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; font-size:13px; margin-bottom:16px;">
@@ -3000,7 +3062,7 @@ document.addEventListener('click', function(e) {
                                         <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
                                             <i class="fa-solid fa-location-dot" style="color:#94a3b8;"></i> Wilayah
                                         </div>
-                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dalung, Kuta Utara, Kab. Badung, Bali'); ?></div>
+                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dago, Coblong, Kota Bandung, Jawa Barat'); ?></div>
                                     </div>
                                     <div>
                                         <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
@@ -3012,7 +3074,7 @@ document.addEventListener('click', function(e) {
                                         <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
                                             <i class="fa-regular fa-envelope" style="color:#94a3b8;"></i> Email
                                         </div>
-                                        <div style="font-weight:600; color:#00a8e8;"><?php echo e($selectedEmployer['email'] ?: 'info@email.com'); ?></div>
+                                        <div style="font-weight:600; color:#00a8e8;"><?php echo e($selectedEmployer['email'] ?: 'ahmad@email.com'); ?></div>
                                     </div>
                                     <div>
                                         <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
@@ -3024,7 +3086,7 @@ document.addEventListener('click', function(e) {
                                         <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
                                             <i class="fa-brands fa-instagram" style="color:#94a3b8;"></i> Sosial Media
                                         </div>
-                                        <div style="font-weight:600; color:#0f172a;">Instagram: @<?php echo e(strtolower(str_replace(' ', '.', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></div>
+                                        <div style="font-weight:600; color:#0f172a;">Instagram: @<?php echo e(strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></div>
                                     </div>
                                     <div>
                                         <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
@@ -3034,21 +3096,21 @@ document.addEventListener('click', function(e) {
                                     </div>
                                     <div style="grid-column: span 2;">
                                         <div style="color:#64748b; margin-bottom:2px; font-weight:500; display:flex; align-items:center; gap:6px;">
-                                            <i class="fa-solid fa-map-pin" style="color:#94a3b8;"></i> Alamat Lengkap Pemberi Kerja
+                                            <i class="fa-solid fa-house" style="color:#94a3b8;"></i> Alamat Lengkap
                                         </div>
-                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: 'Jl. Wayan Gebyag No. 68, Br. Tegal Jaya'); ?></div>
-                                        <div style="font-size:12px; color:#64748b; margin-top:2px;">Kode Pos: <?php echo e($selectedEmployer['postal_code'] ?: '80361'); ?></div>
+                                        <div style="font-weight:600; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: 'Jl. Ir. H. Juanda No. 25'); ?></div>
+                                        <div style="font-size:12px; color:#64748b; margin-top:2px;">Kode Pos: <?php echo e($selectedEmployer['postal_code'] ?: '40135'); ?></div>
                                     </div>
                                 </div>
 
                                 <!-- MAP PREVIEW BOX -->
                                 <div style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-bottom:16px; background:#e0f2fe; height:180px; position:relative; display:flex; align-items:center; justify-content:center;">
-                                    <iframe width="100%" height="180" frameborder="0" style="border:0;" src="https://maps.google.com/maps?q=<?php echo urlencode($selectedEmployer['address'] ?: ($selectedEmployer['city'] ?: 'Badung Bali')); ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" allowfullscreen></iframe>
+                                    <iframe width="100%" height="180" frameborder="0" style="border:0;" src="https://maps.google.com/maps?q=<?php echo urlencode($selectedEmployer['address'] ?: ($selectedEmployer['city'] ?: 'Kota Bandung Jawa Barat')); ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" allowfullscreen></iframe>
                                 </div>
 
                                 <div>
-                                    <div style="color:#64748b; font-size:12.5px; font-weight:600; margin-bottom:4px;">Deskripsi Singkat</div>
-                                    <div style="font-size:13px; color:#334155; line-height:1.5;"><?php echo e($selectedEmployer['description'] ?: 'Real Estate'); ?></div>
+                                    <div style="color:#64748b; font-size:12.5px; font-weight:600; margin-bottom:4px;">Deskripsi Singkat Usaha / Rekrutmen</div>
+                                    <div style="font-size:13px; color:#334155; line-height:1.5;"><?php echo e($selectedEmployer['description'] ?: 'Usaha jasa desain grafis dan digital'); ?></div>
                                 </div>
                             </div>
 
@@ -3064,34 +3126,53 @@ document.addEventListener('click', function(e) {
                                     </div>
                                 </div>
 
-                                <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
-                                    <input type="hidden" name="admin_action" value="assign_employer_case">
-                                    <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-
-                                    <div style="margin-bottom:14px; position:relative;">
+                                <?php if ($isRevisionStatus): ?>
+                                    <div style="margin-bottom:14px;">
                                         <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Pemeriksa <span style="color:#ef4444;">*</span></label>
-                                        <input type="hidden" name="verifier_name" id="inputAssignPemeriksa" required value="">
-                                        <div id="assignPemeriksaTrigger" onclick="toggleAssignPemeriksaDropdown(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#0f172a;">
-                                            <span id="assignPemeriksaLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#64748b;">Pilih pemeriksa...</span>
-                                            <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
-                                        </div>
-
-                                        <!-- SEARCHABLE DROPDOWN CARD -->
-                                        <div id="assignPemeriksaDropdownCard" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:12px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.15); z-index:1005; padding:8px;">
-                                            <input type="text" id="assignPemeriksaSearchInput" onkeyup="filterAssignPemeriksaOptions()" placeholder="Cari Pemeriksa..." style="width:100%; border:1px solid #00a8e8; border-radius:8px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
-                                            <div id="assignPemeriksaOptionsContainer" style="max-height:220px; overflow-y:auto;"></div>
+                                        <div style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; color:#94a3b8; font-size:13px; cursor:not-allowed;">
+                                            <span>Pilih pemeriksa...</span>
+                                            <i class="fa-solid fa-chevron-down" style="color:#cbd5e1; font-size:11px;"></i>
                                         </div>
                                     </div>
 
                                     <div style="margin-bottom:16px;">
                                         <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Alasan <span style="color:#ef4444;">*</span></label>
-                                        <textarea name="assignment_reason" required minlength="10" placeholder="Masukkan alasan penugasan (minimal 10 karakter)..." style="width:100%; min-height:80px; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; outline:none; font-family:inherit;"></textarea>
+                                        <textarea disabled placeholder="Masukkan alasan penugasan (minimal 10 karakter)..." style="width:100%; min-height:80px; padding:10px 12px; border-radius:8px; border:1px solid #e2e8f0; background:#f8fafc; font-size:13px; color:#94a3b8; outline:none; font-family:inherit; cursor:not-allowed; resize:none;"></textarea>
                                     </div>
 
-                                    <button type="submit" style="width:100%; height:42px; background:#7dd3fc; border:none; border-radius:10px; color:#0369a1; font-weight:700; font-size:13.5px; cursor:pointer; transition:background 0.2s;">
+                                    <button type="button" disabled style="width:100%; height:42px; background:#7dd3fc; opacity:0.6; border:none; border-radius:10px; color:#0369a1; font-weight:700; font-size:13.5px; cursor:not-allowed;">
                                         Assign Pemeriksa
                                     </button>
-                                </form>
+                                <?php else: ?>
+                                    <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                        <input type="hidden" name="admin_action" value="assign_employer_case">
+                                        <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+
+                                        <div style="margin-bottom:14px; position:relative;">
+                                            <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Pemeriksa <span style="color:#ef4444;">*</span></label>
+                                            <input type="hidden" name="verifier_name" id="inputAssignPemeriksa" required value="">
+                                            <div id="assignPemeriksaTrigger" onclick="toggleAssignPemeriksaDropdown(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#0f172a;">
+                                                <span id="assignPemeriksaLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#64748b;">Pilih pemeriksa...</span>
+                                                <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                            </div>
+
+                                            <!-- SEARCHABLE DROPDOWN CARD -->
+                                            <div id="assignPemeriksaDropdownCard" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:12px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.15); z-index:1005; padding:8px;">
+                                                <input type="text" id="assignPemeriksaSearchInput" onkeyup="filterAssignPemeriksaOptions()" placeholder="Cari Pemeriksa..." style="width:100%; border:1px solid #00a8e8; border-radius:8px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                                <div id="assignPemeriksaOptionsContainer" style="max-height:220px; overflow-y:auto;"></div>
+                                            </div>
+                                        </div>
+
+                                        <div style="margin-bottom:16px;">
+                                            <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Alasan <span style="color:#ef4444;">*</span></label>
+                                            <textarea name="assignment_reason" required minlength="10" placeholder="Masukkan alasan penugasan (minimal 10 karakter)..." style="width:100%; min-height:80px; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; outline:none; font-family:inherit;"></textarea>
+                                        </div>
+
+                                        <button type="submit" style="width:100%; height:42px; background:#7dd3fc; border:none; border-radius:10px; color:#0369a1; font-weight:700; font-size:13.5px; cursor:pointer; transition:background 0.2s;">
+                                            Assign Pemeriksa
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
 
                             <!-- ========================================== -->
@@ -3226,69 +3307,73 @@ document.addEventListener('click', function(e) {
                             <!-- ========================================== -->
                             <!-- REGULAR DECISION PANEL (ASSIGNMENT MANDATORY) -->
                             <!-- ========================================== -->
-                            <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px; margin-top:10px;">
-                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Checklist & Keputusan Verifikasi Profil</div>
+                            <!-- REGULAR DECISION PANEL (ASSIGNMENT MANDATORY) -->
+                            <!-- ========================================== -->
+                            <?php if (!$isRevisionStatus): ?>
+                                <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px; margin-top:10px;">
+                                    <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Checklist & Keputusan Verifikasi Profil</div>
 
-                                <?php if (empty($selectedEmployer['assigned_to'])): ?>
-                                    <!-- WARNING IF UNASSIGNED -->
-                                    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px; font-size:13px; color:#92400e;">
-                                        <strong><i class="fa-solid fa-triangle-exclamation"></i> Perhatian:</strong><br>
-                                        Untuk mengambil keputusan verifikasi, case pemberi kerja harus memiliki penugasan aktif terlebih dahulu. Silahkan klik tombol <strong>"Ambil Case"</strong> di atas.
-                                    </div>
-                                <?php elseif (strcasecmp((string)$selectedEmployer['assigned_to'], (string)$user['name']) !== 0 && strcasecmp((string)$selectedEmployer['assigned_to'], (string)($user['email'] ?? '')) !== 0): ?>
-                                    <!-- WARNING IF ASSIGNED TO SOMEONE ELSE -->
-                                    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px; font-size:13px; color:#991b1b;">
-                                        <strong><i class="fa-solid fa-lock"></i> Case Sedang Dipegang Pemeriksa Lain:</strong><br>
-                                        Case verifikasi ini saat ini ditugaskan kepada <strong><?php echo e($selectedEmployer['assigned_to']); ?></strong>. Keputusan verifikasi (Setujui, Revisi, Tolak) hanya dapat diambil oleh verifikator yang ditugaskan. Silakan gunakan tombol <strong>"Ambil Alih Case"</strong> atau <strong>"Ubah Pemeriksa"</strong> di atas terlebih dahulu jika Anda ingin memproses case ini.
-                                    </div>
-                                <?php else: ?>
-                                    <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
-                                        <input type="hidden" name="admin_action" value="verify_employer">
-                                        <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-                                        <input type="hidden" name="form_token" value="<?php echo time(); ?>">
-
-                                                                <div style="margin-bottom:14px;">
-                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:8px;">Checklist Pemeriksaan Verifikator:</label>
-                                            <div style="display:grid; gap:8px; font-size:13px;">
-                                                <label style="display:flex; align-items:center; gap:8px;">
-                                                    <input type="checkbox" name="checklist[]" value="NPWP dan NIK valid" checked>
-                                                    NPWP dan NIK sesuai dengan database Kependudukan / DJP
-                                                </label>
-                                                <label style="display:flex; align-items:center; gap:8px;">
-                                                    <input type="checkbox" name="checklist[]" value="Lokasi tempat kerja terverifikasi" checked>
-                                                    Lokasi tempat usaha/rumah terverifikasi di wilayah kerja
-                                                </label>
-                                                <label style="display:flex; align-items:center; gap:8px;">
-                                                    <input type="checkbox" name="checklist[]" value="Dokumen pendukung sesuai" checked>
-                                                    Dokumen izin / identitas pendukung sesuai
-                                                </label>
-                                            </div>
-                                                                </div>
-
-                                                                <div style="margin-bottom:14px;">
-                                            <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">
-                                                Catatan Verifikator <small style="color:#ef4444;">(Wajib diisi jika Revisi / Tolak)</small>:
-                                            </label>
-                                            <textarea name="verifier_notes" placeholder="Tuliskan catatan pemeriksaan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:70px;"><?php echo e($selectedEmployer['verifier_notes']); ?></textarea>
+                                    <?php if (empty($selectedEmployer['assigned_to'])): ?>
+                                        <!-- WARNING IF UNASSIGNED -->
+                                        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px; font-size:13px; color:#92400e;">
+                                            <strong><i class="fa-solid fa-triangle-exclamation"></i> Perhatian:</strong><br>
+                                            Untuk mengambil keputusan verifikasi, case pemberi kerja harus memiliki penugasan aktif terlebih dahulu. Silahkan klik tombol <strong>"Ambil Case"</strong> di atas.
                                         </div>
+                                    <?php elseif (strcasecmp((string)$selectedEmployer['assigned_to'], (string)$user['name']) !== 0 && strcasecmp((string)$selectedEmployer['assigned_to'], (string)($user['email'] ?? '')) !== 0): ?>
+                                        <!-- WARNING IF ASSIGNED TO SOMEONE ELSE -->
+                                        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px; font-size:13px; color:#991b1b;">
+                                            <strong><i class="fa-solid fa-lock"></i> Case Sedang Dipegang Pemeriksa Lain:</strong><br>
+                                            Case verifikasi ini saat ini ditugaskan kepada <strong><?php echo e($selectedEmployer['assigned_to']); ?></strong>. Keputusan verifikasi (Setujui, Revisi, Tolak) hanya dapat diambil oleh verifikator yang ditugaskan. Silakan gunakan tombol <strong>"Ambil Alih Case"</strong> atau <strong>"Ubah Pemeriksa"</strong> di atas terlebih dahulu jika Anda ingin memproses case ini.
+                                        </div>
+                                    <?php else: ?>
+                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                            <input type="hidden" name="admin_action" value="verify_employer">
+                                            <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                            <input type="hidden" name="form_token" value="<?php echo time(); ?>">
 
-                                        <div style="margin-bottom:16px;">
-                                                                    <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
-                                            <select name="decision" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;">
-                                                                        <option value="approve">Setujui (Profil Terverifikasi 3 Bulan)</option>
-                                                <option value="revision">Perlu Diperbaiki / Revisi (Membuka Kesempatan Perbaikan)</option>
-                                                <option value="reject">Tolak Profil (Penolakan ke-<?php echo ((int)$selectedEmployer['rejection_count'] + 1); ?>)</option>
-                                                                    </select>
-                                                                </div>
+                                            <div style="margin-bottom:14px;">
+                                                <label style="font-weight:700; font-size:13px; display:block; margin-bottom:8px;">Checklist Pemeriksaan Verifikator:</label>
+                                                <div style="display:grid; gap:8px; font-size:13px;">
+                                                    <label style="display:flex; align-items:center; gap:8px;">
+                                                        <input type="checkbox" name="checklist[]" value="NPWP dan NIK valid" checked>
+                                                        NPWP dan NIK sesuai dengan database Kependudukan / DJP
+                                                    </label>
+                                                    <label style="display:flex; align-items:center; gap:8px;">
+                                                        <input type="checkbox" name="checklist[]" value="Lokasi tempat kerja terverifikasi" checked>
+                                                        Lokasi tempat usaha/rumah terverifikasi di wilayah kerja
+                                                    </label>
+                                                    <label style="display:flex; align-items:center; gap:8px;">
+                                                        <input type="checkbox" name="checklist[]" value="Dokumen pendukung sesuai" checked>
+                                                        Dokumen izin / identitas pendukung sesuai
+                                                    </label>
+                                                </div>
+                                            </div>
 
-                                        <div style="display:flex; justify-content:flex-end; gap:10px;">
-                                            <button type="submit" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
-                                                Simpan Keputusan Final
-                                            </button>
-                                                            </div>
-                                                        </form>
-                                <?php endif; ?>
-                            </div>
+                                            <div style="margin-bottom:14px;">
+                                                <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">
+                                                    Catatan Verifikator <small style="color:#ef4444;">(Wajib diisi jika Revisi / Tolak)</small>:
+                                                </label>
+                                                <textarea name="verifier_notes" placeholder="Tuliskan catatan pemeriksaan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; min-height:70px;"><?php echo e($selectedEmployer['verifier_notes']); ?></textarea>
+                                            </div>
+
+                                            <div style="margin-bottom:16px;">
+                                                <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Keputusan Final:</label>
+                                                <select name="decision" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600;">
+                                                    <option value="approve">Setujui (Profil Terverifikasi 3 Bulan)</option>
+                                                    <option value="revision">Perlu Diperbaiki / Revisi (Membuka Kesempatan Perbaikan)</option>
+                                                    <option value="reject">Tolak Profil (Penolakan ke-<?php echo ((int)$selectedEmployer['rejection_count'] + 1); ?>)</option>
+                                                </select>
+                                            </div>
+
+                                            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                                                <button type="submit" class="primary-btn" style="height:38px; padding:0 20px; font-size:13px;">
+                                                    Simpan Keputusan Final
+                                                </button>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <!-- RIGHT COLUMN: AKUN & AUDIT LOG -->
@@ -3306,14 +3391,14 @@ document.addEventListener('click', function(e) {
                                         <?php endif; ?>
                                     </div>
                                     <div style="flex:1; min-width:0;">
-                                        <div style="font-size:14px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                        <div style="font-size:14px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase;"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
                                     </div>
                                     <span style="background:#dcfce7; color:#15803d; font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px;">Aktif</span>
                                 </div>
 
                                 <div style="margin-bottom:14px;">
                                     <div style="font-size:12px; color:#64748b; font-weight:500; margin-bottom:2px;">Email Akun</div>
-                                    <div style="font-size:13px; font-weight:600; color:#00a8e8; word-break:break-all;"><?php echo e($selectedEmployer['email'] ?: 'info@email.com'); ?></div>
+                                    <div style="font-size:13px; font-weight:600; color:#00a8e8; word-break:break-all;"><?php echo e($selectedEmployer['email'] ?: 'ahmad@email.com'); ?></div>
                                 </div>
 
                                 <div>
@@ -3327,33 +3412,148 @@ document.addEventListener('click', function(e) {
                                 <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Aktivitas & Audit Log</div>
 
                                 <div class="timeline-list">
-                                    <div class="timeline-item">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
-                                        <div class="timeline-title">Data pemberi kerja dikirim untuk verifikasi.</div>
-                                    </div>
-                                    <?php if (!empty($auditLogs)): ?>
-                                        <?php foreach ($auditLogs as $log): ?>
-                                            <div class="timeline-item">
-                                                <div class="timeline-dot"></div>
-                                                <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></div>
-                                                <div class="timeline-title"><?php echo e($log['action']); ?> <small style="color:#64748b;">(oleh <?php echo e($log['actor_name']); ?>)</small></div>
-                                                <div class="timeline-desc"><?php echo e($log['details']); ?></div>
-                                            </div>
-                                        <?php endforeach; ?>
+                                    <?php if ($isRevisionStatus && empty($auditLogs)): ?>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot" style="background:#f59e0b;"></div>
+                                            <div class="timeline-time">24 Sep 2026, 09:20</div>
+                                            <div class="timeline-title" style="font-weight:600; color:#0f172a;">Revisi Diminta kepada Pemberi Kerja Individu.</div>
+                                        </div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time">24 Sep 2026, 09:18</div>
+                                            <div class="timeline-title" style="font-weight:600; color:#0f172a;"><?php echo strtoupper(e($selectedEmployer['assigned_to'] ?: 'BUDI SANTOSO')); ?> - Memberikan keputusan Revisi Diminta.</div>
+                                        </div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time">22 Sep 2026, 11:50</div>
+                                            <div class="timeline-title" style="font-weight:600; color:#0f172a;">Ditugaskan ke <?php echo e($selectedEmployer['assigned_to'] ?: 'Budi Santoso'); ?>.</div>
+                                        </div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time">22 Sep 2026, 11:50</div>
+                                            <div class="timeline-title" style="font-weight:600; color:#0f172a;"><?php echo strtoupper(e($selectedEmployer['assigned_to'] ?: 'BUDI SANTOSO')); ?> - Mengambil Pengajuan: Dikirim → Dalam Verifikasi</div>
+                                        </div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                            <div class="timeline-title" style="font-weight:600; color:#0f172a;">Data profil dikirim untuk verifikasi.</div>
+                                        </div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'] . ' -2 minutes')); ?></div>
+                                            <div class="timeline-title" style="font-weight:600; color:#0f172a;">Pemberi kerja mengajukan profil.</div>
+                                        </div>
                                     <?php else: ?>
                                         <div class="timeline-item">
                                             <div class="timeline-dot"></div>
                                             <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
-                                            <div class="timeline-title"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?> - Mengirim Data: Membuat → Dikirim</div>
+                                            <div class="timeline-title">Data pemberi kerja dikirim untuk verifikasi.</div>
                                         </div>
-                                        <div class="timeline-item">
-                                            <div class="timeline-dot"></div>
-                                            <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
-                                            <div class="timeline-title">Pemberi kerja mendaftar di platform.</div>
-                                        </div>
+                                        <?php if (!empty($auditLogs)): ?>
+                                            <?php foreach ($auditLogs as $log): ?>
+                                                <div class="timeline-item">
+                                                    <div class="timeline-dot"></div>
+                                                    <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></div>
+                                                    <div class="timeline-title"><?php echo e($log['action']); ?> <small style="color:#64748b;">(oleh <?php echo e($log['actor_name']); ?>)</small></div>
+                                                    <div class="timeline-desc"><?php echo e($log['details']); ?></div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <div class="timeline-item">
+                                                <div class="timeline-dot"></div>
+                                                <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                                <div class="timeline-title"><?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?> - Mengirim Data: Membuat → Dikirim</div>
+                                            </div>
+                                            <div class="timeline-item">
+                                                <div class="timeline-dot"></div>
+                                                <div class="timeline-time"><?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                                <div class="timeline-title">Pemberi kerja mendaftar di platform.</div>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL LIHAT DOKUMEN PENDUKUNG -->
+                    <div class="modal-backdrop" data-modal="modal-view-doc">
+                        <div class="modal-panel" style="width:min(720px, 92vw); max-height:90vh; display:flex; flex-direction:column;">
+                            <div class="modal-header">
+                                <div>
+                                    <div class="modal-title">Dokumen Pendukung</div>
+                                    <div class="modal-subtitle">dokumen-usaha.pdf &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                </div>
+                                <button type="button" data-close-modal="modal-view-doc" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px; background:#f8fafc; text-align:center;">
+                                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:30px; box-shadow:0 4px 12px rgba(0,0,0,0.05); max-width:550px; margin:0 auto; text-align:left;">
+                                    <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid #e2e8f0; padding-bottom:16px; margin-bottom:16px;">
+                                        <div style="width:44px; height:44px; border-radius:10px; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:22px;">
+                                            <i class="fa-solid fa-file-pdf"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:700; color:#0f172a; font-size:15px;">dokumen-usaha.pdf</div>
+                                            <div style="font-size:12px; color:#64748b;">PDF Document &bull; 1.4 MB &bull; Diunggah pada <?php echo date('d M Y', strtotime($selectedEmployer['created_at'])); ?></div>
+                                        </div>
+                                    </div>
+                                    <div style="font-size:13px; color:#475569; line-height:1.6; margin-bottom:20px;">
+                                        <p><strong>Nama Pemilik / Usaha:</strong> <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></p>
+                                        <p><strong>NIK:</strong> <?php echo e($selectedEmployer['nik'] ?: '3273xxxxxxxxxxxx'); ?></p>
+                                        <p><strong>NPWP:</strong> <?php echo e($selectedEmployer['npwp'] ?: '12.345.678.9-123.000'); ?></p>
+                                        <p><strong>Jenis Usaha:</strong> <?php echo e($selectedEmployer['profession'] ?: ($selectedEmployer['description'] ?: 'Jasa Desain Grafis')); ?></p>
+                                        <p><strong>Alamat:</strong> <?php echo e($selectedEmployer['address'] ?: 'Jl. Ir. H. Juanda No. 25, Bandung'); ?></p>
+                                    </div>
+                                    <div style="background:#f1f5f9; border-radius:8px; padding:12px; font-size:12px; color:#64748b; display:flex; align-items:center; gap:8px;">
+                                        <i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Dokumen telah tersertifikasi digital dan terenkripsi.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
+                                <button type="button" class="ghost-btn" data-close-modal="modal-view-doc">Tutup</button>
+                                <a href="#" onclick="event.preventDefault(); alert('Mengunduh dokumen-usaha.pdf');" class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 16px; font-size:13px;">
+                                    <i class="fa-solid fa-download"></i> Unduh File
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL LIHAT FOTO TEMPAT USAHA -->
+                    <div class="modal-backdrop" data-modal="modal-view-photos">
+                        <div class="modal-panel" style="width:min(800px, 94vw); max-height:90vh; display:flex; flex-direction:column;">
+                            <div class="modal-header">
+                                <div>
+                                    <div class="modal-title">Foto Bukti Tempat Usaha / Lokasi</div>
+                                    <div class="modal-subtitle">2 Foto &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                </div>
+                                <button type="button" data-close-modal="modal-view-photos" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px;">
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+                                        <div style="height:200px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:36px; position:relative;">
+                                            <i class="fa-solid fa-shop" style="color:#94a3b8;"></i>
+                                            <span style="position:absolute; bottom:8px; left:8px; background:rgba(0,0,0,0.6); color:#ffffff; font-size:11px; padding:3px 8px; border-radius:6px;">Foto 1 - Tampak Depan</span>
+                                        </div>
+                                        <div style="padding:12px;">
+                                            <div style="font-weight:700; font-size:13px; color:#0f172a;">Tampak Depan Tempat Usaha</div>
+                                            <div style="font-size:12px; color:#64748b; margin-top:2px;">Jl. Ir. H. Juanda No. 25, Bandung</div>
+                                        </div>
+                                    </div>
+                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+                                        <div style="height:200px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:36px; position:relative;">
+                                            <i class="fa-solid fa-laptop-code" style="color:#94a3b8;"></i>
+                                            <span style="position:absolute; bottom:8px; left:8px; background:rgba(0,0,0,0.6); color:#ffffff; font-size:11px; padding:3px 8px; border-radius:6px;">Foto 2 - Ruang Kerja / Studio</span>
+                                        </div>
+                                        <div style="padding:12px;">
+                                            <div style="font-weight:700; font-size:13px; color:#0f172a;">Aktivitas Kerja / Studio Desain</div>
+                                            <div style="font-size:12px; color:#64748b; margin-top:2px;">Perangkat & fasilitas kerja individu</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+                                <button type="button" class="ghost-btn" data-close-modal="modal-view-photos">Tutup</button>
                             </div>
                         </div>
                     </div>
