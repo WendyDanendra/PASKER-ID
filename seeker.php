@@ -190,6 +190,9 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             <a href="seeker.php?page=jobs" class="rail-btn <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>" title="Lowongan Kerja">
                 <i class="fa-solid fa-briefcase"></i>
             </a>
+            <a href="profile-seeker.php" class="rail-btn <?php echo $page === 'profile' ? 'active' : ''; ?>" title="Profil Saya">
+                <i class="fa-regular fa-user"></i>
+            </a>
         </div>
 
         <div class="rail-spacer"></div>
@@ -270,6 +273,10 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
             <a href="seeker.php?page=jobs" class="drawer-menu-item <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>">
                 <i class="fa-solid fa-briefcase"></i>
                 <span>Lowongan</span>
+            </a>
+            <a href="profile-seeker.php" class="drawer-menu-item <?php echo $page === 'profile' ? 'active' : ''; ?>">
+                <i class="fa-regular fa-user"></i>
+                <span>Profil Saya</span>
             </a>
         </div>
     </div>

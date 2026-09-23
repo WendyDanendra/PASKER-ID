@@ -1210,13 +1210,13 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
 
         <!-- Navigation Icons -->
         <div class="sidebar-rail-nav">
-            <a href="admin.php?view=directory_individual" class="rail-btn <?php echo $view === 'directory_individual' ? 'active' : ''; ?>" title="Direktori Profil">
+            <a href="admin.php?view=directory_individual" class="rail-btn <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>" title="Direktori Profil">
                 <i class="fa-solid fa-building-user"></i>
             </a>
-            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>" title="Verifikasi Profil">
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>" title="Verifikasi Profil">
                 <i class="fa-solid fa-id-card"></i>
             </a>
-            <a href="admin.php?view=verifikasi_job&entity=Individu" class="rail-btn <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>" title="Verifikasi Lowongan">
+            <a href="admin.php?view=verifikasi_job&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>" title="Verifikasi Lowongan">
                 <i class="fa-solid fa-briefcase"></i>
             </a>
         </div>
@@ -1289,15 +1289,15 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         </div>
 
         <div class="drawer-menu-list">
-            <a href="admin.php?view=directory_individual" class="drawer-menu-item <?php echo $view === 'directory_individual' ? 'active' : ''; ?>">
+            <a href="admin.php?view=directory_individual" class="drawer-menu-item <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>">
                 <i class="fa-solid fa-building-user"></i>
                 <span>Direktori Profil</span>
             </a>
-            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="drawer-menu-item <?php echo $view === 'verifikasi_employer' ? 'active' : ''; ?>">
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>">
                 <i class="fa-solid fa-id-card"></i>
                 <span>Verifikasi Profil</span>
             </a>
-            <a href="admin.php?view=verifikasi_job&entity=Individu" class="drawer-menu-item <?php echo $view === 'verifikasi_job' ? 'active' : ''; ?>">
+            <a href="admin.php?view=verifikasi_job&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>">
                 <i class="fa-solid fa-briefcase"></i>
                 <span>Verifikasi Lowongan</span>
             </a>
