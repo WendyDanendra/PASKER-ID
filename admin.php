@@ -9,6 +9,9 @@ $view = $_GET['view'] ?? 'directory_individual';
 $entity = $_GET['entity'] ?? 'Semua';
 $tab = $_GET['tab'] ?? 'all';
 $search = trim($_GET['q'] ?? '');
+$startDate = trim($_GET['start_date'] ?? '');
+$endDate = trim($_GET['end_date'] ?? '');
+$cityFilter = trim($_GET['city_filter'] ?? '');
 $detailId = isset($_GET['detail_id']) ? (int)$_GET['detail_id'] : 0;
 
 // --- POST HANDLERS FOR ADMIN ACTIONS ---
@@ -818,6 +821,20 @@ if ($view === 'directory_individual') {
         $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
         $like = '%' . $search . '%';
         $params = array_merge($params, [$like, $like, $like, $like, $like, $like]);
+    }
+
+    if ($startDate !== '') {
+        $query .= ' AND DATE(u.created_at) >= ?';
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $query .= ' AND DATE(u.created_at) <= ?';
+        $params[] = $endDate;
+    }
+    if ($cityFilter !== '') {
+        $query .= ' AND (ep.city LIKE ? OR ep.domicile_city_id LIKE ? OR ep.province LIKE ?)';
+        $cityLike = '%' . $cityFilter . '%';
+        $params = array_merge($params, [$cityLike, $cityLike, $cityLike]);
     }
 
     if ($tab === 'verified') {
@@ -1748,20 +1765,546 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                             </div>
                         </div>
 
-                        <form method="get" action="admin.php" style="display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px;">
+                        <form method="get" action="admin.php" id="filterMainForm" style="display:flex; justify-space-between; align-items:center; gap:16px; margin-bottom:16px; position:relative;">
                             <input type="hidden" name="view" value="directory_individual">
                             <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
                             <?php if ($sort): ?><input type="hidden" name="sort" value="<?php echo e($sort); ?>"><?php endif; ?>
+                            <input type="hidden" name="start_date" id="inputStartDate" value="<?php echo e($startDate); ?>">
+                            <input type="hidden" name="end_date" id="inputEndDate" value="<?php echo e($endDate); ?>">
+                            <input type="hidden" name="city_filter" id="inputCityFilter" value="<?php echo e($cityFilter); ?>">
 
                             <div class="filter-search-box" style="width:280px; border-radius:999px; height:38px;">
                                 <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8; font-size:13px;"></i>
                                 <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari individual...">
                             </div>
 
-                            <button type="submit" class="filter-btn" style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:7px 16px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
-                                <i class="fa-solid fa-sliders" style="font-size:12px;"></i> Filter
-                            </button>
+                            <div style="position:relative;">
+                                <button type="button" class="filter-btn" id="filterToggleBtn" onclick="toggleFilterPopover(event)" style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:7px 16px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
+                                    <i class="fa-solid fa-sliders" style="font-size:12px;"></i> Filter
+                                    <?php if ($startDate || $endDate || $cityFilter): ?>
+                                        <span style="background:#0284c7; color:#fff; font-size:10px; border-radius:999px; padding:1px 6px; margin-left:2px;">●</span>
+                                    <?php endif; ?>
+                                </button>
+
+                                <!-- FILTER POPOVER CARD -->
+                                <div id="filterPopover" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:320px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05); z-index:1000; overflow:visible;">
+
+                                    <!-- ACCORDION 1: TANGGAL PENDAFTARAN -->
+                                    <div style="border-bottom:1px solid #f1f5f9;">
+                                        <div onclick="toggleAccordion('date')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Tanggal Pendaftaran</span>
+                                            <i class="fa-solid fa-chevron-down" id="dateChevron" style="font-size:11px; color:#64748b; transition:transform 0.2s;"></i>
+                                        </div>
+                                        <div id="dateAccordionBody" style="display:none; padding:0 18px 14px 18px;">
+                                            <div id="dateRangeTrigger" onclick="toggleDatePickerPopover(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <div style="display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                    <i class="fa-regular fa-calendar" style="color:#94a3b8; font-size:14px;"></i>
+                                                    <span id="dateRangeLabel"><?php echo ($startDate && $endDate) ? e($startDate . ' - ' . $endDate) : 'Pilih rentang tanggal'; ?></span>
+                                                </div>
+                                                <i class="fa-regular fa-circle-xmark" id="clearDateBtn" style="color:#cbd5e1; font-size:14px; cursor:pointer; <?php echo ($startDate || $endDate) ? 'display:inline;' : 'display:none;'; ?>" onclick="event.stopPropagation(); clearDateRange();"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ACCORDION 2: WILAYAH / KOTA -->
+                                    <div>
+                                        <div onclick="toggleAccordion('city')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Wilayah / Kota</span>
+                                            <i class="fa-solid fa-chevron-down" id="cityChevron" style="font-size:11px; color:#64748b; transition:transform 0.2s;"></i>
+                                        </div>
+                                        <div id="cityAccordionBody" style="display:none; padding:0 18px 14px 18px; position:relative;">
+                                            <div id="citySelectTrigger" onclick="toggleCityDropdown(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <span id="citySelectLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $cityFilter ? e($cityFilter) : 'Pilih kota...'; ?></span>
+                                                <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                            </div>
+
+                                            <!-- CITY SEARCHABLE DROPDOWN -->
+                                            <div id="cityDropdownListCard" style="display:none; position:absolute; left:18px; right:18px; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.12); z-index:1005; padding:8px;">
+                                                <input type="text" id="citySearchInput" onkeyup="filterCityOptions()" placeholder="Cari kota..." style="width:100%; border:1px solid #00a8e8; border-radius:10px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                                <div id="cityOptionsContainer" style="max-height:220px; overflow-y:auto;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DUAL MONTH DATE RANGE PICKER POPOVER -->
+                                    <div id="datePickerPopover" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:540px; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 15px 35px -5px rgba(0,0,0,0.15); z-index:1010; padding:18px; box-sizing:border-box;">
+                                        <!-- Header row with month/year navigation -->
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                                            <button type="button" onclick="prevMonthCluster()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-left"></i></button>
+
+                                            <div style="display:flex; gap:24px; align-items:center;">
+                                                <div style="display:flex; gap:6px;">
+                                                    <select id="m1Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                    <select id="y1Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                </div>
+                                                <div style="display:flex; gap:6px;">
+                                                    <select id="m2Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                    <select id="y2Select" onchange="renderCalendar()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                </div>
+                                            </div>
+
+                                            <button type="button" onclick="nextMonthCluster()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-right"></i></button>
+                                        </div>
+
+                                        <!-- Dual Month Grids -->
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:16px;">
+                                            <!-- Month 1 Grid -->
+                                            <div>
+                                                <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                    <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                                </div>
+                                                <div id="m1DaysGrid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                            </div>
+                                            <!-- Month 2 Grid -->
+                                            <div>
+                                                <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                    <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                                </div>
+                                                <div id="m2DaysGrid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Footer Buttons -->
+                                        <div style="display:flex; flex-direction:column; gap:8px;">
+                                            <button type="button" onclick="applyDatePickerSelection()" style="width:100%; background:#00a8e8; border:none; border-radius:10px; padding:10px; color:#ffffff; font-size:13.5px; font-weight:700; cursor:pointer;">Simpan</button>
+                                            <button type="button" onclick="resetDatePickerSelection()" style="width:100%; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; color:#0f172a; font-size:13.5px; font-weight:700; cursor:pointer;">Reset</button>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
                         </form>
+
+<script>
+const CITY_MASTER = [
+    "Kab. Timor Tengah Selatan, Nusa Tenggara Timur",
+    "Kab. Aceh Barat, Aceh",
+    "Kab. Aceh Barat Daya, Aceh",
+    "Kab. Aceh Besar, Aceh",
+    "Kab. Aceh Jaya, Aceh",
+    "Kab. Aceh Selatan, Aceh",
+    "Kab. Aceh Singkil, Aceh",
+    "Kab. Aceh Tamiang, Aceh",
+    "Kab. Aceh Tengah, Aceh",
+    "Kab. Aceh Tenggara, Aceh",
+    "Kab. Aceh Timur, Aceh",
+    "Kab. Aceh Utara, Aceh",
+    "Kab. Agam, Sumatera Barat",
+    "Kab. Alor, Nusa Tenggara Timur",
+    "Kab. Asahan, Sumatera Utara",
+    "Kab. Badung, Bali",
+    "Kab. Bangka, Bangka Belitung",
+    "Kab. Banggai, Sulawesi Tengah",
+    "Kab. Bandung, Jawa Barat",
+    "Kab. Bandung Barat, Jawa Barat",
+    "Kab. Bangkalan, Jawa Timur",
+    "Kab. Bangli, Bali",
+    "Kab. Banjar, Kalimantan Selatan",
+    "Kab. Banjarnegara, Jawa Tengah",
+    "Kab. Bantaeng, Sulawesi Selatan",
+    "Kab. Bantul, DI Yogyakarta",
+    "Kab. Banyumas, Jawa Tengah",
+    "Kab. Banyuwangi, Jawa Timur",
+    "Kab. Batang, Jawa Tengah",
+    "Kab. Bekasi, Jawa Barat",
+    "Kab. Belitung, Bangka Belitung",
+    "Kab. Blora, Jawa Tengah",
+    "Kab. Bogor, Jawa Barat",
+    "Kab. Bojonegoro, Jawa Timur",
+    "Kab. Bondowoso, Jawa Timur",
+    "Kab. Boyolali, Jawa Tengah",
+    "Kab. Brebes, Jawa Tengah",
+    "Kab. Ciamis, Jawa Barat",
+    "Kab. Cianjur, Jawa Barat",
+    "Kab. Cilacap, Jawa Tengah",
+    "Kab. Cirebon, Jawa Barat",
+    "Kab. Demak, Jawa Tengah",
+    "Kab. Garut, Jawa Barat",
+    "Kab. Gianyar, Bali",
+    "Kab. Gresik, Jawa Timur",
+    "Kab. Grobogan, Jawa Tengah",
+    "Kab. Gunungkidul, DI Yogyakarta",
+    "Kab. Indramayu, Jawa Barat",
+    "Kab. Jember, Jawa Timur",
+    "Kab. Jepara, Jawa Tengah",
+    "Kab. Jombang, Jawa Timur",
+    "Kab. Karanganyar, Jawa Tengah",
+    "Kab. Karawang, Jawa Barat",
+    "Kab. Kebumen, Jawa Tengah",
+    "Kab. Kediri, Jawa Timur",
+    "Kab. Kendal, Jawa Tengah",
+    "Kab. Klaten, Jawa Tengah",
+    "Kab. Klungkung, Bali",
+    "Kab. Kudus, Jawa Tengah",
+    "Kab. Kulon Progo, DI Yogyakarta",
+    "Kab. Kuningan, Jawa Barat",
+    "Kab. Lamongan, Jawa Timur",
+    "Kab. Lumajang, Jawa Timur",
+    "Kab. Madiun, Jawa Timur",
+    "Kab. Magelang, Jawa Tengah",
+    "Kab. Magetan, Jawa Timur",
+    "Kab. Majalengka, Jawa Barat",
+    "Kab. Malang, Jawa Timur",
+    "Kab. Mojokerto, Jawa Timur",
+    "Kab. Nganjuk, Jawa Timur",
+    "Kab. Ngawi, Jawa Timur",
+    "Kab. Pacitan, Jawa Timur",
+    "Kab. Pamekasan, Jawa Timur",
+    "Kab. Pandeglang, Banten",
+    "Kab. Pasuruan, Jawa Timur",
+    "Kab. Pati, Jawa Tengah",
+    "Kab. Pekalongan, Jawa Tengah",
+    "Kab. Pemalang, Jawa Tengah",
+    "Kab. Ponorogo, Jawa Timur",
+    "Kab. Probolinggo, Jawa Timur",
+    "Kab. Purbalingga, Jawa Tengah",
+    "Kab. Purworejo, Jawa Tengah",
+    "Kab. Rembang, Jawa Tengah",
+    "Kab. Sampang, Jawa Timur",
+    "Kab. Semarang, Jawa Tengah",
+    "Kab. Serang, Banten",
+    "Kab. Sidoarjo, Jawa Timur",
+    "Kab. Sleman, DI Yogyakarta",
+    "Kab. Sragen, Jawa Tengah",
+    "Kab. Subang, Jawa Barat",
+    "Kab. Sukabumi, Jawa Barat",
+    "Kab. Sukoharjo, Jawa Tengah",
+    "Kab. Sumedang, Jawa Barat",
+    "Kab. Sumenep, Jawa Timur",
+    "Kab. Tabalong, Kalimantan Selatan",
+    "Kab. Tabanan, Bali",
+    "Kab. Tangerang, Banten",
+    "Kab. Tanggamus, Lampung",
+    "Kab. Tasikmalaya, Jawa Barat",
+    "Kab. Temanggung, Jawa Tengah",
+    "Kab. Tuban, Jawa Timur",
+    "Kab. Tulungagung, Jawa Timur",
+    "Kab. Wonogiri, Jawa Tengah",
+    "Kab. Wonosobo, Jawa Tengah",
+    "Kota Bandung, Jawa Barat",
+    "Kota Banjar, Jawa Barat",
+    "Kota Batu, Jawa Timur",
+    "Kota Bekasi, Jawa Barat",
+    "Kota Blitar, Jawa Timur",
+    "Kota Bogor, Jawa Barat",
+    "Kota Cirebon, Jawa Barat",
+    "Kota Denpasar, Bali",
+    "Kota Depok, Jawa Barat",
+    "Kota Jakarta Barat, DKI Jakarta",
+    "Kota Jakarta Pusat, DKI Jakarta",
+    "Kota Jakarta Selatan, DKI Jakarta",
+    "Kota Jakarta Timur, DKI Jakarta",
+    "Kota Jakarta Utara, DKI Jakarta",
+    "Kota Kediri, Jawa Timur",
+    "Kota Madiun, Jawa Timur",
+    "Kota Magelang, Jawa Tengah",
+    "Kota Malang, Jawa Timur",
+    "Kota Mojokerto, Jawa Timur",
+    "Kota Padang, Sumatera Barat",
+    "Kota Pasuruan, Jawa Timur",
+    "Kota Pekalongan, Jawa Tengah",
+    "Kota Probolinggo, Jawa Timur",
+    "Kota Salatiga, Jawa Tengah",
+    "Kota Semarang, Jawa Tengah",
+    "Kota Surakarta, Jawa Tengah",
+    "Kota Surabaya, Jawa Timur",
+    "Kota Tangerang, Banten",
+    "Kota Tangerang Selatan, Banten",
+    "Kota Tasikmalaya, Jawa Barat",
+    "Kota Yogyakarta, DI Yogyakarta"
+];
+
+let selectedStartDate = "<?php echo e($startDate); ?>";
+let selectedEndDate = "<?php echo e($endDate); ?>";
+let tempStartDate = selectedStartDate;
+let tempEndDate = selectedEndDate;
+let currentYear1 = 2026, currentMonth1 = 8;
+let currentYear2 = 2026, currentMonth2 = 9;
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+
+function toggleFilterPopover(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('filterPopover');
+    if (popover.style.display === 'none' || !popover.style.display) {
+        popover.style.display = 'block';
+    } else {
+        popover.style.display = 'none';
+        document.getElementById('datePickerPopover').style.display = 'none';
+        document.getElementById('cityDropdownListCard').style.display = 'none';
+    }
+}
+
+function toggleAccordion(type) {
+    if (type === 'date') {
+        const body = document.getElementById('dateAccordionBody');
+        const chevron = document.getElementById('dateChevron');
+        if (body.style.display === 'none' || !body.style.display) {
+            body.style.display = 'block';
+            chevron.style.transform = 'rotate(180deg)';
+        } else {
+            body.style.display = 'none';
+            chevron.style.transform = 'rotate(0deg)';
+            document.getElementById('datePickerPopover').style.display = 'none';
+        }
+    } else if (type === 'city') {
+        const body = document.getElementById('cityAccordionBody');
+        const chevron = document.getElementById('cityChevron');
+        if (body.style.display === 'none' || !body.style.display) {
+            body.style.display = 'block';
+            chevron.style.transform = 'rotate(180deg)';
+            populateCityOptions();
+        } else {
+            body.style.display = 'none';
+            chevron.style.transform = 'rotate(0deg)';
+            document.getElementById('cityDropdownListCard').style.display = 'none';
+        }
+    }
+}
+
+function toggleDatePickerPopover(e) {
+    if (e) e.stopPropagation();
+    const picker = document.getElementById('datePickerPopover');
+    if (picker.style.display === 'none' || !picker.style.display) {
+        picker.style.display = 'block';
+        initMonthYearSelects();
+        renderCalendar();
+    } else {
+        picker.style.display = 'none';
+    }
+}
+
+function toggleCityDropdown(e) {
+    if (e) e.stopPropagation();
+    const card = document.getElementById('cityDropdownListCard');
+    if (card.style.display === 'none' || !card.style.display) {
+        card.style.display = 'block';
+        populateCityOptions();
+        setTimeout(() => {
+            const input = document.getElementById('citySearchInput');
+            if (input) input.focus();
+        }, 50);
+    } else {
+        card.style.display = 'none';
+    }
+}
+
+function populateCityOptions(filter = '') {
+    const container = document.getElementById('cityOptionsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const filterLower = filter.toLowerCase();
+    const filtered = CITY_MASTER.filter(c => c.toLowerCase().includes(filterLower));
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="padding:10px; font-size:12.5px; color:#94a3b8; text-align:center;">Kota tidak ditemukan</div>';
+        return;
+    }
+
+    filtered.forEach(city => {
+        const item = document.createElement('div');
+        item.style.cssText = 'padding:8px 12px; font-size:13px; color:#334155; cursor:pointer; border-radius:8px; font-weight:500;';
+        item.textContent = city;
+        item.onmouseover = () => item.style.background = '#f1f5f9';
+        item.onmouseout = () => item.style.background = 'transparent';
+        item.onclick = (e) => {
+            e.stopPropagation();
+            selectCity(city);
+        };
+        container.appendChild(item);
+    });
+}
+
+function filterCityOptions() {
+    const val = document.getElementById('citySearchInput').value;
+    populateCityOptions(val);
+}
+
+function selectCity(cityName) {
+    document.getElementById('inputCityFilter').value = cityName;
+    document.getElementById('citySelectLabel').textContent = cityName;
+    document.getElementById('cityDropdownListCard').style.display = 'none';
+    document.getElementById('filterMainForm').submit();
+}
+
+function initMonthYearSelects() {
+    const m1Sel = document.getElementById('m1Select');
+    const m2Sel = document.getElementById('m2Select');
+    const y1Sel = document.getElementById('y1Select');
+    const y2Sel = document.getElementById('y2Select');
+
+    if (!m1Sel || !m2Sel || !y1Sel || !y2Sel) return;
+
+    m1Sel.innerHTML = MONTH_NAMES.map((m, i) => `<option value="${i}" ${i === currentMonth1 ? 'selected' : ''}>${m}</option>`).join('');
+    m2Sel.innerHTML = MONTH_NAMES.map((m, i) => `<option value="${i}" ${i === currentMonth2 ? 'selected' : ''}>${m}</option>`).join('');
+
+    const years = [2024, 2025, 2026, 2027];
+    y1Sel.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear1 ? 'selected' : ''}>${y}</option>`).join('');
+    y2Sel.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear2 ? 'selected' : ''}>${y}</option>`).join('');
+}
+
+function prevMonthCluster() {
+    currentMonth1--;
+    if (currentMonth1 < 0) { currentMonth1 = 11; currentYear1--; }
+    currentMonth2 = (currentMonth1 + 1) % 12;
+    currentYear2 = currentMonth1 === 11 ? currentYear1 + 1 : currentYear1;
+    initMonthYearSelects();
+    renderCalendar();
+}
+
+function nextMonthCluster() {
+    currentMonth1++;
+    if (currentMonth1 > 11) { currentMonth1 = 0; currentYear1++; }
+    currentMonth2 = (currentMonth1 + 1) % 12;
+    currentYear2 = currentMonth1 === 11 ? currentYear1 + 1 : currentYear1;
+    initMonthYearSelects();
+    renderCalendar();
+}
+
+function renderMonthGrid(gridId, year, month) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    const offset = (firstDay + 6) % 7;
+
+    for (let i = offset - 1; i >= 0; i--) {
+        const dayNum = prevMonthDays - i;
+        const cell = document.createElement('div');
+        cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+        cell.textContent = dayNum;
+        grid.appendChild(cell);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const cell = document.createElement('div');
+
+        let isSelected = false;
+        let isInRange = false;
+
+        if (tempStartDate && dateStr === tempStartDate) isSelected = true;
+        if (tempEndDate && dateStr === tempEndDate) isSelected = true;
+        if (tempStartDate && tempEndDate && dateStr > tempStartDate && dateStr < tempEndDate) isInRange = true;
+
+        let bg = 'transparent';
+        let color = '#334155';
+        let borderRadius = '50%';
+        let fontWeight = '500';
+
+        if (isSelected) {
+            bg = '#00a8e8';
+            color = '#ffffff';
+            fontWeight = '700';
+        } else if (isInRange) {
+            bg = '#e0f2fe';
+            color = '#0284c7';
+            borderRadius = '0';
+        }
+
+        cell.style.cssText = `padding:6px 0; background:${bg}; color:${color}; border-radius:${borderRadius}; font-weight:${fontWeight}; cursor:pointer; font-size:12.5px; transition:all 0.15s;`;
+        cell.textContent = d;
+        cell.onclick = () => selectDate(dateStr);
+        grid.appendChild(cell);
+    }
+
+    const totalCells = offset + daysInMonth;
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let n = 1; n <= remaining; n++) {
+        const cell = document.createElement('div');
+        cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+        cell.textContent = n;
+        grid.appendChild(cell);
+    }
+}
+
+function renderCalendar() {
+    const m1Sel = document.getElementById('m1Select');
+    const y1Sel = document.getElementById('y1Select');
+    const m2Sel = document.getElementById('m2Select');
+    const y2Sel = document.getElementById('y2Select');
+
+    if (m1Sel && y1Sel && m2Sel && y2Sel) {
+        currentMonth1 = parseInt(m1Sel.value);
+        currentYear1 = parseInt(y1Sel.value);
+        currentMonth2 = parseInt(m2Sel.value);
+        currentYear2 = parseInt(y2Sel.value);
+    }
+
+    renderMonthGrid('m1DaysGrid', currentYear1, currentMonth1);
+    renderMonthGrid('m2DaysGrid', currentYear2, currentMonth2);
+}
+
+function selectDate(dateStr) {
+    if (!tempStartDate || (tempStartDate && tempEndDate)) {
+        tempStartDate = dateStr;
+        tempEndDate = '';
+    } else if (tempStartDate && !tempEndDate) {
+        if (dateStr >= tempStartDate) {
+            tempEndDate = dateStr;
+        } else {
+            tempEndDate = tempStartDate;
+            tempStartDate = dateStr;
+        }
+    }
+    renderCalendar();
+}
+
+function applyDatePickerSelection() {
+    selectedStartDate = tempStartDate;
+    selectedEndDate = tempEndDate;
+    document.getElementById('inputStartDate').value = selectedStartDate;
+    document.getElementById('inputEndDate').value = selectedEndDate;
+
+    if (selectedStartDate && selectedEndDate) {
+        document.getElementById('dateRangeLabel').textContent = `${selectedStartDate} - ${selectedEndDate}`;
+        document.getElementById('clearDateBtn').style.display = 'inline';
+    } else if (selectedStartDate) {
+        document.getElementById('dateRangeLabel').textContent = selectedStartDate;
+        document.getElementById('clearDateBtn').style.display = 'inline';
+    } else {
+        document.getElementById('dateRangeLabel').textContent = 'Pilih rentang tanggal';
+        document.getElementById('clearDateBtn').style.display = 'none';
+    }
+
+    document.getElementById('datePickerPopover').style.display = 'none';
+    document.getElementById('filterMainForm').submit();
+}
+
+function resetDatePickerSelection() {
+    tempStartDate = '';
+    tempEndDate = '';
+    selectedStartDate = '';
+    selectedEndDate = '';
+    document.getElementById('inputStartDate').value = '';
+    document.getElementById('inputEndDate').value = '';
+    document.getElementById('dateRangeLabel').textContent = 'Pilih rentang tanggal';
+    document.getElementById('clearDateBtn').style.display = 'none';
+    renderCalendar();
+    document.getElementById('filterMainForm').submit();
+}
+
+function clearDateRange() {
+    resetDatePickerSelection();
+}
+
+document.addEventListener('click', function(e) {
+    const popover = document.getElementById('filterPopover');
+    const filterBtn = document.getElementById('filterToggleBtn');
+    if (popover && filterBtn && !popover.contains(e.target) && !filterBtn.contains(e.target)) {
+        popover.style.display = 'none';
+        const picker = document.getElementById('datePickerPopover');
+        if (picker) picker.style.display = 'none';
+        const cityCard = document.getElementById('cityDropdownListCard');
+        if (cityCard) cityCard.style.display = 'none';
+    }
+});
+</script>
                     <div class="console-table-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow-x:auto;">
                         <table class="console-table" style="width:100%; border-collapse:collapse; min-width:1000px;">
                             <thead>
