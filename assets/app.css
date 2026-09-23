@@ -7,6 +7,7 @@
 html,
 body {
     margin: 0;
+    padding: 0;
     height: 100%;
 }
 
@@ -2770,6 +2771,7 @@ html, body {
     max-height: 100%;
     min-height: 0;
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .sidebar-rail-logo {
@@ -2841,13 +2843,14 @@ html, body {
 
 .rail-spacer {
     flex: 1;
+    min-height: 20px;
 }
 
 .rail-bottom {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
     flex: 0 0 auto;
     margin-top: auto;
@@ -2911,7 +2914,7 @@ html, body {
 
 /* Theme Popover */
 .rail-theme-popover {
-    bottom: 58px;
+    bottom: 64px;
     width: 180px;
     padding: 12px 0 6px;
 }
@@ -2978,7 +2981,7 @@ html, body {
 
 /* Account Popover */
 .rail-account-popover {
-    bottom: 12px;
+    bottom: 16px;
     width: 250px;
     padding: 14px 0 6px;
 }
