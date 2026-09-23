@@ -201,7 +201,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. PERNYATAAN PERSETUJUAN</div>
                         <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; line-height:1.5;">
                             <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="margin-top:3px;">
-                            <span>Saya menyatakan bahwa seluruh data yang diisikan adalah benar, sah, dan valid sesuai hukum yang berlaku. <span class="req">*</span></span>
+                            <span>Saya menyatakan bahwa seluruh informasi yang saya berikan adalah benar dan dapat dipertanggungjawabkan. Saya berkomitmen untuk tidak melakukan penipuan, mempublikasikan lowongan palsu, atau tindakan lain yang merugikan pelamar maupun melanggar hukum. Apabila terbukti melakukan pelanggaran, saya bersedia menerima sanksi sesuai ketentuan hukum yang berlaku. <span class="req">*</span></span>
                         </label>
                     </div>
                 </div>
