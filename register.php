@@ -34,6 +34,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/app.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
     <div class="auth-shell auth-shell-single">
@@ -112,7 +113,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     </div>
                     <hr class="modal-section-hr">
                     <div class="modal-section" style="margin-bottom:24px;">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">3. WILAYAH ADMINISTRATIF DOMISILI</div>
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">3. ALAMAT DOMISILI PEMBERI KERJA</div>
 
                         <div style="margin-bottom:14px;">
                             <label style="font-size:13px; font-weight:600; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
@@ -128,7 +129,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         <input type="hidden" name="village" id="hiddenVillage" value="">
                         <input type="hidden" name="domicile_city_id" id="hiddenDomicileCityId" value="">
 
-                        <div class="field-grid" style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
+                        <div class="field-grid" style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px;">
                             <div class="field" style="position: relative;">
                                 <label>Lokasi Domisili Pemberi Kerja <span class="req">*</span></label>
                                 <div id="hierarchicalLocationInput" class="hierarchical-loc-field" tabindex="0">
@@ -153,36 +154,51 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                                 <input type="text" name="postal_code" id="inputPostalCode" placeholder="Masukkan kode pos">
                             </div>
                         </div>
-                    </div>
-                    <hr class="modal-section-hr">
-                    <div class="modal-section" style="margin-bottom:24px;">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. ALAMAT, DOKUMEN &amp; PETA</div>
+
                         <div class="field" style="margin-bottom:14px;">
-                            <label>Alamat Lengkap Pemberi Kerja <span class="req">*</span></label>
-                            <input type="text" placeholder="Masukkan nama jalan, nomor bangunan, RT/RW, dan alamat lengkap...">
+                            <label>Alamat Lengkap <span class="req">*</span></label>
+                            <input type="text" name="address" id="inputAddress" placeholder="Masukkan nama jalan, nomor bangunan, RT/RW, dan alamat lengkap...">
                         </div>
                         <div class="field" style="margin-bottom:16px;">
                             <label>Detail Alamat / Patokan (Opsional)</label>
-                            <input type="text" placeholder="Contoh: Ruko lantai 2, sebelah Kantor Kelurahan">
+                            <input type="text" name="address_notes" id="inputAddressNotes" placeholder="Contoh: Ruko lantai 2, sebelah Kantor Kelurahan">
                         </div>
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
                             <div class="field">
                                 <label>Dokumen Pendukung <span class="req">*</span></label>
-                                <input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;">
+                                <input type="file" name="supporting_doc" accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;">
                                 <div style="font-size:12px; color:#64748b; margin-top:4px;">Minimal 1 dokumen wajib</div>
                             </div>
                             <div class="field">
                                 <label>Foto Bukti Tempat Usaha / Lokasi</label>
-                                <input type="file" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">
+                                <input type="file" name="workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">
                                 <div style="font-size:12px; color:#64748b; margin-top:4px;">Opsional</div>
+                            </div>
+                        </div>
+
+                        <!-- PETA LOKASI (VIEW-ONLY, MUNCUL SETELAH ALAMAT LENGKAP TERISI) -->
+                        <div class="field" id="mapFieldContainer" style="margin-top:16px;">
+                            <label style="margin-bottom:8px; font-weight:700; color:#0f172a; display:block;">Peta Lokasi</label>
+                            <div id="pkiMapContainer" style="height:220px; width:100%; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; position:relative; background:#f8fafc;">
+                                <div id="mapPlaceholder" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#64748b; text-align:center; padding:20px;">
+                                    <div style="font-size:28px; margin-bottom:6px;">🗺</div>
+                                    <div style="font-size:14px; font-weight:700; color:#334155; margin-bottom:4px;">Pratinjau peta belum tersedia</div>
+                                    <div style="font-size:12px; max-width:360px; line-height:1.4;">Tuliskan Alamat Lengkap untuk menampilkan peta lokasi.</div>
+                                </div>
+                                <div id="leafletMap" style="height:100%; width:100%; display:none;"></div>
+                            </div>
+                            <div id="mapOpenLinkWrapper" style="display:none; margin-top:8px; text-align:right;">
+                                <a id="btnOpenMap" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:6px; color:#0284c7; font-size:12.5px; text-decoration:none; font-weight:600;">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Maps
+                                </a>
                             </div>
                         </div>
                     </div>
                     <hr class="modal-section-hr">
                     <div class="modal-section">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. PERNYATAAN PERSETUJUAN</div>
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. PERNYATAAN PERSETUJUAN</div>
                         <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; line-height:1.5;">
-                            <input type="checkbox" style="margin-top:3px;">
+                            <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="margin-top:3px;">
                             <span>Saya menyatakan bahwa seluruh data yang diisikan adalah benar, sah, dan valid sesuai hukum yang berlaku. <span class="req">*</span></span>
                         </label>
                     </div>
@@ -210,6 +226,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             <a class="primary-btn" href="dashboard.php#dashboard" style="width:100%; text-align:center; justify-content:center;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         (function () {
             var modal = document.getElementById('modalPendaftaranBerhasil');
@@ -236,6 +253,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             var hiddenVill = document.getElementById('hiddenVillage');
             var hiddenCityId = document.getElementById('hiddenDomicileCityId');
             var inputPostal = document.getElementById('inputPostalCode');
+            var inputAddress = document.getElementById('inputAddress');
+
+            var mapBox = document.getElementById('leafletMap');
+            var mapPlaceholder = document.getElementById('mapPlaceholder');
+            var mapLinkWrap = document.getElementById('mapOpenLinkWrapper');
+            var btnOpenMap = document.getElementById('btnOpenMap');
+            var leafletMapInstance = null;
+            var pkiMapMarker = null;
 
             var siapkerjaData = {
                 province: 'Jawa Barat',
@@ -329,6 +354,53 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 }
             };
 
+            function updateMapState() {
+                if (!inputAddress) return;
+                var addrVal = inputAddress.value.trim();
+                if (addrVal.length > 0) {
+                    if (mapPlaceholder) mapPlaceholder.style.display = 'none';
+                    if (mapBox) mapBox.style.display = 'block';
+                    if (mapLinkWrap) mapLinkWrap.style.display = 'block';
+
+                    var cityVal = (hiddenCity && hiddenCity.value) ? hiddenCity.value : 'Bekasi';
+                    var queryStr = encodeURIComponent(addrVal + ', ' + cityVal);
+                    if (btnOpenMap) {
+                        btnOpenMap.href = 'https://www.google.com/maps/search/?api=1&query=' + queryStr;
+                    }
+
+                    if (window.L && mapBox) {
+                        if (!leafletMapInstance) {
+                            leafletMapInstance = L.map('leafletMap', {
+                                dragging: false,
+                                touchZoom: false,
+                                scrollWheelZoom: false,
+                                doubleClickZoom: false,
+                                boxZoom: false,
+                                keyboard: false,
+                                zoomControl: true
+                            }).setView([-6.2349, 106.9896], 15);
+
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '&copy; OpenStreetMap'
+                            }).addTo(leafletMapInstance);
+
+                            pkiMapMarker = L.marker([-6.2349, 106.9896], { interactive: false }).addTo(leafletMapInstance);
+                        } else {
+                            leafletMapInstance.invalidateSize();
+                        }
+                    }
+                } else {
+                    if (mapPlaceholder) mapPlaceholder.style.display = 'flex';
+                    if (mapBox) mapBox.style.display = 'none';
+                    if (mapLinkWrap) mapLinkWrap.style.display = 'none';
+                }
+            }
+
+            if (inputAddress) {
+                inputAddress.addEventListener('input', updateMapState);
+                inputAddress.addEventListener('change', updateMapState);
+            }
+
             function updateDisplayLocation() {
                 if (cbSameLocation && cbSameLocation.checked) {
                     var fullLocStr = siapkerjaData.village + ', ' + siapkerjaData.district + ', ' + siapkerjaData.city + ', ' + siapkerjaData.province;
@@ -376,6 +448,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         if (inputPostal) inputPostal.value = '';
                     }
                 }
+                updateMapState();
             }
 
             if (cbSameLocation) {
@@ -482,6 +555,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     locDisplay.classList.remove('placeholder');
                 }
                 closeLocDropdown();
+                updateMapState();
             };
 
             function renderLocationView() {
