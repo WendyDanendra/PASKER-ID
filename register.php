@@ -47,7 +47,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     </div>
                 </div>
 
-                <form method="post">
+                <form method="post" id="registrationForm">
                     <input type="hidden" name="register_action" value="simulate_employer_session">
                 <div class="modal-body" style="padding:24px;">
                     <div class="modal-section" style="margin-bottom:24px;">
@@ -56,35 +56,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                             <div class="field">
                                 <label>Nama Pemberi Kerja <span class="req">*</span></label>
-                                <input type="text" name="owner_name" placeholder="Masukkan nama lengkap">
+                                <input type="text" name="owner_name" required placeholder="Masukkan nama lengkap">
                             </div>
                             <div class="field">
                                 <label>NIK <span class="req">*</span></label>
-                                <input type="text" placeholder="Masukkan 16 digit NIK" maxlength="16">
+                                <input type="text" name="nik" required placeholder="Masukkan 16 digit NIK" maxlength="16">
                             </div>
                             <div class="field">
                                 <label>Nomor Telepon Aktif <span class="req">*</span></label>
-                                <input type="text" placeholder="08xxxxxxxxxx">
+                                <input type="text" name="phone" required placeholder="08xxxxxxxxxx">
                             </div>
                             <div class="field">
                                 <label>Nomor WhatsApp <span class="req">*</span></label>
-                                <input type="text" placeholder="08xxxxxxxxxx">
+                                <input type="text" name="whatsapp" required placeholder="08xxxxxxxxxx">
                             </div>
                             <div class="field">
                                 <label>Jenis Profesi / Usaha Individu <span class="req">*</span></label>
-                                <select style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
+                                <select name="profession" required style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
                                     <option value="">Pilih profesi / usaha</option>
-                                    <option>Kuliner &amp; Katering</option>
-                                    <option>Perdagangan &amp; Eceran</option>
-                                    <option>Jasa Perorangan / Rumah Tangga</option>
-                                    <option>Pertanian &amp; Peternakan</option>
-                                    <option>Teknologi &amp; Kreatif</option>
-                                    <option>Lainnya</option>
+                                    <option value="Kuliner &amp; Katering">Kuliner &amp; Katering</option>
+                                    <option value="Perdagangan &amp; Eceran">Perdagangan &amp; Eceran</option>
+                                    <option value="Jasa Perorangan / Rumah Tangga">Jasa Perorangan / Rumah Tangga</option>
+                                    <option value="Pertanian &amp; Peternakan">Pertanian &amp; Peternakan</option>
+                                    <option value="Teknologi &amp; Kreatif">Teknologi &amp; Kreatif</option>
+                                    <option value="Lainnya">Lainnya</option>
                                 </select>
                             </div>
                             <div class="field">
                                 <label>NPWP <span class="req">*</span></label>
-                                <input type="text" placeholder="Masukkan NPWP">
+                                <input type="text" name="npwp" required placeholder="Masukkan NPWP">
                             </div>
                         </div>
                     </div>
@@ -159,7 +159,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
 
                         <div class="field" style="margin-bottom:14px;">
                             <label>Alamat Lengkap <span class="req">*</span></label>
-                            <input type="text" name="address" id="inputAddress" placeholder="Masukkan nama jalan, nomor bangunan, RT/RW, dan alamat lengkap...">
+                            <input type="text" name="address" id="inputAddress" required placeholder="Masukkan nama jalan, nomor bangunan, RT/RW, dan alamat lengkap...">
                         </div>
                         <div class="field" style="margin-bottom:16px;">
                             <label>Detail Alamat / Patokan (Opsional)</label>
@@ -168,13 +168,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
                             <div class="field">
                                 <label>Dokumen Pendukung <span class="req">*</span></label>
-                                <input type="file" name="supporting_doc" accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;">
+                                <input type="file" name="supporting_doc" required accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;">
                                 <div style="font-size:12px; color:#64748b; margin-top:4px;">Minimal 1 dokumen wajib</div>
                             </div>
                             <div class="field">
-                                <label>Foto Bukti Tempat Usaha / Lokasi</label>
-                                <input type="file" name="workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">
-                                <div style="font-size:12px; color:#64748b; margin-top:4px;">Opsional</div>
+                                <label>Foto Bukti Tempat Usaha / Lokasi <span class="req">*</span></label>
+                                <input type="file" name="workplace_photo" required accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">
+                                <div style="font-size:12px; color:#64748b; margin-top:4px;">Wajib diunggah</div>
                             </div>
                         </div>
 
@@ -660,6 +660,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     }
                 }
                 optionsList.innerHTML = html;
+            }
+
+            var regForm = document.getElementById('registrationForm');
+            if (regForm) {
+                regForm.addEventListener('submit', function (e) {
+                    if (cbSameLocation && !cbSameLocation.checked && (!hiddenVill || !hiddenVill.value)) {
+                        e.preventDefault();
+                        alert('Silakan pilih Lokasi Domisili Pemberi Kerja terlebih dahulu!');
+                        return false;
+                    }
+
+                    if (selectPostal && !selectPostal.value) {
+                        e.preventDefault();
+                        alert('Silakan pilih Kode Pos terlebih dahulu!');
+                        return false;
+                    }
+                });
             }
 
             updateDisplayLocation();
