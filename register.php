@@ -113,14 +113,49 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     <hr class="modal-section-hr">
                     <div class="modal-section" style="margin-bottom:24px;">
                         <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">3. WILAYAH ADMINISTRATIF DOMISILI</div>
-                        <div class="field-grid" style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
-                            <div class="field">
-                                <label>Lokasi Domisili Pemberi Kerja <span class="req">*</span></label>
-                                <input type="text" placeholder="Pilih lokasi domisili">
+
+                        <div style="margin-bottom:14px;">
+                            <label style="font-size:13px; font-weight:600; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" checked>
+                                <span>Sama seperti lokasi Domisili?</span>
+                            </label>
+                            <div id="siapkerjaNotice" style="color:#0284c7; font-size:13px; margin-top:10px; background:#f0f9ff; padding:10px 14px; border-radius:8px; border:1px solid #bae6fd; font-weight:500;">
+                                <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Lokasi domisili akan menggunakan data dari akun SIAPKerja.
                             </div>
-                            <div class="field">
-                                <label>Kode Pos</label>
-                                <input type="text" placeholder="Masukkan kode pos">
+                        </div>
+
+                        <div id="regionSelectorsContainer" style="display:none;">
+                            <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+                                <div class="field">
+                                    <label>Provinsi <span class="req">*</span></label>
+                                    <select name="province" id="selectProvince" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
+                                        <option value="">Pilih Provinsi</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Kabupaten / Kota <span class="req">*</span></label>
+                                    <select name="city" id="selectCity" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" disabled>
+                                        <option value="">Pilih Kabupaten / Kota</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                                <div class="field">
+                                    <label>Kecamatan <span class="req">*</span></label>
+                                    <select name="district" id="selectDistrict" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" disabled>
+                                        <option value="">Pilih Kecamatan</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Kelurahan / Desa <span class="req">*</span></label>
+                                    <select name="village" id="selectVillage" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" disabled>
+                                        <option value="">Pilih Kelurahan / Desa</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Kode Pos</label>
+                                    <input type="text" name="postal_code" id="inputPostalCode" placeholder="Masukkan kode pos">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -183,15 +218,216 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
     <script>
         (function () {
             var modal = document.getElementById('modalPendaftaranBerhasil');
-            if (!modal) {
-                return;
+            if (modal) {
+                modal.addEventListener('click', function (event) {
+                    if (event.target === modal) {
+                        modal.classList.remove('open');
+                    }
+                });
             }
 
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    modal.classList.remove('open');
+            var cbSameLocation = document.getElementById('cbSameLocation');
+            var siapkerjaNotice = document.getElementById('siapkerjaNotice');
+            var regionSelectorsContainer = document.getElementById('regionSelectorsContainer');
+
+            var selectProv = document.getElementById('selectProvince');
+            var selectCity = document.getElementById('selectCity');
+            var selectDist = document.getElementById('selectDistrict');
+            var selectVill = document.getElementById('selectVillage');
+            var inputPostal = document.getElementById('inputPostalCode');
+
+            var locData = window.ID_LOCATIONS || {
+                'DKI Jakarta': {
+                    'Jakarta Selatan': {
+                        'Kebayoran Baru': { 'Melawai': '12160', 'Gandaria Utara': '12140', 'Senayan': '12190' },
+                        'Cilandak': { 'Cilandak Barat': '12430', 'Lebak Bulus': '12440' },
+                        'Setiabudi': { 'Karet': '12920', 'Kuningan Timur': '12950' },
+                        'Pasar Minggu': { 'Pejaten Barat': '12510', 'Pasar Minggu': '12520' }
+                    },
+                    'Jakarta Pusat': {
+                        'Gambir': { 'Gambir': '10110', 'Petojo Selatan': '10160' },
+                        'Tanah Abang': { 'Bendungan Hilir': '10210', 'Karet Tengsin': '10220' },
+                        'Menteng': { 'Menteng': '10310', 'Cikini': '10330' }
+                    },
+                    'Jakarta Barat': {
+                        'Grogol Petamburan': { 'Tanjung Duren Utara': '11470', 'Grogol': '11450' },
+                        'Kebon Jeruk': { 'Kebon Jeruk': '11530', 'Kedoya Utara': '11520' }
+                    },
+                    'Jakarta Timur': {
+                        'Jatinegara': { 'Kampung Melayu': '13320', 'Bidara Cina': '13330' },
+                        'Duren Sawit': { 'Pondok Bambu': '13430', 'Duren Sawit': '13440' }
+                    }
+                },
+                'Jawa Barat': {
+                    'Kota Bekasi': {
+                        'Bekasi Selatan': { 'Pekayon Jaya': '17148', 'Jaka Setia': '17147', 'Kayuringin Jaya': '17144', 'Marga Jaya': '17141' },
+                        'Bekasi Timur': { 'Aren Jaya': '17111', 'Bekasi Jaya': '17112' },
+                        'Bekasi Barat': { 'Bintara': '17134', 'Kranji': '17135' },
+                        'Bekasi Utara': { 'Harapan Baru': '17123', 'Harapan Jaya': '17124' }
+                    },
+                    'Kabupaten Bekasi': {
+                        'Cikarang Pusat': { 'Jayamukti': '17530', 'Sukamahi': '17530' },
+                        'Cikarang Selatan': { 'Cibatu': '17530', 'Pasirsari': '17530' },
+                        'Tambun Selatan': { 'Jatimulya': '17510', 'Tambun': '17510' }
+                    },
+                    'Kota Bandung': {
+                        'Coblong': { 'Dago': '40135', 'Sadang Serang': '40133' },
+                        'Sukajadi': { 'Pasteur': '40161', 'Sukajadi': '40162' }
+                    },
+                    'Kota Depok': {
+                        'Beji': { 'Beji': '16421', 'Kukusan': '16425' },
+                        'Pancoran Mas': { 'Depok': '16431', 'Mampang': '16433' }
+                    },
+                    'Kota Bogor': {
+                        'Bogor Tengah': { 'Babakan': '16128', 'Paledang': '16122' }
+                    }
+                },
+                'Banten': {
+                    'Kota Tangerang': {
+                        'Tangerang': { 'Cikokol': '15117', 'Babakan': '15118' },
+                        'Cipondoh': { 'Cipondoh': '15148', 'Petir': '15147' }
+                    },
+                    'Kota Tangerang Selatan': {
+                        'Serpong': { 'Rawa Buntu': '15318', 'Serpong': '15311' },
+                        'Pondok Aren': { 'Pondok Aren': '15224', 'Bintaro': '15225' }
+                    },
+                    'Kota Serang': {
+                        'Serang': { 'Cipare': '42117', 'Serang': '42116' }
+                    }
+                },
+                'Jawa Tengah': {
+                    'Kota Semarang': {
+                        'Semarang Tengah': { 'Pekunden': '50134', 'Sekyu': '50132' }
+                    },
+                    'Kota Surakarta': {
+                        'Banjarsari': { 'Kadipiro': '57136', 'Nusukan': '57135' }
+                    }
+                },
+                'Jawa Timur': {
+                    'Kota Surabaya': {
+                        'Tegalsari': { 'Dr. Soetomo': '60264', 'Kedungdoro': '60261' },
+                        'Gubeng': { 'Gubeng': '60281', 'Airlangga': '60286' }
+                    },
+                    'Kota Malang': {
+                        'Lowokwaru': { 'Jatimulyo': '65141', 'Ketawanggede': '65145' }
+                    }
                 }
-            });
+            };
+
+            function populateProvinces() {
+                if (!selectProv) return;
+                selectProv.innerHTML = '<option value="">Pilih Provinsi</option>';
+                Object.keys(locData).sort().forEach(function (prov) {
+                    var opt = document.createElement('option');
+                    opt.value = prov;
+                    opt.textContent = prov;
+                    selectProv.appendChild(opt);
+                });
+            }
+
+            function toggleLocationView() {
+                if (!cbSameLocation) return;
+                if (cbSameLocation.checked) {
+                    regionSelectorsContainer.style.display = 'none';
+                    siapkerjaNotice.style.display = 'block';
+                } else {
+                    regionSelectorsContainer.style.display = 'block';
+                    siapkerjaNotice.style.display = 'none';
+                }
+            }
+
+            if (cbSameLocation) {
+                cbSameLocation.addEventListener('change', toggleLocationView);
+                toggleLocationView();
+            }
+
+            populateProvinces();
+
+            if (selectProv) {
+                selectProv.addEventListener('change', function () {
+                    var provVal = this.value;
+                    selectCity.innerHTML = '<option value="">Pilih Kabupaten / Kota</option>';
+                    selectDist.innerHTML = '<option value="">Pilih Kecamatan</option>';
+                    selectVill.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
+                    selectCity.disabled = !provVal;
+                    selectDist.disabled = true;
+                    selectVill.disabled = true;
+
+                    if (provVal && locData[provVal]) {
+                        Object.keys(locData[provVal]).sort().forEach(function (city) {
+                            var opt = document.createElement('option');
+                            opt.value = city;
+                            opt.textContent = city;
+                            selectCity.appendChild(opt);
+                        });
+                    }
+                });
+            }
+
+            if (selectCity) {
+                selectCity.addEventListener('change', function () {
+                    var provVal = selectProv.value;
+                    var cityVal = this.value;
+                    selectDist.innerHTML = '<option value="">Pilih Kecamatan</option>';
+                    selectVill.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
+                    selectDist.disabled = !cityVal;
+                    selectVill.disabled = true;
+
+                    if (provVal && cityVal && locData[provVal] && locData[provVal][cityVal]) {
+                        Object.keys(locData[provVal][cityVal]).sort().forEach(function (dist) {
+                            var opt = document.createElement('option');
+                            opt.value = dist;
+                            opt.textContent = dist;
+                            selectDist.appendChild(opt);
+                        });
+                    }
+                });
+            }
+
+            if (selectDist) {
+                selectDist.addEventListener('change', function () {
+                    var provVal = selectProv.value;
+                    var cityVal = selectCity.value;
+                    var distVal = this.value;
+                    selectVill.innerHTML = '<option value="">Pilih Kelurahan / Desa</option>';
+                    selectVill.disabled = !distVal;
+
+                    if (provVal && cityVal && distVal && locData[provVal] && locData[provVal][cityVal] && locData[provVal][cityVal][distVal]) {
+                        var vills = locData[provVal][cityVal][distVal];
+                        if (Array.isArray(vills)) {
+                            vills.forEach(function (v) {
+                                var opt = document.createElement('option');
+                                opt.value = v;
+                                opt.textContent = v;
+                                selectVill.appendChild(opt);
+                            });
+                        } else if (typeof vills === 'object') {
+                            Object.keys(vills).sort().forEach(function (v) {
+                                var opt = document.createElement('option');
+                                opt.value = v;
+                                opt.textContent = v;
+                                selectVill.appendChild(opt);
+                            });
+                        }
+                    }
+                });
+            }
+
+            if (selectVill) {
+                selectVill.addEventListener('change', function () {
+                    var provVal = selectProv.value;
+                    var cityVal = selectCity.value;
+                    var distVal = selectDist.value;
+                    var villVal = this.value;
+
+                    if (inputPostal && provVal && cityVal && distVal && villVal && locData[provVal] && locData[provVal][cityVal] && locData[provVal][cityVal][distVal]) {
+                        var vills = locData[provVal][cityVal][distVal];
+                        if (typeof vills === 'object' && vills[villVal]) {
+                            inputPostal.value = vills[villVal];
+                        }
+                    }
+                });
+            }
         })();
     </script>
 </body>
