@@ -975,37 +975,49 @@ if ($view === 'verifikasi_employer') {
 // --- FETCH DATA FOR VERIFIKASI LOWONGAN ---
 if ($view === 'verifikasi_job') {
     $query = <<<SQL
-        SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, u.name as user_name, u.email as user_email
+        SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, ep.province as emp_province, u.name as user_name, u.email as user_email
         FROM job_posts j
         JOIN users u ON u.id = j.user_id
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
     SQL;
     $params = [];
 
-    if ($entity === 'Individu') {
-        $query .= ' WHERE j.entity_type = "Individu"';
-    } elseif ($entity === 'Perusahaan') {
+    if ($entity === 'Perusahaan') {
         $query .= ' WHERE j.entity_type = "Perusahaan"';
     } else {
-        $query .= ' WHERE 1=1';
+        $query .= ' WHERE (j.entity_type = "Individu" OR j.entity_type = "Individual" OR j.entity_type IS NULL)';
     }
 
     if ($search !== '') {
-        $query .= ' AND (j.title LIKE ? OR j.location LIKE ? OR j.kbji_code LIKE ? OR u.name LIKE ?)';
+        $query .= ' AND (j.title LIKE ? OR j.location LIKE ? OR j.kbji_code LIKE ? OR u.name LIKE ? OR ep.owner_name LIKE ?)';
         $like = '%' . $search . '%';
-        $params = array_merge($params, [$like, $like, $like, $like]);
+        $params = array_merge($params, [$like, $like, $like, $like, $like]);
     }
 
-    if ($tab === 'additional_doc') {
-        $query .= ' AND j.status = "ADDITIONAL_DOCUMENT_PENDING"';
-    } elseif ($tab === 'process') {
+    if ($startDate !== '') {
+        $query .= ' AND DATE(j.created_at) >= ?';
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $query .= ' AND DATE(j.created_at) <= ?';
+        $params[] = $endDate;
+    }
+    if ($cityFilter !== '') {
+        $query .= ' AND (j.location LIKE ? OR ep.city LIKE ? OR ep.domicile_city_id LIKE ? OR ep.province LIKE ?)';
+        $cityLike = '%' . $cityFilter . '%';
+        $params = array_merge($params, [$cityLike, $cityLike, $cityLike, $cityLike]);
+    }
+
+    if ($tab === 'process') {
         $query .= ' AND j.status = "Menunggu Verifikasi"';
-    } elseif ($tab === 'approved') {
-        $query .= ' AND j.status = "Tayang"';
     } elseif ($tab === 'revision') {
         $query .= ' AND j.status = "Perlu Direvisi"';
+    } elseif ($tab === 'approved') {
+        $query .= ' AND j.status = "Tayang"';
     } elseif ($tab === 'rejected') {
         $query .= ' AND (j.status = "Ditolak" OR j.status = "CANCELED")';
+    } elseif ($tab === 'additional_doc') {
+        $query .= ' AND j.status = "ADDITIONAL_DOCUMENT_PENDING"';
     }
 
     // Admin Dinas Scope Filter (exact domicile_city_id match)
@@ -1017,10 +1029,27 @@ if ($view === 'verifikasi_job') {
         }
     }
 
-    $query .= ' ORDER BY j.created_at DESC';
+    $sort = $_GET['sort'] ?? 'date_desc';
+    if ($sort === 'name_asc') {
+        $query .= ' ORDER BY j.title ASC';
+    } elseif ($sort === 'name_desc') {
+        $query .= ' ORDER BY j.title DESC';
+    } elseif ($sort === 'date_asc') {
+        $query .= ' ORDER BY j.created_at ASC';
+    } else {
+        $query .= ' ORDER BY j.created_at DESC';
+    }
+
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $verificationJobs = $stmt->fetchAll() ?: [];
+
+    $perPage = 20;
+    $totalData = count($verificationJobs);
+    $totalPages = max(1, (int)ceil($totalData / $perPage));
+    $page = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
+    $showingJobs = array_slice($verificationJobs, ($page - 1) * $perPage, $perPage);
+    $showingCount = count($showingJobs);
 
     // If detail_id is requested for job
     $selectedJob = null;
@@ -2310,6 +2339,7 @@ function clearDateRange() {
 }
 
 document.addEventListener('click', function(e) {
+    // Individual Filter Popover
     const popover = document.getElementById('filterPopover');
     const filterBtn = document.getElementById('filterToggleBtn');
     const picker = document.getElementById('datePickerPopover');
@@ -2323,6 +2353,22 @@ document.addEventListener('click', function(e) {
         if (popover) popover.style.display = 'none';
         if (picker) picker.style.display = 'none';
         if (cityCard) cityCard.style.display = 'none';
+    }
+
+    // Job Filter Popover
+    const popoverJob = document.getElementById('filterPopoverJob');
+    const filterBtnJob = document.getElementById('filterToggleBtnJob');
+    const pickerJob = document.getElementById('datePickerPopoverJob');
+    const cityCardJob = document.getElementById('cityDropdownListCardJob');
+
+    const isInsidePopoverJob = popoverJob && popoverJob.contains(e.target);
+    const isInsideFilterBtnJob = filterBtnJob && filterBtnJob.contains(e.target);
+    const isInsidePickerJob = pickerJob && pickerJob.contains(e.target);
+
+    if (!isInsidePopoverJob && !isInsideFilterBtnJob && !isInsidePickerJob) {
+        if (popoverJob) popoverJob.style.display = 'none';
+        if (pickerJob) pickerJob.style.display = 'none';
+        if (cityCardJob) cityCardJob.style.display = 'none';
     }
 });
 </script>
@@ -3398,103 +3444,536 @@ document.addEventListener('click', function(e) {
                     </script>
 
                 <?php else: ?>
-                    <!-- VERIFIKASI LOWONGAN TABLE VIEW (ALIGNED WITH SCREENSHOT) -->
+                    <!-- VERIFIKASI LOWONGAN TABLE VIEW (MATCHING EXISTING KARIRHUB CONSOLE) -->
+                    <?php
+                    $filterParamsJob = ($startDate ? '&start_date=' . urlencode($startDate) : '') . ($endDate ? '&end_date=' . urlencode($endDate) : '') . ($cityFilter ? '&city_filter=' . urlencode($cityFilter) : '');
+                    ?>
                     <div style="margin-bottom:20px;">
-                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0;">Verifikasi Lowongan</h1>
-                        <div class="tab-filter-bar">
-                            <div class="status-tab-list">
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=all" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=process" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=additional_doc" class="status-tab-item <?php echo $tab === 'additional_doc' ? 'active' : ''; ?>">Dokumen Tambahan</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=revision" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=approved" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Disetujui</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=rejected" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
-                            </div>
+                        <h1 style="font-size:24px; font-weight:800; margin:0 0 16px 0; color:#0f172a;">Verifikasi Lowongan</h1>
 
-                            <div class="filter-controls">
-                                <div class="entity-selector-pill">
-                                    <a href="admin.php?view=verifikasi_job&entity=Semua&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Semua' ? 'active' : ''; ?>">Semua</a>
-                                    <a href="admin.php?view=verifikasi_job&entity=Perusahaan&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Perusahaan' ? 'active' : ''; ?>">Perusahaan</a>
-                                    <a href="admin.php?view=verifikasi_job&entity=Individu&tab=<?php echo e($tab); ?>" class="entity-selector-btn <?php echo $entity === 'Individu' ? 'active' : ''; ?>">Individu</a>
-                                </div>
-                                <form method="get" action="admin.php" style="display:flex; gap:8px;">
-                                    <input type="hidden" name="view" value="verifikasi_job">
-                                    <input type="hidden" name="entity" value="<?php echo e($entity); ?>">
-                                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
-                                    <div class="filter-search-box">
-                                        <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i>
-                                        <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan...">
-                                    </div>
-                                    <button type="submit" class="filter-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
-                                </form>
+                        <!-- STATUS TAB LIST -->
+                        <div style="border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
+                            <div class="status-tab-list" style="gap:24px;">
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=revision&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=approved&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Disetujui</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
                             </div>
                         </div>
+
+                        <!-- FILTER MAIN FORM JOB -->
+                        <form method="get" action="admin.php" id="filterMainFormJob" style="display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; width:100%; position:relative;">
+                            <input type="hidden" name="view" value="verifikasi_job">
+                            <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                            <input type="hidden" name="entity" id="inputEntityJob" value="<?php echo e($entity); ?>">
+                            <?php if ($sort): ?><input type="hidden" name="sort" value="<?php echo e($sort); ?>"><?php endif; ?>
+                            <input type="hidden" name="start_date" id="inputStartDateJob" value="<?php echo e($startDate); ?>">
+                            <input type="hidden" name="end_date" id="inputEndDateJob" value="<?php echo e($endDate); ?>">
+                            <input type="hidden" name="city_filter" id="inputCityFilterJob" value="<?php echo e($cityFilter); ?>">
+
+                            <!-- SEARCH BOX -->
+                            <div class="filter-search-box" style="width:280px; border-radius:999px; height:38px;">
+                                <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8; font-size:13px;"></i>
+                                <input type="text" name="q" value="<?php echo e($search); ?>" placeholder="Cari lowongan...">
+                            </div>
+
+                            <!-- SEGMENTED PILL FILTER: Semua | Perusahaan | Individual -->
+                            <div style="display:inline-flex; background:#f1f5f9; border-radius:999px; padding:3px; gap:2px;">
+                                <a href="admin.php?view=verifikasi_job&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua</a>
+                                <a href="admin.php?view=verifikasi_job&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan</a>
+                                <a href="admin.php?view=verifikasi_job&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual</a>
+                            </div>
+
+                            <!-- FILTER BUTTON & POPOVER -->
+                            <div style="position:relative;">
+                                <button type="button" class="filter-btn" id="filterToggleBtnJob" onclick="toggleFilterPopoverJob(event)" style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:7px 16px; font-size:13px; font-weight:600; color:#334155; cursor:pointer;">
+                                    <i class="fa-solid fa-sliders" style="font-size:12px;"></i> Filter
+                                    <?php if ($startDate || $endDate || $cityFilter): ?>
+                                        <span style="background:#0284c7; color:#fff; font-size:10px; border-radius:999px; padding:1px 6px; margin-left:2px;">●</span>
+                                    <?php endif; ?>
+                                </button>
+
+                                <!-- FILTER POPOVER CARD JOB -->
+                                <div id="filterPopoverJob" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:320px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05); z-index:1000; overflow:visible;">
+
+                                    <!-- ACCORDION 1: TANGGAL PENGAJUAN -->
+                                    <div style="border-bottom:1px solid #f1f5f9;">
+                                        <div onclick="toggleAccordionJob('date')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Tanggal Pengajuan</span>
+                                            <i class="fa-solid fa-chevron-down" id="dateChevronJob" style="font-size:11px; color:#64748b; transition:transform 0.2s; <?php echo ($startDate || $endDate) ? 'transform:rotate(180deg);' : ''; ?>"></i>
+                                        </div>
+                                        <div id="dateAccordionBodyJob" style="display:<?php echo ($startDate || $endDate) ? 'block' : 'none'; ?>; padding:0 18px 14px 18px;">
+                                            <div id="dateRangeTriggerJob" onclick="toggleDatePickerPopoverJob(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <div style="display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                    <i class="fa-regular fa-calendar" style="color:#94a3b8; font-size:14px;"></i>
+                                                    <span id="dateRangeLabelJob"><?php echo ($startDate && $endDate) ? e($startDate . ' - ' . $endDate) : ($startDate ? e($startDate) : 'Pilih rentang tanggal'); ?></span>
+                                                </div>
+                                                <i class="fa-regular fa-circle-xmark" id="clearDateBtnJob" style="color:#cbd5e1; font-size:14px; cursor:pointer; <?php echo ($startDate || $endDate) ? 'display:inline;' : 'display:none;'; ?>" onclick="event.stopPropagation(); clearDateRangeJob();"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ACCORDION 2: WILAYAH / KOTA -->
+                                    <div>
+                                        <div onclick="toggleAccordionJob('city')" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; user-select:none;">
+                                            <span style="font-size:13.5px; font-weight:700; color:#0f172a;">Wilayah / Kota</span>
+                                            <i class="fa-solid fa-chevron-down" id="cityChevronJob" style="font-size:11px; color:#64748b; transition:transform 0.2s; <?php echo $cityFilter ? 'transform:rotate(180deg);' : ''; ?>"></i>
+                                        </div>
+                                        <div id="cityAccordionBodyJob" style="display:<?php echo $cityFilter ? 'block' : 'none'; ?>; padding:0 18px 14px 18px; position:relative;">
+                                            <div id="citySelectTriggerJob" onclick="toggleCityDropdownJob(event)" style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; background:#ffffff; cursor:pointer; font-size:13px; color:#475569;">
+                                                <span id="citySelectLabelJob" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?php echo $cityFilter ? e($cityFilter) : 'Pilih kota...'; ?></span>
+                                                <i class="fa-solid fa-chevron-down" style="color:#94a3b8; font-size:11px;"></i>
+                                            </div>
+
+                                            <!-- CITY SEARCHABLE DROPDOWN JOB -->
+                                            <div id="cityDropdownListCardJob" style="display:none; position:absolute; left:18px; right:18px; top:calc(100% + 4px); background:#ffffff; border:1px solid #00a8e8; border-radius:14px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.12); z-index:1005; padding:8px;">
+                                                <input type="text" id="citySearchInputJob" onkeyup="filterCityOptionsJob()" placeholder="Cari kota..." style="width:100%; border:1px solid #00a8e8; border-radius:10px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:6px; box-sizing:border-box;">
+                                                <div id="cityOptionsContainerJob" style="max-height:220px; overflow-y:auto;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- DUAL MONTH DATE RANGE PICKER POPOVER JOB -->
+                                <div id="datePickerPopoverJob" onclick="event.stopPropagation();" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:540px; max-width:90vw; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 15px 35px -5px rgba(0,0,0,0.15); z-index:1010; padding:18px; box-sizing:border-box;">
+                                    <!-- Header row with month/year navigation -->
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                                        <button type="button" onclick="event.stopPropagation(); prevMonthClusterJob()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-left"></i></button>
+
+                                        <div style="display:flex; gap:24px; align-items:center;">
+                                            <div style="display:flex; gap:6px;">
+                                                <select id="m1SelectJob" onchange="renderCalendarJob()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                <select id="y1SelectJob" onchange="renderCalendarJob()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                            </div>
+                                            <div style="display:flex; gap:6px;">
+                                                <select id="m2SelectJob" onchange="renderCalendarJob()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                                <select id="y2SelectJob" onchange="renderCalendarJob()" onclick="event.stopPropagation()" style="border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; outline:none;"></select>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" onclick="event.stopPropagation(); nextMonthClusterJob()" style="background:none; border:none; cursor:pointer; padding:6px 10px; color:#475569; font-size:14px;"><i class="fa-solid fa-chevron-right"></i></button>
+                                    </div>
+
+                                    <!-- Dual Month Grids -->
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:16px;">
+                                        <div>
+                                            <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                            </div>
+                                            <div id="m1DaysGridJob" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                        </div>
+                                        <div>
+                                            <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">
+                                                <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                                            </div>
+                                            <div id="m2DaysGridJob" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-size:12.5px;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Footer Buttons -->
+                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                                        <button type="button" onclick="applyDatePickerSelectionJob()" style="width:100%; background:#00a8e8; border:none; border-radius:10px; padding:10px; color:#ffffff; font-size:13.5px; font-weight:700; cursor:pointer;">Simpan</button>
+                                        <button type="button" onclick="resetDatePickerSelectionJob()" style="width:100%; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; color:#0f172a; font-size:13.5px; font-weight:700; cursor:pointer;">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
 
-                    <div class="console-table-card">
-                        <table class="console-table">
+                    <script>
+                    let selectedStartDateJob = "<?php echo e($startDate); ?>";
+                    let selectedEndDateJob = "<?php echo e($endDate); ?>";
+                    let tempStartDateJob = selectedStartDateJob;
+                    let tempEndDateJob = selectedEndDateJob;
+                    let currentYear1Job = 2026, currentMonth1Job = 8;
+                    let currentYear2Job = 2026, currentMonth2Job = 9;
+
+                    if (selectedStartDateJob) {
+                        const parts = selectedStartDateJob.split('-');
+                        if (parts.length === 3) {
+                            currentYear1Job = parseInt(parts[0]);
+                            currentMonth1Job = parseInt(parts[1]) - 1;
+                            currentMonth2Job = (currentMonth1Job + 1) % 12;
+                            currentYear2Job = currentMonth1Job === 11 ? currentYear1Job + 1 : currentYear1Job;
+                        }
+                    }
+
+                    function toggleFilterPopoverJob(e) {
+                        if (e) e.stopPropagation();
+                        const popover = document.getElementById('filterPopoverJob');
+                        if (!popover) return;
+                        if (popover.style.display === 'none' || !popover.style.display) {
+                            popover.style.display = 'block';
+                        } else {
+                            popover.style.display = 'none';
+                            if (document.getElementById('datePickerPopoverJob')) document.getElementById('datePickerPopoverJob').style.display = 'none';
+                            if (document.getElementById('cityDropdownListCardJob')) document.getElementById('cityDropdownListCardJob').style.display = 'none';
+                        }
+                    }
+
+                    function toggleAccordionJob(type) {
+                        if (type === 'date') {
+                            const body = document.getElementById('dateAccordionBodyJob');
+                            const chevron = document.getElementById('dateChevronJob');
+                            if (body.style.display === 'none' || !body.style.display) {
+                                body.style.display = 'block';
+                                chevron.style.transform = 'rotate(180deg)';
+                            } else {
+                                body.style.display = 'none';
+                                chevron.style.transform = 'rotate(0deg)';
+                                if (document.getElementById('datePickerPopoverJob')) document.getElementById('datePickerPopoverJob').style.display = 'none';
+                            }
+                        } else if (type === 'city') {
+                            const body = document.getElementById('cityAccordionBodyJob');
+                            const chevron = document.getElementById('cityChevronJob');
+                            if (body.style.display === 'none' || !body.style.display) {
+                                body.style.display = 'block';
+                                chevron.style.transform = 'rotate(180deg)';
+                                populateCityOptionsJob();
+                            } else {
+                                body.style.display = 'none';
+                                chevron.style.transform = 'rotate(0deg)';
+                                if (document.getElementById('cityDropdownListCardJob')) document.getElementById('cityDropdownListCardJob').style.display = 'none';
+                            }
+                        }
+                    }
+
+                    function toggleDatePickerPopoverJob(e) {
+                        if (e) e.stopPropagation();
+                        const picker = document.getElementById('datePickerPopoverJob');
+                        if (!picker) return;
+                        if (picker.style.display === 'none' || !picker.style.display) {
+                            picker.style.display = 'block';
+                            initMonthYearSelectsJob();
+                            renderCalendarJob();
+                        } else {
+                            picker.style.display = 'none';
+                        }
+                    }
+
+                    function toggleCityDropdownJob(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('cityDropdownListCardJob');
+                        if (!card) return;
+                        if (card.style.display === 'none' || !card.style.display) {
+                            card.style.display = 'block';
+                            populateCityOptionsJob();
+                            setTimeout(() => {
+                                const input = document.getElementById('citySearchInputJob');
+                                if (input) input.focus();
+                            }, 50);
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+
+                    function populateCityOptionsJob(filter = '') {
+                        const container = document.getElementById('cityOptionsContainerJob');
+                        if (!container) return;
+                        container.innerHTML = '';
+
+                        const filterLower = filter.toLowerCase();
+                        const masterList = (typeof CITY_MASTER !== 'undefined') ? CITY_MASTER : [];
+                        const filtered = masterList.filter(c => c.toLowerCase().includes(filterLower));
+
+                        if (filtered.length === 0) {
+                            container.innerHTML = '<div style="padding:10px; font-size:12.5px; color:#94a3b8; text-align:center;">Kota tidak ditemukan</div>';
+                            return;
+                        }
+
+                        filtered.forEach(city => {
+                            const item = document.createElement('div');
+                            item.style.cssText = 'padding:8px 12px; font-size:13px; color:#334155; cursor:pointer; border-radius:8px; font-weight:500;';
+                            item.textContent = city;
+                            item.onmouseover = () => item.style.background = '#f1f5f9';
+                            item.onmouseout = () => item.style.background = 'transparent';
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectCityJob(city);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterCityOptionsJob() {
+                        const val = document.getElementById('citySearchInputJob').value;
+                        populateCityOptionsJob(val);
+                    }
+
+                    function selectCityJob(cityName) {
+                        document.getElementById('inputCityFilterJob').value = cityName;
+                        document.getElementById('citySelectLabelJob').textContent = cityName;
+                        document.getElementById('cityDropdownListCardJob').style.display = 'none';
+                        document.getElementById('filterMainFormJob').submit();
+                    }
+
+                    function initMonthYearSelectsJob() {
+                        const m1Sel = document.getElementById('m1SelectJob');
+                        const m2Sel = document.getElementById('m2SelectJob');
+                        const y1Sel = document.getElementById('y1SelectJob');
+                        const y2Sel = document.getElementById('y2SelectJob');
+
+                        if (!m1Sel || !m2Sel || !y1Sel || !y2Sel) return;
+
+                        m1Sel.innerHTML = MONTH_NAMES.map((m, i) => `<option value="${i}" ${i === currentMonth1Job ? 'selected' : ''}>${m}</option>`).join('');
+                        m2Sel.innerHTML = MONTH_NAMES.map((m, i) => `<option value="${i}" ${i === currentMonth2Job ? 'selected' : ''}>${m}</option>`).join('');
+
+                        const years = [2024, 2025, 2026, 2027];
+                        y1Sel.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear1Job ? 'selected' : ''}>${y}</option>`).join('');
+                        y2Sel.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear2Job ? 'selected' : ''}>${y}</option>`).join('');
+                    }
+
+                    function prevMonthClusterJob() {
+                        currentMonth1Job--;
+                        if (currentMonth1Job < 0) { currentMonth1Job = 11; currentYear1Job--; }
+                        currentMonth2Job = (currentMonth1Job + 1) % 12;
+                        currentYear2Job = currentMonth1Job === 11 ? currentYear1Job + 1 : currentYear1Job;
+                        initMonthYearSelectsJob();
+                        renderCalendarJob();
+                    }
+
+                    function nextMonthClusterJob() {
+                        currentMonth1Job++;
+                        if (currentMonth1Job > 11) { currentMonth1Job = 0; currentYear1Job++; }
+                        currentMonth2Job = (currentMonth1Job + 1) % 12;
+                        currentYear2Job = currentMonth1Job === 11 ? currentYear1Job + 1 : currentYear1Job;
+                        initMonthYearSelectsJob();
+                        renderCalendarJob();
+                    }
+
+                    function renderMonthGridJob(gridId, year, month) {
+                        const grid = document.getElementById(gridId);
+                        if (!grid) return;
+                        grid.innerHTML = '';
+
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const prevMonthDays = new Date(year, month, 0).getDate();
+
+                        const offset = (firstDay + 6) % 7;
+
+                        for (let i = offset - 1; i >= 0; i--) {
+                            const dayNum = prevMonthDays - i;
+                            const cell = document.createElement('div');
+                            cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+                            cell.textContent = dayNum;
+                            grid.appendChild(cell);
+                        }
+
+                        for (let d = 1; d <= daysInMonth; d++) {
+                            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                            const cell = document.createElement('div');
+
+                            let isSelected = false;
+                            let isInRange = false;
+
+                            if (tempStartDateJob && dateStr === tempStartDateJob) isSelected = true;
+                            if (tempEndDateJob && dateStr === tempEndDateJob) isSelected = true;
+                            if (tempStartDateJob && tempEndDateJob && dateStr > tempStartDateJob && dateStr < tempEndDateJob) isInRange = true;
+
+                            let bg = 'transparent';
+                            let color = '#334155';
+                            let borderRadius = '50%';
+                            let fontWeight = '500';
+
+                            if (isSelected) {
+                                bg = '#00a8e8';
+                                color = '#ffffff';
+                                fontWeight = '700';
+                            } else if (isInRange) {
+                                bg = '#e0f2fe';
+                                color = '#0284c7';
+                                borderRadius = '0';
+                            }
+
+                            cell.style.cssText = `padding:6px 0; background:${bg}; color:${color}; border-radius:${borderRadius}; font-weight:${fontWeight}; cursor:pointer; font-size:12.5px; transition:all 0.15s;`;
+                            cell.textContent = d;
+                            cell.onclick = (e) => {
+                                if (e) e.stopPropagation();
+                                selectDateJob(dateStr);
+                            };
+                            grid.appendChild(cell);
+                        }
+
+                        const totalCells = offset + daysInMonth;
+                        const remaining = (7 - (totalCells % 7)) % 7;
+                        for (let n = 1; n <= remaining; n++) {
+                            const cell = document.createElement('div');
+                            cell.style.cssText = 'padding:6px 0; color:#cbd5e1; font-weight:500;';
+                            cell.textContent = n;
+                            grid.appendChild(cell);
+                        }
+                    }
+
+                    function renderCalendarJob() {
+                        const m1Sel = document.getElementById('m1SelectJob');
+                        const y1Sel = document.getElementById('y1SelectJob');
+                        const m2Sel = document.getElementById('m2SelectJob');
+                        const y2Sel = document.getElementById('y2SelectJob');
+
+                        if (m1Sel && y1Sel && m2Sel && y2Sel) {
+                            currentMonth1Job = parseInt(m1Sel.value);
+                            currentYear1Job = parseInt(y1Sel.value);
+                            currentMonth2Job = parseInt(m2Sel.value);
+                            currentYear2Job = parseInt(y2Sel.value);
+                        }
+
+                        renderMonthGridJob('m1DaysGridJob', currentYear1Job, currentMonth1Job);
+                        renderMonthGridJob('m2DaysGridJob', currentYear2Job, currentMonth2Job);
+                    }
+
+                    function selectDateJob(dateStr) {
+                        if (!tempStartDateJob || (tempStartDateJob && tempEndDateJob)) {
+                            tempStartDateJob = dateStr;
+                            tempEndDateJob = '';
+                        } else if (tempStartDateJob && !tempEndDateJob) {
+                            if (dateStr >= tempStartDateJob) {
+                                tempEndDateJob = dateStr;
+                            } else {
+                                tempEndDateJob = tempStartDateJob;
+                                tempStartDateJob = dateStr;
+                            }
+                        }
+                        renderCalendarJob();
+                    }
+
+                    function applyDatePickerSelectionJob() {
+                        selectedStartDateJob = tempStartDateJob;
+                        selectedEndDateJob = tempEndDateJob;
+                        document.getElementById('inputStartDateJob').value = selectedStartDateJob;
+                        document.getElementById('inputEndDateJob').value = selectedEndDateJob;
+
+                        if (selectedStartDateJob && selectedEndDateJob) {
+                            document.getElementById('dateRangeLabelJob').textContent = `${selectedStartDateJob} - ${selectedEndDateJob}`;
+                            document.getElementById('clearDateBtnJob').style.display = 'inline';
+                        } else if (selectedStartDateJob) {
+                            document.getElementById('dateRangeLabelJob').textContent = selectedStartDateJob;
+                            document.getElementById('clearDateBtnJob').style.display = 'inline';
+                        } else {
+                            document.getElementById('dateRangeLabelJob').textContent = 'Pilih rentang tanggal';
+                            document.getElementById('clearDateBtnJob').style.display = 'none';
+                        }
+
+                        document.getElementById('datePickerPopoverJob').style.display = 'none';
+                        document.getElementById('filterMainFormJob').submit();
+                    }
+
+                    function resetDatePickerSelectionJob() {
+                        tempStartDateJob = '';
+                        tempEndDateJob = '';
+                        selectedStartDateJob = '';
+                        selectedEndDateJob = '';
+                        document.getElementById('inputStartDateJob').value = '';
+                        document.getElementById('inputEndDateJob').value = '';
+                        document.getElementById('dateRangeLabelJob').textContent = 'Pilih rentang tanggal';
+                        document.getElementById('clearDateBtnJob').style.display = 'none';
+                        renderCalendarJob();
+                        document.getElementById('filterMainFormJob').submit();
+                    }
+
+                    function clearDateRangeJob() {
+                        resetDatePickerSelectionJob();
+                    }
+                    </script>
+
+                    <div class="console-table-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow-x:auto;">
+                        <table class="console-table" style="width:100%; border-collapse:collapse; min-width:1000px;">
                             <thead>
-                                <tr>
-                                    <th>Judul Lowongan</th>
-                                    <th>Jenis Entitas</th>
-                                    <th>Status</th>
-                                    <th>Blacklist</th>
-                                    <th>Tanggal Pengajuan</th>
-                                    <th>Aksi</th>
+                                <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left;">
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:200px;">
+                                        <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'name_asc' ? 'name_desc' : 'name_asc'; ?><?php echo $filterParamsJob; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                            Lowongan <i class="fa-solid fa-arrows-up-down" style="font-size:11px; color:#94a3b8;"></i>
+                                        </a>
+                                    </th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:180px;">Pemberi Kerja</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:150px;">Lokasi</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:140px;">Status</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:160px;">
+                                        <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'date_desc' ? 'date_asc' : 'date_desc'; ?><?php echo $filterParamsJob; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                            Tanggal Pengajuan <i class="fa-solid fa-arrow-down" style="font-size:11px; color:#64748b;"></i>
+                                        </a>
+                                    </th>
+                                    <th style="padding:14px 16px; width:130px; text-align:right;"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (!$verificationJobs): ?>
-                                    <tr><td colspan="6" style="text-align:center; padding:40px; color:#64748b;">Tidak ada antrean verifikasi lowongan.</td></tr>
+                                <?php if (!$showingJobs): ?>
+                                    <tr>
+                                        <td colspan="6" style="text-align:center; padding:60px 20px; color:#64748b; font-size:13.5px;">
+                                            <?php echo $entity === 'Perusahaan' ? 'Tidak ada data lowongan perusahaan.' : 'Tidak ada data lowongan yang tersedia.'; ?>
+                                        </td>
+                                    </tr>
                                 <?php else: ?>
-                                    <?php foreach ($verificationJobs as $vJob): ?>
-                                        <tr>
-                                            <td>
-                                                <div style="display:flex; align-items:center; gap:12px;">
-                                                    <div class="item-avatar-box">
-                                                        <?php echo strtoupper(substr($vJob['title'], 0, 2)); ?>
-                                                    </div>
-                                                    <div>
-                                                        <strong><?php echo e($vJob['title']); ?></strong><br>
-                                                        <small style="color:#94a3b8; font-size:11px;"><?php echo e($vJob['owner_name'] ?: $vJob['user_name']); ?></small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><span class="pill-badge verified"><?php echo e($vJob['entity_type']); ?></span></td>
-                                            <td>
-                                                <?php if ($vJob['status'] === 'Tayang'): ?>
-                                                    <span class="pill-badge verified">● Disetujui</span>
-                                                <?php elseif ($vJob['status'] === 'Menunggu Verifikasi'): ?>
-                                                    <?php if (!empty($vJob['assigned_to'])): ?>
-                                                        <span class="pill-badge assigned">● Ditugaskan</span>
-                                                    <?php else: ?>
-                                                        <span class="pill-badge pending">● Menunggu</span>
-                                                    <?php endif; ?>
-                                                <?php elseif ($vJob['status'] === 'Perlu Direvisi'): ?>
-                                                    <span class="pill-badge revision">● Revisi</span>
-                                                <?php else: ?>
-                                                    <span class="pill-badge danger">● <?php echo e($vJob['status']); ?></span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php if (!empty($vJob['is_blacklisted'])): ?>
-                                                    <span class="pill-badge danger" style="font-size:11px;">Terdeteksi</span>
-                                                <?php else: ?>
-                                                    <span class="pill-badge safe" style="font-size:11px;">Aman</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><?php echo date('d M Y, H:i', strtotime($vJob['created_at'])); ?></td>
-                                            <td>
-                                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $vJob['id']; ?>" class="btn-lihat-detail">
-                                                    Lihat Detail
-                                                </a>
+                                    <?php foreach ($showingJobs as $vJob):
+                                        $jobTitle = $vJob['title'];
+                                        $employerName = $vJob['owner_name'] ?: $vJob['user_name'];
+                                        $locationStr = $vJob['location'] ?: ($vJob['emp_city'] ?: '-');
+
+                                        $jStatus = $vJob['status'] ?? '';
+                                        if ($jStatus === 'Tayang') {
+                                            $badgeHtml = '<span class="pill-badge verified">● Disetujui</span>';
+                                        } elseif ($jStatus === 'Menunggu Verifikasi') {
+                                            if (!empty($vJob['assigned_to'])) {
+                                                $badgeHtml = '<span class="pill-badge assigned">● Ditugaskan</span>';
+                                            } else {
+                                                $badgeHtml = '<span class="pill-badge pending">● Menunggu</span>';
+                                            }
+                                        } elseif ($jStatus === 'Perlu Direvisi') {
+                                            $badgeHtml = '<span class="pill-badge revision">● Revisi</span>';
+                                        } elseif ($jStatus === 'Ditolak' || $jStatus === 'CANCELED') {
+                                            $badgeHtml = '<span class="pill-badge danger">● Ditolak</span>';
+                                        } else {
+                                            $badgeHtml = '<span class="pill-badge pending">● ' . e($jStatus) . '</span>';
+                                        }
+
+                                        $dateStr = date('d M Y, H:i', strtotime($vJob['created_at']));
+                                    ?>
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                            <td style="padding:14px 16px; font-weight:600; color:#0f172a; font-size:13px;"><?php echo e($jobTitle); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($employerName); ?></td>
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($locationStr); ?></td>
+                                            <td style="padding:14px 16px; font-size:13px; white-space:nowrap;"><?php echo $badgeHtml; ?></td>
+                                            <td style="padding:14px 16px; color:#64748b; font-size:12.5px; white-space:nowrap;"><?php echo e($dateStr); ?></td>
+                                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
+                                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $vJob['id']; ?>" class="btn-lihat-detail" style="white-space:nowrap;">Lihat Detail</a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
                         </table>
-                </div>
+
+                        <?php if ($showingJobs): ?>
+                            <div class="console-table-footer" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; font-size:13px; color:#64748b; border-top:1px solid #e2e8f0;">
+                                <div>
+                                    Menampilkan <?php echo $showingCount; ?> dari <?php echo $totalData; ?> total data.
+                                </div>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <?php if ($page > 1): ?>
+                                        <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page - 1; ?><?php echo $filterParamsJob; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">‹</a>
+                                    <?php else: ?>
+                                        <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">‹</span>
+                                    <?php endif; ?>
+
+                                    <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                                        <?php if ($p == $page): ?>
+                                            <span style="padding:6px 12px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; border:1px solid #0284c7;"><?php echo $p; ?></span>
+                                        <?php else: ?>
+                                            <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $p; ?><?php echo $filterParamsJob; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;"><?php echo $p; ?></a>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+
+                                    <?php if ($page < $totalPages): ?>
+                                        <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?>&page=<?php echo $page + 1; ?><?php echo $filterParamsJob; ?>" style="padding:6px 12px; border-radius:6px; text-decoration:none; color:#475569; border:1px solid #cbd5e1; font-weight:600;">›</a>
+                                    <?php else: ?>
+                                        <span style="padding:6px 12px; border-radius:6px; color:#cbd5e1; border:1px solid #e2e8f0; font-weight:600; cursor:not-allowed;">›</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
