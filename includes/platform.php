@@ -557,7 +557,9 @@ function render_notif_dropdown(array $notifications, int $unread): string
     } else {
         foreach ($notifications as $row) {
             $unreadClass = empty($row['is_read']) ? ' unread' : '';
-            $items .= '<div class="notif-item' . $unreadClass . '">';
+            $isConsent = (stripos($row['title'], 'Persetujuan') !== false || stripos($row['title'], 'Consent') !== false);
+            $modalAttr = $isConsent ? ' data-open-modal="modal-user-consent" style="cursor:pointer;"' : '';
+            $items .= '<div class="notif-item' . $unreadClass . '"' . $modalAttr . '>';
             $items .= '<strong>' . e($row['title']) . '</strong>';
             $items .= '<p>' . e($row['message']) . '</p>';
             $items .= '<span>' . e(date('d M Y H:i', strtotime((string) $row['created_at']))) . '</span>';

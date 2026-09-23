@@ -150,10 +150,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             } elseif ($decision === 'revision') {
                 $currentRev = (int)($targetEmp['revision_count'] ?? ($targetEmp['rejection_count'] ?? 0));
                 $newRevisionCount = min(3, $currentRev + 1);
+                $manualStatus = ($newRevisionCount >= 3) ? 'MANUAL_DINAS_REVIEW' : 'NONE';
 
                 try {
-                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", revision_count = ?, rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
-                    $stmt->execute([$newRevisionCount, $newRevisionCount, $notes, $checklist, $targetUserId]);
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", revision_count = ?, rejection_count = ?, manual_review_status = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt->execute([$newRevisionCount, $newRevisionCount, $manualStatus, $notes, $checklist, $targetUserId]);
                 } catch (Throwable $ignore) {
                     $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 0, verification_status = "NEEDS_REVISION", rejection_count = ?, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                     $stmt->execute([$newRevisionCount, $notes, $checklist, $targetUserId]);
@@ -181,14 +182,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         exit;
     }
 
-    // 3. JALUR MANUAL DINAS: CONTROLLED EDIT
+    // 3. JALUR MANUAL DINAS: CONTROLLED EDIT & AJUKAN PERMOHONAN ULANG
     if ($action === 'manual_dinas_edit') {
         $targetUserId = (int)$_POST['user_id'];
         $ownerName = trim($_POST['owner_name'] ?? '');
+        $nik = trim($_POST['nik'] ?? '');
         $profession = trim($_POST['profession'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
         $whatsapp = trim($_POST['whatsapp'] ?? '');
         $npwp = trim($_POST['npwp'] ?? '');
+        $instagram = trim($_POST['instagram'] ?? '');
+        $facebook = trim($_POST['facebook'] ?? '');
+        $linkedin = trim($_POST['linkedin'] ?? '');
         $province = trim($_POST['province'] ?? '');
         $city = trim($_POST['city'] ?? '');
         $district = trim($_POST['district'] ?? '');
@@ -198,41 +203,58 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $addressDetail = trim($_POST['address_detail'] ?? '');
         $description = trim($_POST['description'] ?? '');
 
-        // Fetch old profile to check if consent was previously given and is now invalidated
+        // Fetch old profile
         $stmtOld = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
         $stmtOld->execute([$targetUserId]);
-        $oldProfile = $stmtOld->fetch();
+        $oldProfile = $stmtOld->fetch() ?: [];
+
+        $permitDoc = store_upload('permit_document', 'employer/' . $targetUserId, ['pdf', 'jpg', 'jpeg', 'png']);
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $targetUserId, ['jpg', 'jpeg', 'png', 'webp']);
+        $permitDoc = $permitDoc ?: ($oldProfile['permit_document'] ?? $oldProfile['doc_permission'] ?? null);
+        $workplacePhoto = $workplacePhoto ?: ($oldProfile['workplace_photo'] ?? $oldProfile['doc_location_photo'] ?? null);
 
         $updateSql = <<<SQL
             UPDATE employer_profiles SET
-                owner_name = ?, profession = ?, phone = ?, whatsapp = ?, npwp = ?,
+                owner_name = ?, nik = ?, profession = ?, phone = ?, whatsapp = ?, npwp = ?,
+                instagram = ?, facebook = ?, linkedin = ?,
                 province = ?, city = ?, district = ?, village = ?, postal_code = ?,
-                address = ?, address_detail = ?, description = ?
+                address = ?, address_detail = ?, description = ?,
+                permit_document = ?, doc_permission = ?, workplace_photo = ?, doc_location_photo = ?,
+                updated_at = CURRENT_TIMESTAMP
             WHERE user_id = ?
         SQL;
         db()->prepare($updateSql)->execute([
-            $ownerName, $profession, $phone, $whatsapp, $npwp,
+            $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
+            $instagram, $facebook, $linkedin,
             $province, $city, $district, $village, $postalCode,
-            $address, $addressDetail, $description, $targetUserId
+            $address, $addressDetail, $description,
+            $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
+            $targetUserId
         ]);
 
-        // Check if consent was invalidated
-        $newProfile = [
-            'owner_name' => $ownerName, 'nik' => $oldProfile['nik'] ?? '', 'profession' => $profession,
+        $newProfileData = [
+            'owner_name' => $ownerName, 'nik' => $nik, 'profession' => $profession,
             'phone' => $phone, 'whatsapp' => $whatsapp, 'npwp' => $npwp, 'province' => $province,
             'city' => $city, 'district' => $district, 'village' => $village, 'postal_code' => $postalCode,
             'address' => $address, 'address_detail' => $addressDetail, 'description' => $description
         ];
-        $newHash = calculate_employer_consent_hash($newProfile);
+        $newHash = calculate_employer_consent_hash($newProfileData);
 
-        if (!empty($oldProfile['consent_data_hash']) && $oldProfile['consent_data_hash'] !== $newHash) {
-            // Invalidate consent!
-            db()->prepare('UPDATE employer_profiles SET manual_review_status = "INVALID", consent_agreed = 0, consent_data_hash = NULL WHERE user_id = ?')->execute([$targetUserId]);
-            record_audit_log('employer', $targetUserId, 'CONSENT_INVALIDATED', "Data profil diubah oleh Admin setelah persetujuan pemohon. Consent sebelumnya otomatis INVALID.", $user['name']);
-            flash('warning', 'Data profil berhasil diperbarui oleh Admin. PERINGATAN: Karena data berubah, persetujuan (consent) pemohon sebelumnya menjadi INVALID. Silahkan ajukan consent ulang.');
+        if (!empty($_POST['send_consent'])) {
+            db()->prepare('UPDATE employer_profiles SET manual_review_status = "CONSENT_PENDING", consent_data_hash = ?, consent_agreed = 0 WHERE user_id = ?')->execute([$newHash, $targetUserId]);
+            record_audit_log('employer', $targetUserId, 'ADMIN_PROFILE_EDIT', "Petugas Dinas memperbarui seluruh data profil pemohon pada permohonan ulang.", $user['name'], $user['role'] ?? 'admin', true);
+            record_audit_log('employer', $targetUserId, 'CONSENT_REQUESTED', "Petugas Dinas mengirimkan permintaan persetujuan (Consent) ke pemohon.", $user['name'], $user['role'] ?? 'admin', true);
+            notify_user($targetUserId, 'Persetujuan Data Diperlukan (Jalur Dinas)', 'Petugas Dinas telah menyiapkan data perbaikan profil Anda. Silakan tinjau dan berikan persetujuan (Consent) di Dashboard Anda.', 'warning');
+            flash('success', 'Data profil berhasil diperbarui dan Permintaan Persetujuan (Consent) telah dikirim ke akun pemohon.');
         } else {
-            record_audit_log('employer', $targetUserId, 'CONTROLLED_EDIT', "Admin melakukan controlled edit pada data profil.", $user['name']);
-            flash('success', 'Data profil berhasil diperbarui melalui Controlled Edit.');
+            if (!empty($oldProfile['consent_data_hash']) && $oldProfile['consent_data_hash'] !== $newHash) {
+                db()->prepare('UPDATE employer_profiles SET manual_review_status = "INVALID", consent_agreed = 0, consent_data_hash = NULL WHERE user_id = ?')->execute([$targetUserId]);
+                record_audit_log('employer', $targetUserId, 'CONSENT_INVALIDATED', "Data profil diubah oleh Petugas Dinas setelah persetujuan pemohon. Consent sebelumnya otomatis INVALID.", $user['name'], $user['role'] ?? 'admin', true);
+                flash('warning', 'Data profil berhasil diperbarui. PERINGATAN: Karena data berubah, persetujuan (consent) pemohon sebelumnya menjadi INVALID. Silakan klik Kirim Permintaan Consent ulang.');
+            } else {
+                record_audit_log('employer', $targetUserId, 'ADMIN_PROFILE_EDIT', "Petugas Dinas memperbarui data profil pemohon.", $user['name'], $user['role'] ?? 'admin', true);
+                flash('success', 'Data profil berhasil disimpan oleh Petugas Dinas.');
+            }
         }
 
         redirect($redirectUrl);
@@ -250,7 +272,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             $hash = calculate_employer_consent_hash($emp);
             $stmt = db()->prepare('UPDATE employer_profiles SET manual_review_status = "CONSENT_PENDING", consent_data_hash = ?, consent_agreed = 0 WHERE user_id = ?');
             $stmt->execute([$hash, $targetUserId]);
-            record_audit_log('employer', $targetUserId, 'CONSENT_REQUESTED', "Admin mengajukan permintaan persetujuan (Consent) ke pemohon (Hash: " . substr($hash, 0, 10) . "...).", $user['name']);
+            record_audit_log('employer', $targetUserId, 'CONSENT_REQUESTED', "Petugas Dinas mengirimkan permintaan persetujuan (Consent) ke pemohon.", $user['name'], $user['role'] ?? 'admin', true);
             notify_user($targetUserId, 'Persetujuan Data Diperlukan (Jalur Dinas)', 'Petugas Dinas telah menyiapkan data perbaikan profil Anda. Silakan tinjau dan berikan persetujuan (Consent) di Dashboard Anda.', 'warning');
             flash('success', 'Permintaan persetujuan (Consent) berhasil diajukan ke pemohon.');
         }
@@ -266,7 +288,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $statementCheck = !empty($_POST['statement_confirmed']);
 
         if (!$statementCheck || $officerStatement === '') {
-            flash('error', 'Pernyataan Petugas dan konfirmasi checklist wajib diisi.');
+            flash('error', 'Pernyataan Petugas dan konfirmasi checklist wajib dicentang.');
             redirect($redirectUrl);
             exit;
         }
@@ -278,7 +300,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
         $currentHash = calculate_employer_consent_hash($emp);
         if ($emp['manual_review_status'] !== 'CONSENT_GIVEN' || empty($emp['consent_data_hash']) || $emp['consent_data_hash'] !== $currentHash) {
-            flash('error', 'Persetujuan pemohon tidak valid atau data telah berubah setelah consent. Setujui & Aktifkan dibatalkan.');
+            flash('error', 'Persetujuan pemohon belum disetujui atau data telah berubah setelah consent. Setujui & Aktifkan dibatalkan.');
             redirect($redirectUrl);
             exit;
         }
@@ -291,7 +313,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         }
         $stmt->execute([$officerName, $officerStatement, $targetUserId]);
         db()->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
-        record_audit_log('employer', $targetUserId, 'APPROVED_MANUAL_DINAS', "Profil disetujui & diaktifkan melalui Jalur Manual Dinas oleh petugas: {$officerName}. Pernyataan: {$officerStatement}", $user['name']);
+        record_audit_log('employer', $targetUserId, 'APPROVED_MANUAL_DINAS', "Profil disetujui & diaktifkan melalui Jalur Manual Dinas oleh petugas: {$officerName}. Pernyataan: {$officerStatement}", $user['name'], $user['role'] ?? 'admin', true);
         notify_user($targetUserId, 'Profil Aktif (Jalur Dinas)', 'Selamat! Akun Pemberi Kerja Individu Anda telah disetujui dan diaktifkan oleh Dinas Tenaga Kerja selama 3 bulan.', 'success');
         flash('success', 'Akun Pemberi Kerja Individu berhasil Disetujui & Diaktifkan melalui Jalur Manual Dinas.');
         redirect($redirectUrl);
@@ -2483,7 +2505,11 @@ document.addEventListener('click', function(e) {
                                         $vStatus = $emp['verification_status'] ?? '';
                                         if ($vStatus === 'APPROVED') {
                                             $badgeHtml = '<span class="pill-badge verified">● Terverifikasi</span>';
-                                        } elseif ($vStatus === 'REJECTED' || $vStatus === 'NEEDS_REVISION') {
+                                        } elseif ($vStatus === 'NEEDS_REVISION') {
+                                            $revNum = (int)($emp['revision_count'] ?? ($emp['rejection_count'] ?? 1));
+                                            $revNum = max(1, min(3, $revNum));
+                                            $badgeHtml = '<span class="pill-badge revision" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a;">● Revisi Diminta (ke-' . $revNum . ')</span>';
+                                        } elseif ($vStatus === 'REJECTED') {
                                             $badgeHtml = '<span class="pill-badge rejected">● Ditolak</span>';
                                         } else {
                                             $badgeHtml = '<span class="pill-badge pending">● Dalam Proses</span>';
@@ -2812,9 +2838,12 @@ document.addEventListener('click', function(e) {
                                         $isRevisionStatus = in_array(strtoupper($status), ['REVISION', 'NEEDS_REVISION']) || ($tab === 'revision');
                                         $statusClass = 'pending';
                                         $statusLabel = 'Dikirim';
+                                        $revNum = 1;
                                         if ($isRevisionStatus) {
                                             $statusClass = 'revision';
-                                            $statusLabel = 'Revisi Diminta';
+                                            $revNum = (int)($selectedEmployer['revision_count'] ?? ($selectedEmployer['rejection_count'] ?? 1));
+                                            $revNum = max(1, min(3, $revNum));
+                                            $statusLabel = "Revisi Diminta (ke-{$revNum})";
                                         } elseif ($status === 'APPROVED') {
                                             $statusClass = 'verified';
                                             $statusLabel = 'Terverifikasi';
@@ -2825,6 +2854,7 @@ document.addEventListener('click', function(e) {
                                             $statusClass = 'pending';
                                             $statusLabel = 'Dikirim';
                                         }
+                                        $isDinasFlow = ($isRevisionStatus && ($revNum >= 3 || in_array($selectedEmployer['manual_review_status'] ?? '', ['MANUAL_DINAS_REVIEW', 'CONSENT_PENDING', 'CONSENT_GIVEN', 'INVALID'])));
                                     ?>
                                     <span class="pill-badge <?php echo $statusClass; ?>" style="<?php echo $isRevisionStatus ? 'background:#fef3c7; color:#d97706; border:1px solid #fde68a;' : ''; ?>">
                                         ● <?php echo e($statusLabel); ?>
@@ -2840,7 +2870,11 @@ document.addEventListener('click', function(e) {
                         </div>
 
                         <div>
-                            <?php if (!$isRevisionStatus): ?>
+                            <?php if ($isDinasFlow): ?>
+                                <button type="button" onclick="const sec = document.getElementById('sectionManualDinasEdit'); if (sec) { sec.scrollIntoView({behavior:'smooth'}); const dt = sec.querySelector('details'); if (dt) dt.open = true; }" style="display:inline-flex; align-items:center; gap:8px; background:#0284c7; border:none; border-radius:999px; padding:9px 20px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.25);">
+                                    <i class="fa-solid fa-pen-to-square"></i> Ajukan Permohonan Ulang
+                                </button>
+                            <?php elseif (!$isRevisionStatus): ?>
                                 <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #00a8e8; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#0284c7; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                                     <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
                                 </button>
@@ -3173,130 +3207,219 @@ document.addEventListener('click', function(e) {
                             </div>
 
                             <!-- ========================================== -->
-                            <!-- JALUR MANUAL DINAS SECTION (IF TRIGGERED) -->
+                            <!-- JALUR MANUAL DINAS SECTION (REVISI DIMINTA KE-3) -->
                             <!-- ========================================== -->
-                            <?php if (in_array($selectedEmployer['manual_review_status'] ?? '', ['MANUAL_DINAS_REVIEW', 'CONSENT_PENDING', 'CONSENT_GIVEN', 'INVALID'])): ?>
-                                <div class="section-card" style="border:2px solid #0284c7; background:#f0f9ff;">
-                                    <div class="section-card-title" style="color:#0369a1;">
-                                        <i class="fa-solid fa-hands-holding-child"></i> Jalur Bantuan / Manual Dinas Tenaga Kerja
+                            <?php if ($isDinasFlow): ?>
+                                <div id="sectionManualDinasEdit" class="section-card" style="border:2px solid #0284c7; background:#f0f9ff; border-radius:14px; padding:20px;">
+                                    <div class="section-card-title" style="color:#0369a1; font-size:15px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+                                        <i class="fa-solid fa-hands-holding-child"></i> Pendampingan & Permohonan Ulang Bersama Petugas Dinas (Revisi Diminta ke-3)
                                     </div>
-                                    <p style="font-size:13px; color:#0c4a6e; line-height:1.5;">
-                                        Profil ini berada dalam <strong>Jalur Manual Dinas</strong> (Penolakan ke-3 atau pendampingan khusus). Petugas Dinas dapat melakukan Controlled Edit data, mengajukan persetujuan (Consent) ke pemohon, memvalidasi pernyataan petugas, dan mengaktifkan akun.
+                                    <p style="font-size:13px; color:#0c4a6e; line-height:1.5; margin-bottom:16px;">
+                                        Pengajuan ini telah mencapai batas maksimal revisi mandiri (<strong>Revisi Diminta ke-3</strong>). Petugas Dinas sesuai domisili dapat membantu memperbaiki data profil pemohon, mengirimkan permohonan persetujuan (Consent), memverifikasi secara manual, dan menyetujui serta mengaktifkan hak akses.
                                     </p>
 
-                                    <!-- STEP STATUS BANNER -->
-                                    <div style="background:#ffffff; border:1px solid #bae6fd; border-radius:10px; padding:14px; margin:16px 0; font-size:13px;">
-                                        <strong>Status Persetujuan Pemohon:</strong>
-                                        <?php if ($selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN'): ?>
-                                            <span class="pill-badge verified" style="margin-left:8px;"><i class="fa-solid fa-check-circle"></i> Consent Telah Diberikan Pemohon</span>
-                                        <?php elseif ($selectedEmployer['manual_review_status'] === 'CONSENT_PENDING'): ?>
-                                            <span class="pill-badge pending" style="margin-left:8px;"><i class="fa-solid fa-clock"></i> Menunggu Persetujuan Pemohon</span>
-                                        <?php elseif ($selectedEmployer['manual_review_status'] === 'INVALID'): ?>
-                                            <span class="pill-badge danger" style="margin-left:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Consent INVALID (Data Berubah Setelah Persetujuan)</span>
-                                        <?php else: ?>
-                                            <span class="pill-badge process" style="margin-left:8px;">Belum Mengajukan Consent</span>
+                                    <!-- STEP 1: STATUS CONSENT BOX -->
+                                    <div style="background:#ffffff; border:1px solid #bae6fd; border-radius:10px; padding:14px; margin-bottom:16px; font-size:13px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                        <div>
+                                            <strong>Status Consent Pemberi Kerja:</strong>
+                                            <?php if ($selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN'): ?>
+                                                <span class="pill-badge verified" style="margin-left:8px; font-weight:700; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;">
+                                                    <i class="fa-solid fa-check-circle"></i> Sudah Disetujui
+                                                </span>
+                                            <?php elseif ($selectedEmployer['manual_review_status'] === 'CONSENT_PENDING'): ?>
+                                                <span class="pill-badge pending" style="margin-left:8px; background:#fef3c7; color:#b45309; border:1px solid #fde68a;">
+                                                    <i class="fa-solid fa-clock"></i> Menunggu Persetujuan Pemohon (Consent Terkirim)
+                                                </span>
+                                            <?php elseif ($selectedEmployer['manual_review_status'] === 'INVALID'): ?>
+                                                <span class="pill-badge danger" style="margin-left:8px; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i> Consent INVALID (Data Berubah Setelah Persetujuan)
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="pill-badge process" style="margin-left:8px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">
+                                                    Belum Dikirimkan Consent
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($selectedEmployer['consent_given_at']) && $selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN'): ?>
+                                            <div style="font-size:12px; color:#059669; font-weight:600;">
+                                                <i class="fa-regular fa-calendar-check"></i> <?php echo date('d M Y, H:i', strtotime($selectedEmployer['consent_given_at'])); ?> WIB
+                                            </div>
                                         <?php endif; ?>
                                     </div>
 
-                                    <!-- 1. CONTROLLED EDIT FORM -->
-                                    <details style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:12px; margin-bottom:14px;" <?php echo $selectedEmployer['manual_review_status'] !== 'CONSENT_GIVEN' ? 'open' : ''; ?>>
-                                        <summary style="font-weight:700; color:#0f172a; cursor:pointer; font-size:13px;">
-                                            <i class="fa-solid fa-pen-to-square"></i> 1. Controlled Edit Data Profil oleh Admin
+                                    <!-- STEP 2: FORM PROFIL PEMBERI KERJA INDIVIDU (VERSI ADMIN) -->
+                                    <details id="detailsAdminProfileForm" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:16px; margin-bottom:16px;" <?php echo ($selectedEmployer['manual_review_status'] !== 'CONSENT_GIVEN') ? 'open' : ''; ?>>
+                                        <summary style="font-weight:700; color:#0f172a; cursor:pointer; font-size:13.5px; display:flex; align-items:center; gap:8px;">
+                                            <i class="fa-solid fa-pen-to-square" style="color:#0284c7;"></i> Form Profil Pemberi Kerja Individu (Versi Admin - Prefilled & Editable)
                                         </summary>
-                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" style="margin-top:14px;">
+                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" enctype="multipart/form-data" style="margin-top:16px;">
                                             <input type="hidden" name="admin_action" value="manual_dinas_edit">
                                             <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:12px;">
+                                            
+                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:12.5px;">
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Nama Lengkap Pemilik:</label>
-                                                    <input type="text" name="owner_name" value="<?php echo e($selectedEmployer['owner_name']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Nama Lengkap Pemberi Kerja:</label>
+                                                    <input type="text" name="owner_name" value="<?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Jenis Usaha / Profesi:</label>
-                                                    <input type="text" name="profession" value="<?php echo e($selectedEmployer['profession']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">NIK:</label>
+                                                    <input type="text" name="nik" value="<?php echo e($selectedEmployer['nik'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Telepon:</label>
-                                                    <input type="text" name="phone" value="<?php echo e($selectedEmployer['phone']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Nomor Telepon:</label>
+                                                    <input type="text" name="phone" value="<?php echo e($selectedEmployer['phone']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">WhatsApp:</label>
-                                                    <input type="text" name="whatsapp" value="<?php echo e($selectedEmployer['whatsapp']); ?>" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">WhatsApp:</label>
+                                                    <input type="text" name="whatsapp" value="<?php echo e($selectedEmployer['whatsapp'] ?? $selectedEmployer['phone']); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">NPWP:</label>
-                                                    <input type="text" name="npwp" value="<?php echo e($selectedEmployer['npwp']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Jenis Profesi / Usaha Individu:</label>
+                                                    <input type="text" name="profession" value="<?php echo e($selectedEmployer['profession'] ?? ''); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Kota / Kabupaten:</label>
-                                                    <input type="text" name="city" value="<?php echo e($selectedEmployer['city']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">NPWP:</label>
+                                                    <input type="text" name="npwp" value="<?php echo e($selectedEmployer['npwp'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
+                                                
+                                                <!-- SOSIAL MEDIA -->
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Instagram:</label>
+                                                    <input type="text" name="instagram" value="<?php echo e($selectedEmployer['instagram'] ?? ''); ?>" placeholder="https://instagram.com/..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Facebook / LinkedIn:</label>
+                                                    <input type="text" name="facebook" value="<?php echo e($selectedEmployer['facebook'] ?? ''); ?>" placeholder="Tautan profil medsos..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+
+                                                <!-- LOKASI WILAYAH -->
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Provinsi:</label>
+                                                    <input type="text" name="province" value="<?php echo e($selectedEmployer['province'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kota / Kabupaten:</label>
+                                                    <input type="text" name="city" value="<?php echo e($selectedEmployer['city']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kecamatan:</label>
+                                                    <input type="text" name="district" value="<?php echo e($selectedEmployer['district'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kelurahan / Desa:</label>
+                                                    <input type="text" name="village" value="<?php echo e($selectedEmployer['village'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kode Pos:</label>
+                                                    <input type="text" name="postal_code" value="<?php echo e($selectedEmployer['postal_code'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Detail Alamat / Patokan:</label>
+                                                    <input type="text" name="address_detail" value="<?php echo e($selectedEmployer['address_detail'] ?? ''); ?>" placeholder="Patokan lokasi..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>
+
+                                                <!-- ALAMAT LENGKAP -->
                                                 <div style="grid-column: span 2;">
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Alamat Lengkap:</label>
-                                                    <input type="text" name="address" value="<?php echo e($selectedEmployer['address']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Alamat Lengkap Domisili:</label>
+                                                    <input type="text" name="address" value="<?php echo e($selectedEmployer['address']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
+
+                                                <!-- DESKRIPSI -->
                                                 <div style="grid-column: span 2;">
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px;">Deskripsi:</label>
-                                                    <textarea name="description" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; min-height:50px;"><?php echo e($selectedEmployer['description']); ?></textarea>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen:</label>
+                                                    <textarea name="description" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; min-height:60px;"><?php echo e($selectedEmployer['description']); ?></textarea>
+                                                </div>
+
+                                                <!-- DOKUMEN & FOTO -->
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Dokumen Pendukung:</label>
+                                                    <?php if (!empty($selectedEmployer['permit_document']) || !empty($selectedEmployer['doc_permission'])): ?>
+                                                        <div style="margin-bottom:6px; font-size:11.5px; color:#0284c7;">
+                                                            <i class="fa-solid fa-file-lines"></i> File tersimpan: <code><?php echo e(basename($selectedEmployer['permit_document'] ?? $selectedEmployer['doc_permission'])); ?></code>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <input type="file" name="permit_document" accept=".pdf,.jpg,.jpeg,.png" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:8px; font-size:11.5px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Foto Bukti Tempat Usaha / Lokasi:</label>
+                                                    <?php if (!empty($selectedEmployer['workplace_photo']) || !empty($selectedEmployer['doc_location_photo'])): ?>
+                                                        <div style="margin-bottom:6px; font-size:11.5px; color:#0284c7;">
+                                                            <i class="fa-solid fa-image"></i> Foto tersimpan: <code><?php echo e(basename($selectedEmployer['workplace_photo'] ?? $selectedEmployer['doc_location_photo'])); ?></code>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <input type="file" name="workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:8px; font-size:11.5px;">
                                                 </div>
                                             </div>
-                                            <div style="margin-top:12px; display:flex; justify-content:flex-end;">
-                                                <button type="submit" class="primary-btn" style="height:34px; padding:0 14px; font-size:12px;">
-                                                    Simpan Controlled Edit
+
+                                            <!-- FORM ACTION BUTTONS -->
+                                            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #f1f5f9; padding-top:14px;">
+                                                <button type="submit" name="save_only" value="1" class="secondary-btn" style="height:36px; padding:0 16px; font-size:12.5px; font-weight:600; border:1px solid #cbd5e1; border-radius:8px; cursor:pointer; background:#ffffff; color:#334155;">
+                                                    <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Data
+                                                </button>
+                                                <button type="submit" name="send_consent" value="1" class="primary-btn" style="height:36px; padding:0 16px; font-size:12.5px; font-weight:700; background:#0284c7; color:#ffffff; border:none; border-radius:8px; cursor:pointer;">
+                                                    <i class="fa-solid fa-paper-plane"></i> Kirim Permintaan Consent
                                                 </button>
                                             </div>
                                         </form>
                                     </details>
 
-                                    <!-- 2. AJUKAN CONSENT -->
-                                    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:14px; margin-bottom:14px;">
-                                        <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
-                                            <i class="fa-solid fa-paper-plane"></i> 2. Ajukan Permintaan Consent ke Pemohon
-                                                        </div>
-                                        <p style="font-size:12px; color:#64748b; margin-bottom:10px;">
-                                            Klik tombol berikut untuk mengunci data hash dan mengirimkan notifikasi persetujuan ke pemohon di dashboard mereka.
-                                        </p>
-                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
-                                            <input type="hidden" name="admin_action" value="manual_dinas_request_consent">
-                                            <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-                                            <button type="submit" class="primary-btn" style="background:#0284c7; height:34px; padding:0 14px; font-size:12px;">
-                                                <i class="fa-solid fa-paper-plane"></i> Ajukan Consent ke Pemohon
-                                            </button>
-                                        </form>
-                                                                </div>
-
-                                    <!-- 3. PERNYATAAN PETUGAS & SETUJUI AKTIFKAN -->
-                                    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:14px;">
-                                        <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
-                                            <i class="fa-solid fa-certificate"></i> 3. Pernyataan Petugas & Setujui & Aktifkan
+                                    <!-- STEP 3: PERNYATAAN VERIFIKASI MANUAL PETUGAS DINAS -->
+                                    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:18px;">
+                                        <div style="font-weight:700; color:#0f172a; font-size:14px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                                            <i class="fa-solid fa-certificate" style="color:#059669;"></i> Pernyataan Verifikasi Manual Petugas Dinas
                                         </div>
-                                        <?php if ($selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN'): ?>
-                                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
-                                                <input type="hidden" name="admin_action" value="manual_dinas_approve_activate">
-                                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
-                                                <div style="margin-bottom:10px;">
-                                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Nama Petugas Dinas:</label>
-                                                    <input type="text" name="officer_name" value="<?php echo e($user['name']); ?>" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
-                                                </div>
-                                                <div style="margin-bottom:10px;">
-                                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Pernyataan Petugas:</label>
-                                                    <textarea name="officer_statement" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; min-height:50px;">Saya telah memvalidasi keabsahan data dan identitas pemberi kerja secara langsung melalui pendampingan dinas tenaga kerja.</textarea>
-                                                </div>
-                                                                <div style="margin-bottom:14px;">
-                                                    <label style="font-size:12px; display:flex; align-items:center; gap:8px;">
-                                                        <input type="checkbox" name="statement_confirmed" value="1" required>
-                                                        Saya menyatakan bahwa proses verifikasi manual telah memenuhi seluruh ketentuan regulasi yang berlaku.
-                                                    </label>
-                                                                    </div>
-                                                <button type="submit" class="primary-btn" style="background:#059669; width:100%; height:38px; font-size:13px;">
-                                                    <i class="fa-solid fa-check-double"></i> Setujui & Aktifkan Akun (3 Bulan)
-                                                </button>
-                                            </form>
-                                        <?php else: ?>
-                                            <div style="background:#f8fafc; padding:12px; border-radius:8px; font-size:12px; color:#64748b;">
-                                                <i class="fa-solid fa-lock"></i> Tombol <strong>Setujui & Aktifkan</strong> akan aktif setelah pemohon membaca dan menyetujui Consent melalui Dashboard mereka.
-                                                                </div>
-                                        <?php endif; ?>
+
+                                        <div style="background:#f8fafc; border-left:4px solid #0284c7; padding:12px 14px; border-radius:6px; font-size:12.5px; color:#334155; line-height:1.6; margin-bottom:14px;">
+                                            “Saya sebagai Petugas Dinas yang berwenang menyatakan telah melakukan pemeriksaan dan verifikasi manual terhadap identitas, bukti tempat pemberi kerja, serta data pendukung Pemberi Kerja Individu yang bersangkutan. Saya memastikan hasil pemeriksaan ini dapat dipertanggungjawabkan secara kedinasan dan hukum.”
+                                        </div>
+
+                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                            <input type="hidden" name="admin_action" value="manual_dinas_approve_activate">
+                                            <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                            <input type="hidden" name="officer_name" value="<?php echo e($user['name']); ?>">
+                                            <input type="hidden" name="officer_statement" value="Saya sebagai Petugas Dinas yang berwenang menyatakan telah melakukan pemeriksaan dan verifikasi manual terhadap identitas, bukti tempat pemberi kerja, serta data pendukung Pemberi Kerja Individu yang bersangkutan. Saya memastikan hasil pemeriksaan ini dapat dipertanggungjawabkan secara kedinasan dan hukum.">
+
+                                            <div style="margin-bottom:16px;">
+                                                <label style="font-size:13px; font-weight:600; color:#0f172a; display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                                                    <input type="checkbox" id="officerStatementCheck" name="statement_confirmed" value="1" onchange="toggleOfficerApproveButton()" <?php echo ($selectedEmployer['manual_review_status'] !== 'CONSENT_GIVEN') ? 'disabled' : ''; ?> style="margin-top:2px; width:16px; height:16px; accent-color:#059669; cursor:pointer;">
+                                                    <span>Saya menyatakan telah melakukan verifikasi manual dan bertanggung jawab atas hasil pemeriksaan ini.</span>
+                                                </label>
+                                            </div>
+
+                                            <button type="submit" id="btnOfficerApproveActivate" class="primary-btn" style="background:#059669; width:100%; height:44px; font-size:13.5px; font-weight:700; border-radius:10px; border:none; color:#ffffff; display:flex; align-items:center; justify-content:center; gap:8px; opacity:0.5; cursor:not-allowed;" disabled>
+                                                <i class="fa-solid fa-check-double"></i> Setujui & Aktifkan Akses
+                                            </button>
+
+                                            <div id="officerApproveNotice" style="font-size:12px; color:#64748b; margin-top:10px; text-align:center;">
+                                                <?php if ($selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN'): ?>
+                                                    <span style="color:#b45309;"><i class="fa-solid fa-circle-info"></i> Centang pernyataan verifikasi manual di atas untuk mengaktifkan tombol Setujui & Aktifkan Akses.</span>
+                                                <?php else: ?>
+                                                    <i class="fa-solid fa-lock"></i> Tombol <strong>Setujui & Aktifkan Akses</strong> dinonaktifkan sampai User Consent Pemberi Kerja = <strong>Sudah Disetujui</strong> dan Pernyataan Petugas Dinas dicentang.
+                                                <?php endif; ?>
+                                            </div>
+                                        </form>
+
+                                        <script>
+                                        function toggleOfficerApproveButton() {
+                                            const isConsentGiven = <?php echo ($selectedEmployer['manual_review_status'] === 'CONSENT_GIVEN') ? 'true' : 'false'; ?>;
+                                            const check = document.getElementById('officerStatementCheck');
+                                            const btn = document.getElementById('btnOfficerApproveActivate');
+                                            const notice = document.getElementById('officerApproveNotice');
+                                            if (isConsentGiven && check && check.checked) {
+                                                btn.disabled = false;
+                                                btn.style.opacity = '1';
+                                                btn.style.cursor = 'pointer';
+                                                if (notice) notice.innerHTML = '<span style="color:#059669; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Seluruh syarat terpenuhi. Anda dapat menyetujui dan mengaktifkan akses pemberi kerja.</span>';
+                                            } else {
+                                                btn.disabled = true;
+                                                btn.style.opacity = '0.5';
+                                                btn.style.cursor = 'not-allowed';
+                                                if (notice && isConsentGiven) {
+                                                    notice.innerHTML = '<span style="color:#b45309;"><i class="fa-solid fa-circle-info"></i> Centang pernyataan verifikasi manual di atas untuk mengaktifkan tombol.</span>';
+                                                }
+                                            }
+                                        }
+                                        </script>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -3993,6 +4116,11 @@ document.addEventListener('click', function(e) {
                                                     <span class="pill-badge verified">● Terverifikasi</span>
                                                 <?php elseif ($vEmp['verification_status'] === 'PENDING'): ?>
                                                     <span class="pill-badge pending">● Menunggu</span>
+                                                <?php elseif (in_array($vEmp['verification_status'], ['NEEDS_REVISION', 'REVISION'])): ?>
+                                                    <?php $revCount = max(1, min(3, (int)($vEmp['revision_count'] ?? $vEmp['rejection_count'] ?? 1))); ?>
+                                                    <span class="pill-badge revision">● Revisi Diminta (ke-<?php echo $revCount; ?>)</span>
+                                                <?php elseif ($vEmp['verification_status'] === 'REJECTED'): ?>
+                                                    <span class="pill-badge danger">● Ditolak</span>
                                                 <?php else: ?>
                                                     <span class="pill-badge revision">● <?php echo e($vEmp['verification_status']); ?></span>
                                                 <?php endif; ?>

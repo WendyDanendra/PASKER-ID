@@ -336,6 +336,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
+        // Check if user is in NEEDS_REVISION state with revision_count >= 3 (Max revision reached)
+        $currRev = (int)($profile['revision_count'] ?? ($profile['rejection_count'] ?? 0));
+        if (($profile['verification_status'] ?? '') === 'NEEDS_REVISION' && $currRev >= 3) {
+            flash('error', 'Batas maksimal perbaikan profil mandiri telah tercapai (Revisi ke-3). Proses selanjutnya harus dilakukan bersama Petugas Dinas sesuai domisili.');
+            redirect('dashboard.php');
+            exit;
+        }
+
         // Check if user is in FULL_DISABLED state: must be eligible to submit reactivation online
         if ($isFullDisable && !$isEligibleForReactivation) {
             flash('error', 'Pengajuan reaktivasi online tidak tersedia karena tidak memenuhi syarat (minimal 1 pelamar diterima pada siklus sebelumnya). Silakan ikuti proses melalui Dinas Tenaga Kerja setempat.');
@@ -368,7 +376,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 verification_status = "PENDING", verified = 0, active_until = NULL,
                 extension_requested = 0, extension_status = "NONE",
                 assigned_to = NULL, assigned_at = NULL, verifier_notes = NULL, verification_checklist = NULL,
-                manual_review_status = NULL, rejection_count = 0, consent_data_hash = NULL, consent_agreed = 0,
+                manual_review_status = NULL, consent_data_hash = NULL, consent_agreed = 0,
                 updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?');
             $stmt->execute([
