@@ -3421,6 +3421,148 @@ document.addEventListener('click', function(e) {
                         </div>
                     </div>
 
+                    <script>
+                    const ALL_PEMERIKSA_MASTER = <?php echo json_encode(array_merge([$user['name'] . ' (Saya)'], $pemeriksaMasterList)); ?>;
+
+                    function toggleAssignPemeriksaDropdown(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('assignPemeriksaDropdownCard');
+                        if (!card) return;
+                        const isHidden = card.style.display === 'none';
+                        card.style.display = isHidden ? 'block' : 'none';
+                        if (isHidden) {
+                            populateAssignPemeriksaOptions();
+                            setTimeout(() => {
+                                const input = document.getElementById('assignPemeriksaSearchInput');
+                                if (input) input.focus();
+                            }, 50);
+                        }
+                    }
+
+                    function populateAssignPemeriksaOptions() {
+                        const container = document.getElementById('assignPemeriksaOptionsContainer');
+                        if (!container || container.children.length > 0) return;
+                        renderAssignPemeriksaList(ALL_PEMERIKSA_MASTER);
+                    }
+
+                    function renderAssignPemeriksaList(list) {
+                        const container = document.getElementById('assignPemeriksaOptionsContainer');
+                        if (!container) return;
+                        container.innerHTML = '';
+                        const currentVal = document.getElementById('inputAssignPemeriksa') ? document.getElementById('inputAssignPemeriksa').value : '';
+
+                        list.forEach(itemText => {
+                            const item = document.createElement('div');
+                            const val = itemText.replace(' (Saya)', '');
+                            const isSelected = val === currentVal || itemText === currentVal;
+                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+                            item.textContent = itemText;
+                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectAssignPemeriksa(val, itemText);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterAssignPemeriksaOptions() {
+                        const input = document.getElementById('assignPemeriksaSearchInput');
+                        const query = (input ? input.value : '').toLowerCase().trim();
+                        const filtered = ALL_PEMERIKSA_MASTER.filter(n => n.toLowerCase().includes(query));
+                        renderAssignPemeriksaList(filtered);
+                    }
+
+                    function selectAssignPemeriksa(val, labelText) {
+                        const input = document.getElementById('inputAssignPemeriksa');
+                        if (input) input.value = val;
+                        const label = document.getElementById('assignPemeriksaLabel');
+                        if (label) {
+                            label.textContent = labelText;
+                            label.style.color = '#0f172a';
+                        }
+                        const card = document.getElementById('assignPemeriksaDropdownCard');
+                        if (card) card.style.display = 'none';
+                    }
+
+                    function toggleAssignPemeriksaModalDropdown(e) {
+                        if (e) e.stopPropagation();
+                        const card = document.getElementById('assignPemeriksaModalDropdownCard');
+                        if (!card) return;
+                        const isHidden = card.style.display === 'none';
+                        card.style.display = isHidden ? 'block' : 'none';
+                        if (isHidden) {
+                            populateAssignPemeriksaModalOptions();
+                            setTimeout(() => {
+                                const input = document.getElementById('assignPemeriksaModalSearchInput');
+                                if (input) input.focus();
+                            }, 50);
+                        }
+                    }
+
+                    function populateAssignPemeriksaModalOptions() {
+                        const container = document.getElementById('assignPemeriksaModalOptionsContainer');
+                        if (!container || container.children.length > 0) return;
+                        renderAssignPemeriksaModalList(ALL_PEMERIKSA_MASTER);
+                    }
+
+                    function renderAssignPemeriksaModalList(list) {
+                        const container = document.getElementById('assignPemeriksaModalOptionsContainer');
+                        if (!container) return;
+                        container.innerHTML = '';
+                        const currentVal = document.getElementById('inputAssignPemeriksaModal') ? document.getElementById('inputAssignPemeriksaModal').value : '';
+
+                        list.forEach(itemText => {
+                            const item = document.createElement('div');
+                            const val = itemText.replace(' (Saya)', '');
+                            const isSelected = val === currentVal || itemText === currentVal;
+                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
+                            item.textContent = itemText;
+                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
+                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                selectAssignPemeriksaModal(val, itemText);
+                            };
+                            container.appendChild(item);
+                        });
+                    }
+
+                    function filterAssignPemeriksaModalOptions() {
+                        const input = document.getElementById('assignPemeriksaModalSearchInput');
+                        const query = (input ? input.value : '').toLowerCase().trim();
+                        const filtered = ALL_PEMERIKSA_MASTER.filter(n => n.toLowerCase().includes(query));
+                        renderAssignPemeriksaModalList(filtered);
+                    }
+
+                    function selectAssignPemeriksaModal(val, labelText) {
+                        const input = document.getElementById('inputAssignPemeriksaModal');
+                        if (input) input.value = val;
+                        const label = document.getElementById('assignPemeriksaModalLabel');
+                        if (label) {
+                            label.textContent = labelText;
+                            label.style.color = '#0f172a';
+                        }
+                        const card = document.getElementById('assignPemeriksaModalDropdownCard');
+                        if (card) card.style.display = 'none';
+                    }
+
+                    document.addEventListener('click', function(e) {
+                        const card = document.getElementById('assignPemeriksaDropdownCard');
+                        const trigger = document.getElementById('assignPemeriksaTrigger');
+                        if (card && card.style.display !== 'none' && !card.contains(e.target) && (!trigger || !trigger.contains(e.target))) {
+                            card.style.display = 'none';
+                        }
+
+                        const modalCard = document.getElementById('assignPemeriksaModalDropdownCard');
+                        const modalTrigger = document.getElementById('assignPemeriksaModalTrigger');
+                        if (modalCard && modalCard.style.display !== 'none' && !modalCard.contains(e.target) && (!modalTrigger || !modalTrigger.contains(e.target))) {
+                            modalCard.style.display = 'none';
+                        }
+                    });
+                    </script>
+
                 <?php else: ?>
                     <!-- VERIFIKASI PEMBERI KERJA TABLE VIEW -->
                     <?php
@@ -3743,145 +3885,6 @@ document.addEventListener('click', function(e) {
                         "ACHMAD RAJA NASUTION"
                     ];
 
-                    const ALL_PEMERIKSA_MASTER = <?php echo json_encode(array_merge([$user['name'] . ' (Saya)'], $pemeriksaMasterList)); ?>;
-
-                    function toggleAssignPemeriksaDropdown(e) {
-                        if (e) e.stopPropagation();
-                        const card = document.getElementById('assignPemeriksaDropdownCard');
-                        if (!card) return;
-                        const isHidden = card.style.display === 'none';
-                        card.style.display = isHidden ? 'block' : 'none';
-                        if (isHidden) {
-                            populateAssignPemeriksaOptions();
-                            setTimeout(() => {
-                                const input = document.getElementById('assignPemeriksaSearchInput');
-                                if (input) input.focus();
-                            }, 50);
-                        }
-                    }
-
-                    function populateAssignPemeriksaOptions() {
-                        const container = document.getElementById('assignPemeriksaOptionsContainer');
-                        if (!container || container.children.length > 0) return;
-                        renderAssignPemeriksaList(ALL_PEMERIKSA_MASTER);
-                    }
-
-                    function renderAssignPemeriksaList(list) {
-                        const container = document.getElementById('assignPemeriksaOptionsContainer');
-                        if (!container) return;
-                        container.innerHTML = '';
-                        const currentVal = document.getElementById('inputAssignPemeriksa') ? document.getElementById('inputAssignPemeriksa').value : '';
-
-                        list.forEach(itemText => {
-                            const item = document.createElement('div');
-                            const val = itemText.replace(' (Saya)', '');
-                            const isSelected = val === currentVal || itemText === currentVal;
-                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
-                            item.textContent = itemText;
-                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
-                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
-                            item.onclick = (e) => {
-                                e.stopPropagation();
-                                selectAssignPemeriksa(val, itemText);
-                            };
-                            container.appendChild(item);
-                        });
-                    }
-
-                    function filterAssignPemeriksaOptions() {
-                        const input = document.getElementById('assignPemeriksaSearchInput');
-                        const query = (input ? input.value : '').toLowerCase().trim();
-                        const filtered = ALL_PEMERIKSA_MASTER.filter(n => n.toLowerCase().includes(query));
-                        renderAssignPemeriksaList(filtered);
-                    }
-
-                    function selectAssignPemeriksa(val, labelText) {
-                        const input = document.getElementById('inputAssignPemeriksa');
-                        if (input) input.value = val;
-                        const label = document.getElementById('assignPemeriksaLabel');
-                        if (label) {
-                            label.textContent = labelText;
-                            label.style.color = '#0f172a';
-                        }
-                        const card = document.getElementById('assignPemeriksaDropdownCard');
-                        if (card) card.style.display = 'none';
-                    }
-
-                    function toggleAssignPemeriksaModalDropdown(e) {
-                        if (e) e.stopPropagation();
-                        const card = document.getElementById('assignPemeriksaModalDropdownCard');
-                        if (!card) return;
-                        const isHidden = card.style.display === 'none';
-                        card.style.display = isHidden ? 'block' : 'none';
-                        if (isHidden) {
-                            populateAssignPemeriksaModalOptions();
-                            setTimeout(() => {
-                                const input = document.getElementById('assignPemeriksaModalSearchInput');
-                                if (input) input.focus();
-                            }, 50);
-                        }
-                    }
-
-                    function populateAssignPemeriksaModalOptions() {
-                        const container = document.getElementById('assignPemeriksaModalOptionsContainer');
-                        if (!container || container.children.length > 0) return;
-                        renderAssignPemeriksaModalList(ALL_PEMERIKSA_MASTER);
-                    }
-
-                    function renderAssignPemeriksaModalList(list) {
-                        const container = document.getElementById('assignPemeriksaModalOptionsContainer');
-                        if (!container) return;
-                        container.innerHTML = '';
-                        const currentVal = document.getElementById('inputAssignPemeriksaModal') ? document.getElementById('inputAssignPemeriksaModal').value : '';
-
-                        list.forEach(itemText => {
-                            const item = document.createElement('div');
-                            const val = itemText.replace(' (Saya)', '');
-                            const isSelected = val === currentVal || itemText === currentVal;
-                            item.style.cssText = `padding:8px 12px; font-size:13px; color:#1e293b; border-radius:8px; cursor:pointer; background:${isSelected ? '#f0f9ff' : 'transparent'}; font-weight:${isSelected ? '700' : 'normal'}; transition:background 0.15s;`;
-                            item.textContent = itemText;
-                            item.onmouseover = () => { if (!isSelected) item.style.background = '#f8fafc'; };
-                            item.onmouseout = () => { if (!isSelected) item.style.background = 'transparent'; };
-                            item.onclick = (e) => {
-                                e.stopPropagation();
-                                selectAssignPemeriksaModal(val, itemText);
-                            };
-                            container.appendChild(item);
-                        });
-                    }
-
-                    function filterAssignPemeriksaModalOptions() {
-                        const input = document.getElementById('assignPemeriksaModalSearchInput');
-                        const query = (input ? input.value : '').toLowerCase().trim();
-                        const filtered = ALL_PEMERIKSA_MASTER.filter(n => n.toLowerCase().includes(query));
-                        renderAssignPemeriksaModalList(filtered);
-                    }
-
-                    function selectAssignPemeriksaModal(val, labelText) {
-                        const input = document.getElementById('inputAssignPemeriksaModal');
-                        if (input) input.value = val;
-                        const label = document.getElementById('assignPemeriksaModalLabel');
-                        if (label) {
-                            label.textContent = labelText;
-                            label.style.color = '#0f172a';
-                        }
-                        const card = document.getElementById('assignPemeriksaModalDropdownCard');
-                        if (card) card.style.display = 'none';
-                    }
-
-                    document.addEventListener('click', function(e) {
-                        const card = document.getElementById('assignPemeriksaDropdownCard');
-                        const trigger = document.getElementById('assignPemeriksaTrigger');
-                        if (card && card.style.display !== 'none' && !card.contains(e.target) && (!trigger || !trigger.contains(e.target))) {
-                            card.style.display = 'none';
-                        }
-
-                        const modalCard = document.getElementById('assignPemeriksaModalDropdownCard');
-                        const modalTrigger = document.getElementById('assignPemeriksaModalTrigger');
-                        if (modalCard && modalCard.style.display !== 'none' && !modalCard.contains(e.target) && (!modalTrigger || !modalTrigger.contains(e.target))) {
-                            modalCard.style.display = 'none';
-                        }
-                    });
 
                     function toggleFilterPopoverEmp(e) {
                         if (e) e.stopPropagation();
