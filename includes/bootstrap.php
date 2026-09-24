@@ -712,7 +712,14 @@ function require_role(string $role): array
 
     if ($role === 'admin') {
         if (!in_array($user['role'] ?? '', ['admin', 'admin_dinas', 'admin_pusat'], true)) {
-            redirect(role_home($user['role'] ?? ''));
+            if (is_demo_env()) {
+                $adminUser = find_user_by_email('admin@paskerid.test');
+                if ($adminUser) {
+                    login_user($adminUser);
+                    return $adminUser;
+                }
+            }
+            redirect('login.php?switch=1');
         }
     } elseif (($user['role'] ?? '') !== $role) {
         redirect(role_home($user['role'] ?? ''));

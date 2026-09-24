@@ -1,8 +1,10 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 
-if (current_user()) {
-    redirect('index.php');
+if (isset($_GET['switch']) || isset($_GET['logout'])) {
+    logout_user();
+} elseif (current_user()) {
+    redirect(role_home(current_user()['role'] ?? ''));
 }
 
 $error = null;
@@ -10,6 +12,10 @@ $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
+
+    if ($email === 'andi@paskerid.tes') {
+        $email = 'andi@paskerid.test';
+    }
 
     $user = find_user_by_email($email);
 
@@ -342,9 +348,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span><i class="fa-solid fa-key" style="margin-right:6px;"></i> Klik Akun Demo (Simulasi)</span>
                     <small style="opacity:0.8;">Pre-fill Otomatis</small>
                 </div>
+                <div class="demo-item" onclick="fillCredential('andi@paskerid.test', 'Pusatpasarkerj4')">
+                    <span>Andi Pratama (Menunggu Verifikasi)</span>
+                    <code>andi@paskerid.test / Pusatpasarkerj4</code>
+                </div>
                 <div class="demo-item" onclick="fillCredential('perorangan@paskerid.test', 'password')">
-                    <span>Pemberi Kerja Individu</span>
-                    <code>perorangan@paskerid.test</code>
+                    <span>Pemberi Kerja Individu (Terverifikasi)</span>
+                    <code>perorangan@paskerid.test / password</code>
                 </div>
                 <div class="demo-item" onclick="fillCredential('seeker@paskerid.test', 'password')">
                     <span>Pencari Kerja</span>
