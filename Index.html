@@ -3577,18 +3577,63 @@
                 </div>
             </section>
 
-            <!-- SECTION M: PROFIL PEMBERI KERJA VIEW (EXACT MATCH USER SCREENSHOT) -->
+            <!-- SECTION M: PROFIL PEMBERI KERJA VIEW -->
             <section class="page" data-page="profil" id="page-profil">
                 <div class="dash-container profile-page-wrapper">
-                    <h1 class="profile-page-heading">Profil Pemberi Kerja</h1>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+                        <h1 class="profile-page-heading" style="margin:0;">Profil Pemberi Kerja</h1>
+                        <?php if (in_array($verificationStatus, ['NOT_SUBMITTED', 'NEEDS_REVISION', 'PENDING'], true)): ?>
+                            <button type="button" class="primary-btn" data-open-modal="modal-employer-profile">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Profil
+                            </button>
+                        <?php endif; ?>
+                    </div>
 
-                    <!-- TOP BANNER CARD: PEMBERI KERJA TERVERIFIKASI -->
-                    <div class="profile-verified-banner">
+                    <!-- TOP BANNER CARD: DYNAMIC STATUS -->
+                    <?php
+                        $bannerBg = '#f0fdf4';
+                        $bannerBorder = '#a7f3d0';
+                        $iconClass = 'fa-regular fa-circle-check';
+                        $iconColor = '#10b981';
+                        $statusTitle = 'Pemberi Kerja Terverifikasi';
+                        $statusText = 'Selamat! Profil Pemberi kerja Anda telah berhasil diverifikasi dan kini dapat menggunakan seluruh fitur yang tersedia.';
+
+                        if ($verificationStatus === 'PENDING') {
+                            $bannerBg = '#fff7ed';
+                            $bannerBorder = '#fed7aa';
+                            $iconClass = 'fa-regular fa-clock';
+                            $iconColor = '#ea580c';
+                            $statusTitle = 'Menunggu Verifikasi';
+                            $statusText = 'Profil Pemberi Kerja Anda telah berhasil diajukan dan saat ini sedang dalam proses verifikasi oleh Petugas Dinas.';
+                        } elseif ($verificationStatus === 'NEEDS_REVISION') {
+                            $bannerBg = '#fefce8';
+                            $bannerBorder = '#fef08a';
+                            $iconClass = 'fa-solid fa-triangle-exclamation';
+                            $iconColor = '#d97706';
+                            $statusTitle = 'Perlu Direvisi';
+                            $statusText = 'Profil Anda membutuhkan perbaikan data. ' . (!empty($profile['verifier_notes']) ? 'Catatan: ' . e($profile['verifier_notes']) : 'Silakan periksa catatan dan perbarui profil Anda.');
+                        } elseif ($verificationStatus === 'REJECTED' || $verificationStatus === 'FULL_DISABLED') {
+                            $bannerBg = '#fef2f2';
+                            $bannerBorder = '#fecaca';
+                            $iconClass = 'fa-solid fa-circle-xmark';
+                            $iconColor = '#dc2626';
+                            $statusTitle = ($verificationStatus === 'FULL_DISABLED') ? 'Hak Akses Nonaktif / Kadaluarsa' : 'Pengajuan Ditolak';
+                            $statusText = !empty($profile['verifier_notes']) ? e($profile['verifier_notes']) : 'Pengajuan verifikasi profil Anda belum dapat disetujui. Silakan perbarui data profil Anda.';
+                        } elseif ($verificationStatus === 'NOT_SUBMITTED') {
+                            $bannerBg = '#f8fafc';
+                            $bannerBorder = '#cbd5e1';
+                            $iconClass = 'fa-solid fa-circle-info';
+                            $iconColor = '#64748b';
+                            $statusTitle = 'Profil Belum Diverifikasi';
+                            $statusText = 'Profil Pemberi Kerja Anda belum diajukan untuk verifikasi. Klik tombol Edit Profil di kanan atas untuk melengkapi biodata.';
+                        }
+                    ?>
+                    <div class="profile-verified-banner" style="background:<?php echo $bannerBg; ?>; border-color:<?php echo $bannerBorder; ?>;">
                         <div class="profile-banner-alert">
-                            <i class="fa-regular fa-circle-check profile-alert-icon"></i>
+                            <i class="<?php echo $iconClass; ?> profile-alert-icon" style="color:<?php echo $iconColor; ?>;"></i>
                             <div class="profile-alert-text">
-                                <strong>Pemberi Kerja Terverifikasi</strong>
-                                <span>Selamat! Pemberi kerja Anda telah berhasil diverifikasi dan kini dapat menggunakan seluruh fitur yang tersedia.</span>
+                                <strong><?php echo $statusTitle; ?></strong>
+                                <span><?php echo $statusText; ?></span>
                             </div>
                         </div>
 
@@ -3597,14 +3642,14 @@
                                 <i class="fa-regular fa-building"></i>
                             </div>
                             <div class="profile-company-info">
-                                <span class="profile-type-badge">PERUSAHAAN</span>
-                                <h2 class="profile-company-title">PT. Pandu Jaya</h2>
+                                <span class="profile-type-badge"><?php echo e($profile['entity_type'] ?? 'INDIVIDU'); ?></span>
+                                <h2 class="profile-company-title"><?php echo e($profile['owner_name'] ?: ($user['name'] ?? 'Pemberi Kerja')); ?></h2>
                                 <div class="profile-contact-pills">
                                     <span class="profile-contact-pill">
-                                        <i class="fa-regular fa-envelope"></i> pandu@gmail.com
+                                        <i class="fa-regular fa-envelope"></i> <?php echo e($user['email'] ?? '-'); ?>
                                     </span>
                                     <span class="profile-contact-pill">
-                                        <i class="fa-solid fa-phone"></i> 0216645828
+                                        <i class="fa-solid fa-phone"></i> <?php echo e($profile['phone'] ?: ($profile['whatsapp'] ?: '-')); ?>
                                     </span>
                                 </div>
                             </div>
@@ -3625,7 +3670,7 @@
                                 </div>
 
                                 <p class="profile-desc-muted">
-                                    Belum ada deskripsi. Deskripsi pemberi kerja membantu calon pekerja mengenal organisasi Anda.
+                                    <?php echo !empty($profile['description']) ? nl2br(e($profile['description'])) : 'Belum ada deskripsi. Deskripsi pemberi kerja membantu calon pekerja mengenal organisasi Anda.'; ?>
                                 </p>
 
                                 <div class="profile-card-sep"></div>
@@ -3633,7 +3678,7 @@
                                 <div>
                                     <div class="profile-meta-label">Terdaftar Sebagai Pemberi Kerja Sejak</div>
                                     <div class="profile-meta-val">
-                                        <i class="fa-regular fa-calendar"></i> 16 Juni 2021
+                                        <i class="fa-regular fa-calendar"></i> <?php echo format_indo_date($profile['created_at'] ?? ($user['created_at'] ?? 'now')); ?>
                                     </div>
                                 </div>
                             </div>
@@ -3650,23 +3695,23 @@
                                 <div class="profile-fields-2col">
                                     <div class="profile-field-block">
                                         <span class="pfl-label">Provinsi</span>
-                                        <span class="pfl-value">Jawa Barat</span>
+                                        <span class="pfl-value"><?php echo e($profile['province'] ?: '-'); ?></span>
                                     </div>
                                     <div class="profile-field-block">
                                         <span class="pfl-label">Kota/Kabupaten</span>
-                                        <span class="pfl-value">Kota Bekasi</span>
+                                        <span class="pfl-value"><?php echo e($profile['city'] ?: '-'); ?></span>
                                     </div>
                                     <div class="profile-field-block">
                                         <span class="pfl-label">Kecamatan</span>
-                                        <span class="pfl-value">Rawalumbu</span>
+                                        <span class="pfl-value"><?php echo e($profile['district'] ?: '-'); ?></span>
                                     </div>
                                     <div class="profile-field-block">
                                         <span class="pfl-label">Kelurahan</span>
-                                        <span class="pfl-value">Pengasinan</span>
+                                        <span class="pfl-value"><?php echo e($profile['village'] ?: '-'); ?></span>
                                     </div>
                                     <div class="profile-field-block">
                                         <span class="pfl-label">Alamat</span>
-                                        <span class="pfl-value">Bekasi</span>
+                                        <span class="pfl-value"><?php echo e($profile['address'] ?: '-'); ?></span>
                                     </div>
                                 </div>
                             </div>
@@ -3680,19 +3725,19 @@
                                 <div class="profile-pic-stack">
                                     <div class="profile-field-block">
                                         <span class="pfl-label">Nama</span>
-                                        <span class="pfl-value">Pandu Isdiyanto, S.T., M.M.</span>
+                                        <span class="pfl-value"><?php echo e($profile['owner_name'] ?: ($user['name'] ?? '-')); ?></span>
                                     </div>
                                     <div class="profile-field-block">
                                         <span class="pfl-label">NIK</span>
-                                        <span class="pfl-value">3402153112760034</span>
+                                        <span class="pfl-value"><?php echo e($profile['nik'] ?: '-'); ?></span>
                                     </div>
                                     <div class="profile-field-block">
                                         <span class="pfl-label">Email</span>
-                                        <span class="pfl-value">ppandfoee@gmail.com</span>
+                                        <span class="pfl-value"><?php echo e($user['email'] ?? '-'); ?></span>
                                     </div>
                                     <div class="profile-field-block">
                                         <span class="pfl-label">No. Telp</span>
-                                        <span class="pfl-value">-</span>
+                                        <span class="pfl-value"><?php echo e($profile['phone'] ?: ($profile['whatsapp'] ?: '-')); ?></span>
                                     </div>
                                 </div>
                             </div>

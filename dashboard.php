@@ -368,12 +368,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt = db()->prepare('UPDATE employer_profiles SET 
                 owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
                 linkedin = ?, facebook = ?, instagram = ?,
-                same_location_siapkerja = ?, province = ?, city = ?, district = ?, village = ?, postal_code = ?,
+                same_location_siapkerja = ?, province = ?, city = ?, domicile_city_id = ?, district = ?, village = ?, postal_code = ?,
                 same_address_siapkerja = ?, address = ?, address_detail = ?,
                 latitude = ?, longitude = ?, permit_document = ?, doc_permission = ?,
                 workplace_photo = ?, doc_location_photo = ?,
                 description = ?, user_consent = ?, consent_accepted = ?,
-                verification_status = "PENDING", verified = 0, active_until = NULL,
+                entity_type = "Individu", verification_status = "PENDING", verified = 0, active_until = NULL,
                 extension_requested = 0, extension_status = "NONE",
                 assigned_to = NULL, assigned_at = NULL, verifier_notes = NULL, verification_checklist = NULL,
                 manual_review_status = NULL, consent_data_hash = NULL, consent_agreed = 0,
@@ -382,7 +382,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt->execute([
                 $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
-                $sameLoc, $province, $city, $district, $village, $postalCode,
+                $sameLoc, $province, $city, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc,
                 $workplacePhoto, $workplacePhoto,
@@ -393,23 +393,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt = db()->prepare('INSERT INTO employer_profiles (
                 user_id, owner_name, nik, phone, whatsapp, profession, npwp,
                 linkedin, facebook, instagram,
-                same_location_siapkerja, province, city, district, village, postal_code,
+                same_location_siapkerja, province, city, domicile_city_id, district, village, postal_code,
                 same_address_siapkerja, address, address_detail,
                 latitude, longitude, permit_document, doc_permission, workplace_photo, doc_location_photo,
                 description, user_consent, consent_accepted,
-                verification_status, verified, active_until, extension_requested, extension_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0, NULL, 0, "NONE")');
+                entity_type, verification_status, verified, active_until, extension_requested, extension_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Individu", "PENDING", 0, NULL, 0, "NONE")');
             $stmt->execute([
                 $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
-                $sameLoc, $province, $city, $district, $village, $postalCode,
+                $sameLoc, $province, $city, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
                 $description, $consent, $consent
             ]);
         }
 
-        db()->prepare('UPDATE users SET name = ?, profile_complete = 1 WHERE id = ?')->execute([$ownerName, $user['id']]);
+        db()->prepare('UPDATE users SET name = ?, domicile_city_id = ?, city = ?, profile_complete = 1 WHERE id = ?')->execute([$ownerName, $city, $city, $user['id']]);
 
         if ($isReactivation) {
             record_audit_log('employer', $user['id'], 'REACTIVATION_REQUESTED', 'Mengajukan permohonan reaktivasi Hak Akses Pemberi Kerja Individu secara online.', $user['name'], 'employer');

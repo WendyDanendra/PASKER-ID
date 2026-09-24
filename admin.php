@@ -975,20 +975,21 @@ if ($view === 'verifikasi_employer') {
     }
 
     if ($tab === 'process') {
-        $query .= ' AND ep.verification_status = "PENDING"';
+        $query .= ' AND (ep.verification_status = "PENDING" OR ep.verification_status = "NOT_SUBMITTED" OR ep.verification_status IS NULL)';
     } elseif ($tab === 'approved') {
-        $query .= ' AND ep.verification_status = "APPROVED"';
+        $query .= ' AND (ep.verification_status = "APPROVED" OR ep.verification_status = "ACTIVE_VERIFIED")';
     } elseif ($tab === 'revision') {
         $query .= ' AND ep.verification_status = "NEEDS_REVISION"';
     } elseif ($tab === 'rejected') {
-        $query .= ' AND ep.verification_status = "REJECTED"';
+        $query .= ' AND (ep.verification_status = "REJECTED" OR ep.verification_status = "FULL_DISABLED")';
     }
 
     // Scope Admin Dinas Filter (exact domicile_city_id match)
     if ($user['role'] === 'admin_dinas' || (!empty($user['domicile_city_id']) && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
         $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
         if ($adminDomicileCity !== '') {
-            $query .= ' AND ep.domicile_city_id = ?';
+            $query .= ' AND (ep.city LIKE ? OR ep.domicile_city_id = ? OR ep.domicile_city_id IS NULL OR ep.city IS NULL OR ep.city = "")';
+            $params[] = '%' . $adminDomicileCity . '%';
             $params[] = $adminDomicileCity;
         }
     }
