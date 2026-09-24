@@ -646,7 +646,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         try {
             // Lock source row inside transaction with FOR UPDATE to prevent race conditions / concurrent requests
-            $jobStmt = $pdo->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? FOR UPDATE');
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+            $jobStmt = $pdo->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?' . $forUpdate);
             $jobStmt->execute([$jobId, $user['id']]);
             $oldJob = $jobStmt->fetch();
 
@@ -798,7 +800,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         try {
             // Refresh & lock employer profile row inside transaction
-            $profStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+            $profStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ?' . $forUpdate);
             $profStmt->execute([$user['id']]);
             $currProfile = $profStmt->fetch() ?: [];
 

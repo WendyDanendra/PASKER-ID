@@ -72,7 +72,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
         try {
             // Lock row with FOR UPDATE
-            $stmtEmp = $pdo->prepare('SELECT ep.*, u.name, u.email FROM employer_profiles ep JOIN users u ON u.id = ep.user_id WHERE ep.user_id = ? FOR UPDATE');
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+            $stmtEmp = $pdo->prepare('SELECT ep.*, u.name, u.email FROM employer_profiles ep JOIN users u ON u.id = ep.user_id WHERE ep.user_id = ?' . $forUpdate);
             $stmtEmp->execute([$targetUserId]);
             $targetEmp = $stmtEmp->fetch();
 
@@ -354,7 +356,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
         try {
             // Lock employer profile row with FOR UPDATE
-            $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+            $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ?' . $forUpdate);
             $empStmt->execute([$targetUserId]);
             $targetEmp = $empStmt->fetch();
 
@@ -432,7 +436,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
         try {
             // Lock employer profile row with FOR UPDATE
-            $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+            $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ?' . $forUpdate);
             $empStmt->execute([$targetUserId]);
             $targetEmp = $empStmt->fetch();
 

@@ -828,7 +828,9 @@ function suspend_employer_access(PDO $pdo, int $targetUserId, string $reason, ar
     }
 
     try {
-        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ?' . $forUpdate);
         $empStmt->execute([$targetUserId]);
         $targetEmp = $empStmt->fetch();
 
@@ -942,7 +944,9 @@ function unsuspend_employer_access(PDO $pdo, int $targetUserId, array $actorUser
     }
 
     try {
-        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ? FOR UPDATE');
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+        $empStmt = $pdo->prepare('SELECT * FROM employer_profiles WHERE user_id = ?' . $forUpdate);
         $empStmt->execute([$targetUserId]);
         $targetEmp = $empStmt->fetch();
 
