@@ -2836,6 +2836,7 @@ document.addEventListener('click', function(e) {
                                     <?php
                                         $status = $selectedEmployer['verification_status'] ?? 'PENDING';
                                         $isRevisionStatus = in_array(strtoupper($status), ['REVISION', 'NEEDS_REVISION']) || ($tab === 'revision');
+                                        $isIndividual = strcasecmp((string)($selectedEmployer['entity_type'] ?? 'Individual'), 'Individual') === 0;
                                         $statusClass = 'pending';
                                         $statusLabel = 'Dikirim';
                                         $revNum = 1;
