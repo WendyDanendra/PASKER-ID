@@ -700,7 +700,8 @@ function role_home(string $role): string
     return match ($role) {
         'admin', 'admin_dinas', 'admin_pusat' => 'admin.php',
         'seeker' => 'seeker.php',
-        default => 'dashboard.php',
+        'employer' => 'dashboard.php',
+        default => 'index.php',
     };
 }
 
@@ -725,7 +726,12 @@ function require_role(string $role): array
             redirect('login.php?switch=1');
         }
     } elseif (($user['role'] ?? '') !== $role) {
-        redirect(role_home($user['role'] ?? ''));
+        $target = role_home($user['role'] ?? '');
+        $currentScript = basename($_SERVER['SCRIPT_NAME'] ?? '');
+        if ($target === $currentScript) {
+            redirect('login.php?switch=1');
+        }
+        redirect($target);
     }
 
     return $user;
