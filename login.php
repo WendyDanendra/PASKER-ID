@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/bootstrap.php';
 
 if (isset($_GET['switch']) || isset($_GET['logout'])) {
     logout_user();

@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/bootstrap.php';
 
 if (current_user() && !isset($_GET['success'])) {
     redirect('index.php');
@@ -13,7 +13,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
         $ownerName = 'Pemberi Kerja Individu';
     }
 
-    $uniqueEmail = 'sim.employer.' . date('YmdHis') . '.' . random_int(1000, 9999) . '@paskerid.test';
+    $cleanSlug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '.', trim($ownerName)));
+    $cleanSlug = trim($cleanSlug, '.');
+    if ($cleanSlug === '') {
+        $cleanSlug = 'employer';
+    }
+    $uniqueEmail = $cleanSlug . '@paskerid.test';
+    if (find_user_by_email($uniqueEmail)) {
+        $uniqueEmail = $cleanSlug . '.' . date('YmdHis') . '@paskerid.test';
+    }
     $tempPassword = 'password';
 
     $nik = trim($_POST['nik'] ?? '');
@@ -58,7 +66,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             ?, ?, ?, ?, ?, ?, ?,
             ?, ?, ?, ?, ?, ?, ?,
             ?, ?, ?, ?, ?, ?, ?,
-            "Individu", "PENDING", 0, ?, ?, datetime("now")
+            "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
         )');
 
         $stmtEp->execute([
@@ -69,7 +77,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
         ]);
 
         try {
-            $stmtLog = db()->prepare("INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES ('employer', ?, ?, 'employer', 'Profil dikirim untuk verifikasi.', 'Pengajuan profil pemberi kerja baru.', datetime('now'))");
+            $stmtLog = db()->prepare("INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES ('employer', ?, ?, 'employer', 'Profil dikirim untuk verifikasi.', 'Pengajuan profil pemberi kerja baru.', CURRENT_TIMESTAMP)");
             $stmtLog->execute([$userId, $ownerName]);
         } catch (Throwable $ignored) {}
 
