@@ -1,3 +1,26 @@
+window.formatSalaryInput = function(input) {
+    if (!input) return;
+    let value = input.value;
+    let cursorPosition = input.selectionStart;
+    let origLen = value.length;
+
+    let raw = value.replace(/\D/g, '');
+    if (!raw) {
+        input.value = '';
+        return;
+    }
+
+    let formatted = new Intl.NumberFormat('id-ID').format(raw);
+    input.value = formatted;
+
+    let newLen = formatted.length;
+    cursorPosition = cursorPosition + (newLen - origLen);
+    if (cursorPosition < 0) cursorPosition = 0;
+    try {
+        input.setSelectionRange(cursorPosition, cursorPosition);
+    } catch (e) {}
+};
+
 // Theme Management (Terang, Gelap, Sistem)
 function setTheme(theme) {
     localStorage.setItem('karirhub_theme', theme);
@@ -1147,8 +1170,8 @@ function initJobCreateWizard() {
         setCheckboxGroup('physical_condition[]', data.physical_conditions);
         setCheckboxGroup('gender[]', data.genders);
         setFieldValue('disability_excluded', data.disability_excluded);
-        setFieldValue('salary_min', data.salary_min);
-        setFieldValue('salary_max', data.salary_max);
+        setFieldValue('salary_min', data.salary_min ? new Intl.NumberFormat('id-ID').format(data.salary_min) : '');
+        setFieldValue('salary_max', data.salary_max ? new Intl.NumberFormat('id-ID').format(data.salary_max) : '');
         setCheckbox('show_salary', data.show_salary);
         setCheckbox('is_remote', data.is_remote);
         setCheckbox('is_limited', data.is_limited);
@@ -1230,7 +1253,7 @@ function initJobCreateWizard() {
 
         const salaryMin = panel.querySelector('[name="salary_min"]');
         const salaryMax = panel.querySelector('[name="salary_max"]');
-        if (salaryMin && salaryMax && salaryMin.value && salaryMax.value && Number(salaryMax.value) < Number(salaryMin.value)) {
+        if (salaryMin && salaryMax && salaryMin.value && salaryMax.value && Number(salaryMax.value.replace(/\D/g, '')) < Number(salaryMin.value.replace(/\D/g, ''))) {
             salaryMax.setCustomValidity('Gaji maksimal harus lebih besar atau sama dengan gaji minimal.');
             salaryMax.reportValidity();
             salaryMax.setCustomValidity('');

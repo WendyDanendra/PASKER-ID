@@ -440,8 +440,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $quota = (int)($_POST['quota'] ?? 1);
         $description = trim($_POST['job_description'] ?? $_POST['description'] ?? '');
 
-        $salaryMin = isset($_POST['salary_min']) && $_POST['salary_min'] !== '' ? (int)$_POST['salary_min'] : null;
-        $salaryMax = isset($_POST['salary_max']) && $_POST['salary_max'] !== '' ? (int)$_POST['salary_max'] : null;
+        $salaryMin = isset($_POST['salary_min']) && $_POST['salary_min'] !== '' ? (int)preg_replace('/[^0-9]/', '', (string)$_POST['salary_min']) : null;
+        $salaryMax = isset($_POST['salary_max']) && $_POST['salary_max'] !== '' ? (int)preg_replace('/[^0-9]/', '', (string)$_POST['salary_max']) : null;
 
         $physicalConditions = isset($_POST['physical_condition']) ? array_values((array)$_POST['physical_condition']) : ['Non Disabilitas'];
         $genders = isset($_POST['gender']) ? array_values((array)$_POST['gender']) : ['Laki-laki', 'Perempuan'];
@@ -1845,14 +1845,14 @@ $modal = <<<HTML
                                     <label>Gaji minimal <span class="req">*</span></label>
                                     <div class="input-addon-group">
                                         <span class="addon-text">Rp</span>
-                                        <input type="number" name="salary_min" placeholder="Isi minimal gaji yang akan diberikan" required min="0">
+                                        <input type="text" inputmode="numeric" name="salary_min" placeholder="Isi minimal gaji yang akan diberikan" required oninput="formatSalaryInput(this)">
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>Gaji maksimal <span class="req">*</span></label>
                                     <div class="input-addon-group">
                                         <span class="addon-text">Rp</span>
-                                        <input type="number" name="salary_max" placeholder="Isi maksimal gaji yang akan diberikan" required min="0">
+                                        <input type="text" inputmode="numeric" name="salary_max" placeholder="Isi maksimal gaji yang akan diberikan" required oninput="formatSalaryInput(this)">
                                     </div>
                                 </div>
                             </div>
@@ -1910,9 +1910,9 @@ $modal = <<<HTML
                                 <label>Lama expired loker <span class="req">*</span></label>
                                 <select name="expiry_days" class="form-control-custom" required>
                                     <option value="">Pilih lama expired loker</option>
-                                    <option value="14">14 Hari</option>
-                                    <option value="30" selected>30 Hari</option>
-                                    <option value="60">60 Hari</option>
+                                    <option value="30" selected>1 Bulan (<?php echo format_indo_date('+1 month', 'short'); ?>)</option>
+                                    <option value="60">2 Bulan (<?php echo format_indo_date('+2 month', 'short'); ?>)</option>
+                                    <option value="90">3 Bulan (<?php echo format_indo_date('+3 month', 'short'); ?>)</option>
                                 </select>
                             </div>
 
