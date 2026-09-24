@@ -1658,36 +1658,6 @@ window.CITY_MASTER = [
 ];
 </script>
 
-                <?php if (!$detailId): ?>
-                    <!-- ADMIN OVERVIEW KPI STATS (4 CARDS) -->
-                    <div class="cards4">
-                        <div class="card">
-                            <div class="mini-icon" style="background:#e0f2fe;color:#0284c7;"><i class="fa-solid fa-building-user"></i></div>
-                            <h3>Total Pemberi Kerja</h3>
-                            <div class="value"><?php echo number_format($statTotalEmployers); ?></div>
-                            <div class="desc neutral">Akun terdaftar di sistem</div>
-                        </div>
-                        <div class="card">
-                            <div class="mini-icon" style="background:#fff7ed;color:#ea580c;"><i class="fa-solid fa-id-card"></i></div>
-                            <h3>Antrean Verifikasi Profil</h3>
-                            <div class="value" style="<?php echo $statPendingEmployers > 0 ? 'color:#ea580c;' : ''; ?>"><?php echo number_format($statPendingEmployers); ?></div>
-                            <div class="desc <?php echo $statPendingEmployers > 0 ? 'warning' : 'neutral'; ?>">Menunggu pemeriksaan</div>
-                        </div>
-                        <div class="card">
-                            <div class="mini-icon" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-briefcase"></i></div>
-                            <h3>Antrean Moderasi Loker</h3>
-                            <div class="value" style="<?php echo $statPendingJobs > 0 ? 'color:#d97706;' : ''; ?>"><?php echo number_format($statPendingJobs); ?></div>
-                            <div class="desc <?php echo $statPendingJobs > 0 ? 'warning' : 'neutral'; ?>">Menunggu persetujuan</div>
-                        </div>
-                        <div class="card">
-                            <div class="mini-icon" style="background:#ecfdf5;color:#059669;"><i class="fa-solid fa-users"></i></div>
-                            <h3>Pencari Kerja Aktif</h3>
-                            <div class="value"><?php echo number_format($statTotalSeekers); ?></div>
-                            <div class="desc neutral">Talenta siap dilamar</div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
             <!-- ========================================== -->
             <!-- 1. DIREKTORI INDIVIDUAL (READ-ONLY DIRECTORY) -->
             <!-- ========================================== -->
