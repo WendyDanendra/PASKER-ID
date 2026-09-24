@@ -1919,31 +1919,42 @@ window.CITY_MASTER = [
                                 </div>
 
                                 <!-- Dokumen Pendukung & Foto Bukti -->
-                                <div style="border-top:1px solid #f1f5f9; padding-top:14px; display:flex; flex-direction:column; gap:12px;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <i class="fa-regular fa-file-lines" style="color:#64748b; font-size:16px;"></i>
-                                            <div>
-                                                <div style="font-size:12px; color:#64748b;">Dokumen Pendukung</div>
-                                                <div style="font-size:13px; font-weight:600; color:#0f172a;"><?php echo e($docPermissionName); ?></div>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-permission" style="padding:6px 14px; font-size:12px; font-weight:600;">
-                                            Lihat Dokumen
-                                        </button>
+                                <div style="border-top:1px solid #f1f5f9; padding-top:16px; margin-top:14px;">
+                                    <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                                        <i class="fa-regular fa-folder-closed" style="color:#0284c7;"></i> Dokumen Pendukung & Foto Bukti
                                     </div>
-
-                                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <i class="fa-regular fa-image" style="color:#64748b; font-size:16px;"></i>
-                                            <div>
-                                                <div style="font-size:12px; color:#64748b;">Foto Bukti Tempat Usaha / Lokasi</div>
-                                                <div style="font-size:13px; font-weight:600; color:#0f172a;"><?php echo e($photoCountLabel); ?></div>
+                                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
+                                        <!-- Dokumen Pendukung Card -->
+                                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                                            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                                <div style="width:36px; height:36px; border-radius:8px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                                    <i class="fa-regular fa-file-pdf" style="font-size:16px;"></i>
+                                                </div>
+                                                <div style="min-width:0;">
+                                                    <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">Dokumen Pendukung</div>
+                                                    <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($docPermissionName); ?>"><?php echo e($docPermissionName); ?></div>
+                                                </div>
                                             </div>
+                                            <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-permission" style="padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:6px; flex-shrink:0; background:#ffffff; border:1px solid #0284c7; color:#0284c7; cursor:pointer;">
+                                                <i class="fa-regular fa-eye"></i> Lihat Dokumen
+                                            </button>
                                         </div>
-                                        <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-photos" style="padding:6px 14px; font-size:12px; font-weight:600;">
-                                            Lihat Foto
-                                        </button>
+
+                                        <!-- Foto Bukti Card -->
+                                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                                            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                                <div style="width:36px; height:36px; border-radius:8px; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                                    <i class="fa-regular fa-image" style="font-size:16px;"></i>
+                                                </div>
+                                                <div style="min-width:0;">
+                                                    <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">Foto Lokasi / Tempat Usaha</div>
+                                                    <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo e($photoCountLabel); ?></div>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-photos" style="padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:6px; flex-shrink:0; background:#ffffff; border:1px solid #16a34a; color:#16a34a; cursor:pointer;">
+                                                <i class="fa-regular fa-eye"></i> Lihat Foto
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
