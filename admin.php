@@ -53,9 +53,25 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
                 $stmt = db()->prepare('UPDATE employer_profiles SET assigned_to = ?, assigned_at = NOW(), assignment_reason = ? WHERE user_id = ?');
                 $stmt->execute([$verifierName, $reasonText, $targetUserId]);
             }
-            record_audit_log('employer', $targetUserId, 'CASE_ASSIGNED', "Case ditugaskan kepada: {$verifierName}. Alasan: {$reasonText}", $user['name']);
-            flash('success', "Case verifikasi berhasil ditugaskan ke {$verifierName}.");
+            if ($isSelfAssign) {
+                record_audit_log('employer', $targetUserId, 'CASE_ASSIGNED', "Ditugaskan ke {$verifierName}.", $user['name']);
+                record_audit_log('employer', $targetUserId, 'CASE_TAKEN', "{$verifierName} mengambil pengajuan: Dikirim → Dalam Verifikasi.", $user['name']);
+                flash('success', "Pengajuan verifikasi berhasil diambil oleh {$verifierName}.");
+            } else {
+                record_audit_log('employer', $targetUserId, 'CASE_ASSIGNED', "Case ditugaskan kepada: {$verifierName}. Alasan: {$reasonText}", $user['name']);
+                flash('success', "Case verifikasi berhasil ditugaskan ke {$verifierName}.");
+            }
         }
+        redirect($redirectUrl);
+        exit;
+    }
+
+    if ($action === 'unassign_employer_case') {
+        $targetUserId = (int)$_POST['user_id'];
+        $stmt = db()->prepare('UPDATE employer_profiles SET assigned_to = NULL, assigned_at = NULL, assignment_reason = NULL WHERE user_id = ?');
+        $stmt->execute([$targetUserId]);
+        record_audit_log('employer', $targetUserId, 'CASE_UNASSIGNED', "Penugasan dibatalkan.", $user['name']);
+        flash('success', "Penugasan pemeriksa berhasil dibatalkan.");
         redirect($redirectUrl);
         exit;
     }
@@ -3071,6 +3087,7 @@ document.addEventListener('click', function(e) {
                                         $status = $selectedEmployer['verification_status'] ?? 'PENDING';
                                         $isRevisionStatus = in_array(strtoupper($status), ['REVISION', 'NEEDS_REVISION']) || ($tab === 'revision');
                                         $isIndividual = strcasecmp((string)($selectedEmployer['entity_type'] ?? 'Individual'), 'Individual') === 0;
+                                        $hasAssignment = !empty($selectedEmployer['assigned_to']);
                                         $statusClass = 'pending';
                                         $statusLabel = 'Dikirim';
                                         $revNum = 1;
@@ -3085,11 +3102,15 @@ document.addEventListener('click', function(e) {
                                         } elseif ($status === 'REJECTED') {
                                             $statusClass = 'danger';
                                             $statusLabel = 'Ditolak';
+                                        } elseif ($hasAssignment) {
+                                            $statusClass = 'process';
+                                            $statusLabel = 'Dalam Verifikasi';
                                         } elseif ($status === 'PENDING') {
                                             $statusClass = 'pending';
                                             $statusLabel = 'Dikirim';
                                         }
                                         $isDinasFlow = ($isRevisionStatus && ($revNum >= 3 || in_array($selectedEmployer['manual_review_status'] ?? '', ['MANUAL_DINAS_REVIEW', 'CONSENT_PENDING', 'CONSENT_GIVEN', 'INVALID'])));
+                                        $isAdminPusat = ($user['role'] === 'admin' || $user['role'] === 'admin_pusat' || strcasecmp((string)$user['name'], 'Admin Pusat') === 0);
                                     ?>
                                     <span class="pill-badge <?php echo $statusClass; ?>" style="<?php echo $isRevisionStatus ? 'background:#fef3c7; color:#d97706; border:1px solid #fde68a;' : ''; ?>">
                                         ● <?php echo e($statusLabel); ?>
@@ -3109,8 +3130,23 @@ document.addEventListener('click', function(e) {
                                 <button type="button" onclick="const sec = document.getElementById('sectionManualDinasEdit'); if (sec) { sec.scrollIntoView({behavior:'smooth'}); const dt = sec.querySelector('details'); if (dt) dt.open = true; }" style="display:inline-flex; align-items:center; gap:8px; background:#0284c7; border:none; border-radius:999px; padding:9px 20px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.25);">
                                     <i class="fa-solid fa-pen-to-square"></i> Ajukan Permohonan Ulang
                                 </button>
-                            <?php elseif (!$isRevisionStatus && $status !== 'APPROVED'): ?>
-                                <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #00a8e8; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#0284c7; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                            <?php elseif ($hasAssignment && !$isRevisionStatus && $status !== 'APPROVED' && $status !== 'REJECTED'): ?>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button type="button" data-open-modal="modal-confirm-unassign" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:999px; padding:8px 16px; font-size:13px; font-weight:700; color:#475569; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                        Batalkan Penugasan
+                                    </button>
+                                    <button type="button" data-open-modal="modal-header-revisi" style="background:#fffbeb; border:1px solid #fde68a; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#b45309; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                        Revisi
+                                    </button>
+                                    <button type="button" data-open-modal="modal-header-tolak" style="background:#fef2f2; border:1px solid #fecaca; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#b91c1c; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                        Tolak
+                                    </button>
+                                    <button type="button" data-open-modal="modal-header-setujui" style="background:#0284c7; border:none; border-radius:999px; padding:8px 20px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.3);">
+                                        Setujui
+                                    </button>
+                                </div>
+                            <?php elseif (!$hasAssignment && !$isRevisionStatus && $status !== 'APPROVED' && $status !== 'REJECTED'): ?>
+                                <button type="button" data-open-modal="modal-confirm-ambil-pengajuan" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #00a8e8; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#0284c7; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                                     <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
                                 </button>
                             <?php endif; ?>
@@ -3380,19 +3416,21 @@ document.addEventListener('click', function(e) {
                                 </div>
                             </div>
 
-                            <!-- CARD 5: ASSIGN PEMERIKSA -->
+                            <!-- CARD 5: ASSIGN / REASSIGN PEMERIKSA -->
                             <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;">
-                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">Assign Pemeriksa</div>
-
-                                <!-- NOTICE BOX -->
-                                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px; margin-bottom:16px;">
-                                    <div style="font-size:13px; font-weight:700; color:#92400e; margin-bottom:4px;">Perhatian</div>
-                                    <div style="font-size:12.5px; color:#b45309; line-height:1.4;">
-                                        Untuk mengubah pemeriksa, pemberi kerja harus memiliki penugasan aktif terlebih dahulu. Silakan ambil case terlebih dahulu melalui aksi di header.
-                                    </div>
+                                <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">
+                                    <?php echo $hasAssignment ? 'Reassign Pemeriksa' : 'Assign Pemeriksa'; ?>
                                 </div>
 
-                                <?php if ($isRevisionStatus): ?>
+                                <?php if (!$hasAssignment): ?>
+                                    <!-- NOTICE BOX WHEN UNASSIGNED -->
+                                    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px; margin-bottom:16px;">
+                                        <div style="font-size:13px; font-weight:700; color:#92400e; margin-bottom:4px;">Perhatian</div>
+                                        <div style="font-size:12.5px; color:#b45309; line-height:1.4;">
+                                            Untuk mengubah pemeriksa, pemberi kerja harus memiliki penugasan aktif terlebih dahulu. Silakan ambil case terlebih dahulu melalui aksi di header.
+                                        </div>
+                                    </div>
+
                                     <div style="margin-bottom:14px;">
                                         <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Pemeriksa <span style="color:#ef4444;">*</span></label>
                                         <div style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc; color:#94a3b8; font-size:13px; cursor:not-allowed;">
@@ -3414,6 +3452,13 @@ document.addEventListener('click', function(e) {
                                         <input type="hidden" name="admin_action" value="assign_employer_case">
                                         <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
 
+                                        <div style="margin-bottom:14px;">
+                                            <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Pemeriksa saat ini</label>
+                                            <div style="border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; background:#f8fafc; color:#0f172a; font-weight:700; font-size:13px;">
+                                                <?php echo e($selectedEmployer['assigned_to']); ?>
+                                            </div>
+                                        </div>
+
                                         <div style="margin-bottom:14px; position:relative;">
                                             <label style="font-size:13px; font-weight:600; color:#0f172a; display:block; margin-bottom:6px;">Pemeriksa <span style="color:#ef4444;">*</span></label>
                                             <input type="hidden" name="verifier_name" id="inputAssignPemeriksa" required value="">
@@ -3434,8 +3479,8 @@ document.addEventListener('click', function(e) {
                                             <textarea name="assignment_reason" required minlength="10" placeholder="Masukkan alasan penugasan (minimal 10 karakter)..." style="width:100%; min-height:80px; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; outline:none; font-family:inherit;"></textarea>
                                         </div>
 
-                                        <button type="submit" style="width:100%; height:42px; background:#7dd3fc; border:none; border-radius:10px; color:#0369a1; font-weight:700; font-size:13.5px; cursor:pointer; transition:background 0.2s;">
-                                            Assign Pemeriksa
+                                        <button type="submit" style="width:100%; height:42px; background:#0284c7; border:none; border-radius:10px; color:#ffffff; font-weight:700; font-size:13.5px; cursor:pointer; transition:background 0.2s;">
+                                            Reassign Pemeriksa
                                         </button>
                                     </form>
                                 <?php endif; ?>
@@ -3913,6 +3958,148 @@ document.addEventListener('click', function(e) {
                             <div class="modal-footer" style="display:flex; justify-content:flex-end;">
                                 <button type="button" class="ghost-btn" data-close-modal="modal-view-photos">Tutup</button>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL KONFIRMASI AMBIL PENGAJUAN -->
+                    <div class="modal-backdrop" data-modal="modal-confirm-ambil-pengajuan">
+                        <div class="modal-panel" style="width:min(460px, 92vw); border-radius:16px; padding:24px; background:#ffffff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Konfirmasi</h3>
+                                <button type="button" data-close-modal="modal-confirm-ambil-pengajuan" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:24px;">
+                                Apakah Anda yakin ingin mengambil pengajuan verifikasi ini? Pengajuan ini akan langsung ditugaskan kepada Anda sebagai pemeriksa.
+                            </p>
+                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="admin_action" value="assign_employer_case">
+                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="self_assign" value="1">
+                                <input type="hidden" name="verifier_name" value="<?php echo e($user['name'] ?: 'Admin Pusat'); ?>">
+                                <div style="display:flex; justify-content:flex-end; gap:12px;">
+                                    <button type="button" class="ghost-btn" data-close-modal="modal-confirm-ambil-pengajuan" style="border:1px solid #cbd5e1; border-radius:999px; padding:8px 20px; font-size:13px; font-weight:700; color:#475569; background:#ffffff; cursor:pointer;">
+                                        Batalkan
+                                    </button>
+                                    <button type="submit" style="background:#0284c7; border:none; border-radius:999px; padding:8px 22px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.3);">
+                                        Lanjutkan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- MODAL BATALKAN PENUGASAN -->
+                    <div class="modal-backdrop" data-modal="modal-confirm-unassign">
+                        <div class="modal-panel" style="width:min(440px, 90vw); border-radius:16px; padding:24px; background:#ffffff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Batalkan Penugasan</h3>
+                                <button type="button" data-close-modal="modal-confirm-unassign" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:24px;">
+                                Apakah Anda yakin ingin membatalkan penugasan pemeriksa pada pengajuan verifikasi ini?
+                            </p>
+                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="admin_action" value="unassign_employer_case">
+                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                <div style="display:flex; justify-content:flex-end; gap:12px;">
+                                    <button type="button" class="ghost-btn" data-close-modal="modal-confirm-unassign" style="border:1px solid #cbd5e1; border-radius:999px; padding:8px 20px; font-size:13px; font-weight:700; color:#475569; background:#ffffff; cursor:pointer;">
+                                        Batal
+                                    </button>
+                                    <button type="submit" style="background:#ef4444; border:none; border-radius:999px; padding:8px 22px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer;">
+                                        Ya, Batalkan Penugasan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- MODAL KEPUTUSAN REVISI -->
+                    <div class="modal-backdrop" data-modal="modal-header-revisi">
+                        <div class="modal-panel" style="width:min(500px, 90vw); border-radius:16px; padding:24px; background:#ffffff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Minta Revisi Verifikasi</h3>
+                                <button type="button" data-close-modal="modal-header-revisi" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="admin_action" value="verify_employer">
+                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="decision" value="revision">
+                                <div style="margin-bottom:16px;">
+                                    <label style="font-size:13px; font-weight:700; color:#0f172a; display:block; margin-bottom:6px;">Catatan Perbaikan <span style="color:#ef4444;">*</span></label>
+                                    <textarea name="verifier_notes" required placeholder="Tuliskan catatan perbaikan atau dokumen yang perlu dilengkapi..." style="width:100%; min-height:90px; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; outline:none; font-family:inherit;"></textarea>
+                                </div>
+                                <div style="display:flex; justify-content:flex-end; gap:12px;">
+                                    <button type="button" class="ghost-btn" data-close-modal="modal-header-revisi" style="border:1px solid #cbd5e1; border-radius:999px; padding:8px 20px; font-size:13px; font-weight:700; color:#475569; background:#ffffff; cursor:pointer;">
+                                        Batal
+                                    </button>
+                                    <button type="submit" style="background:#f59e0b; border:none; border-radius:999px; padding:8px 22px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer;">
+                                        Kirim Revisi
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- MODAL KEPUTUSAN TOLAK -->
+                    <div class="modal-backdrop" data-modal="modal-header-tolak">
+                        <div class="modal-panel" style="width:min(500px, 90vw); border-radius:16px; padding:24px; background:#ffffff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Tolak Verifikasi Pemberi Kerja</h3>
+                                <button type="button" data-close-modal="modal-header-tolak" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="admin_action" value="verify_employer">
+                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="decision" value="reject">
+                                <div style="margin-bottom:16px;">
+                                    <label style="font-size:13px; font-weight:700; color:#0f172a; display:block; margin-bottom:6px;">Alasan Penolakan <span style="color:#ef4444;">*</span></label>
+                                    <textarea name="verifier_notes" required placeholder="Tuliskan alasan penolakan..." style="width:100%; min-height:90px; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; color:#0f172a; outline:none; font-family:inherit;"></textarea>
+                                </div>
+                                <div style="display:flex; justify-content:flex-end; gap:12px;">
+                                    <button type="button" class="ghost-btn" data-close-modal="modal-header-tolak" style="border:1px solid #cbd5e1; border-radius:999px; padding:8px 20px; font-size:13px; font-weight:700; color:#475569; background:#ffffff; cursor:pointer;">
+                                        Batal
+                                    </button>
+                                    <button type="submit" style="background:#ef4444; border:none; border-radius:999px; padding:8px 22px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer;">
+                                        Tolak Pengajuan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- MODAL KEPUTUSAN SETUJUI -->
+                    <div class="modal-backdrop" data-modal="modal-header-setujui">
+                        <div class="modal-panel" style="width:min(440px, 90vw); border-radius:16px; padding:24px; background:#ffffff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Setujui Verifikasi</h3>
+                                <button type="button" data-close-modal="modal-header-setujui" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:24px;">
+                                Apakah Anda yakin ingin menyetujui verifikasi profil pemberi kerja ini? Profil akan aktif terverifikasi selama 3 bulan.
+                            </p>
+                            <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="admin_action" value="verify_employer">
+                                <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
+                                <input type="hidden" name="decision" value="approve">
+                                <div style="display:flex; justify-content:flex-end; gap:12px;">
+                                    <button type="button" class="ghost-btn" data-close-modal="modal-header-setujui" style="border:1px solid #cbd5e1; border-radius:999px; padding:8px 20px; font-size:13px; font-weight:700; color:#475569; background:#ffffff; cursor:pointer;">
+                                        Batal
+                                    </button>
+                                    <button type="submit" style="background:#0284c7; border:none; border-radius:999px; padding:8px 22px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.3);">
+                                        Setujui & Verifikasi
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
