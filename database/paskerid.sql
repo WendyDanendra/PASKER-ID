@@ -43,6 +43,7 @@ CREATE TABLE employer_profiles (
     linkedin VARCHAR(255) NULL,
     facebook VARCHAR(255) NULL,
     instagram VARCHAR(255) NULL,
+    social_media TEXT NULL,
     same_location_siapkerja TINYINT(1) DEFAULT 1,
     province VARCHAR(120) NOT NULL,
     city VARCHAR(120) NOT NULL,

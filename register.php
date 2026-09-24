@@ -61,28 +61,63 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 $linkedin ? "LinkedIn: {$linkedin}" : null,
                 $facebook ? "Facebook: {$facebook}" : null
             ]));
+            $pdo = db();
+            $hasSocialMediaColumn = false;
+            try {
+                if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
+                    $colCheck = $pdo->query("SHOW COLUMNS FROM employer_profiles LIKE 'social_media'");
+                    $hasSocialMediaColumn = $colCheck && (bool) $colCheck->fetch();
+                } else {
+                    $cols = array_column($pdo->query('PRAGMA table_info(employer_profiles)')->fetchAll(), 'name');
+                    $hasSocialMediaColumn = in_array('social_media', $cols, true);
+                }
+            } catch (Throwable $ignored) {}
 
-            $stmtEp = db()->prepare('INSERT INTO employer_profiles (
-                user_id, owner_name, nik, profession, phone, whatsapp, npwp,
-                province, city, district, village, postal_code, address, address_detail,
-                latitude, longitude, description, linkedin, instagram, facebook, social_media,
-                permit_document, doc_permission, workplace_photo, doc_location_photo,
-                entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?,
-                "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
-            )');
+            if ($hasSocialMediaColumn) {
+                $stmtEp = $pdo->prepare('INSERT INTO employer_profiles (
+                    user_id, owner_name, nik, profession, phone, whatsapp, npwp,
+                    province, city, district, village, postal_code, address, address_detail,
+                    latitude, longitude, description, linkedin, instagram, facebook, social_media,
+                    permit_document, doc_permission, workplace_photo, doc_location_photo,
+                    entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
+                )');
 
-            $stmtEp->execute([
-                $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
-                $province, $city, $district, $village, $postalCode, $address, $addressNotes,
-                '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook, $socialSummary,
-                $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
-                $domicileCityId, $userConsent
-            ]);
+                $stmtEp->execute([
+                    $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
+                    $province, $city, $district, $village, $postalCode, $address, $addressNotes,
+                    '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook, $socialSummary,
+                    $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
+                    $domicileCityId, $userConsent
+                ]);
+            } else {
+                $stmtEp = $pdo->prepare('INSERT INTO employer_profiles (
+                    user_id, owner_name, nik, profession, phone, whatsapp, npwp,
+                    province, city, district, village, postal_code, address, address_detail,
+                    latitude, longitude, description, linkedin, instagram, facebook,
+                    permit_document, doc_permission, workplace_photo, doc_location_photo,
+                    entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
+                )');
+
+                $stmtEp->execute([
+                    $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
+                    $province, $city, $district, $village, $postalCode, $address, $addressNotes,
+                    '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook,
+                    $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
+                    $domicileCityId, $userConsent
+                ]);
+            }
 
             try {
                 $stmtLog = db()->prepare("INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES ('employer', ?, ?, 'employer', 'Profil dikirim untuk verifikasi.', 'Pengajuan profil pemberi kerja baru.', CURRENT_TIMESTAMP)");
