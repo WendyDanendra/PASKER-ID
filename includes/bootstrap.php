@@ -170,6 +170,18 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
             if (!in_array('domicile_city_id', $cols, true)) {
                 $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN domicile_city_id TEXT');
             }
+            if (!in_array('instagram', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN instagram TEXT');
+            }
+            if (!in_array('linkedin', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN linkedin TEXT');
+            }
+            if (!in_array('facebook', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN facebook TEXT');
+            }
+            if (!in_array('social_media', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN social_media TEXT');
+            }
         } catch (Throwable $ignored) {}
     } catch (Throwable $ignored) {}
 
