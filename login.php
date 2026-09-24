@@ -119,21 +119,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             object-fit: contain;
         }
 
-        .visual-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(8px);
-            padding: 8px 16px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
         .visual-title {
             font-size: 28px;
             font-weight: 800;
@@ -340,11 +325,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- LEFT VISUAL SIDE -->
         <div class="auth-visual-side">
             <div>
-                <div class="visual-badge">
-                    <i class="fa-solid fa-id-card"></i>
-                    Otentikasi Akun SIAPkerja
-                </div>
-
                 <div class="logo-wrapper">
                     <img src="assets/logo-karirhub.png" alt="Karirhub oleh Kemnaker">
                 </div>
