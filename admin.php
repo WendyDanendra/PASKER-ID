@@ -2874,7 +2874,7 @@ document.addEventListener('click', function(e) {
                                 <button type="button" onclick="const sec = document.getElementById('sectionManualDinasEdit'); if (sec) { sec.scrollIntoView({behavior:'smooth'}); const dt = sec.querySelector('details'); if (dt) dt.open = true; }" style="display:inline-flex; align-items:center; gap:8px; background:#0284c7; border:none; border-radius:999px; padding:9px 20px; font-size:13px; font-weight:700; color:#ffffff; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.25);">
                                     <i class="fa-solid fa-pen-to-square"></i> Ajukan Permohonan Ulang
                                 </button>
-                            <?php elseif (!$isRevisionStatus): ?>
+                            <?php elseif (!$isRevisionStatus && $status !== 'APPROVED'): ?>
                                 <button type="button" data-open-modal="modal-assign-pemeriksa" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #00a8e8; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; color:#0284c7; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                                     <i class="fa-solid fa-arrows-rotate" style="color:#00a8e8;"></i> Ambil Pengajuan
                                 </button>
@@ -3429,7 +3429,7 @@ document.addEventListener('click', function(e) {
                             <!-- ========================================== -->
                             <!-- REGULAR DECISION PANEL (ASSIGNMENT MANDATORY) -->
                             <!-- ========================================== -->
-                            <?php if (!$isRevisionStatus): ?>
+                            <?php if (!$isRevisionStatus && $status === 'PENDING'): ?>
                                 <div class="section-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px; margin-top:10px;">
                                     <div class="section-card-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">Checklist & Keputusan Verifikasi Profil</div>
 
