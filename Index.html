@@ -3397,9 +3397,11 @@
                             <div class="sched-select-wrap">
                                 <select class="sched-select" id="schedJobFilter">
                                     <option value="all">Semua Lowongan</option>
-                                    <option value="1">Koki Masakan Tradisional</option>
-                                    <option value="2">Asisten Rumah Tangga</option>
-                                    <option value="3">Staf Entri Data</option>
+                                    <?php if (!empty($jobs) && $isProfileVerified): ?>
+                                        <?php foreach ($jobs as $j): ?>
+                                            <option value="<?php echo (int)$j['id']; ?>"><?php echo htmlspecialchars($j['title']); ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </select>
                                 <i class="fa-solid fa-chevron-down"></i>
                             </div>
@@ -3512,8 +3514,8 @@
                             <!-- 3. MODE HARIAN (SCREENSHOT 3) -->
                             <div id="schedViewHarian" class="sched-view-pane" style="display:none;">
                                 <div class="day-view-container">
-                                    <div class="day-current-time-marker">
-                                        <div class="day-time-pill">10:54</div>
+                                    <div class="day-current-time-marker" id="dayCurrentTimeMarker">
+                                        <div class="day-time-pill" id="dayTimePill">10:54</div>
                                         <div class="day-time-line"></div>
                                     </div>
 

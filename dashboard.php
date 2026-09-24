@@ -70,7 +70,7 @@ $isExpired = false;
 $isTransitionPeriod = false;
 $isFullDisable = false;
 
-if (in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED', 'FULL_DISABLED'], true)) {
+if (!empty($profile['verified']) && (int)$profile['verified'] === 1 && in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED', 'FULL_DISABLED'], true)) {
     if ($activeUntil) {
         if ($now <= $activeUntil) {
             $diff = $now->diff($activeUntil);
@@ -972,7 +972,7 @@ if ($selectedJobId > 0) {
 }
 
 // Prepare dynamic metrics & verification flags for Index.html template
-$isProfileVerified = in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true);
+$isProfileVerified = (!empty($profile['verified']) && (int)$profile['verified'] === 1) && in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true);
 
 $jobCounts = [
     'draft' => 0, 'menunggu' => 0, 'revisi' => 0, 'ditolak' => 0,

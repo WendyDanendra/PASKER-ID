@@ -1860,6 +1860,30 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentScheduleView = 'bulanan';
 let currentSchedulePeriodOffset = 0;
 
+function updateHarianTimeMarker() {
+    const marker = document.getElementById('dayCurrentTimeMarker');
+    const timePill = document.getElementById('dayTimePill');
+    const container = document.querySelector('.day-view-container');
+    if (!marker || !container) return;
+
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    if (timePill) timePill.textContent = `${hh}:${mm}`;
+
+    const hourRows = container.querySelectorAll('.day-hour-row');
+    if (hourRows.length > 0) {
+        const rowHeight = hourRows[0].offsetHeight || 40;
+        const totalMinutes = (hours * 60) + minutes;
+        const topPx = (totalMinutes / 60) * rowHeight;
+        marker.style.top = `${topPx}px`;
+    }
+}
+window.updateHarianTimeMarker = updateHarianTimeMarker;
+
 function setScheduleView(mode) {
     currentScheduleView = mode;
     
@@ -1875,7 +1899,12 @@ function setScheduleView(mode) {
 
     if (paneBulanan) paneBulanan.style.display = (mode === 'bulanan') ? 'block' : 'none';
     if (paneMingguan) paneMingguan.style.display = (mode === 'mingguan') ? 'block' : 'none';
-    if (paneHarian) paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
+    if (paneHarian) {
+        paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
+        if (mode === 'harian') {
+            setTimeout(updateHarianTimeMarker, 50);
+        }
+    }
 
     updateSchedulePeriodTitle();
 }
