@@ -103,12 +103,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #ffffff;
             padding: 20px 32px;
             border-radius: 20px;
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 14px 35px -8px rgba(0, 0, 0, 0.22);
-            margin-bottom: 28px;
+            margin: 0 auto 28px auto;
             border: 1px solid rgba(255, 255, 255, 0.8);
+            width: fit-content;
         }
 
         .logo-wrapper img {
@@ -324,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-container">
         <!-- LEFT VISUAL SIDE -->
         <div class="auth-visual-side">
-            <div>
+            <div style="text-align: center;">
                 <div class="logo-wrapper">
                     <img src="assets/logo-karirhub.png" alt="Karirhub oleh Kemnaker">
                 </div>
