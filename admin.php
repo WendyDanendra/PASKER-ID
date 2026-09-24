@@ -1737,9 +1737,9 @@ window.CITY_MASTER = [
                         </div>
 
                         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                            <button type="button" class="btn-lihat-detail" data-open-modal="modal-ver-info" style="display:inline-flex; align-items:center; gap:8px; padding:9px 18px; font-size:13px; font-weight:600; border-radius:8px; border:1px solid #cbd5e1; background:#ffffff; color:#334155; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                            <a href="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" class="btn-lihat-detail" style="display:inline-flex; align-items:center; gap:8px; padding:9px 18px; font-size:13px; font-weight:600; border-radius:8px; border:1px solid #cbd5e1; background:#ffffff; color:#334155; text-decoration:none; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
                                 <i class="fa-regular fa-circle-dot" style="color:#0284c7;"></i> Lihat Rincian Verifikasi
-                            </button>
+                            </a>
                             <?php if ($canReactivateSelected): ?>
                                 <button type="button" class="btn-lihat-detail" style="color:#0284c7; border-color:#93c5fd; background:#eff6ff; font-weight:700; padding:9px 18px;" data-open-modal="modal-reactivate-<?php echo $selectedEmployer['user_id']; ?>">
                                     <i class="fa-solid fa-arrows-rotate"></i> Reaktivasi Hak Akses
