@@ -971,6 +971,61 @@ if ($selectedJobId > 0) {
     }
 }
 
+// Prepare dynamic metrics & verification flags for Index.html template
+$isProfileVerified = in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true);
+
+$jobCounts = [
+    'draft' => 0, 'menunggu' => 0, 'revisi' => 0, 'ditolak' => 0,
+    'terjadwal' => 0, 'tayang' => 0, 'ditangguhkan' => 0, 'ditutup' => 0,
+    'kedaluwarsa' => 0, 'diblokir' => 0
+];
+foreach ($jobs as $j) {
+    $st = mb_strtolower($j['status'] ?? '');
+    if (str_contains($st, 'draft')) $jobCounts['draft']++;
+    elseif (str_contains($st, 'menunggu')) $jobCounts['menunggu']++;
+    elseif (str_contains($st, 'revisi')) $jobCounts['revisi']++;
+    elseif (str_contains($st, 'ditolak')) $jobCounts['ditolak']++;
+    elseif (str_contains($st, 'terjadwal')) $jobCounts['terjadwal']++;
+    elseif (str_contains($st, 'tayang') || str_contains($st, 'aktif') || str_contains($st, 'published')) $jobCounts['tayang']++;
+    elseif (str_contains($st, 'ditangguhkan')) $jobCounts['ditangguhkan']++;
+    elseif (str_contains($st, 'tutup')) $jobCounts['ditutup']++;
+    elseif (str_contains($st, 'kedaluwarsa')) $jobCounts['kedaluwarsa']++;
+    elseif (str_contains($st, 'blokir')) $jobCounts['diblokir']++;
+}
+
+$userApplications = [];
+try {
+    $appStmt = db()->prepare('
+        SELECT a.*, j.title AS job_title, u.name AS seeker_name, u.email AS seeker_email
+        FROM job_applications a
+        JOIN job_posts j ON j.id = a.job_id
+        JOIN users u ON u.id = a.seeker_id
+        WHERE j.user_id = ?
+        ORDER BY a.id DESC
+    ');
+    $appStmt->execute([$user['id']]);
+    $userApplications = $appStmt->fetchAll() ?: [];
+} catch (Throwable $e) {
+    $userApplications = [];
+}
+
+$totalApplications = count($userApplications);
+$totalWawancara = count(array_filter($userApplications, fn($a) => in_array($a['status'] ?? '', ['Wawancara', 'Interview'], true)));
+$totalDiterima = count(array_filter($userApplications, fn($a) => in_array($a['status'] ?? '', ['Diterima', 'Accepted'], true)));
+
+$userActivities = [];
+try {
+    $actStmt = db()->prepare('
+        SELECT * FROM audit_logs
+        WHERE (entity_type = "employer" AND entity_id = ?) OR user_id = ?
+        ORDER BY id DESC LIMIT 10
+    ');
+    $actStmt->execute([$user['id'], $user['id']]);
+    $userActivities = $actStmt->fetchAll() ?: [];
+} catch (Throwable $e) {
+    $userActivities = [];
+}
+
 ob_start();
 include __DIR__ . '/Index.html';
 $html = ob_get_clean();

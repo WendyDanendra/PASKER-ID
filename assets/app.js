@@ -50,7 +50,23 @@ function setActivePage(pageName) {
         return;
     }
 
-    const targetPage = pageName || 'dashboard';
+    let targetPage = pageName || 'dashboard';
+
+    const isLockedItem = document.querySelector(`.rail-btn[data-page="${targetPage}"][data-locked="true"], .drawer-menu-item[data-page="${targetPage}"][data-locked="true"]`);
+    if (isLockedItem && targetPage !== 'dashboard' && targetPage !== 'profil') {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Akses Dikunci',
+                text: 'Menu ini belum dapat diakses. Mohon selesaikan dan tunggu verifikasi profil Pemberi Kerja Anda terlebih dahulu.',
+                confirmButtonText: 'Mengerti',
+                confirmButtonColor: '#002B66'
+            });
+        } else {
+            alert('Menu ini belum dapat diakses. Mohon selesaikan dan tunggu verifikasi profil Pemberi Kerja Anda terlebih dahulu.');
+        }
+        targetPage = 'dashboard';
+    }
 
     dataPages.forEach((page) => {
         const matches = page.dataset.page === targetPage || page.id === `page-${targetPage}`;
@@ -97,6 +113,22 @@ function bindPageSwitchers() {
         item.addEventListener('click', (e) => {
             if (item.tagName === 'A' && item.getAttribute('href') && !item.getAttribute('href').startsWith('#')) {
                 return; // Let normal links work
+            }
+            if (item.getAttribute('data-locked') === 'true' || item.classList.contains('locked-nav-item')) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Akses Dikunci',
+                        text: 'Menu ini belum dapat diakses. Mohon selesaikan dan tunggu verifikasi profil Pemberi Kerja Anda terlebih dahulu.',
+                        confirmButtonText: 'Mengerti',
+                        confirmButtonColor: '#002B66'
+                    });
+                } else {
+                    alert('Menu ini belum dapat diakses. Mohon selesaikan dan tunggu verifikasi profil Pemberi Kerja Anda terlebih dahulu.');
+                }
+                return;
             }
             const target = item.dataset.page || item.dataset.nav;
             if (target) {

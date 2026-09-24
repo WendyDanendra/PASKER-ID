@@ -1658,13 +1658,15 @@
                 <button type="button" class="rail-btn active" data-page="dashboard" title="Dasbor">
                     <i class="fa-solid fa-chart-line"></i>
                 </button>
-                <button type="button" class="rail-btn" data-page="lowongan" title="Lowongan">
+                <button type="button" class="rail-btn <?php echo !$isProfileVerified ? 'locked-nav-item' : ''; ?>" data-page="lowongan" title="<?php echo $isProfileVerified ? 'Lowongan' : 'Lowongan (Dikunci - Profil Belum Terverifikasi)'; ?>" <?php echo !$isProfileVerified ? 'data-locked="true"' : ''; ?>>
                     <i class="fa-solid fa-briefcase"></i>
+                    <?php if (!$isProfileVerified): ?><i class="fa-solid fa-lock" style="font-size:9px; position:absolute; top:5px; right:5px; color:#cbd5e1;"></i><?php endif; ?>
                 </button>
-                <button type="button" class="rail-btn" data-page="jadwal" title="Jadwal Wawancara">
+                <button type="button" class="rail-btn <?php echo !$isProfileVerified ? 'locked-nav-item' : ''; ?>" data-page="jadwal" title="<?php echo $isProfileVerified ? 'Jadwal Wawancara' : 'Jadwal Wawancara (Dikunci - Profil Belum Terverifikasi)'; ?>" <?php echo !$isProfileVerified ? 'data-locked="true"' : ''; ?>>
                     <i class="fa-regular fa-calendar-check"></i>
+                    <?php if (!$isProfileVerified): ?><i class="fa-solid fa-lock" style="font-size:9px; position:absolute; top:5px; right:5px; color:#cbd5e1;"></i><?php endif; ?>
                 </button>
-                <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi kerja">
+                <button type="button" class="rail-btn" data-page="profil" title="Profil Pemberi Kerja">
                     <i class="fa-regular fa-building"></i>
                 </button>
             </div>
@@ -1758,17 +1760,23 @@
                     <i class="fa-solid fa-chart-line"></i>
                     <span>Dasbor</span>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="lowongan">
+                <button type="button" class="drawer-menu-item <?php echo !$isProfileVerified ? 'locked-nav-item' : ''; ?>" data-page="lowongan" <?php echo !$isProfileVerified ? 'data-locked="true"' : ''; ?>>
                     <i class="fa-solid fa-briefcase"></i>
                     <span>Lowongan</span>
+                    <?php if (!$isProfileVerified): ?>
+                        <i class="fa-solid fa-lock" style="margin-left:auto; font-size:12px; color:#94a3b8;" title="Menu dikunci"></i>
+                    <?php endif; ?>
                 </button>
-                <button type="button" class="drawer-menu-item" data-page="jadwal">
+                <button type="button" class="drawer-menu-item <?php echo !$isProfileVerified ? 'locked-nav-item' : ''; ?>" data-page="jadwal" <?php echo !$isProfileVerified ? 'data-locked="true"' : ''; ?>>
                     <i class="fa-regular fa-calendar-check"></i>
                     <span>Jadwal Wawancara</span>
+                    <?php if (!$isProfileVerified): ?>
+                        <i class="fa-solid fa-lock" style="margin-left:auto; font-size:12px; color:#94a3b8;" title="Menu dikunci"></i>
+                    <?php endif; ?>
                 </button>
                 <button type="button" class="drawer-menu-item" data-page="profil">
                     <i class="fa-regular fa-building"></i>
-                    <span>Profil Pemberi kerja</span>
+                    <span>Profil Pemberi Kerja</span>
                 </button>
             </div>
         </div>
@@ -2134,32 +2142,32 @@
                                     <span class="dash-stat-title">Lowongan</span>
                                     <div class="dash-stat-icon-wrap teal"><i class="fa-solid fa-briefcase"></i></div>
                                 </div>
-                                <div class="dash-stat-value" id="statLowonganVal"><?php echo max(16, count($jobs)); ?></div>
-                                <div class="dash-stat-subtitle"><strong class="pos">+9</strong> dari bulan lalu</div>
+                                <div class="dash-stat-value" id="statLowonganVal"><?php echo count($jobs); ?></div>
+                                <div class="dash-stat-subtitle"><?php echo count($jobs) > 0 ? 'Total lowongan terdaftar' : 'Belum ada lowongan'; ?></div>
                             </div>
                             <div class="dash-stat-card">
                                 <div class="dash-stat-top">
                                     <span class="dash-stat-title">Pelamar</span>
                                     <div class="dash-stat-icon-wrap green"><i class="fa-solid fa-users"></i></div>
                                 </div>
-                                <div class="dash-stat-value" id="statPelamarVal">0</div>
-                                <div class="dash-stat-subtitle"><strong class="neg">-87</strong> dari bulan lalu</div>
+                                <div class="dash-stat-value" id="statPelamarVal"><?php echo $totalApplications; ?></div>
+                                <div class="dash-stat-subtitle"><?php echo $totalApplications > 0 ? 'Total pelamar saat ini' : 'Belum ada pelamar'; ?></div>
                             </div>
                             <div class="dash-stat-card">
                                 <div class="dash-stat-top">
                                     <span class="dash-stat-title">Wawancara</span>
                                     <div class="dash-stat-icon-wrap purple"><i class="fa-regular fa-calendar-check"></i></div>
                                 </div>
-                                <div class="dash-stat-value" id="statWawancaraVal">0</div>
-                                <div class="dash-stat-subtitle">Tidak ada perubahan dari bulan lalu</div>
+                                <div class="dash-stat-value" id="statWawancaraVal"><?php echo $totalWawancara; ?></div>
+                                <div class="dash-stat-subtitle"><?php echo $totalWawancara > 0 ? 'Jadwal wawancara aktif' : 'Belum ada jadwal wawancara'; ?></div>
                             </div>
                             <div class="dash-stat-card">
                                 <div class="dash-stat-top">
                                     <span class="dash-stat-title">Diterima</span>
                                     <div class="dash-stat-icon-wrap blue"><i class="fa-regular fa-circle-check"></i></div>
                                 </div>
-                                <div class="dash-stat-value" id="statDiterimaVal">0</div>
-                                <div class="dash-stat-subtitle"><strong class="neg">-1</strong> dari bulan lalu</div>
+                                <div class="dash-stat-value" id="statDiterimaVal"><?php echo $totalDiterima; ?></div>
+                                <div class="dash-stat-subtitle"><?php echo $totalDiterima > 0 ? 'Pelamar telah diterima' : 'Belum ada kandidat diterima'; ?></div>
                             </div>
                         </div>
 
@@ -2175,215 +2183,231 @@
                                         Pengajuan 6 bulan terakhir · berdasarkan status saat ini
                                     </div>
                                 </div>
-                                <button type="button" class="dash-outline-btn" id="btnKelolaLowongan" data-page="lowongan" data-nav="lowongan">
-                                    Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
-                                </button>
-                            </div>
+                                 <button type="button" class="dash-outline-btn <?php echo !$isProfileVerified ? 'locked-nav-item' : ''; ?>" id="btnKelolaLowongan" data-page="lowongan" data-nav="lowongan" <?php echo !$isProfileVerified ? 'data-locked="true"' : ''; ?>>
+                                     Kelola Lowongan <i class="fa-solid fa-arrow-right"></i>
+                                 </button>
+                             </div>
 
-                            <div class="chart-breakdown-grid" style="margin-top:16px;">
-                                <!-- Left side: Interactive SVG Area Chart -->
-                                <div class="chart-canvas-wrap" id="chartCanvasWrap">
-                                    <svg class="pv-chart-svg" id="pvChartSvg" viewBox="0 0 620 220" preserveAspectRatio="none" style="width:100%; height:100%; overflow:visible;">
-                                        <defs>
-                                            <linearGradient id="gradMaroon" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" stop-color="#7f1d1d" stop-opacity="0.18" />
-                                                <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0.01" />
-                                            </linearGradient>
-                                            <linearGradient id="gradGreen" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" stop-color="#10b981" stop-opacity="0.25" />
-                                                <stop offset="100%" stop-color="#10b981" stop-opacity="0.02" />
-                                            </linearGradient>
-                                            <linearGradient id="gradOrange" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.22" />
-                                                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.02" />
-                                            </linearGradient>
-                                            <linearGradient id="gradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.22" />
-                                                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02" />
-                                            </linearGradient>
-                                            <linearGradient id="gradRed" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25" />
-                                                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.02" />
-                                            </linearGradient>
-                                        </defs>
+                             <div class="chart-breakdown-grid" style="margin-top:16px;">
+                                 <!-- Left side: Interactive SVG Area Chart -->
+                                 <div class="chart-canvas-wrap" id="chartCanvasWrap">
+                                     <svg class="pv-chart-svg" id="pvChartSvg" viewBox="0 0 620 220" preserveAspectRatio="none" style="width:100%; height:100%; overflow:visible;">
+                                         <defs>
+                                             <linearGradient id="gradMaroon" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                 <stop offset="0%" stop-color="#7f1d1d" stop-opacity="0.18" />
+                                                 <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0.01" />
+                                             </linearGradient>
+                                             <linearGradient id="gradGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                 <stop offset="0%" stop-color="#10b981" stop-opacity="0.25" />
+                                                 <stop offset="100%" stop-color="#10b981" stop-opacity="0.02" />
+                                             </linearGradient>
+                                             <linearGradient id="gradOrange" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                 <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.22" />
+                                                 <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.02" />
+                                             </linearGradient>
+                                             <linearGradient id="gradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                 <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.22" />
+                                                 <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02" />
+                                             </linearGradient>
+                                             <linearGradient id="gradRed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                 <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25" />
+                                                 <stop offset="100%" stop-color="#ef4444" stop-opacity="0.02" />
+                                             </linearGradient>
+                                         </defs>
 
-                                        <!-- Grid lines -->
-                                        <g class="pv-grid-lines">
-                                            <line x1="36" y1="20" x2="600" y2="20" stroke="#f1f5f9" stroke-width="1" />
-                                            <line x1="36" y1="62" x2="600" y2="62" stroke="#f1f5f9" stroke-width="1" />
-                                            <line x1="36" y1="104" x2="600" y2="104" stroke="#f1f5f9" stroke-width="1" />
-                                            <line x1="36" y1="146" x2="600" y2="146" stroke="#f1f5f9" stroke-width="1" />
-                                            <line x1="36" y1="188" x2="600" y2="188" stroke="#f1f5f9" stroke-width="1" />
-                                        </g>
-                                        <!-- Y-Axis Labels -->
-                                        <g class="pv-y-labels" font-size="11" fill="#94a3b8" font-family="Inter, sans-serif">
-                                            <text x="14" y="24" text-anchor="start">16</text>
-                                            <text x="14" y="66" text-anchor="start">12</text>
-                                            <text x="14" y="108" text-anchor="start">8</text>
-                                            <text x="14" y="150" text-anchor="start">4</text>
-                                            <text x="14" y="192" text-anchor="start">0</text>
-                                        </g>
+                                         <!-- Grid lines -->
+                                         <g class="pv-grid-lines">
+                                             <line x1="36" y1="20" x2="600" y2="20" stroke="#f1f5f9" stroke-width="1" />
+                                             <line x1="36" y1="62" x2="600" y2="62" stroke="#f1f5f9" stroke-width="1" />
+                                             <line x1="36" y1="104" x2="600" y2="104" stroke="#f1f5f9" stroke-width="1" />
+                                             <line x1="36" y1="146" x2="600" y2="146" stroke="#f1f5f9" stroke-width="1" />
+                                             <line x1="36" y1="188" x2="600" y2="188" stroke="#f1f5f9" stroke-width="1" />
+                                         </g>
+                                         <!-- Y-Axis Labels -->
+                                         <g class="pv-y-labels" font-size="11" fill="#94a3b8" font-family="Inter, sans-serif">
+                                             <text x="14" y="24" text-anchor="start">16</text>
+                                             <text x="14" y="66" text-anchor="start">12</text>
+                                             <text x="14" y="108" text-anchor="start">8</text>
+                                             <text x="14" y="150" text-anchor="start">4</text>
+                                             <text x="14" y="192" text-anchor="start">0</text>
+                                         </g>
 
-                                        <!-- Area series paths matching Screenshot 1 curves -->
-                                        <!-- Maroon Series -->
-                                        <path class="pv-area-maroon" d="M 46 167 C 100 180, 120 188, 154 188 C 188 188, 220 178, 262 178 C 304 178, 330 180, 370 178 C 410 176, 440 140, 478 114 C 516 88, 550 40, 586 20 L 586 188 L 46 188 Z" fill="url(#gradMaroon)" />
-                                        <path class="pv-line-maroon" d="M 46 167 C 100 180, 120 188, 154 188 C 188 188, 220 178, 262 178 C 304 178, 330 180, 370 178 C 410 176, 440 140, 478 114 C 516 88, 550 40, 586 20" fill="none" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round" />
+                                         <!-- Area series paths matching Screenshot 1 curves -->
+                                         <!-- Maroon Series -->
+                                         <path class="pv-area-maroon" d="M 46 167 C 100 180, 120 188, 154 188 C 188 188, 220 178, 262 178 C 304 178, 330 180, 370 178 C 410 176, 440 140, 478 114 C 516 88, 550 40, 586 20 L 586 188 L 46 188 Z" fill="url(#gradMaroon)" />
+                                         <path class="pv-line-maroon" d="M 46 167 C 100 180, 120 188, 154 188 C 188 188, 220 178, 262 178 C 304 178, 330 180, 370 178 C 410 176, 440 140, 478 114 C 516 88, 550 40, 586 20" fill="none" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round" />
 
-                                        <!-- Green Series (Tayang) -->
-                                        <path class="pv-area-green" d="M 46 188 C 154 188, 262 188, 370 188 C 420 188, 440 180, 478 178 C 516 176, 540 65, 586 32 L 586 188 L 46 188 Z" fill="url(#gradGreen)" />
-                                        <path class="pv-line-green" d="M 46 188 C 154 188, 262 188, 370 188 C 420 188, 440 180, 478 178 C 516 176, 540 65, 586 32" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
+                                         <!-- Green Series (Tayang) -->
+                                         <path class="pv-area-green" d="M 46 188 C 154 188, 262 188, 370 188 C 420 188, 440 180, 478 178 C 516 176, 540 65, 586 32 L 586 188 L 46 188 Z" fill="url(#gradGreen)" />
+                                         <path class="pv-line-green" d="M 46 188 C 154 188, 262 188, 370 188 C 420 188, 440 180, 478 178 C 516 176, 540 65, 586 32" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
 
-                                        <!-- Orange Series -->
-                                        <path class="pv-area-orange" d="M 46 188 C 262 188, 370 188, 478 188 C 510 188, 540 110, 586 150 L 586 188 L 46 188 Z" fill="url(#gradOrange)" />
-                                        <path class="pv-line-orange" d="M 46 188 C 262 188, 370 188, 478 188 C 510 188, 540 110, 586 150" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+                                         <!-- Orange Series -->
+                                         <path class="pv-area-orange" d="M 46 188 C 262 188, 370 188, 478 188 C 510 188, 540 110, 586 150 L 586 188 L 46 188 Z" fill="url(#gradOrange)" />
+                                         <path class="pv-line-orange" d="M 46 188 C 262 188, 370 188, 478 188 C 510 188, 540 110, 586 150" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
 
-                                        <!-- Blue Series -->
-                                        <path class="pv-area-blue" d="M 46 188 C 370 188, 440 188, 478 188 C 520 188, 550 172, 586 167 L 586 188 L 46 188 Z" fill="url(#gradBlue)" />
-                                        <path class="pv-line-blue" d="M 46 188 C 370 188, 440 188, 478 188 C 520 188, 550 172, 586 167" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
+                                         <!-- Blue Series -->
+                                         <path class="pv-area-blue" d="M 46 188 C 370 188, 440 188, 478 188 C 520 188, 550 172, 586 167 L 586 188 L 46 188 Z" fill="url(#gradBlue)" />
+                                         <path class="pv-line-blue" d="M 46 188 C 370 188, 440 188, 478 188 C 520 188, 550 172, 586 167" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
 
-                                        <!-- Red Series -->
-                                        <path class="pv-area-red" d="M 46 188 C 370 188, 478 188, 510 188 C 540 188, 560 176, 586 172 L 586 188 L 46 188 Z" fill="url(#gradRed)" />
-                                        <path class="pv-line-red" d="M 46 188 C 370 188, 478 188, 510 188 C 540 188, 560 176, 586 172" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
+                                         <!-- Red Series -->
+                                         <path class="pv-area-red" d="M 46 188 C 370 188, 478 188, 510 188 C 540 188, 560 176, 586 172 L 586 188 L 46 188 Z" fill="url(#gradRed)" />
+                                         <path class="pv-line-red" d="M 46 188 C 370 188, 478 188, 510 188 C 540 188, 560 176, 586 172" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
 
-                                        <!-- Hover guide line & point -->
-                                        <line class="pv-hover-guideline" id="pvHoverLine" x1="0" y1="20" x2="0" y2="188" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" opacity="0" />
-                                        <circle class="pv-hover-dot" id="pvHoverDot" cx="0" cy="0" r="4" fill="#ffffff" stroke="#7f1d1d" stroke-width="2" opacity="0" />
+                                         <!-- Hover guide line & point -->
+                                         <line class="pv-hover-guideline" id="pvHoverLine" x1="0" y1="20" x2="0" y2="188" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" opacity="0" />
+                                         <circle class="pv-hover-dot" id="pvHoverDot" cx="0" cy="0" r="4" fill="#ffffff" stroke="#7f1d1d" stroke-width="2" opacity="0" />
 
-                                        <!-- X-Axis Labels -->
-                                        <g class="pv-x-labels" font-size="11" fill="#64748b" font-family="Inter, sans-serif">
-                                            <text class="pv-x-tick" data-month-index="0" x="46" y="210" text-anchor="middle" cursor="pointer">Apr</text>
-                                            <text class="pv-x-tick" data-month-index="1" x="154" y="210" text-anchor="middle" cursor="pointer">May</text>
-                                            <text class="pv-x-tick" data-month-index="2" x="262" y="210" text-anchor="middle" cursor="pointer">Jun</text>
-                                            <text class="pv-x-tick" data-month-index="3" x="370" y="210" text-anchor="middle" cursor="pointer">Jul</text>
-                                            <text class="pv-x-tick" data-month-index="4" x="478" y="210" text-anchor="middle" cursor="pointer">Aug</text>
-                                            <text class="pv-x-tick" data-month-index="5" x="586" y="210" text-anchor="middle" cursor="pointer">Sep</text>
-                                        </g>
-                                    </svg>
+                                         <!-- X-Axis Labels -->
+                                         <g class="pv-x-labels" font-size="11" fill="#64748b" font-family="Inter, sans-serif">
+                                             <text class="pv-x-tick" data-month-index="0" x="46" y="210" text-anchor="middle" cursor="pointer">Apr</text>
+                                             <text class="pv-x-tick" data-month-index="1" x="154" y="210" text-anchor="middle" cursor="pointer">May</text>
+                                             <text class="pv-x-tick" data-month-index="2" x="262" y="210" text-anchor="middle" cursor="pointer">Jun</text>
+                                             <text class="pv-x-tick" data-month-index="3" x="370" y="210" text-anchor="middle" cursor="pointer">Jul</text>
+                                             <text class="pv-x-tick" data-month-index="4" x="478" y="210" text-anchor="middle" cursor="pointer">Aug</text>
+                                             <text class="pv-x-tick" data-month-index="5" x="586" y="210" text-anchor="middle" cursor="pointer">Sep</text>
+                                         </g>
+                                     </svg>
 
-                                    <!-- Interactive Tooltip Overlay (Screenshot 2) -->
-                                    <div class="pv-chart-tooltip" id="pvChartTooltip" style="display:none;">
-                                        <div class="pv-tt-month" id="pvTtMonth">May</div>
-                                        <div class="pv-tt-list">
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq draft"></span> Draft</span>
-                                                <strong class="pv-tt-val" id="pvTtDraft">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq menunggu"></span> Menunggu Verifikasi</span>
-                                                <strong class="pv-tt-val" id="pvTtMenunggu">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq revisi"></span> Perlu Direvisi</span>
-                                                <strong class="pv-tt-val" id="pvTtRevisi">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq ditolak"></span> Ditolak</span>
-                                                <strong class="pv-tt-val" id="pvTtDitolak">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq terjadwal"></span> Terjadwal Tayang</span>
-                                                <strong class="pv-tt-val" id="pvTtTerjadwal">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq tayang"></span> Tayang</span>
-                                                <strong class="pv-tt-val" id="pvTtTayang">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq ditangguhkan"></span> Ditangguhkan</span>
-                                                <strong class="pv-tt-val" id="pvTtDitangguhkan">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq ditutup"></span> Ditutup</span>
-                                                <strong class="pv-tt-val" id="pvTtDitutup">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq kedaluwarsa"></span> Kedaluwarsa</span>
-                                                <strong class="pv-tt-val" id="pvTtKedaluwarsa">0</strong>
-                                            </div>
-                                            <div class="pv-tt-row">
-                                                <span class="pv-tt-name"><span class="pv-tt-sq diblokir"></span> Diblokir</span>
-                                                <strong class="pv-tt-val" id="pvTtDiblokir">0</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                     <!-- Interactive Tooltip Overlay (Screenshot 2) -->
+                                     <div class="pv-chart-tooltip" id="pvChartTooltip" style="display:none;">
+                                         <div class="pv-tt-month" id="pvTtMonth">May</div>
+                                         <div class="pv-tt-list">
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq draft"></span> Draft</span>
+                                                 <strong class="pv-tt-val" id="pvTtDraft">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq menunggu"></span> Menunggu Verifikasi</span>
+                                                 <strong class="pv-tt-val" id="pvTtMenunggu">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq revisi"></span> Perlu Direvisi</span>
+                                                 <strong class="pv-tt-val" id="pvTtRevisi">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq ditolak"></span> Ditolak</span>
+                                                 <strong class="pv-tt-val" id="pvTtDitolak">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq terjadwal"></span> Terjadwal Tayang</span>
+                                                 <strong class="pv-tt-val" id="pvTtTerjadwal">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq tayang"></span> Tayang</span>
+                                                 <strong class="pv-tt-val" id="pvTtTayang">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq ditangguhkan"></span> Ditangguhkan</span>
+                                                 <strong class="pv-tt-val" id="pvTtDitangguhkan">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq ditutup"></span> Ditutup</span>
+                                                 <strong class="pv-tt-val" id="pvTtDitutup">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq kedaluwarsa"></span> Kedaluwarsa</span>
+                                                 <strong class="pv-tt-val" id="pvTtKedaluwarsa">0</strong>
+                                             </div>
+                                             <div class="pv-tt-row">
+                                                 <span class="pv-tt-name"><span class="pv-tt-sq diblokir"></span> Diblokir</span>
+                                                 <strong class="pv-tt-val" id="pvTtDiblokir">0</strong>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
 
-                                <!-- Right side: Total lowongan Breakdown (Screenshot 1) -->
-                                <div class="chart-total-side">
-                                    <div class="chart-total-label">Total lowongan</div>
-                                    <div class="chart-total-val" id="chartTotalLowonganVal">174</div>
-                                    <div class="chart-total-divider"></div>
-                                    <div class="chart-status-list">
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-menunggu"></span> Menunggu Verifikasi
-                                            </div>
-                                            <span class="chart-status-count" id="countMenunggu">1</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-revisi"></span> Perlu Direvisi
-                                            </div>
-                                            <span class="chart-status-count" id="countRevisi">2</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-ditolak"></span> Ditolak
-                                            </div>
-                                            <span class="chart-status-count" id="countDitolak">1</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-ditangguhkan"></span> Ditangguhkan
-                                            </div>
-                                            <span class="chart-status-count" id="countDitangguhkan">0</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-diblokir"></span> Diblokir
-                                            </div>
-                                            <span class="chart-status-count" id="countDiblokir">3</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-terjadwal"></span> Terjadwal Tayang
-                                            </div>
-                                            <span class="chart-status-count" id="countTerjadwal">0</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-tayang"></span> Tayang
-                                            </div>
-                                            <span class="chart-status-count" id="countTayang">12</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-draft"></span> Draft
-                                            </div>
-                                            <span class="chart-status-count" id="countDraft">0</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-kedaluwarsa"></span> Kedaluwarsa
-                                            </div>
-                                            <span class="chart-status-count" id="countKedaluwarsa">7</span>
-                                        </div>
-                                        <div class="chart-status-row">
-                                            <div class="chart-status-name">
-                                                <span class="status-dot dot-ditutup"></span> Ditutup
-                                            </div>
-                                            <span class="chart-status-count" id="countDitutup">148</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                 <!-- Right side: Total lowongan Breakdown (Screenshot 1) -->
+                                 <div class="chart-total-side">
+                                     <div class="chart-total-label">Total lowongan</div>
+                                     <div class="chart-total-val" id="chartTotalLowonganVal"><?php echo count($jobs); ?></div>
+                                     <div class="chart-total-divider"></div>
+                                     <div class="chart-status-list">
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-menunggu"></span> Menunggu Verifikasi
+                                             </div>
+                                             <span class="chart-status-count" id="countMenunggu"><?php echo $jobCounts['menunggu']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-revisi"></span> Perlu Direvisi
+                                             </div>
+                                             <span class="chart-status-count" id="countRevisi"><?php echo $jobCounts['revisi']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-ditolak"></span> Ditolak
+                                             </div>
+                                             <span class="chart-status-count" id="countDitolak"><?php echo $jobCounts['ditolak']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-ditangguhkan"></span> Ditangguhkan
+                                             </div>
+                                             <span class="chart-status-count" id="countDitangguhkan"><?php echo $jobCounts['ditangguhkan']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-diblokir"></span> Diblokir
+                                             </div>
+                                             <span class="chart-status-count" id="countDiblokir"><?php echo $jobCounts['diblokir']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-terjadwal"></span> Terjadwal Tayang
+                                             </div>
+                                             <span class="chart-status-count" id="countTerjadwal"><?php echo $jobCounts['terjadwal']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-tayang"></span> Tayang
+                                             </div>
+                                             <span class="chart-status-count" id="countTayang"><?php echo $jobCounts['tayang']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-draft"></span> Draft
+                                             </div>
+                                             <span class="chart-status-count" id="countDraft"><?php echo $jobCounts['draft']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-kedaluwarsa"></span> Kedaluwarsa
+                                             </div>
+                                             <span class="chart-status-count" id="countKedaluwarsa"><?php echo $jobCounts['kedaluwarsa']; ?></span>
+                                         </div>
+                                         <div class="chart-status-row">
+                                             <div class="chart-status-name">
+                                                 <span class="status-dot dot-ditutup"></span> Ditutup
+                                             </div>
+                                             <span class="chart-status-count" id="countDitutup"><?php echo $jobCounts['ditutup']; ?></span>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
 
-                            <!-- Bottom Warning Alert Banner (Screenshot 1) -->
-                            <div class="chart-warning-banner" id="chartWarningBanner">
-                                <i class="fa-solid fa-triangle-exclamation" style="color:#d97706; font-size:14px; flex-shrink:0;"></i>
-                                <span><strong>1 lowongan</strong> menunggu verifikasi, <strong>2 lowongan</strong> perlu direvisi, <strong>1 lowongan</strong> ditolak dan <strong>3 lowongan</strong> diblokir. Periksa agar lowongan dapat segera tayang.</span>
-                            </div>
-                        </div>
+                             <!-- Bottom Warning Alert Banner (Screenshot 1) -->
+                             <?php if (($jobCounts['menunggu'] + $jobCounts['revisi'] + $jobCounts['ditolak'] + $jobCounts['diblokir']) > 0): ?>
+                             <div class="chart-warning-banner" id="chartWarningBanner">
+                                 <i class="fa-solid fa-triangle-exclamation" style="color:#d97706; font-size:14px; flex-shrink:0;"></i>
+                                 <span>
+                                     <?php 
+                                     $parts = [];
+                                     if ($jobCounts['menunggu'] > 0) $parts[] = '<strong>' . $jobCounts['menunggu'] . ' lowongan</strong> menunggu verifikasi';
+                                     if ($jobCounts['revisi'] > 0) $parts[] = '<strong>' . $jobCounts['revisi'] . ' lowongan</strong> perlu direvisi';
+                                     if ($jobCounts['ditolak'] > 0) $parts[] = '<strong>' . $jobCounts['ditolak'] . ' lowongan</strong> ditolak';
+                                     if ($jobCounts['diblokir'] > 0) $parts[] = '<strong>' . $jobCounts['diblokir'] . ' lowongan</strong> diblokir';
+                                     echo implode(', ', $parts) . '. Periksa agar lowongan dapat segera tayang.';
+                                     ?>
+                                 </span>
+                             </div>
+                             <?php else: ?>
+                             <div class="chart-warning-banner" id="chartWarningBanner" style="background:#f8fafc; border-color:#e2e8f0; color:#64748b;">
+                                 <i class="fa-solid fa-circle-check" style="color:#10b981; font-size:14px; flex-shrink:0;"></i>
+                                 <span>Semua lowongan terpantau aman dan tidak ada catatan pengajuan.</span>
+                             </div>
+                             <?php endif; ?>
+                         </div>
 
                         <!-- BOTTOM 3-COLUMN GRID (SCREENSHOT 1) -->
                         <div class="dash-bottom-3col">
@@ -2392,91 +2416,35 @@
                                 <div class="dash-bottom-card-header">
                                     <div class="dash-bottom-card-title">Pelamar siap diseleksi</div>
                                 </div>
-                                <div class="dash-applicant-list" id="readyApplicantList">
-                                    <div class="dash-applicant-item">
-                                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Erina Meliani</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
+                                <?php if (empty($userApplications) || !$isProfileVerified): ?>
+                                    <div style="padding: 36px 16px; text-align: center; color: #64748b;">
+                                        <div style="width:48px; height:48px; border-radius:50%; background:#f1f5f9; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;">
+                                            <i class="fa-solid fa-user-slash" style="font-size:20px; color:#94a3b8;"></i>
                                         </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                    <div class="dash-applicant-item">
-                                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Amelia Yunita Putri</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
+                                        <div style="font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 4px;">Belum Ada Pelamar</div>
+                                        <div style="font-size: 12px; color: #64748b; max-width: 240px; margin: 0 auto; line-height: 1.4;">
+                                            <?php echo !$isProfileVerified ? 'Profil belum terverifikasi. Selesaikan verifikasi untuk mulai menerima lamaran.' : 'Belum ada kandidat pelamar yang mengajukan lamaran.'; ?>
                                         </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
                                     </div>
-                                    <div class="dash-applicant-item">
-                                        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Siti Fatimah</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
+                                <?php else: ?>
+                                    <div class="dash-applicant-list" id="readyApplicantList">
+                                        <?php foreach ($userApplications as $idx => $app): ?>
+                                        <div class="dash-applicant-item <?php echo $idx >= 5 ? 'extra-applicant' : ''; ?>" <?php echo $idx >= 5 ? 'style="display:none;"' : ''; ?>>
+                                            <img src="<?php echo !empty($app['avatar']) ? htmlspecialchars($app['avatar']) : 'https://ui-avatars.com/api/?name=' . urlencode($app['name'] ?? 'Pelamar'); ?>" alt="" class="dash-applicant-avatar">
+                                            <div class="dash-applicant-info">
+                                                <div class="dash-applicant-name"><?php echo htmlspecialchars($app['name'] ?? 'Nama Pelamar'); ?></div>
+                                                <div class="dash-applicant-role"><?php echo htmlspecialchars($app['role'] ?? 'Posisi'); ?></div>
+                                            </div>
+                                            <span class="dash-applicant-tag"><?php echo htmlspecialchars($app['status'] ?? 'Lamaran Masuk'); ?></span>
                                         </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
+                                        <?php endforeach; ?>
                                     </div>
-                                    <div class="dash-applicant-item">
-                                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">SAUMI AWALIA AL BANJARI</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
-                                        </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                    <div class="dash-applicant-item">
-                                        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Gusti Sapriani</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
-                                        </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
-                                        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Putri Rere Maulinda</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
-                                        </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
-                                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Leni Maulina</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
-                                        </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
-                                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Rezka Franeta Marlena Sari</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
-                                        </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
-                                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Shella Oktavia Putri</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
-                                        </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                    <div class="dash-applicant-item extra-applicant" style="display:none;">
-                                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=64&auto=format&fit=crop&q=60" alt="" class="dash-applicant-avatar">
-                                        <div class="dash-applicant-info">
-                                            <div class="dash-applicant-name">Kezia Nauli</div>
-                                            <div class="dash-applicant-role">Sekretaris</div>
-                                        </div>
-                                        <span class="dash-applicant-tag">Lamaran Masuk</span>
-                                    </div>
-                                </div>
-                                <button type="button" class="dash-show-more-btn" id="btnToggleMoreApplicants" onclick="toggleMoreApplicants()">
-                                    <i class="fa-solid fa-chevron-down"></i> Tampilkan lebih banyak
-                                </button>
+                                    <?php if (count($userApplications) > 5): ?>
+                                    <button type="button" class="dash-show-more-btn" id="btnToggleMoreApplicants" onclick="toggleMoreApplicants()">
+                                        <i class="fa-solid fa-chevron-down"></i> Tampilkan lebih banyak
+                                    </button>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Col 2: Aktivitas Lamaran -->
@@ -2487,57 +2455,29 @@
                                         <span>Aktivitas Lamaran</span>
                                     </div>
                                 </div>
-                                <div class="dash-activity-timeline">
-                                    <div class="dash-activity-row">
-                                        <div class="dash-activity-badge blue"><i class="fa-regular fa-file-lines"></i></div>
-                                        <div class="dash-activity-text">
-                                            <div><strong>Lamaran dipelajari</strong> · Ajat Sudrajat — Sales Eksekutif</div>
-                                            <div class="dash-activity-meta">09 Sep 2026, 17:51 · oleh Pandu Isdiyanto, S.T., M.M.</div>
+                                <?php if (empty($userActivities) || !$isProfileVerified): ?>
+                                    <div style="padding: 36px 16px; text-align: center; color: #64748b;">
+                                        <div style="width:48px; height:48px; border-radius:50%; background:#f1f5f9; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;">
+                                            <i class="fa-regular fa-folder-open" style="font-size:20px; color:#94a3b8;"></i>
+                                        </div>
+                                        <div style="font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 4px;">Belum Ada Aktivitas</div>
+                                        <div style="font-size: 12px; color: #64748b; max-width: 240px; margin: 0 auto; line-height: 1.4;">
+                                            Belum ada aktivitas lamaran atau tindakan yang dicatat.
                                         </div>
                                     </div>
-                                    <div class="dash-activity-row">
-                                        <div class="dash-activity-badge blue"><i class="fa-regular fa-file-lines"></i></div>
-                                        <div class="dash-activity-text">
-                                            <div><strong>Lamaran dipelajari</strong> · MUCHAMAD SODIKIN — Sales Eksekutif</div>
-                                            <div class="dash-activity-meta">09 Sep 2026, 17:48 · oleh Pandu Isdiyanto, S.T., M.M.</div>
+                                <?php else: ?>
+                                    <div class="dash-activity-timeline">
+                                        <?php foreach ($userActivities as $act): ?>
+                                        <div class="dash-activity-row">
+                                            <div class="dash-activity-badge <?php echo $act['badgeClass'] ?? 'blue'; ?>"><i class="<?php echo $act['iconClass'] ?? 'fa-regular fa-file-lines'; ?>"></i></div>
+                                            <div class="dash-activity-text">
+                                                <div><strong><?php echo htmlspecialchars($act['title']); ?></strong> · <?php echo htmlspecialchars($act['detail']); ?></div>
+                                                <div class="dash-activity-meta"><?php echo htmlspecialchars($act['meta']); ?></div>
+                                            </div>
                                         </div>
+                                        <?php endforeach; ?>
                                     </div>
-                                    <div class="dash-activity-row">
-                                        <div class="dash-activity-badge green"><i class="fa-regular fa-circle-check"></i></div>
-                                        <div class="dash-activity-text">
-                                            <div><strong>Lamaran diterima</strong> · Alvin Vigo Pratama — Testing</div>
-                                            <div class="dash-activity-meta">24 Agt 2026, 14:00 · oleh Pandu Isdiyanto, S.T., M.M.</div>
-                                        </div>
-                                    </div>
-                                    <div class="dash-activity-row">
-                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
-                                        <div class="dash-activity-text">
-                                            <div><strong>Melamar posisi ini</strong> · Muhammad Arsyi Haykal — Testing Dummy</div>
-                                            <div class="dash-activity-meta">19 Agt 2026, 14:41 · oleh Muhammad Arsyi Haykal</div>
-                                        </div>
-                                    </div>
-                                    <div class="dash-activity-row">
-                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
-                                        <div class="dash-activity-text">
-                                            <div><strong>Melamar posisi ini</strong> · DIRGA RISKIYAGA UTAMA — Testing Dummy</div>
-                                            <div class="dash-activity-meta">19 Agt 2026, 14:41 · oleh DIRGA RISKIYAGA UTAMA</div>
-                                        </div>
-                                    </div>
-                                    <div class="dash-activity-row">
-                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
-                                        <div class="dash-activity-text">
-                                            <div><strong>Melamar posisi ini</strong> · MIRA KHAFIDHOTUR ROHMAH — Testing Dummy</div>
-                                            <div class="dash-activity-meta">19 Agt 2026, 14:37 · oleh MIRA KHAFIDHOTUR ROHMAH</div>
-                                        </div>
-                                    </div>
-                                    <div class="dash-activity-row">
-                                        <div class="dash-activity-badge gray"><i class="fa-solid fa-user-plus"></i></div>
-                                        <div class="dash-activity-text">
-                                            <div><strong>Melamar posisi ini</strong> · Alvin Vigo Pratama — Testing</div>
-                                            <div class="dash-activity-meta">19 Agt 2026, 14:32 · oleh Alvin Vigo Pratama</div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Col 3: Wawancara Terdekat -->
@@ -2547,7 +2487,7 @@
                                         <i class="fa-regular fa-calendar-check" style="color:#0284c7;"></i>
                                         <span>Wawancara Terdekat</span>
                                     </div>
-                                    <button type="button" class="dash-outline-btn" data-page="jadwal" data-nav="jadwal" style="padding:4px 10px; font-size:11px;">
+                                    <button type="button" class="dash-outline-btn <?php echo !$isProfileVerified ? 'locked-nav-item' : ''; ?>" data-page="jadwal" data-nav="jadwal" style="padding:4px 10px; font-size:11px;" <?php echo !$isProfileVerified ? 'data-locked="true"' : ''; ?>>
                                         Kalender <i class="fa-solid fa-arrow-right"></i>
                                     </button>
                                 </div>
