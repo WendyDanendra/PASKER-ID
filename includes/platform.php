@@ -1039,18 +1039,33 @@ function unsuspend_employer_access(PDO $pdo, int $targetUserId, array $actorUser
  * Format date string into Indonesian formatted date.
  * E.g. '2026-09-22' -> '22 September 2026'
  */
-function format_indo_date(?string $dateRaw): string
+function format_indo_date($dateRaw, string $format = 'long'): string
 {
     if (empty($dateRaw)) {
         return '-';
     }
     try {
-        $d = new DateTime($dateRaw);
+        if ($dateRaw instanceof DateTimeInterface) {
+            $d = $dateRaw;
+        } else {
+            $d = new DateTime((string)$dateRaw);
+        }
         $monthsLong = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
             7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
-        return $d->format('j') . ' ' . $monthsLong[(int)$d->format('n')] . ' ' . $d->format('Y');
+        $monthsShort = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+        $monthNum = (int)$d->format('n');
+        if ($format === 'short') {
+            return $d->format('j') . ' ' . ($monthsShort[$monthNum] ?? '') . ' ' . $d->format('Y');
+        }
+        if ($format === 'day_month') {
+            return $d->format('j') . ' ' . ($monthsShort[$monthNum] ?? '');
+        }
+        return $d->format('j') . ' ' . ($monthsLong[$monthNum] ?? '') . ' ' . $d->format('Y');
     } catch (Exception $e) {
         return '-';
     }
@@ -1060,14 +1075,14 @@ function format_indo_date(?string $dateRaw): string
  * Format date range into Indonesian cycle format.
  * E.g. ('2026-09-21', '2026-12-21') -> '21 Sep – 21 Des 2026'
  */
-function format_cycle_range(?string $startDateRaw, ?string $endDateRaw): string
+function format_cycle_range($startDateRaw, $endDateRaw): string
 {
     if (empty($startDateRaw) || empty($endDateRaw)) {
         return '-';
     }
     try {
-        $start = new DateTime($startDateRaw);
-        $end = new DateTime($endDateRaw);
+        $start = ($startDateRaw instanceof DateTimeInterface) ? $startDateRaw : new DateTime((string)$startDateRaw);
+        $end = ($endDateRaw instanceof DateTimeInterface) ? $endDateRaw : new DateTime((string)$endDateRaw);
         $months = [
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
             7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'

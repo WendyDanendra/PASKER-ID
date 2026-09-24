@@ -14,11 +14,69 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
     }
 
     $uniqueEmail = 'sim.employer.' . date('YmdHis') . '.' . random_int(1000, 9999) . '@paskerid.test';
-    $tempPassword = 'Sim' . random_int(100000, 999999);
+    $tempPassword = 'password';
+
+    $nik = trim($_POST['nik'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $whatsapp = trim($_POST['whatsapp'] ?? '');
+    $profession = trim($_POST['profession'] ?? '');
+    $npwp = trim($_POST['npwp'] ?? '');
+    $linkedin = trim($_POST['linkedin'] ?? '');
+    $facebook = trim($_POST['facebook'] ?? '');
+    $instagram = trim($_POST['instagram'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $province = trim($_POST['province'] ?? '');
+    $city = trim($_POST['city'] ?? '');
+    $district = trim($_POST['district'] ?? '');
+    $village = trim($_POST['village'] ?? '');
+    $domicileCityId = trim($_POST['domicile_city_id'] ?? $city);
+    $postalCode = trim($_POST['postal_code'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $addressNotes = trim($_POST['address_notes'] ?? '');
+    $userConsent = !empty($_POST['user_consent']) ? 1 : 0;
 
     create_user($ownerName, $uniqueEmail, $tempPassword, 'employer');
     $newUser = find_user_by_email($uniqueEmail);
     if ($newUser) {
+        $userId = (int)$newUser['id'];
+        
+        // Update user profile complete and domicile
+        db()->prepare('UPDATE users SET profile_complete = 1, domicile_city_id = ?, city = ? WHERE id = ?')->execute([$domicileCityId, $city, $userId]);
+        
+        $socialSummary = implode(', ', array_filter([
+            $instagram ? "Instagram: {$instagram}" : null,
+            $linkedin ? "LinkedIn: {$linkedin}" : null,
+            $facebook ? "Facebook: {$facebook}" : null
+        ]));
+
+        $stmtEp = db()->prepare('INSERT INTO employer_profiles (
+            user_id, owner_name, nik, profession, phone, whatsapp, npwp,
+            province, city, district, village, postal_code, address, address_detail,
+            latitude, longitude, description, linkedin, instagram, facebook, social_media,
+            entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?,
+            "Individu", "PENDING", 0, ?, ?, datetime("now")
+        )');
+
+        $stmtEp->execute([
+            $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
+            $province, $city, $district, $village, $postalCode, $address, $addressNotes,
+            '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook, $socialSummary,
+            $domicileCityId, $userConsent
+        ]);
+
+        try {
+            $stmtLog = db()->prepare("INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES ('employer', ?, ?, 'employer', 'Profil dikirim untuk verifikasi.', 'Pengajuan profil pemberi kerja baru.', datetime('now'))");
+            $stmtLog->execute([$userId, $ownerName]);
+        } catch (Throwable $ignored) {}
+
+        $newUser['profile_complete'] = 1;
+        $newUser['domicile_city_id'] = $domicileCityId;
+        $newUser['city'] = $city;
+
         login_user($newUser);
         redirect('register.php?success=1');
     }
@@ -108,7 +166,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         </div>
                         <div class="field">
                             <label>Deskripsi Singkat Usaha / Rekrutmen</label>
-                            <textarea placeholder="Tuliskan informasi singkat mengenai kegiatan, usaha, atau kebutuhan rekrutmen..." style="min-height:80px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5;"></textarea>
+                            <textarea name="description" placeholder="Tuliskan informasi singkat mengenai kegiatan, usaha, atau kebutuhan rekrutmen..." style="min-height:80px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5;"></textarea>
                         </div>
                     </div>
                     <hr class="modal-section-hr">
