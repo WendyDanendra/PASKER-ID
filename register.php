@@ -95,15 +95,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
                             <div class="field">
                                 <label>LinkedIn</label>
-                                <input type="url" placeholder="https://...">
+                                <input type="text" name="linkedin" placeholder="username atau https://linkedin.com/in/...">
                             </div>
                             <div class="field">
                                 <label>Facebook</label>
-                                <input type="url" placeholder="https://...">
+                                <input type="text" name="facebook" placeholder="@username atau https://facebook.com/...">
                             </div>
                             <div class="field" style="grid-column: 1 / -1;">
                                 <label>Instagram</label>
-                                <input type="url" placeholder="https://..." style="max-width:calc(50% - 8px);">
+                                <input type="text" name="instagram" placeholder="@username atau https://instagram.com/..." style="max-width:calc(50% - 8px);">
                             </div>
                         </div>
                         <div class="field">

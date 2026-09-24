@@ -3252,16 +3252,15 @@ document.addEventListener('click', function(e) {
                                                     <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">NPWP:</label>
                                                     <input type="text" name="npwp" value="<?php echo e($selectedEmployer['npwp'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
-                                                
-                                                <!-- SOSIAL MEDIA -->
+                                                          <!-- SOSIAL MEDIA -->
                                                 <div>
                                                     <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Instagram:</label>
-                                                    <input type="text" name="instagram" value="<?php echo e($selectedEmployer['instagram'] ?? ''); ?>" placeholder="https://instagram.com/..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <input type="text" name="instagram" value="<?php echo e($selectedEmployer['instagram'] ?? ''); ?>" placeholder="@username atau https://instagram.com/..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
                                                 </div>
                                                 <div>
                                                     <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Facebook / LinkedIn:</label>
-                                                    <input type="text" name="facebook" value="<?php echo e($selectedEmployer['facebook'] ?? ''); ?>" placeholder="Tautan profil medsos..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
-                                                </div>
+                                                    <input type="text" name="facebook" value="<?php echo e($selectedEmployer['facebook'] ?? ''); ?>" placeholder="@username atau https://facebook.com/..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                </div>                                  </div>
 
                                                 <!-- LOKASI WILAYAH -->
                                                 <div>

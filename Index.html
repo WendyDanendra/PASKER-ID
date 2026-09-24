@@ -3833,15 +3833,15 @@
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
                             <div class="field">
                                 <label>LinkedIn</label>
-                                <input type="url" name="linkedin" value="<?php echo e($profile['linkedin'] ?? ''); ?>" placeholder="https://...">
+                                <input type="text" name="linkedin" value="<?php echo e($profile['linkedin'] ?? ''); ?>" placeholder="username atau https://linkedin.com/in/...">
                             </div>
                             <div class="field">
                                 <label>Facebook</label>
-                                <input type="url" name="facebook" value="<?php echo e($profile['facebook'] ?? ''); ?>" placeholder="https://...">
+                                <input type="text" name="facebook" value="<?php echo e($profile['facebook'] ?? ''); ?>" placeholder="@username atau https://facebook.com/...">
                             </div>
                             <div class="field" style="grid-column: 1 / -1;">
                                 <label>Instagram</label>
-                                <input type="url" name="instagram" value="<?php echo e($profile['instagram'] ?? ''); ?>" placeholder="https://..." style="max-width:calc(50% - 8px);">
+                                <input type="text" name="instagram" value="<?php echo e($profile['instagram'] ?? ''); ?>" placeholder="@username atau https://instagram.com/..." style="max-width:calc(50% - 8px);">
                             </div>
                         </div>
                         <div class="field">
