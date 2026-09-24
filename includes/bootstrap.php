@@ -32,6 +32,9 @@ function db(): PDO
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
+            $pdo->sqliteCreateFunction('NOW', function () {
+                return date('Y-m-d H:i:s');
+            });
             if ($isNew) {
                 init_sqlite_schema($pdo);
             }
@@ -738,7 +741,7 @@ function find_user_by_email(string $email): ?array
 
 function create_user(string $name, string $email, string $password, string $role): int
 {
-    $statement = db()->prepare('INSERT INTO users (name, email, password_hash, role, profile_complete, created_at) VALUES (?, ?, ?, ?, 0, NOW())');
+    $statement = db()->prepare('INSERT INTO users (name, email, password_hash, role, profile_complete, created_at) VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)');
     $statement->execute([
         $name,
         $email,
