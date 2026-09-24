@@ -5813,14 +5813,14 @@ document.addEventListener('click', function(e) {
                         <table class="console-table" style="width:100%; border-collapse:collapse; min-width:1000px;">
                             <thead>
                                 <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; text-align:left;">
-                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:200px;">
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:240px;">
                                         <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'name_asc' ? 'name_desc' : 'name_asc'; ?><?php echo $filterParamsJob; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
-                                            Lowongan <i class="fa-solid fa-arrows-up-down" style="font-size:11px; color:#94a3b8;"></i>
+                                            Judul Lowongan <i class="fa-solid fa-arrows-up-down" style="font-size:11px; color:#94a3b8;"></i>
                                         </a>
                                     </th>
-                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:180px;">Pemberi Kerja</th>
-                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:150px;">Lokasi</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:130px;">Jenis Entitas</th>
                                     <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:140px;">Status</th>
+                                    <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:120px;">Blacklist</th>
                                     <th style="padding:14px 16px; font-size:12.5px; font-weight:600; color:#475569; min-width:160px;">
                                         <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?>&sort=<?php echo $sort === 'date_desc' ? 'date_asc' : 'date_desc'; ?><?php echo $filterParamsJob; ?>" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
                                             Tanggal Pengajuan <i class="fa-solid fa-arrow-down" style="font-size:11px; color:#64748b;"></i>
@@ -5840,7 +5840,7 @@ document.addEventListener('click', function(e) {
                                     <?php foreach ($showingJobs as $vJob):
                                         $jobTitle = $vJob['title'];
                                         $employerName = $vJob['owner_name'] ?: $vJob['user_name'];
-                                        $locationStr = $vJob['location'] ?: ($vJob['emp_city'] ?: '-');
+                                        $entityTypeLabel = ($vJob['entity_type'] === 'Perusahaan') ? 'Perusahaan' : 'Individual';
 
                                         $jStatus = $vJob['status'] ?? '';
                                         if ($jStatus === 'Tayang') {
@@ -5859,14 +5859,37 @@ document.addEventListener('click', function(e) {
                                             $badgeHtml = '<span class="pill-badge pending">● ' . e($jStatus) . '</span>';
                                         }
 
+                                        // Blacklist Status Indicator
+                                        $isBlacklisted = !empty($vJob['is_blacklisted']) || ($vJob['verification_status'] ?? '') === 'REJECTED';
+                                        $blacklistHtml = $isBlacklisted 
+                                            ? '<span style="color:#dc2626; font-weight:600; font-size:12.5px;">Terdeteksi</span>' 
+                                            : '<span style="color:#059669; font-weight:600; font-size:12.5px;">Aman</span>';
+
                                         $dateStr = date('d M Y, H:i', strtotime($vJob['created_at']));
+                                        $initialChar = mb_strtoupper(mb_substr($jobTitle, 0, 1));
                                     ?>
                                         <tr style="border-bottom:1px solid #f1f5f9;">
-                                            <td style="padding:14px 16px; font-weight:600; color:#0f172a; font-size:13px;"><?php echo e($jobTitle); ?></td>
-                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($employerName); ?></td>
-                                            <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($locationStr); ?></td>
+                                            <!-- Column 1: Judul Lowongan + Nama Pemberi Kerja Individu -->
+                                            <td style="padding:14px 16px;">
+                                                <div style="display:flex; align-items:center; gap:10px;">
+                                                    <div style="width:30px; height:30px; border-radius:50%; background:#e0f2fe; color:#0284c7; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; flex-shrink:0;">
+                                                        <?php echo e($initialChar); ?>
+                                                    </div>
+                                                    <div>
+                                                        <div style="font-weight:700; color:#0f172a; font-size:13.5px; line-height:1.3;"><?php echo e($jobTitle); ?></div>
+                                                        <div style="font-size:12px; color:#64748b; margin-top:2px;"><?php echo e($employerName); ?></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <!-- Column 2: Jenis Entitas -->
+                                            <td style="padding:14px 16px; color:#334155; font-size:13px; font-weight:500;"><?php echo e($entityTypeLabel); ?></td>
+                                            <!-- Column 3: Status -->
                                             <td style="padding:14px 16px; font-size:13px; white-space:nowrap;"><?php echo $badgeHtml; ?></td>
+                                            <!-- Column 4: Blacklist -->
+                                            <td style="padding:14px 16px; font-size:13px; white-space:nowrap;"><?php echo $blacklistHtml; ?></td>
+                                            <!-- Column 5: Tanggal Pengajuan -->
                                             <td style="padding:14px 16px; color:#64748b; font-size:12.5px; white-space:nowrap;"><?php echo e($dateStr); ?></td>
+                                            <!-- Column 6: Action Button -->
                                             <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
                                                 <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $vJob['id']; ?>" class="btn-lihat-detail" style="white-space:nowrap;">Lihat Detail</a>
                                             </td>
