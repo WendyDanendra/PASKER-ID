@@ -279,79 +279,364 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             var currentLocLevel = 1;
 
             var locData = window.ID_LOCATIONS || {
+                'Aceh': {
+                    'Kota Banda Aceh': {
+                        'Kuta Alam': { 'Beurawe': '23124', 'Bandar Baru': '23126', 'Kota Baru': '23125', 'Keuramat': '23123', 'Lambaro Skep': '23127' },
+                        'Baiturrahman': { 'Neusu Aceh': '23241', 'Peunitia': '23241', 'Ateuk Pabuat': '23241', 'Sukaramai': '23241' },
+                        'Banda Raya': { 'Lamlagang': '23239', 'Geuceu Komplek': '23239', 'Geuceu Ineum': '23239' },
+                        'Jaya Baru': { 'Punge Blang Cut': '23233', 'Lampoh Daya': '23233', 'Empee Trieng': '23233' },
+                        'Syiah Kuala': { 'Darussalam': '23111', 'Kopelma Darussalam': '23111', 'Ie Masen Kayee Adang': '23111' }
+                    },
+                    'Kota Sabang': {
+                        'Sukakarya': { 'Aneuk Laot': '23511', 'Iboih': '23523', 'Krueng Raya': '23511' },
+                        'Sukajaya': { 'Anoi Itam': '23521', 'Balohan': '23521', 'Cot Abeuk': '23521' }
+                    },
+                    'Kabupaten Aceh Besar': {
+                        'Ingin Jaya': { 'Lambaro': '23371', 'Aneyuk Batee': '23371', 'Lubok Sukon': '23371' },
+                        'Darul Imarah': { 'Lampeuneurut': '23238', 'Punieu': '23238', 'Gue Gajah': '23238' },
+                        'Lhoknga': { 'Mon Ikeun': '23353', 'Lampuuk': '23353' }
+                    },
+                    'Kabupaten Pidie': {
+                        'Sigli': { 'Blang Paseh': '24112', 'Kuala Pidie': '24113', 'Kramat Luar': '24114' }
+                    }
+                },
+                'Sumatera Utara': {
+                    'Kota Medan': {
+                        'Medan Kota': { 'Pasar Merah Timur': '20217', 'Teladan Barat': '20217', 'Pusat Pasar': '20212', 'Siti Rejo I': '20216' },
+                        'Medan Petisah': { 'Sekip': '20111', 'Petisah Tengah': '20112', 'Sei Sikambing D': '20114', 'Silalas': '20114' },
+                        'Medan Barat': { 'Kesawan': '20111', 'Glugur Kota': '20115', 'Karang Berombak': '20115' },
+                        'Medan Timur': { 'Gugor': '20235', 'Perintis': '20231', 'Sidodadi': '20234' },
+                        'Medan Selayang': { 'Padang Bulan Selayang I': '20131', 'Sempakata': '20131', 'Tanjung Sari': '20132' },
+                        'Medan Johor': { 'Gedung Johor': '20144', 'Pangkalan Mansyur': '20143', 'Suka Maju': '20146' },
+                        'Medan Helvetia': { 'Helvetia': '20124', 'Dwikora': '20123', 'Tanjung Gusta': '20125' }
+                    },
+                    'Kota Binjai': {
+                        'Binjai Kota': { 'Pekan Binjai': '20711', 'Kartini': '20712', 'Setia': '20713' },
+                        'Binjai Barat': { 'Payaroba': '20718', 'Limau Sundai': '20719' }
+                    },
+                    'Kabupaten Deli Serdang': {
+                        'Lubuk Pakam': { 'Lubuk Pakam Pekan': '20511', 'Sekip': '20512', 'Bakaran Batu': '20513' },
+                        'Percut Sei Tuan': { 'Tembung': '20371', 'Saentis': '20371', 'Sampali': '20371' },
+                        'Sunggal': { 'Sunggal Kanan': '20351', 'Helvetia': '20351', 'Sei Semayang': '20351' },
+                        'Tanjung Morawa': { 'Tanjung Morawa A': '20362', 'Tanjung Morawa B': '20362', 'Wono Giri': '20362' }
+                    }
+                },
+                'Sumatera Barat': {
+                    'Kota Padang': {
+                        'Padang Barat': { 'Olo': '25117', 'Kampung Jao': '25112', 'Flamboyan Baru': '25115' },
+                        'Padang Timur': { 'Sawahan': '25121', 'Jati': '25129', 'Ganting Parak Gadang': '25122' },
+                        'Padang Selatan': { 'Mata Air': '25211', 'Pasa Gadang': '25211', 'Teluk Bayur': '25213' },
+                        'Kuranji': { 'Kuranji': '25157', 'Pasar Ambacang': '25152', 'Anduring': '25151' }
+                    },
+                    'Kota Bukittinggi': {
+                        'Guguk Panjang': { 'Tarigo': '26114', 'Benteng Pasar Atas': '26113', 'Kayu Kubu': '26115' },
+                        'Mandiangin Koto Selayan': { 'Campago Ipuuh': '26122', 'Pulai Anak Air': '26124' }
+                    }
+                },
+                'Riau': {
+                    'Kota Pekanbaru': {
+                        'Pekanbaru Kota': { 'Simpang Empat': '28116', 'Sumahilang': '28111', 'Sukaramai': '28112' },
+                        'Tampan': { 'Sidomulyo Barat': '28289', 'Delima': '28289', 'Tuah Karya': '28289' },
+                        'Marpoyan Damai': { 'Tangkerang Tengah': '28282', 'Sidomulyo Timur': '28284' },
+                        'Rumbai': { 'Umban Sari': '28265', 'Palas': '28264' }
+                    },
+                    'Kota Dumai': {
+                        'Dumai Timur': { 'Teluk Binjai': '28812', 'Buluh Kasap:': '28814', 'Jaya Mukti': '28815' }
+                    }
+                },
+                'Kepulauan Riau': {
+                    'Kota Batam': {
+                        'Batam Kota': { 'Teluk Tering': '29461', 'Belian': '29464', 'Baloi Permai': '29432', 'Sukajadi': '29432' },
+                        'Lubuk Baja': { 'Nagoya': '29432', 'Kampung Seraya': '29432', 'Batu Selicin': '29432' },
+                        'Sekupang': { 'Tiban Indah': '29425', 'Sungai Harapan': '29422', 'Tiban Lama': '29424' },
+                        'Batu Ampar': { 'Jabu Subur': '29452', 'Sungai Jodoh': '29453' }
+                    },
+                    'Kota Tanjungpinang': {
+                        'Tanjungpinang Kota': { 'Tanjungpinang Kota': '29111', 'Kampung Bugis': '29112' },
+                        'Bukit Bestari': { 'Tanjung Ayun': '29122', 'Dompak': '29124' }
+                    }
+                },
+                'Sumatera Selatan': {
+                    'Kota Palembang': {
+                        'Ilir Timur I': { 'Demang Lebar Daun': '30137', '20 Ilir D I': '30128', 'Sungai Buah': '30118' },
+                        'Ilir Barat I': { 'Lorok Pakjo': '30137', 'Demang Lebar Daun': '30137', 'Bukit Lama': '30139' },
+                        'Seberang Ulu I': { '7 Ulu': '30251', '9/10 Ulu': '30251', '15 Ulu': '30252' },
+                        'Bukit Kecil': { '26 Ilir': '30136', 'Talang Semut': '30135' },
+                        'Plaju': { 'Plaju Ulu': '30266', 'Plaju Darat': '30268' }
+                    }
+                },
+                'Bengkulu': {
+                    'Kota Bengkulu': {
+                        'Ratu Samban': { 'Pengantungan': '38221', 'Belakang Pondok': '38222', 'Padang Jati': '38227' },
+                        'Teluk Segara': { 'Pasar Baru': '38114', 'Kampung Kelawi': '38119' }
+                    }
+                },
+                'Lampung': {
+                    'Kota Bandar Lampung': {
+                        'Tanjung Karang Pusat': { 'Tanjung Karang': '35111', 'Enggal': '35118', 'Gotong Royong': '35119' },
+                        'Kedaton': { 'Kedaton': '35141', 'Labuhan Ratu': '35142', 'Penengahan': '35143' },
+                        'Teluk Betung Selatan': { 'Gedong Pakuon': '35221', 'Pesawahan': '35223' }
+                    }
+                },
                 'DKI Jakarta': {
-                    'Jakarta Selatan': {
-                        'Kebayoran Baru': { 'Melawai': '12160', 'Gandaria Utara': '12140', 'Senayan': '12190' },
-                        'Cilandak': { 'Cilandak Barat': '12430', 'Lebak Bulus': '12440' },
-                        'Setiabudi': { 'Karet': '12920', 'Kuningan Timur': '12950' },
-                        'Pasar Minggu': { 'Pejaten Barat': '12510', 'Pasar Minggu': '12520' }
+                    'Kota Jakarta Selatan': {
+                        'Kebayoran Baru': { 'Melawai': '12160', 'Gandaria Utara': '12140', 'Senayan': '12190', 'Rawa Barat': '12180', 'Pulo': '12160', 'Kramat Pela': '12130', 'Gunung': '12120' },
+                        'Cilandak': { 'Cilandak Barat': '12430', 'Lebak Bulus': '12440', 'Pondok Labu': '12450', 'Gandaria Selatan': '12420' },
+                        'Setiabudi': { 'Karet': '12920', 'Kuningan Timur': '12950', 'Setiabudi': '12910', 'Menteng Atas': '12960', 'Pasar Manggis': '12970' },
+                        'Pasar Minggu': { 'Pejaten Barat': '12510', 'Pasar Minggu': '12520', 'Jati Padang': '12540', 'Ragunan': '12550', 'Cilandak Timur': '12560' },
+                        'Pancoran': { 'Kalibata': '12740', 'Pancoran': '12780', 'Pengadegan': '12770', 'Rawajati': '12750', 'Duren Tiga': '12760' },
+                        'Tebet': { 'Tebet Barat': '12810', 'Tebet Timur': '12820', 'Kebon Baru': '12830', 'Manggarai': '12850', 'Menteng Dalam': '12870' },
+                        'Kebayoran Lama': { 'Kebayoran Lama Utara': '12240', 'Pondok Pinang': '12310', 'Grogol Selatan': '12220', 'Cipulir': '12230' },
+                        'Jagakarsa': { 'Jagakarsa': '12620', 'Ciganjur': '12630', 'Srengseng Sawah': '12640', 'Lenteng Agung': '12610' }
                     },
-                    'Jakarta Pusat': {
-                        'Gambir': { 'Gambir': '10110', 'Petojo Selatan': '10160' },
-                        'Tanah Abang': { 'Bendungan Hilir': '10210', 'Karet Tengsin': '10220' },
-                        'Menteng': { 'Menteng': '10310', 'Cikini': '10330' }
+                    'Kota Jakarta Pusat': {
+                        'Gambir': { 'Gambir': '10110', 'Petojo Selatan': '10160', 'Cideng': '10150', 'Kebon Kelapa': '10120' },
+                        'Tanah Abang': { 'Bendungan Hilir': '10210', 'Karet Tengsin': '10220', 'Kebon Kacang': '10240', 'Kampung Bali': '10250', 'Gelora': '10270' },
+                        'Menteng': { 'Menteng': '10310', 'Cikini': '10330', 'Gondangdia': '10350', 'Pegangsaan': '10320' },
+                        'Kemayoran': { 'Kemayoran': '10620', 'Gunung Sahari Selatan': '10610', 'Serdang': '10650', 'Utan Panjang': '10650' },
+                        'Sawah Besar': { 'Pasar Baru': '10710', 'Gunung Sahari Utara': '10720', 'Mangga Dua Selatan': '10730' },
+                        'Senen': { 'Senen': '10410', 'Kwitang': '10420', 'Kenari': '10430', 'Kramat': '10450' }
                     },
-                    'Jakarta Barat': {
-                        'Grogol Petamburan': { 'Tanjung Duren Utara': '11470', 'Grogol': '11450' },
-                        'Kebon Jeruk': { 'Kebon Jeruk': '11530', 'Kedoya Utara': '11520' }
+                    'Kota Jakarta Barat': {
+                        'Grogol Petamburan': { 'Tanjung Duren Utara': '11470', 'Grogol': '11450', 'Tomang': '11440', 'Jelambar': '11460' },
+                        'Kebon Jeruk': { 'Kebon Jeruk': '11530', 'Kedoya Utara': '11520', 'Duri Kepa': '11510', 'Sukabumi Utara': '11540' },
+                        'Kembangan': { 'Kembangan Selatan': '11610', 'Puri Kembangan': '11610', 'Meruya Utara': '11620', 'Srengseng': '11630' },
+                        'Palmerah': { 'Palmerah': '11480', 'Slipi': '11410', 'Kemanggisan': '11480', 'Kota Bambu Selatan': '11420' },
+                        'Cengkareng': { 'Cengkareng Barat': '11730', 'Rawa Buaya': '11740', 'Kapuk': '11720', 'Duri Kosambi': '11750' }
                     },
-                    'Jakarta Timur': {
-                        'Jatinegara': { 'Kampung Melayu': '13320', 'Bidara Cina': '13330' },
-                        'Duren Sawit': { 'Pondok Bambu': '13430', 'Duren Sawit': '13440' }
+                    'Kota Jakarta Timur': {
+                        'Jatinegara': { 'Kampung Melayu': '13320', 'Bidara Cina': '13330', 'Bali Mester': '13310', 'Cipinang Cempedak': '13340' },
+                        'Duren Sawit': { 'Pondok Bambu': '13430', 'Duren Sawit': '13440', 'Klender': '13470', 'Pondok Kelapa': '13450' },
+                        'Cakung': { 'Cakung Barat': '13910', 'Penggilingan': '13940', 'Ujung Menteng': '13960', 'Pulogebang': '13950' },
+                        'Kramat Jati': { 'Kramat Jati': '13510', 'Batu Ampar': '13520', 'Balekambang': '13530', 'Cawang': '13630' },
+                        'Pulogadung': { 'Rawamangun': '13220', 'Pulogadung': '13260', 'Jati': '13210', 'Kayu Putih': '13210' }
+                    },
+                    'Kota Jakarta Utara': {
+                        'Kelapa Gading': { 'Kelapa Gading Barat': '14240', 'Kelapa Gading Timur': '14240', 'Pegangsaan Dua': '14250' },
+                        'Penjaringan': { 'Penjaringan': '14440', 'Pluit': '14450', 'Kapuk Muara': '14460', 'Kamal Muara': '14470' },
+                        'Tanjung Priok': { 'Tanjung Priok': '14310', 'Sunter Agung': '14350', 'Sunter Jaya': '14350', 'Papanggo': '14340' }
                     }
                 },
                 'Jawa Barat': {
                     'Kota Bekasi': {
                         'Bekasi Selatan': { 'Pekayon Jaya': '17148', 'Jaka Setia': '17147', 'Kayuringin Jaya': '17144', 'Marga Jaya': '17141' },
-                        'Bekasi Timur': { 'Aren Jaya': '17111', 'Bekasi Jaya': '17112' },
-                        'Bekasi Barat': { 'Bintara': '17134', 'Kranji': '17135' },
-                        'Bekasi Utara': { 'Harapan Baru': '17123', 'Harapan Jaya': '17124' }
+                        'Bekasi Timur': { 'Aren Jaya': '17111', 'Bekasi Jaya': '17112', 'Duren Jaya': '17111', 'Margahayu': '17113' },
+                        'Bekasi Barat': { 'Bintara': '17134', 'Kranji': '17135', 'Kota Baru': '17133', 'Bintara Jaya': '17136' },
+                        'Bekasi Utara': { 'Harapan Baru': '17123', 'Harapan Jaya': '17124', 'Teluk Pucung': '17121', 'Perwira': '17122' },
+                        'Rawalumbu': { 'Bojong Rawalumbu': '17116', 'Pengasinan': '17115', 'Sepanjang Jaya': '17114' },
+                        'Pondok Gede': { 'Jaticempaka': '17411', 'Jatiwaringin': '17411', 'Jatibening': '17412' },
+                        'Jatiasih': { 'Jatiasih': '17423', 'Jatikramat': '17421', 'Jatimekar': '17422' },
+                        'Medan Satria': { 'Medan Satria': '17132', 'Pejuang': '17131', 'Harapan Mulya': '17143' }
                     },
                     'Kabupaten Bekasi': {
-                        'Cikarang Pusat': { 'Jayamukti': '17530', 'Sukamahi': '17530' },
-                        'Cikarang Selatan': { 'Cibatu': '17530', 'Pasirsari': '17530' },
-                        'Tambun Selatan': { 'Jatimulya': '17510', 'Tambun': '17510' }
+                        'Cikarang Pusat': { 'Jayamukti': '17530', 'Sukamahi': '17530', 'Pasirranji': '17530' },
+                        'Cikarang Selatan': { 'Cibatu': '17530', 'Pasirsari': '17530', 'Sukaresmi': '17530', 'Serang': '17530' },
+                        'Cikarang Utara': { 'Waluya': '17530', 'Simpangan': '17530', 'Mekarmukti': '17530' },
+                        'Tambun Selatan': { 'Jatimulya': '17510', 'Tambun': '17510', 'Tridayajaya': '17510', 'Mekarsari': '17510' },
+                        'Cibitung': { 'Wanasari': '17520', 'Gandasari': '17520' }
                     },
                     'Kota Bandung': {
-                        'Coblong': { 'Dago': '40135', 'Sadang Serang': '40133' },
-                        'Sukajadi': { 'Pasteur': '40161', 'Sukajadi': '40162' }
+                        'Coblong': { 'Dago': '40135', 'Sadang Serang': '40133', 'Sekeloa': '40134', 'Lebak Siliwangi': '40132', 'Cipaganti': '40131' },
+                        'Sukajadi': { 'Pasteur': '40161', 'Sukajadi': '40162', 'Sukawarna': '40164', 'Gegerkalongan': '40153' },
+                        'Sumur Bandung': { 'Braga': '40111', 'Kebon Pisang': '40112', 'Merdeka': '40113' },
+                        'Bandung Wetan': { 'Citarum': '40115', 'Tamansari': '40116', 'Cihapit': '40114' },
+                        'Cicendo': { 'Pasirkaliki': '40171', 'Arjuna': '40172', 'Pajajaran': '40173' },
+                        'Lengkong': { 'Malabar': '40262', 'Cijagra': '40265', 'Burangrang': '40262' },
+                        'Regol': { 'Balonggede': '40251', 'Ciateul': '40252', 'Palleser': '40253' }
                     },
                     'Kota Depok': {
-                        'Beji': { 'Beji': '16421', 'Kukusan': '16425' },
-                        'Pancoran Mas': { 'Depok': '16431', 'Mampang': '16433' }
+                        'Beji': { 'Beji': '16421', 'Kukusan': '16425', 'Pondok Cina': '16424', 'Tanah Baru': '16426' },
+                        'Pancoran Mas': { 'Depok': '16431', 'Mampang': '16433', 'Depok Jaya': '16432', 'Rangkapan Jaya': '16435' },
+                        'Cimanggis': { 'Tugu': '16451', 'Pasir Gunung Selatan': '16451', 'Mekarsari': '16452' },
+                        'Sukmajaya': { 'Abadijaya': '16417', 'Mekarjaya': '16411', 'Baktijaya': '16418' }
                     },
                     'Kota Bogor': {
-                        'Bogor Tengah': { 'Babakan': '16128', 'Paledang': '16122' }
+                        'Bogor Tengah': { 'Babakan': '16128', 'Paledang': '16122', 'Sempur': '16129', 'Kebon Kelapa': '16125' },
+                        'Bogor Timur': { 'Baranangsiang': '16143', 'Katulampa': '16144', 'Tajur': '16141' },
+                        'Bogor Selatan': { 'Batutulis': '16133', 'Lawanggintung': '16134', 'Empang': '16132' },
+                        'Tanah Sareal': { 'Tanah Sareal': '16161', 'Kedung Badak': '16162', 'Kebon Pedes': '16165' }
+                    },
+                    'Kabupaten Bogor': {
+                        'Cibinong': { 'Cibinong': '16911', 'Cirimekar': '16915', 'Pakansari': '16915', 'Nanggewer': '16912' },
+                        'Gunung Putri': { 'Gunung Putri': '16961', 'Tlajung Udik': '16962', 'Cicadas': '16964' },
+                        'Bojonggede': { 'Bojonggede': '16922', 'Pabuaran': '16921' },
+                        'Parung': { 'Parung': '16330', 'Waru': '16330' }
+                    },
+                    'Kota Cimahi': {
+                        'Cimahi Utara': { 'Cipageran': '40511', 'Citeureup': '40512', 'Pasirkaliki': '40514' },
+                        'Cimahi Tengah': { 'Cimahi': '40525', 'Karangmekar': '40523', 'Padasuka': '40526' }
                     }
                 },
                 'Banten': {
                     'Kota Tangerang': {
-                        'Tangerang': { 'Cikokol': '15117', 'Babakan': '15118' },
-                        'Cipondoh': { 'Cipondoh': '15148', 'Petir': '15147' }
+                        'Tangerang': { 'Cikokol': '15117', 'Babakan': '15118', 'Buaran Indah': '15119', 'Tanah Tinggi': '15119' },
+                        'Cipondoh': { 'Cipondoh': '15148', 'Petir': '15147', 'Poris Plawad': '15141', 'Poris Indah': '15141' },
+                        'Karawaci': { 'Karawaci': '15115', 'Cimone': '15114', 'Bugel': '15113' },
+                        'Ciledug': { 'Sudimara Barat': '15151', 'Paninggilan': '15153' },
+                        'Pinang': { 'Kunciran': '15144', 'Pinang': '15145', 'Sudimara Pinang': '15145' }
                     },
                     'Kota Tangerang Selatan': {
-                        'Serpong': { 'Rawa Buntu': '15318', 'Serpong': '15311' },
-                        'Pondok Aren': { 'Pondok Aren': '15224', 'Bintaro': '15225' }
+                        'Serpong': { 'Rawa Buntu': '15318', 'Serpong': '15311', 'Lengkong Gudang': '15321', 'Lengkong Karya': '15322' },
+                        'Serpong Utara': { 'Pakulonan': '15325', 'Jelupang': '15323', 'Pondok Jagung': '15326' },
+                        'Pondok Aren': { 'Pondok Aren': '15224', 'Bintaro': '15225', 'Jurang Mangu Barat': '15223', 'Pondok Betung': '15221' },
+                        'Pamulang': { 'Pamulang Barat': '15417', 'Pamulang Timur': '15417', 'Pondok Benda': '15416' },
+                        'Ciputat': { 'Ciputat': '15411', 'Cipayung': '15414', 'Sawah Besar': '15413' }
+                    },
+                    'Kabupaten Tangerang': {
+                        'Kelapa Dua': { 'Kelapa Dua': '15810', 'Bencongan': '15810', 'Bojong Nangka': '15810' },
+                        'Curug': { 'Curug Kulon': '15810', 'Binong': '15810' },
+                        'Cikupa': { 'Cikupa': '15710', 'Talaga': '15710' },
+                        'Pasar Kemis': { 'Pasar Kemis': '15560', 'Kutajaya': '15560' }
                     },
                     'Kota Serang': {
-                        'Serang': { 'Cipare': '42117', 'Serang': '42116' }
+                        'Serang': { 'Cipare': '42117', 'Serang': '42116', 'Kagungan': '42114', 'Lontarbaru': '42115' },
+                        'Cipocok Jaya': { 'Cipocok Jaya': '42121', 'Banjaragung': '42122' }
+                    },
+                    'Kota Cilegon': {
+                        'Cilegon': { 'Bagendung': '42419', 'Ciwedus': '42418' },
+                        'Citangkil': { 'Citangkil': '42441' }
                     }
                 },
                 'Jawa Tengah': {
                     'Kota Semarang': {
-                        'Semarang Tengah': { 'Pekunden': '50134', 'Sekyu': '50132' }
+                        'Semarang Tengah': { 'Pekunden': '50134', 'Sekyu': '50132', 'Bangunharjo': '50139', 'Pandansari': '50139' },
+                        'Semarang Selatan': { 'Peterongan': '50242', 'Randusari': '50244', 'Pleburan': '50241', 'Lamper Kidul': '50249' },
+                        'Gajahmungkur': { 'Bendan Ngisor': '50233', 'Petompon': '50237', 'Sampangan': '50233', 'Gajahmungkur': '50232' },
+                        'Semarang Barat': { 'Karangayu': '50149', 'Krobokan': '50141', 'Cabean': '50141' },
+                        'Banyumanik': { 'Srondol Kulon': '50265', 'Pedalangan': '50268', 'Pudakpayung': '50265' }
                     },
                     'Kota Surakarta': {
-                        'Banjarsari': { 'Kadipiro': '57136', 'Nusukan': '57135' }
+                        'Banjarsari': { 'Kadipiro': '57136', 'Nusukan': '57135', 'Timuran': '57131', 'Manahan': '57139' },
+                        'Jebres': { 'Jebres': '57126', 'Purwodiningratan': '57128', 'Mojosongo': '57127' },
+                        'Laweyan': { 'Purwosari': '57142', 'Kerten': '57143', 'Sondakan': '57147' },
+                        'Pasar Kliwon': { 'Kauman': '57112', 'Kedung Lumbu': '57113' }
+                    },
+                    'Kabupaten Banyumas': {
+                        'Purwokerto Timur': { 'Kranji': '53111', 'Sokanegara': '53115' },
+                        'Purwokerto Selatan': { 'Karangklesem': '53144' }
+                    },
+                    'Kabupaten Kudus': {
+                        'Kota Kudus': { 'Demaan': '59313', 'Glantengan': '59313' },
+                        'Jati': { 'Getas Peformat': '59343' }
+                    }
+                },
+                'DI Yogyakarta': {
+                    'Kota Yogyakarta': {
+                        'Danurejan': { 'Suryatmajan': '55213', 'Bausasran': '55211' },
+                        'Gondokusuman': { 'Terban': '55223', 'Kotabaru': '55224', 'Baciro': '55225' },
+                        'Jetis': { 'Cokrodiningratan': '55233', 'Gowongan': '55232' },
+                        'Umbulharjo': { 'Muja Muju': '55165', 'Giwangan': '55163', 'Tahunan': '55167' },
+                        'Mantrijeron': { 'Suryodiningratan': '55141', 'Gedongkiwo': '55142' }
+                    },
+                    'Kabupaten Sleman': {
+                        'Depok': { 'Caturtunggal': '55281', 'Maguwoharjo': '55282', 'Condongcatur': '55283' },
+                        'Mlati': { 'Sinduadi': '55284', 'Sendangadi': '55285' },
+                        'Gamping': { 'Nogotirto': '55292', 'Ambarketawang': '55294' }
+                    },
+                    'Kabupaten Bantul': {
+                        'Kasihan': { 'Bangunjiwo': '55184', 'Tirtonirmolo': '55181' },
+                        'Banguntapan': { 'Banguntapan': '55198' }
                     }
                 },
                 'Jawa Timur': {
                     'Kota Surabaya': {
-                        'Tegalsari': { 'Dr. Soetomo': '60264', 'Kedungdoro': '60261' },
-                        'Gubeng': { 'Gubeng': '60281', 'Airlangga': '60286' }
+                        'Tegalsari': { 'Dr. Soetomo': '60264', 'Kedungdoro': '60261', 'Wonorejo': '60263', 'Keputran': '60265' },
+                        'Gubeng': { 'Gubeng': '60281', 'Airlangga': '60286', 'Kertajaya': '60282', 'Mojo': '60285' },
+                        'Wonokromo': { 'Darmo': '60241', 'Sawunggaling': '60242', 'Wonokromo': '60243', 'Jagir': '60244' },
+                        'Sukolilo': { 'Keputih': '60111', 'Gebang Putih': '60117', 'Nginden Jangkungan': '60118', 'Menur Pumpungan': '60118' },
+                        'Rungkut': { 'Kalirungkut': '60293', 'Rungkut Kidul': '60293', 'Medokan Ayu': '60295' },
+                        'Genteng': { 'Embong Kaliasin': '60271', 'Genteng': '60275' },
+                        'Jambangan': { 'Jambangan': '60232', 'Karah': '60232' }
                     },
                     'Kota Malang': {
-                        'Lowokwaru': { 'Jatimulyo': '65141', 'Ketawanggede': '65145' }
+                        'Lowokwaru': { 'Jatimulyo': '65141', 'Ketawanggede': '65145', 'Dinoyo': '65144', 'Mojolangu': '65142', 'Tunggulwulung': '65143' },
+                        'Klojen': { 'Klojen': '65111', 'Rampal Celaket': '65111', 'Oro-Oro Dowo': '65119', 'Kauman': '65119' },
+                        'Blimbing': { 'Blimbing': '65126', 'Purwantoro': '65122', 'Arjosari': '65126' },
+                        'Sukun': { 'Sukun': '65147', 'Kebonsari': '65149' }
+                    },
+                    'Kabupaten Sidoarjo': {
+                        'Sidoarjo': { 'Sidokumpul': '61212', 'Magersari': '61212', 'Lemahputro': '61213' },
+                        'Waru': { 'Waru': '61256', 'Tropodo': '61256', 'Ngingas': '61256', 'Medaeng': '61256' },
+                        'Gedangan': { 'Gedangan': '61254', 'Sawotratap': '61254' },
+                        'Taman': { 'Sepanjang': '61257', 'Kalijaten': '61257' }
+                    },
+                    'Kota Kediri': {
+                        'Kota': { 'Kampung Dalem': '64126', 'Pocanan': '64129' },
+                        'Mojoroto': { 'Bandar Lor': '64114', 'Bujel': '64118' }
+                    }
+                },
+                'Bali': {
+                    'Kota Denpasar': {
+                        'Denpasar Selatan': { 'Sanur': '80228', 'Renon': '80226', 'Panjer': '80225', 'Pedungan': '80222', 'Sidakarya': '80224' },
+                        'Denpasar Barat': { 'Dauh Puri': '80113', 'Pemecutan': '80119', 'Padangsambian': '80117' },
+                        'Denpasar Utara': { 'Peguyangan': '80115', 'Ubung': '80116' },
+                        'Denpasar Timur': { 'Dangin Puri': '80232', 'Sumerta': '80235' }
+                    },
+                    'Kabupaten Badung': {
+                        'Kuta': { 'Kuta': '80361', 'Legian': '80361', 'Seminyak': '80361' },
+                        'Kuta Utara': { 'Tibubeneng': '80361', 'Kerobokan': '80361', 'Canggu': '80361' },
+                        'Kuta Selatan': { 'Jimbaran': '80361', 'Benoa': '80361', 'Ungasan': '80361', 'Pecatu': '80361' },
+                        'Mengwi': { 'Mengwi': '80351', 'Kapal': '80351' }
+                    },
+                    'Kabupaten Gianyar': {
+                        'Ubud': { 'Ubud': '80571', 'Peliatan': '80571', 'Sayan': '80571', 'Petulu': '80571' },
+                        'Sukawati': { 'Sukawati': '80582', 'Batubulan': '80582' }
+                    }
+                },
+                'Nusa Tenggara Barat': {
+                    'Kota Mataram': {
+                        'Mataram': { 'Mataram Barat': '83126', 'Pejanggik': '83127' },
+                        'Selaparang': { 'Monjok': '83122' },
+                        'Ampenan': { 'Ampenan Selatan': '83111' }
+                    }
+                },
+                'Nusa Tenggara Timur': {
+                    'Kota Kupang': {
+                        'Oebobo': { 'Oebobo': '85111', 'Fatululi': '85111' },
+                        'Kelapa Lima': { 'Kelapa Lima': '85228' }
+                    }
+                },
+                'Kalimantan Barat': {
+                    'Kota Pontianak': {
+                        'Pontianak Selatan': { 'Benua Melayu Darat': '78121', 'Akcaya': '78121' },
+                        'Pontianak Kota': { 'Mariana': '78112', 'Sungai Bangkong': '78116' }
+                    }
+                },
+                'Kalimantan Timur': {
+                    'Kota Balikpapan': {
+                        'Balikpapan Kota': { 'Klandasan Ulu': '76112', 'Damai': '76114' },
+                        'Balikpapan Selatan': { 'Sepinggan': '76115', 'Gunung Bahagia': '76114' },
+                        'Balikpapan Utara': { 'Muara Rapak': '76124' },
+                        'Balikpapan Tengah': { 'Gunung Sari': '76113' }
+                    },
+                    'Kota Samarinda': {
+                        'Samarinda Kota': { 'Bugis': '75121', 'Pelabuhan': '75112' },
+                        'Samarinda Ulu': { 'Sidodadi': '75123', 'Air Putih': '75124' },
+                        'Sungai Kunjang': { 'Teluk Lerong Ulu': '75127', 'Loa Bakung': '75126' }
+                    },
+                    'Nusantara (IKN)': {
+                        'Sepaku': { 'Pemaluan': '76148', 'Bumi Harapan': '76148', 'Sepaku': '76148' }
+                    }
+                },
+                'Sulawesi Selatan': {
+                    'Kota Makassar': {
+                        'Ujung Pandang': { 'Baraya': '90111', 'Mangkura': '90114', 'Sawerigading': '90115' },
+                        'Panakkukang': { 'Masale': '90231', 'Tamamaung': '90231', 'Paropo': '90233', 'Karampuang': '90231' },
+                        'Tamalate': { 'Tanjung Merdeka': '90224', 'Maccini Sombala': '90224', 'Mangasa': '90221' },
+                        'Rappocini': { 'Buakana': '90222', 'Karunrung': '90222', 'Kassi-Kassi': '90222' },
+                        'Biringkanaya': { 'Daya': '90241', 'Sudiang': '90242' }
+                    }
+                },
+                'Sulawesi Utara': {
+                    'Kota Manado': {
+                        'Wenang': { 'Wenang Utara': '95121', 'Teling Bawah': '95125' },
+                        'Malalayang': { 'Malalayang Satu': '95115' }
+                    }
+                },
+                'Papua': {
+                    'Kota Jayapura': {
+                        'Jayapura Utara': { 'Gurabesi': '99111', 'Mandala': '99112' },
+                        'Abepura': { 'Kota Baru': '99351', 'Asano': '99351' }
                     }
                 }
             };
