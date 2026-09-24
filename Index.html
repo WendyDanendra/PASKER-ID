@@ -2531,6 +2531,10 @@
                                         <span class="status-pill pending" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;">
                                             Menunggu Verifikasi
                                         </span>
+                                    <?php elseif (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true)): ?>
+                                        <span class="status-pill revision" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">
+                                            Perlu Direvisi
+                                        </span>
                                     <?php elseif ($dStatus === 'Draft'): ?>
                                         <span class="status-pill draft" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">
                                             Draft
@@ -2567,8 +2571,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Action Buttons for Draft (Horizontal under Quota card) -->
-                                <?php if ($dStatus === 'Draft'): ?>
+                                <!-- Action Buttons for Draft & Perlu Direvisi -->
+                                <?php if (in_array($dStatus, ['Draft', 'Perlu Direvisi', 'Perlu Revisi'], true)): ?>
                                     <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
                                         <button type="button" class="btn-secondary-custom" data-edit-draft="<?php echo $detailJob['id']; ?>" style="border:1px solid #cbd5e1; background:#fff; color:#334155; padding:9px 16px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
                                             <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
@@ -2582,17 +2586,19 @@
                                             </button>
                                         </form>
 
-                                        <form method="post" action="dashboard.php#lowongan" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft lowongan ini?')">
-                                            <input type="hidden" name="delete_job" value="1">
-                                            <input type="hidden" name="job_id" value="<?php echo $detailJob['id']; ?>">
-                                            <button type="submit" style="background:#fff; color:#dc2626; border:1px solid #fecaca; padding:9px 16px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-                                                <i class="fa-solid fa-trash"></i> Hapus Lowongan
-                                            </button>
-                                        </form>
+                                        <?php if ($dStatus === 'Draft'): ?>
+                                            <form method="post" action="dashboard.php#lowongan" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft lowongan ini?')">
+                                                <input type="hidden" name="delete_job" value="1">
+                                                <input type="hidden" name="job_id" value="<?php echo $detailJob['id']; ?>">
+                                                <button type="submit" style="background:#fff; color:#dc2626; border:1px solid #fecaca; padding:9px 16px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                                    <i class="fa-solid fa-trash"></i> Hapus Lowongan
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
-                        </div>                       </div>
+                        </div>
 
                         <!-- Detail Tabs Section -->
                         <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
@@ -2606,9 +2612,86 @@
                             </div>
 
                             <div style="padding:28px;">
+                                <!-- CARD HASIL VERIFIKASI (UNTUK PERLU REVISI / PERLU DIREVISI) -->
+                                <?php if (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true) || !empty($detailJob['verifier_notes']) || !empty($detailJob['admin_notes'])): ?>
+                                    <?php
+                                        $vNotes = $detailJob['verifier_notes'] ?: ($detailJob['admin_notes'] ?: 'Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.');
+                                        $vChecklistRaw = json_decode($detailJob['compliance_checklist'] ?? '{}', true) ?: [];
+                                        $vDate = !empty($detailJob['updated_at']) ? date('d M Y', strtotime($detailJob['updated_at'])) : date('d M Y');
+                                        
+                                        $stdCategories = [
+                                            'Tidak sesuai dengan aturan anti diskriminasi' => 'Kesesuaian dengan aturan anti diskriminasi',
+                                            'Data tidak lengkap' => 'Kelengkapan data',
+                                            'Tidak sesuai dengan aturan' => 'Kesesuaian dengan aturan',
+                                            'Tidak sesuai substansi' => 'Kesesuaian substansi',
+                                        ];
+                                    ?>
+                                    <div style="background:#fff; border:1px solid #fed7aa; border-radius:14px; padding:20px 24px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                                        <!-- Top Row: Icon, Title, Date & Badge -->
+                                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                                            <div style="display:flex; align-items:flex-start; gap:12px;">
+                                                <div style="width:30px; height:30px; border-radius:50%; background:#fff7ed; border:1px solid #ffedd5; color:#d97706; display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; margin-top:2px;">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 style="font-size:15px; font-weight:800; color:#0f172a; margin:0 0 4px 0;">Hasil Verifikasi</h3>
+                                                    <p style="font-size:12.5px; color:#64748b; margin:0; line-height:1.4;">Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.</p>
+                                                </div>
+                                            </div>
+                                            <div style="display:flex; align-items:center; gap:10px;">
+                                                <span style="font-size:12px; color:#94a3b8; font-weight:500;"><?php echo $vDate; ?></span>
+                                                <span class="status-pill revision" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:3px 12px; border-radius:9999px; font-size:11px; font-weight:700;">
+                                                    Perlu Revisi
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Catatan Verifikator Utama -->
+                                        <?php if (!empty($vNotes)): ?>
+                                            <div style="margin-bottom:16px; padding-left:42px;">
+                                                <div style="font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px;">Catatan Verifikator</div>
+                                                <div style="font-size:13px; color:#1e293b; line-height:1.5; font-weight:500;">
+                                                    <?php echo nl2br(e($vNotes)); ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- Inner Box: Hasil Pemeriksaan Checklist -->
+                                        <div style="background:#fff; border:1px solid #f1f5f9; border-radius:12px; padding:18px 20px; margin-top:12px;">
+                                            <div style="font-size:13.5px; font-weight:800; color:#0f172a; margin-bottom:16px;">Hasil Pemeriksaan Checklist</div>
+                                            
+                                            <div style="display:flex; flex-direction:column; gap:14px;">
+                                                <?php foreach ($stdCategories as $catKey => $catLabel): ?>
+                                                    <?php
+                                                        $catItem = $vChecklistRaw[$catKey] ?? ($vChecklistRaw[$catLabel] ?? null);
+                                                        $isPatuh = !($catItem && ($catItem['status'] ?? '') === 'Tidak Patuh');
+                                                        $catNote = $catItem['note'] ?? '';
+                                                    ?>
+                                                    <div>
+                                                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #f1f5f9; padding-bottom:8px;">
+                                                            <span style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($catLabel); ?></span>
+                                                            <?php if ($isPatuh): ?>
+                                                                <span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; padding:2px 12px; border-radius:9999px; font-size:11px; font-weight:700;">Patuh</span>
+                                                            <?php else: ?>
+                                                                <span style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:2px 12px; border-radius:9999px; font-size:11px; font-weight:700;">Tidak Patuh</span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <?php if (!$isPatuh && !empty($catNote)): ?>
+                                                            <div style="background:#fef2f2; border:1px solid #fee2e2; border-radius:8px; padding:10px 14px; margin-top:8px;">
+                                                                <div style="font-size:11px; font-weight:700; color:#dc2626; margin-bottom:2px;">Catatan Verifikator</div>
+                                                                <div style="font-size:12.5px; color:#991b1b; line-height:1.4;"><?php echo e($catNote); ?></div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
                                 <!-- TAB 1: LAMARAN (LOCKED STATE) -->
                                 <div id="tabPanePageLamaran">
-                                    <?php if ($dStatus === 'Draft' || $dStatus === 'Menunggu Verifikasi'): ?>
+                                    <?php if (in_array($dStatus, ['Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Perlu Revisi'], true)): ?>
                                         <div style="position:relative; min-height:340px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; padding:20px 0;">
                                             <!-- Faded Background Table Simulation -->
                                             <div style="position:absolute; inset:0; opacity:0.18; filter:blur(2.5px); pointer-events:none; padding:10px;">
@@ -2633,10 +2716,11 @@
                                                 <p style="font-size:13.5px; color:#64748b; line-height:1.6; margin:0;">
                                                     <?php if ($dStatus === 'Menunggu Verifikasi'): ?>
                                                         Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang.<br>Lowongan telah diajukan dan sedang menunggu verifikasi oleh admin.
+                                                    <?php elseif (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true)): ?>
+                                                        Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang.<br>Lowongan dikembalikan oleh admin dan perlu diperbaiki sebelum diajukan ulang.
                                                     <?php else: ?>
                                                         Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang.<br>Lowongan masih dalam tahap penyusunan dan belum diajukan untuk diverifikasi.
                                                     <?php endif; ?>
-                                                </p>
                                             </div>
                                         </div>
                                     <?php else: ?>
