@@ -1910,9 +1910,9 @@ $modal = <<<HTML
                                 <label>Lama expired loker <span class="req">*</span></label>
                                 <select name="expiry_days" class="form-control-custom" required>
                                     <option value="">Pilih lama expired loker</option>
-                                    <option value="30" selected>1 Bulan (<?php echo format_indo_date('+1 month', 'short'); ?>)</option>
-                                    <option value="60">2 Bulan (<?php echo format_indo_date('+2 month', 'short'); ?>)</option>
-                                    <option value="90">3 Bulan (<?php echo format_indo_date('+3 month', 'short'); ?>)</option>
+                                    <option value="30" selected>1 Bulan (<?php echo format_indo_date(date('Y-m-d', strtotime('+1 month')), 'short'); ?>)</option>
+                                    <option value="60">2 Bulan (<?php echo format_indo_date(date('Y-m-d', strtotime('+2 month')), 'short'); ?>)</option>
+                                    <option value="90">3 Bulan (<?php echo format_indo_date(date('Y-m-d', strtotime('+3 month')), 'short'); ?>)</option>
                                 </select>
                             </div>
 

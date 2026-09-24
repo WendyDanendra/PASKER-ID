@@ -1052,7 +1052,12 @@ function format_indo_date($dateRaw, string $format = 'long'): string
         if ($dateRaw instanceof DateTimeInterface) {
             $d = $dateRaw;
         } else {
-            $d = new DateTime((string)$dateRaw);
+            $ts = is_numeric($dateRaw) ? (int)$dateRaw : strtotime((string)$dateRaw);
+            if ($ts !== false && $ts > 0) {
+                $d = (new DateTime())->setTimestamp($ts);
+            } else {
+                $d = new DateTime((string)$dateRaw);
+            }
         }
         $monthsLong = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
@@ -1070,7 +1075,7 @@ function format_indo_date($dateRaw, string $format = 'long'): string
             return $d->format('j') . ' ' . ($monthsShort[$monthNum] ?? '');
         }
         return $d->format('j') . ' ' . ($monthsLong[$monthNum] ?? '') . ' ' . $d->format('Y');
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         return '-';
     }
 }
