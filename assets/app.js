@@ -2116,41 +2116,41 @@ const PKI_FORM_LOCATIONS = {
     },
     "DKI Jakarta": {
         "Kota Jakarta Selatan": {
-            "Kebayoran Baru": ["Senayan", "Rawa Barat", "Melawai", "Gandaria Utara", "Pulo", "Kramat Pela", "Gunung"],
-            "Cilandak": ["Cilandak Barat", "Pondok Labu", "Lebak Bulus", "Gandaria Selatan"],
-            "Setiabudi": ["Karet", "Kuningan Timur", "Setiabudi", "Menteng Atas", "Pasar Manggis"],
-            "Pasar Minggu": ["Pejaten Barat", "Pasar Minggu", "Jati Padang", "Ragunan", "Cilandak Timur"],
-            "Pancoran": ["Kalibata", "Pancoran", "Pengadegan", "Rawajati", "Duren Tiga"],
-            "Tebet": ["Tebet Barat", "Tebet Timur", "Kebon Baru", "Manggarai", "Menteng Dalam"],
-            "Kebayoran Lama": ["Kebayoran Lama Utara", "Pondok Pinang", "Grogol Selatan", "Cipulir"],
-            "Jagakarsa": ["Jagakarsa", "Ciganjur", "Srengseng Sawah", "Lenteng Agung"]
+            "Tebet": ["Bukit Duri", "Kebon Baru", "Manggarai", "Manggarai Selatan", "Menteng Dalam", "Tebet Barat", "Tebet Timur"],
+            "Kebayoran Baru": ["Cipete Utara", "Gandaria Utara", "Gunung", "Kramat Pela", "Melawai", "Petogogan", "Pulo", "Rawa Barat", "Selong", "Senayan"],
+            "Cilandak": ["Cilandak Barat", "Cipete Selatan", "Gandaria Selatan", "Lebak Bulus", "Pondok Labu"],
+            "Setiabudi": ["Guntur", "Karet", "Karet Kuningan", "Karet Semanggi", "Kuningan Timur", "Menteng Atas", "Pasar Manggis", "Setiabudi"],
+            "Pasar Minggu": ["Cilandak Timur", "Jati Padang", "Kebagusan", "Pasar Minggu", "Pejaten Barat", "Pejaten Timur", "Ragunan"],
+            "Pancoran": ["Cikoko", "Duren Tiga", "Kalibata", "Pancoran", "Pengadegan", "Rawajati"],
+            "Kebayoran Lama": ["Cipulir", "Grogol Selatan", "Grogol Utara", "Kebayoran Lama Selatan", "Kebayoran Lama Utara", "Pondok Pinang"],
+            "Jagakarsa": ["Ciganjur", "Cipedak", "Jagakarsa", "Lenteng Agung", "Srengseng Sawah", "Tanjung Barat"]
         },
         "Kota Jakarta Pusat": {
-            "Gambir": ["Gambir", "Cideng", "Petojo Selatan", "Kebon Kelapa"],
-            "Tanah Abang": ["Bendungan Hilir", "Karet Tengsin", "Kebon Kacang", "Kampung Bali", "Gelora"],
-            "Menteng": ["Menteng", "Cikini", "Gondangdia", "Pegangsaan"],
-            "Kemayoran": ["Kemayoran", "Gunung Sahari Selatan", "Serdang", "Utan Panjang"],
-            "Sawah Besar": ["Pasar Baru", "Gunung Sahari Utara", "Mangga Dua Selatan"],
-            "Senen": ["Senen", "Kwitang", "Kenari", "Kramat"]
+            "Gambir": ["Cideng", "Duri Pulo", "Gambir", "Kebon Kelapa", "Petojo Selatan", "Petojo Utara"],
+            "Tanah Abang": ["Bendungan Hilir", "Gelora", "Kampung Bali", "Karet Tengsin", "Kebon Kacang", "Kebon Melati", "Petamburan"],
+            "Menteng": ["Cikini", "Gondangdia", "Kebon Sirih", "Menteng", "Pegangsaan"],
+            "Kemayoran": ["Cempaka Baru", "Gunung Sahari Selatan", "Harapan Mulya", "Kebon Kosong", "Kemayoran", "Serdang", "Sumur Batu", "Utan Panjang"],
+            "Sawah Besar": ["Gunung Sahari Utara", "Karang Anyar", "Kartini", "Mangga Dua Selatan", "Pasar Baru"],
+            "Senen": ["Bungur", "Kenari", "Kramat", "Kwitang", "Paseban", "Senen"]
         },
         "Kota Jakarta Barat": {
-            "Grogol Petamburan": ["Tanjung Duren Utara", "Grogol", "Tomang", "Jelambar"],
-            "Kebon Jeruk": ["Kebon Jeruk", "Kedoya Utara", "Duri Kepa", "Sukabumi Utara"],
-            "Kembangan": ["Kembangan Selatan", "Puri Kembangan", "Meruya Utara", "Srengseng"],
-            "Palmerah": ["Palmerah", "Slipi", "Kemanggisan", "Kota Bambu Selatan"],
-            "Cengkareng": ["Cengkareng Barat", "Rawa Buaya", "Kapuk", "Duri Kosambi"]
+            "Grogol Petamburan": ["Grogol", "Jelambar", "Jelambar Baru", "Tanjung Duren Selatan", "Tanjung Duren Utara", "Tomang", "Wijaya Kusuma"],
+            "Kebon Jeruk": ["Duri Kepa", "Kebon Jeruk", "Kedoya Selatan", "Kedoya Utara", "Kelapa Dua", "Sukabumi Selatan", "Sukabumi Utara"],
+            "Kembangan": ["Joglo", "Kembangan Selatan", "Kembangan Utara", "Meruya Selatan", "Meruya Utara", "Srengseng"],
+            "Palmerah": ["Jatipulo", "Kemanggisan", "Kota Bambu Selatan", "Kota Bambu Utara", "Palmerah", "Slipi"],
+            "Cengkareng": ["Cengkareng Barat", "Cengkareng Timur", "Duri Kosambi", "Kapuk", "Kedaung Kali Angke", "Rawa Buaya"]
         },
         "Kota Jakarta Timur": {
-            "Jatinegara": ["Kampung Melayu", "Bidara Cina", "Bali Mester", "Cipinang Cempedak"],
-            "Duren Sawit": ["Pondok Bambu", "Duren Sawit", "Klender", "Pondok Kelapa"],
-            "Cakung": ["Cakung Barat", "Penggilingan", "Ujung Menteng", "Pulogebang"],
-            "Kramat Jati": ["Kramat Jati", "Batu Ampar", "Balekambang", "Cawang"],
-            "Pulogadung": ["Rawamangun", "Pulogadung", "Jati", "Kayu Putih"]
+            "Jatinegara": ["Bali Mester", "Bidara Cina", "Cipinang Besar Selatan", "Cipinang Besar Utara", "Cipinang Cempedak", "Cipinang Muara", "Kampung Melayu"],
+            "Duren Sawit": ["Duren Sawit", "Klender", "Malaka Jaya", "Malaka Sari", "Pondok Bambu", "Pondok Kelapa", "Pondok Kopi"],
+            "Cakung": ["Cakung Barat", "Cakung Timur", "Jatinegara", "Penggilingan", "Pulogebang", "Rawa Terate", "Ujung Menteng"],
+            "Kramat Jati": ["Balekambang", "Batu Ampar", "Cawang", "Cililitan", "Dukuh", "Kramat Jati", "Tengah"],
+            "Pulogadung": ["Cipinang", "Jati", "Jatinegara Kaum", "Kayu Putih", "Pisangan Timur", "Pulogadung", "Rawamangun"]
         },
         "Kota Jakarta Utara": {
             "Kelapa Gading": ["Kelapa Gading Barat", "Kelapa Gading Timur", "Pegangsaan Dua"],
-            "Penjaringan": ["Penjaringan", "Pluit", "Kapuk Muara", "Kamal Muara"],
-            "Tanjung Priok": ["Tanjung Priok", "Sunter Agung", "Sunter Jaya", "Papanggo"]
+            "Penjaringan": ["Kamal Muara", "Kapuk Muara", "Pejagalan", "Penjaringan", "Pluit"],
+            "Tanjung Priok": ["Kebon Bawang", "Papanggo", "Sungai Bambu", "Sunter Agung", "Sunter Jaya", "Tanjung Priok", "Warakas"]
         }
     },
     "Jawa Barat": {
