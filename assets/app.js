@@ -1107,7 +1107,14 @@ function initJobCreateWizard() {
         if (!field) {
             return;
         }
-        const valStr = value == null ? '' : String(value);
+        let valStr = value == null ? '' : String(value);
+        if (name === 'expiry_days' && valStr) {
+            const num = parseInt(valStr, 10);
+            if (num === 1) valStr = '30';
+            else if (num === 2) valStr = '60';
+            else if (num === 3) valStr = '90';
+            else if (!valStr) valStr = '30';
+        }
         if (field.tagName === 'SELECT' && valStr) {
             const exists = Array.from(field.options).some((opt) => opt.value === valStr);
             if (!exists) {

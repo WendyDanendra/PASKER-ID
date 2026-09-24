@@ -537,7 +537,13 @@ function job_to_form_data(array $job): array
         'show_salary' => !empty($details['show_salary']),
         'is_remote' => !empty($details['is_remote']),
         'is_limited' => !empty($details['is_limited']),
-        'expiry_days' => ((int) ($details['expiry_days'] ?? 0)) > 0 ? (int) $details['expiry_days'] : '',
+        'expiry_days' => (function($val) {
+            $e = (int)$val;
+            if ($e === 1) return 30;
+            if ($e === 2) return 60;
+            if ($e === 3) return 90;
+            return $e > 0 ? $e : 30;
+        })($details['expiry_days'] ?? 30),
         'education_required' => (string) ($details['education_required'] ?? ''),
         'experience_required' => (string) ($details['experience_required'] ?? ''),
         'marital_statuses' => array_values((array) ($details['marital_statuses'] ?? ['Telah Menikah', 'Lajang / Belum Menikah'])),
