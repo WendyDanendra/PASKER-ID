@@ -5339,25 +5339,25 @@ document.addEventListener('click', function(e) {
                     </div>
 
                     <!-- MODAL POPUP KONFIRMASI: BATALKAN / TUTUP -->
-                    <div id="cancelConfirmModalOverlay" style="display:none; position:fixed; inset:0; z-index:1000000; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(2px); align-items:center; justify-content:center;">
-                        <div style="background:#ffffff; border-radius:12px; width:310px; max-width:88vw; padding:22px 22px 20px 22px; box-shadow:0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1); position:relative; animation:popupScale 0.18s cubic-bezier(0.16, 1, 0.3, 1); box-sizing:border-box;">
+                    <div id="cancelConfirmModalOverlay" style="display:none; position:fixed; inset:0; z-index:1000000; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(2px); align-items:center; justify-content:center; font-family:'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                        <div style="background:#ffffff; border-radius:18px; width:330px; max-width:88vw; padding:24px 22px 20px 24px; box-shadow:0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1); position:relative; animation:popupScale 0.18s cubic-bezier(0.16, 1, 0.3, 1); box-sizing:border-box;">
                             <!-- HEADER -->
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                                <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Konfirmasi</h3>
+                                <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; line-height:1.2;">Konfirmasi</h3>
                                 <button type="button" onclick="closeCancelConfirmModal()" style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:2px; display:inline-flex; align-items:center; justify-content:center; line-height:1;" title="Tutup">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
                             <!-- BODY TEXT -->
-                            <p style="font-size:13px; color:#475569; margin:0 0 24px 0; line-height:1.55;">
+                            <p style="font-size:13px; color:#475569; margin:0 0 20px 0; line-height:1.45;">
                                 Data yang sudah diisi pada form ini akan hilang. Yakin ingin menutup?
                             </p>
                             <!-- ACTIONS -->
-                            <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px;">
-                                <button type="button" onclick="closeCancelConfirmModal()" style="padding:7px 16px; font-size:12.5px; font-weight:600; color:#374151; background:#ffffff; border:1px solid #d1d5db; border-radius:8px; cursor:pointer; transition:all 0.15s ease;">
+                            <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
+                                <button type="button" onclick="closeCancelConfirmModal()" style="padding:7px 16px; font-size:13px; font-weight:600; color:#334155; background:#ffffff; border:1px solid #cbd5e1; border-radius:9px; cursor:pointer; transition:all 0.15s ease;">
                                     Batalkan
                                 </button>
-                                <button type="button" onclick="confirmCancelAndCloseDrawer()" style="padding:7px 18px; font-size:12.5px; font-weight:600; color:#ffffff; background:#e11d48; border:none; border-radius:8px; cursor:pointer; transition:all 0.15s ease; box-shadow:0 2px 4px rgba(225, 29, 72, 0.25);">
+                                <button type="button" onclick="confirmCancelAndCloseDrawer()" style="padding:7px 18px; font-size:13px; font-weight:600; color:#ffffff; background:#e11d48; border:none; border-radius:9px; cursor:pointer; transition:all 0.15s ease; box-shadow:0 2px 4px rgba(225, 29, 72, 0.25);">
                                     Lanjutkan
                                 </button>
                             </div>
