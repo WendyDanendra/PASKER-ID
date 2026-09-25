@@ -614,6 +614,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             exit;
         }
 
+        if (($decision === 'reject' || $decision === 'revision') && $notes === '') {
+            flash('error', 'Catatan wajib diisi untuk keputusan ' . ($decision === 'reject' ? 'Tolak' : 'Revisi') . '.');
+            redirect($redirectUrl);
+            exit;
+        }
+
         $checklistJson = json_encode($checklistData, JSON_UNESCAPED_UNICODE);
 
             if ($decision === 'approve') {
@@ -5051,9 +5057,18 @@ document.addEventListener('click', function(e) {
                             <div>
                                 <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                                     <h1 style="font-size:24px; font-weight:800; color:#0f172a; margin:0; line-height:1.2;"><?php echo e($selectedJob['title']); ?></h1>
-                                    <span class="pill-badge assigned" style="background:#e0f2fe; color:#0369a1; font-size:12px; padding:4px 12px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
-                                        ● Ditugaskan
-                                    </span>
+                                    <?php
+                                    $detailStatus = $selectedJob['status'] ?? '';
+                                    if ($detailStatus === 'Tayang') {
+                                        echo '<span class="pill-badge verified" style="background:#dcfce7; color:#15803d; font-size:12px; padding:4px 12px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">● Disetujui</span>';
+                                    } elseif ($detailStatus === 'Perlu Direvisi') {
+                                        echo '<span class="pill-badge revision" style="background:#fef3c7; color:#b45309; font-size:12px; padding:4px 12px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">● Revisi</span>';
+                                    } elseif ($detailStatus === 'Ditolak' || $detailStatus === 'CANCELED') {
+                                        echo '<span class="pill-badge danger" style="background:#fee2e2; color:#b91c1c; font-size:12px; padding:4px 12px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">● Ditolak</span>';
+                                    } else {
+                                        echo '<span class="pill-badge assigned" style="background:#e0f2fe; color:#0369a1; font-size:12px; padding:4px 12px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">● Ditugaskan</span>';
+                                    }
+                                    ?>
                                 </div>
                                 <div style="font-size:13px; color:#64748b; margin-top:6px; display:flex; align-items:center; gap:8px;">
                                     <strong style="color:#334155;"><?php echo e($empName); ?></strong>
@@ -5064,7 +5079,7 @@ document.addEventListener('click', function(e) {
                                 </div>
                             </div>
                             <div>
-                                <button type="button" id="btnAmbilKeputusan" data-action="open-decision-modal" onclick="openDecisionModal()" class="primary-btn" style="height:40px; padding:0 20px; font-size:13px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 2px 4px rgba(2,132,199,0.2);">
+                                <button type="button" onclick="openDecisionModal()" class="primary-btn" style="height:40px; padding:0 20px; font-size:13px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 2px 4px rgba(2,132,199,0.2);">
                                     <i class="fa-solid fa-gavel"></i> Ambil Keputusan
                                 </button>
                             </div>
@@ -5169,68 +5184,67 @@ document.addEventListener('click', function(e) {
                         </div>
                     </div>
 
-                    <!-- MODAL POPUP: AMBIL KEPUTUSAN VERIFIKASI (SIDE PANEL DRAWER) -->
-                    <div id="decisionModalOverlay" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(2px); justify-content:flex-end; align-items:stretch;">
-                        <div style="background:#ffffff; width:560px; max-width:90vw; height:100vh; box-shadow:-10px 0 30px rgba(0,0,0,0.15); display:flex; flex-direction:column; overflow:hidden; animation:slideInRight 0.25s ease-out;">
+                    <!-- MODAL POPUP: AMBIL KEPUTUSAN VERIFIKASI (RIGHT SIDE DRAWER) -->
+                    <div id="decisionModalOverlay" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(2px); justify-content:flex-end;">
+                        <div class="side-panel-content" style="background:#ffffff; width:500px; max-width:92vw; height:100vh; border-top-left-radius:20px; border-bottom-left-radius:20px; box-shadow:-10px 0 35px rgba(0,0,0,0.15); display:flex; flex-direction:column; overflow:hidden;">
                             <!-- MODAL HEADER -->
-                            <div style="padding:20px 24px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:flex-start; background:#ffffff; flex-shrink:0;">
-                                <div>
-                                    <h2 style="font-size:18px; font-weight:800; color:#0f172a; margin:0 0 4px 0;">Ambil Keputusan Verifikasi</h2>
-                                    <p style="font-size:12.5px; color:#64748b; margin:0; line-height:1.4;">Pilih keputusan untuk lowongan ini. Pastikan Anda telah memeriksa seluruh data lowongan dengan seksama.</p>
+                            <div style="padding:22px 26px 16px 26px; border-bottom:1px solid #f1f5f9; position:relative;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <h2 style="font-size:17px; font-weight:800; color:#0f172a; margin:0 0 6px 0;">Ambil Keputusan Verifikasi</h2>
+                                    <button type="button" onclick="closeDecisionModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:2px; line-height:1;" title="Tutup">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
                                 </div>
-                                <button type="button" onclick="closeDecisionModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer; padding:4px 8px; border-radius:8px; line-height:1; transition:all 0.15s;" title="Tutup">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
+                                <p style="font-size:12.5px; color:#64748b; margin:0; line-height:1.45; padding-right:20px;">Pilih keputusan untuk lowongan ini. Pastikan Anda telah memeriksa seluruh data lowongan dengan seksama.</p>
                             </div>
 
                             <!-- MODAL BODY FORM -->
-                            <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>" id="jobVerificationForm" style="display:flex; flex-direction:column; flex:1; overflow:hidden; margin:0;">
+                            <form method="post" action="admin.php?view=verifikasi_job&detail_id=<?php echo $selectedJob['id']; ?>" id="jobVerificationForm" onsubmit="return handleFormSubmit(event)" style="display:flex; flex-direction:column; flex:1; overflow:hidden; margin:0;">
                                 <input type="hidden" name="admin_action" value="verify_job">
                                 <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
+                                <input type="hidden" name="decision" id="inputDecision" value="">
+                                <textarea name="verifier_notes" id="finalVerifierNotes" style="display:none;"></textarea>
 
                                 <?php 
                                     $savedChecklist = json_decode($selectedJob['compliance_checklist'] ?? '{}', true) ?: [];
                                     $categories = compliance_categories();
                                 ?>
 
-                                <div style="padding:24px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:24px;">
+                                <div style="padding:20px 26px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:26px;">
                                     <!-- SECTION 1: KETIDAKPATUHAN -->
                                     <div>
-                                        <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
-                                            <div style="width:34px; height:34px; border-radius:10px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">
-                                                <i class="fa-solid fa-sliders"></i>
+                                        <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;">
+                                            <div style="width:34px; height:34px; border-radius:8px; background:#e0f2fe; color:#00a8e8; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">
+                                                <i class="fa-solid fa-bars-staggered"></i>
                                             </div>
                                             <div>
-                                                <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 2px 0;">Ketidakpatuhan</h3>
-                                                <p style="font-size:11.5px; color:#64748b; margin:0;">Aktifkan salah satu item di bawah ini apabila terdapat ketidakpatuhan pada lowongan ini</p>
+                                                <h3 style="font-size:13.5px; font-weight:800; color:#0f172a; margin:0 0 2px 0;">Ketidakpatuhan</h3>
+                                                <p style="font-size:11.5px; color:#64748b; margin:0; line-height:1.35;">Aktifkan salah satu item di bawah ini apabila terdapat ketidakpatuhan pada lowongan ini</p>
                                             </div>
                                         </div>
 
                                         <!-- 4 ITEM TOGGLE SWITCHES -->
                                         <div style="display:flex; flex-direction:column; gap:10px;">
-                                            <?php foreach ($categories as $cat): ?>
-                                                <?php 
-                                                    $slug = 'cat_' . md5($cat);
-                                                    $catData = $savedChecklist[$cat] ?? ['status' => 'Patuh', 'note' => ''];
-                                                    $isNonCompliant = $catData['status'] === 'Tidak Patuh';
-                                                ?>
-                                                <div id="<?php echo $slug; ?>_container" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; transition:all 0.2s ease;">
+                                            <?php foreach ($categories as $cat): 
+                                                $slug = 'cat_' . md5($cat);
+                                                $catData = $savedChecklist[$cat] ?? ['status' => 'Patuh', 'note' => ''];
+                                                $isNonCompliant = $catData['status'] === 'Tidak Patuh';
+                                            ?>
+                                                <div id="<?php echo $slug; ?>_card" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; background:#ffffff; transition:all 0.2s ease;">
                                                     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                                                        <span id="<?php echo $slug; ?>_label" style="font-size:13.5px; font-weight:700; color:#0f172a; display:flex; align-items:center;">
-                                                            <?php echo e($cat); ?><span id="<?php echo $slug; ?>_asterisk" style="color:#ef4444; margin-left:4px; display:<?php echo $isNonCompliant ? 'inline' : 'none'; ?>;">*</span>
+                                                        <span id="<?php echo $slug; ?>_label" style="font-size:13px; font-weight:<?php echo $isNonCompliant ? '700' : '500'; ?>; color:#1e293b;">
+                                                            <?php echo e($cat); ?><?php if ($isNonCompliant): ?> <span style="color:#ef4444;">*</span><?php endif; ?>
                                                         </span>
-                                                        
-                                                        <!-- TOGGLE SWITCH CONTROL -->
-                                                        <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer; margin:0; flex-shrink:0;">
-                                                            <input type="checkbox" id="<?php echo $slug; ?>_toggle" onchange="toggleComplianceItem('<?php echo $slug; ?>')" <?php echo $isNonCompliant ? 'checked' : ''; ?> style="opacity:0; width:0; height:0;">
-                                                            <span class="custom-toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:<?php echo $isNonCompliant ? '#00a8e8' : '#cbd5e1'; ?>; transition:.3s; border-radius:24px;"></span>
+                                                        <label class="switch-toggle" style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer; flex-shrink:0;">
+                                                            <input type="checkbox" id="<?php echo $slug; ?>_toggle" onchange="handleComplianceToggle('<?php echo $slug; ?>', '<?php echo addslashes($cat); ?>')" <?php echo $isNonCompliant ? 'checked' : ''; ?> style="opacity:0; width:0; height:0;">
+                                                            <span class="custom-toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:<?php echo $isNonCompliant ? '#00a8e8' : '#cbd5e1'; ?>; transition:.25s; border-radius:24px;"></span>
                                                         </label>
                                                         <input type="hidden" name="<?php echo $slug; ?>_status" id="<?php echo $slug; ?>_status" value="<?php echo $isNonCompliant ? 'Tidak Patuh' : 'Patuh'; ?>">
                                                     </div>
 
                                                     <!-- ITEM CATATAN TEXTAREA (APPEARS WHEN TOGGLE IS ON) -->
-                                                    <div id="<?php echo $slug; ?>_note_box" style="display:<?php echo $isNonCompliant ? 'block' : 'none'; ?>; margin-top:12px;">
-                                                        <textarea name="<?php echo $slug; ?>_note" id="<?php echo $slug; ?>_note" placeholder="Masukkan catatan..." style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #e2e8f0; font-size:13px; color:#1e293b; min-height:70px; resize:vertical; outline:none; font-family:inherit; box-sizing:border-box;" oninput="updateJobCompliance()"><?php echo e($catData['note']); ?></textarea>
+                                                    <div id="<?php echo $slug; ?>_note_wrapper" style="display:<?php echo $isNonCompliant ? 'block' : 'none'; ?>; margin-top:10px;">
+                                                        <textarea id="<?php echo $slug; ?>_note" name="<?php echo $slug; ?>_note" placeholder="Masukkan catatan..." style="width:100%; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; font-size:13px; color:#1e293b; outline:none; min-height:75px; resize:vertical; box-sizing:border-box; font-family:inherit; transition:border-color 0.2s;" oninput="updateButtonAndNotesState()"><?php echo e($catData['note']); ?></textarea>
                                                     </div>
                                                 </div>
                                             <?php endforeach; ?>
@@ -5239,86 +5253,119 @@ document.addEventListener('click', function(e) {
 
                                     <!-- SECTION 2: KEPUTUSAN -->
                                     <div>
-                                        <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
-                                            <div style="width:34px; height:34px; border-radius:10px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">
+                                        <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;">
+                                            <div style="width:34px; height:34px; border-radius:8px; background:#e0f2fe; color:#00a8e8; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">
                                                 <i class="fa-solid fa-gavel"></i>
                                             </div>
                                             <div>
-                                                <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 2px 0;">Keputusan</h3>
-                                                <p style="font-size:11.5px; color:#64748b; margin:0;">Tentukan keputusan sebelum memverifikasi lowongan ini</p>
+                                                <h3 style="font-size:13.5px; font-weight:800; color:#0f172a; margin:0 0 2px 0;">Keputusan</h3>
+                                                <p style="font-size:11.5px; color:#64748b; margin:0; line-height:1.35;">Tentukan keputusan sebelum memverifikasi lowongan ini</p>
                                             </div>
                                         </div>
 
-                                        <!-- KEPUTUSAN RADIO SELECTION CARDS -->
+                                        <!-- KEPUTUSAN SELECTABLE RADIO CARDS -->
                                         <div style="display:flex; flex-direction:column; gap:10px;">
+                                            <!-- SETUJUI -->
+                                            <div id="cardSetujui" onclick="selectDecision('approve')" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s ease; background:#ffffff;">
+                                                <div class="radio-indicator" id="radioDotSetujui" style="width:18px; height:18px; border-radius:50%; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                                    <div class="inner-dot" style="width:9px; height:9px; border-radius:50%; background:#00a8e8; display:none;"></div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:#0f172a;">
+                                                    <i class="fa-regular fa-circle-check" style="font-size:15px; color:#0f172a;"></i>
+                                                    <span>Setujui</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- TOLAK -->
+                                            <div id="cardTolak" onclick="selectDecision('reject')" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s ease; background:#ffffff;">
+                                                <div class="radio-indicator" id="radioDotTolak" style="width:18px; height:18px; border-radius:50%; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                                    <div class="inner-dot" style="width:9px; height:9px; border-radius:50%; background:#00a8e8; display:none;"></div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:#0f172a;">
+                                                    <i class="fa-regular fa-circle-xmark" style="font-size:15px; color:#0f172a;"></i>
+                                                    <span>Tolak</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- REVISI -->
+                                            <div id="cardRevisi" onclick="selectDecision('revision')" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s ease; background:#ffffff;">
+                                                <div class="radio-indicator" id="radioDotRevisi" style="width:18px; height:18px; border-radius:50%; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                                    <div class="inner-dot" style="width:9px; height:9px; border-radius:50%; background:#00a8e8; display:none;"></div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:#0f172a;">
+                                                    <i class="fa-solid fa-pen" style="font-size:13.5px; color:#0f172a;"></i>
+                                                    <span>Revisi</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- DYNAMIC DECISION FEEDBACK BOXES -->
+                                        <!-- 1. APPROVE FEEDBACK -->
+                                        <div id="decisionFeedbackApprove" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px 16px; margin-top:14px; align-items:center; gap:12px;">
+                                            <span style="background:#ffffff; border:1px solid #86efac; color:#16a34a; font-weight:600; font-size:12px; padding:3px 12px; border-radius:999px; white-space:nowrap;">Persetujuan</span>
+                                            <span style="color:#166534; font-size:13px; line-height:1.4;">Dengan menyetujui, lowongan akan langsung dipublikasikan dan dapat dilihat oleh pencari kerja.</span>
+                                        </div>
+
+                                        <!-- 2. REJECT FEEDBACK -->
+                                        <div id="decisionFeedbackReject" style="display:none; margin-top:14px;">
+                                            <label style="display:block; font-size:13px; font-weight:700; color:#0f172a; margin-bottom:6px;">Catatan <span style="color:#ef4444;">*</span></label>
+                                            <textarea id="noteReject" placeholder="Masukkan alasan penolakan lowongan..." style="width:100%; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; font-size:13px; color:#1e293b; outline:none; min-height:85px; resize:vertical; box-sizing:border-box; font-family:inherit;" oninput="syncNotes()"></textarea>
                                             
-                                            <!-- SETUJUI CARD -->
-                                            <label id="cardSetujui" onclick="selectDecision('approve', event)" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
-                                                <span id="dotSetujui" class="custom-radio-dot" style="width:18px; height:18px; border-radius:50%; border:2px solid #cbd5e1; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                                    <span class="inner-dot" style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:none;"></span>
-                                                </span>
-                                                <input type="radio" name="decision" value="approve" id="optApprove" onchange="updateJobCompliance()" style="display:none;">
-                                                <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:#0f172a;">
-                                                    <i class="fa-regular fa-circle-check" style="color:#0f172a; font-size:16px;"></i> Setujui
-                                                </div>
-                                            </label>
-
-                                            <!-- TOLAK CARD -->
-                                            <label id="cardTolak" onclick="selectDecision('reject', event)" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
-                                                <span id="dotTolak" class="custom-radio-dot" style="width:18px; height:18px; border-radius:50%; border:2px solid #cbd5e1; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                                    <span class="inner-dot" style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:none;"></span>
-                                                </span>
-                                                <input type="radio" name="decision" value="reject" id="optReject" onchange="updateJobCompliance()" style="display:none;">
-                                                <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:#0f172a;">
-                                                    <i class="fa-regular fa-circle-xmark" style="color:#0f172a; font-size:16px;"></i> Tolak
-                                                </div>
-                                            </label>
-
-                                            <!-- REVISI CARD -->
-                                            <label id="cardRevisi" onclick="selectDecision('revision', event)" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
-                                                <span id="dotRevisi" class="custom-radio-dot" style="width:18px; height:18px; border-radius:50%; border:2px solid #cbd5e1; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                                    <span class="inner-dot" style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:none;"></span>
-                                                </span>
-                                                <input type="radio" name="decision" value="revision" id="optRevision" onchange="updateJobCompliance()" style="display:none;">
-                                                <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:#0f172a;">
-                                                    <i class="fa-solid fa-pencil" style="color:#0f172a; font-size:14px;"></i> Revisi
-                                                </div>
-                                            </label>
+                                            <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:14px 16px; margin-top:14px; display:flex; align-items:center; gap:12px;">
+                                                <span style="background:#ffffff; border:1px solid #fca5a5; color:#dc2626; font-weight:600; font-size:12px; padding:3px 12px; border-radius:999px; white-space:nowrap;">Peringatan</span>
+                                                <span style="color:#991b1b; font-size:13px; line-height:1.4;">Tindakan ini akan menolak lowongan secara permanen. Pemberi kerja harus mengajukan ulang lowongan baru.</span>
+                                            </div>
                                         </div>
 
-                                        <!-- DYNAMIC DECISION BANNERS & TEXTAREA -->
-                                        <!-- 1. SETUJUI BANNER -->
-                                        <div id="bannerApprove" style="display:none; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:12px; padding:12px 16px; align-items:center; gap:12px; margin-top:14px;">
-                                            <span style="background:#d1fae5; color:#059669; font-size:11.5px; font-weight:700; padding:4px 12px; border-radius:999px; flex-shrink:0;">Persetujuan</span>
-                                            <span style="font-size:12.5px; color:#065f46; font-weight:500; line-height:1.4;">Dengan menyetujui, lowongan akan langsung dipublikasikan dan dapat dilihat oleh pencari kerja.</span>
-                                        </div>
-
-                                        <!-- 2. CATATAN TEXTAREA (FOR REVISI OR TOLAK) -->
-                                        <div id="notesContainer" style="display:none; margin-top:16px;">
-                                            <label id="notesLabel" style="font-weight:700; font-size:13px; color:#0f172a; display:block; margin-bottom:6px;">Catatan <span style="color:#ef4444;">*</span></label>
-                                            <textarea name="verifier_notes" id="verifierNotesInput" placeholder="Masukkan catatan..." style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #e2e8f0; font-size:13px; color:#1e293b; min-height:80px; resize:vertical; outline:none; font-family:inherit; box-sizing:border-box;"><?php echo e($selectedJob['verifier_notes']); ?></textarea>
-                                        </div>
-
-                                        <!-- 3. TOLAK WARNING BANNER -->
-                                        <div id="bannerReject" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:12px 16px; align-items:center; gap:12px; margin-top:14px;">
-                                            <span style="background:#fee2e2; color:#dc2626; font-size:11.5px; font-weight:700; padding:4px 12px; border-radius:999px; flex-shrink:0;">Peringatan</span>
-                                            <span style="font-size:12.5px; color:#991b1b; font-weight:500; line-height:1.4;">Tindakan ini akan menolak lowongan secara permanen. Pemberi kerja harus mengajukan ulang lowongan baru.</span>
+                                        <!-- 3. REVISION FEEDBACK -->
+                                        <div id="decisionFeedbackRevision" style="display:none; margin-top:14px;">
+                                            <label style="display:block; font-size:13px; font-weight:700; color:#0f172a; margin-bottom:6px;">Catatan <span style="color:#ef4444;">*</span></label>
+                                            <textarea id="noteRevision" placeholder="Masukkan catatan revisi untuk pemberi kerja..." style="width:100%; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; font-size:13px; color:#1e293b; outline:none; min-height:85px; resize:vertical; box-sizing:border-box; font-family:inherit;" oninput="syncNotes()"></textarea>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- MODAL FOOTER BUTTONS -->
-                                <div style="padding:16px 24px; border-top:1px solid #f1f5f9; display:flex; justify-content:flex-end; gap:12px; background:#ffffff; align-items:center; flex-shrink:0;">
-                                    <button type="button" onclick="closeDecisionModal()" style="height:40px; padding:0 20px; font-size:13.5px; background:#ffffff; color:#0f172a; border:1px solid #cbd5e1; border-radius:10px; font-weight:700; cursor:pointer;">
+                                <div style="padding:16px 26px; border-top:1px solid #f1f5f9; display:flex; justify-content:flex-end; align-items:center; gap:12px; background:#ffffff;">
+                                    <button type="button" onclick="closeDecisionModal()" style="height:42px; padding:0 22px; font-size:13.5px; background:#ffffff; color:#0f172a; border:1px solid #e2e8f0; border-radius:10px; font-weight:600; cursor:pointer;">
                                         Batalkan
                                     </button>
-                                    <button type="submit" id="btnSubmitJobDecision" style="height:40px; padding:0 24px; font-size:13.5px; background:#059669; color:#ffffff; border:none; border-radius:10px; font-weight:700; cursor:pointer; transition:all 0.15s ease;">
-                                        Setujui Lowongan
+                                    <button type="submit" id="btnSubmitJobDecision" style="height:42px; padding:0 24px; font-size:13.5px; background:#00a8e8; color:#ffffff; border:none; border-radius:10px; font-weight:700; cursor:not-allowed; opacity:0.6;" disabled>
+                                        Konfirmasi
                                     </button>
                                 </div>
                             </form>
                         </div>
                     </div>
+
+                    <!-- TOGGLE SWITCH & SIDE PANEL CUSTOM STYLES -->
+                    <style>
+                    @keyframes slideInRight {
+                        from { transform: translateX(100%); }
+                        to { transform: translateX(0); }
+                    }
+                    .side-panel-content {
+                        animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    }
+                    .custom-toggle-slider:before {
+                        position: absolute;
+                        content: "";
+                        height: 18px;
+                        width: 18px;
+                        left: 3px;
+                        bottom: 3px;
+                        background-color: white;
+                        transition: .25s;
+                        border-radius: 50%;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+                    }
+                    input:checked + .custom-toggle-slider {
+                        background-color: #00a8e8 !important;
+                    }
+                    input:checked + .custom-toggle-slider:before {
+                        transform: translateX(20px) !important;
+                    }
+                    </style>
 
                     <!-- MAIN CARD: INFORMASI LOWONGAN -->
                     <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:24px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
@@ -5549,101 +5596,116 @@ document.addEventListener('click', function(e) {
                         </div>
                     </div>
 
-                    <style>
-                    @keyframes slideInRight {
-                        from { transform: translateX(100%); }
-                        to { transform: translateX(0); }
-                    }
-                    .custom-toggle-slider:before {
-                        position: absolute;
-                        content: "";
-                        height: 18px;
-                        width: 18px;
-                        left: 3px;
-                        bottom: 3px;
-                        background-color: white;
-                        transition: .3s;
-                        border-radius: 50%;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-                    }
-                    input:checked + .custom-toggle-slider {
-                        background-color: #00a8e8 !important;
-                    }
-                    input:checked + .custom-toggle-slider:before {
-                        transform: translateX(20px) !important;
-                    }
-                    </style>
-
                     <script>
-                    window.openDecisionModal = function() {
+                    function openDecisionModal() {
                         const modal = document.getElementById('decisionModalOverlay');
                         if (modal) {
                             modal.style.display = 'flex';
                             document.body.style.overflow = 'hidden';
-                            if (typeof window.updateJobCompliance === 'function') {
-                                window.updateJobCompliance();
-                            }
                         }
-                    };
+                        validateDecisionState();
+                    }
 
-                    window.closeDecisionModal = function() {
+                    function closeDecisionModal() {
                         const modal = document.getElementById('decisionModalOverlay');
                         if (modal) {
                             modal.style.display = 'none';
                             document.body.style.overflow = '';
                         }
-                    };
+                    }
 
-                    window.toggleComplianceItem = function(slug) {
+                    function handleComplianceToggle(slug, catName) {
                         const toggle = document.getElementById(slug + '_toggle');
+                        const isChecked = toggle ? toggle.checked : false;
                         const statusInput = document.getElementById(slug + '_status');
-                        const noteBox = document.getElementById(slug + '_note_box');
+                        const noteWrapper = document.getElementById(slug + '_note_wrapper');
+                        const label = document.getElementById(slug + '_label');
                         const noteTextarea = document.getElementById(slug + '_note');
-                        const asterisk = document.getElementById(slug + '_asterisk');
-                        const slider = toggle ? toggle.nextElementSibling : null;
 
-                        if (toggle && statusInput) {
-                            if (toggle.checked) {
-                                statusInput.value = 'Tidak Patuh';
-                                if (noteBox) noteBox.style.display = 'block';
-                                if (asterisk) asterisk.style.display = 'inline';
-                                if (slider) slider.style.backgroundColor = '#00a8e8';
-                                if (noteTextarea) {
-                                    noteTextarea.required = true;
-                                }
+                        if (statusInput) {
+                            statusInput.value = isChecked ? 'Tidak Patuh' : 'Patuh';
+                        }
+
+                        if (label) {
+                            label.innerHTML = catName + (isChecked ? ' <span style="color:#ef4444;">*</span>' : '');
+                            label.style.fontWeight = isChecked ? '700' : '500';
+                        }
+
+                        if (noteWrapper) {
+                            noteWrapper.style.display = isChecked ? 'block' : 'none';
+                            if (isChecked && noteTextarea) {
+                                setTimeout(() => noteTextarea.focus(), 50);
+                            }
+                        }
+
+                        validateDecisionState();
+                    }
+
+                    function selectDecision(type) {
+                        const inputDecision = document.getElementById('inputDecision');
+                        if (inputDecision) inputDecision.value = type;
+
+                        const cards = {
+                            'approve': document.getElementById('cardSetujui'),
+                            'reject': document.getElementById('cardTolak'),
+                            'revision': document.getElementById('cardRevisi')
+                        };
+
+                        const dots = {
+                            'approve': document.getElementById('radioDotSetujui'),
+                            'reject': document.getElementById('radioDotTolak'),
+                            'revision': document.getElementById('radioDotRevisi')
+                        };
+
+                        Object.keys(cards).forEach(key => {
+                            const card = cards[key];
+                            const dot = dots[key];
+                            if (!card) return;
+                            const inner = dot ? dot.querySelector('.inner-dot') : null;
+
+                            if (key === type) {
+                                card.style.borderColor = '#00a8e8';
+                                if (dot) dot.style.borderColor = '#00a8e8';
+                                if (inner) inner.style.display = 'block';
                             } else {
-                                statusInput.value = 'Patuh';
-                                if (noteBox) noteBox.style.display = 'none';
-                                if (asterisk) asterisk.style.display = 'none';
-                                if (slider) slider.style.backgroundColor = '#cbd5e1';
-                                if (noteTextarea) {
-                                    noteTextarea.required = false;
-                                    noteTextarea.value = '';
-                                }
+                                card.style.borderColor = '#e2e8f0';
+                                if (dot) dot.style.borderColor = '#cbd5e1';
+                                if (inner) inner.style.display = 'none';
                             }
-                        }
-                        if (typeof window.updateJobCompliance === 'function') {
-                            window.updateJobCompliance();
-                        }
-                    };
+                        });
 
-                    window.selectDecision = function(val, e) {
-                        if (e && e.target && e.target.tagName === 'INPUT') {
-                            if (typeof window.updateJobCompliance === 'function') {
-                                window.updateJobCompliance();
-                            }
-                            return;
-                        }
-                        const radio = document.getElementById(val === 'approve' ? 'optApprove' : (val === 'reject' ? 'optReject' : 'optRevision'));
-                        if (radio && !radio.disabled) {
-                            radio.checked = true;
-                            if (typeof window.updateJobCompliance === 'function') {
-                                window.updateJobCompliance();
-                            }
-                        }
-                    };
+                        const fbApprove = document.getElementById('decisionFeedbackApprove');
+                        const fbReject = document.getElementById('decisionFeedbackReject');
+                        const fbRevision = document.getElementById('decisionFeedbackRevision');
 
-                    window.updateJobCompliance = function() {
+                        if (fbApprove) fbApprove.style.display = (type === 'approve') ? 'flex' : 'none';
+                        if (fbReject) fbReject.style.display = (type === 'reject') ? 'block' : 'none';
+                        if (fbRevision) fbRevision.style.display = (type === 'revision') ? 'block' : 'none';
+
+                        syncNotes();
+                        updateButtonAndNotesState();
+                    }
+
+                    function syncNotes() {
+                        const inputDecision = document.getElementById('inputDecision');
+                        const currentDecision = inputDecision ? inputDecision.value : '';
+                        const finalNotes = document.getElementById('finalVerifierNotes');
+                        if (!finalNotes) return;
+
+                        if (currentDecision === 'reject') {
+                            const noteReject = document.getElementById('noteReject');
+                            finalNotes.value = noteReject ? noteReject.value.trim() : '';
+                        } else if (currentDecision === 'revision') {
+                            const noteRevision = document.getElementById('noteRevision');
+                            finalNotes.value = noteRevision ? noteRevision.value.trim() : '';
+                        } else {
+                            finalNotes.value = '';
+                        }
+
+                        updateButtonAndNotesState();
+                    }
+
+                    function validateDecisionState() {
                         const form = document.getElementById('jobVerificationForm');
                         if (!form) return;
 
@@ -5656,134 +5718,116 @@ document.addEventListener('click', function(e) {
                         });
 
                         const cardSetujui = document.getElementById('cardSetujui');
-                        const optApprove = document.getElementById('optApprove');
-                        const optReject = document.getElementById('optReject');
-                        const optRevision = document.getElementById('optRevision');
+                        const inputDecision = document.getElementById('inputDecision');
 
                         if (hasViolation) {
                             if (cardSetujui) cardSetujui.style.display = 'none';
-                            if (optApprove) {
-                                optApprove.disabled = true;
-                                if (optApprove.checked) {
-                                    if (optRevision) optRevision.checked = true;
-                                }
+                            if (inputDecision && inputDecision.value === 'approve') {
+                                selectDecision('revision');
                             }
                         } else {
                             if (cardSetujui) cardSetujui.style.display = 'flex';
-                            if (optApprove) optApprove.disabled = false;
                         }
 
-                        let currentDecision = 'approve';
-                        if (optReject && optReject.checked) currentDecision = 'reject';
-                        else if (optRevision && optRevision.checked) currentDecision = 'revision';
-                        else if (optApprove && optApprove.checked) currentDecision = 'approve';
-                        else {
-                            if (!hasViolation && optApprove) {
-                                optApprove.checked = true;
-                                currentDecision = 'approve';
-                            } else if (optRevision) {
-                                optRevision.checked = true;
-                                currentDecision = 'revision';
-                            }
-                        }
+                        updateButtonAndNotesState();
+                    }
 
-                        const cards = {
-                            'approve': { card: cardSetujui, dot: document.getElementById('dotSetujui') },
-                            'reject': { card: document.getElementById('cardTolak'), dot: document.getElementById('dotTolak') },
-                            'revision': { card: document.getElementById('cardRevisi'), dot: document.getElementById('dotRevisi') }
-                        };
+                    function updateButtonAndNotesState() {
+                        const submitBtn = document.getElementById('btnSubmitJobDecision');
+                        const inputDecision = document.getElementById('inputDecision');
+                        if (!submitBtn || !inputDecision) return;
 
-                        Object.keys(cards).forEach(key => {
-                            const item = cards[key];
-                            if (!item.card) return;
-                            const innerDot = item.dot ? item.dot.querySelector('.inner-dot') : null;
-                            if (key === currentDecision) {
-                                item.card.style.borderColor = '#00a8e8';
-                                item.card.style.boxShadow = '0 0 0 1px #00a8e8';
-                                if (item.dot) item.dot.style.borderColor = '#00a8e8';
-                                if (innerDot) innerDot.style.display = 'block';
-                            } else {
-                                item.card.style.borderColor = '#e2e8f0';
-                                item.card.style.boxShadow = 'none';
-                                if (item.dot) item.dot.style.borderColor = '#cbd5e1';
-                                if (innerDot) innerDot.style.display = 'none';
-                            }
-                        });
-
-                        const bannerApprove = document.getElementById('bannerApprove');
-                        const bannerReject = document.getElementById('bannerReject');
-                        const notesContainer = document.getElementById('notesContainer');
-                        const verifierNotesInput = document.getElementById('verifierNotesInput');
-                        const btnSubmit = document.getElementById('btnSubmitJobDecision');
+                        const currentDecision = inputDecision.value;
 
                         if (currentDecision === 'approve') {
-                            if (bannerApprove) bannerApprove.style.display = 'flex';
-                            if (bannerReject) bannerReject.style.display = 'none';
-                            if (notesContainer) notesContainer.style.display = 'none';
-                            if (verifierNotesInput) verifierNotesInput.required = false;
-
-                            if (btnSubmit) {
-                                btnSubmit.textContent = 'Setujui Lowongan';
-                                btnSubmit.style.background = '#059669';
-                            }
+                            submitBtn.textContent = 'Setujui Lowongan';
+                            submitBtn.style.background = '#00875a';
+                            submitBtn.style.color = '#ffffff';
+                            submitBtn.style.opacity = '1';
+                            submitBtn.style.cursor = 'pointer';
+                            submitBtn.disabled = false;
                         } else if (currentDecision === 'reject') {
-                            if (bannerApprove) bannerApprove.style.display = 'none';
-                            if (bannerReject) bannerReject.style.display = 'flex';
-                            if (notesContainer) notesContainer.style.display = 'block';
-                            if (verifierNotesInput) {
-                                verifierNotesInput.required = true;
-                                verifierNotesInput.placeholder = 'Masukkan alasan penolakan lowongan...';
-                            }
-
-                            if (btnSubmit) {
-                                btnSubmit.textContent = 'Tolak Lowongan';
-                                btnSubmit.style.background = '#f43f5e';
-                            }
+                            submitBtn.textContent = 'Tolak Lowongan';
+                            submitBtn.style.background = '#e11d48';
+                            submitBtn.style.color = '#ffffff';
+                            submitBtn.style.opacity = '1';
+                            submitBtn.style.cursor = 'pointer';
+                            submitBtn.disabled = false;
                         } else if (currentDecision === 'revision') {
-                            if (bannerApprove) bannerApprove.style.display = 'none';
-                            if (bannerReject) bannerReject.style.display = 'none';
-                            if (notesContainer) notesContainer.style.display = 'block';
-                            if (verifierNotesInput) {
-                                verifierNotesInput.required = true;
-                                verifierNotesInput.placeholder = 'Masukkan catatan revisi untuk pemberi kerja...';
-                            }
-
-                            if (btnSubmit) {
-                                btnSubmit.textContent = 'Kirim Revisi';
-                                btnSubmit.style.background = '#f59e0b';
-                            }
+                            submitBtn.textContent = 'Kirim Revisi';
+                            submitBtn.style.background = '#f59e0b';
+                            submitBtn.style.color = '#ffffff';
+                            submitBtn.style.opacity = '1';
+                            submitBtn.style.cursor = 'pointer';
+                            submitBtn.disabled = false;
+                        } else {
+                            submitBtn.textContent = 'Konfirmasi';
+                            submitBtn.style.background = '#00a8e8';
+                            submitBtn.style.color = '#ffffff';
+                            submitBtn.style.opacity = '0.6';
+                            submitBtn.style.cursor = 'not-allowed';
+                            submitBtn.disabled = true;
                         }
-                    };
+                    }
 
-                    document.addEventListener('click', (e) => {
-                        const triggerBtn = e.target.closest('#btnAmbilKeputusan') || e.target.closest('[data-action="open-decision-modal"]');
-                        if (triggerBtn) {
+                    function handleFormSubmit(e) {
+                        const inputDecision = document.getElementById('inputDecision');
+                        const decision = inputDecision ? inputDecision.value : '';
+
+                        if (!decision) {
                             e.preventDefault();
-                            if (typeof window.openDecisionModal === 'function') {
-                                window.openDecisionModal();
+                            alert('Silakan pilih salah satu keputusan terlebih dahulu.');
+                            return false;
+                        }
+
+                        // Check active compliance items for non-empty note
+                        const form = document.getElementById('jobVerificationForm');
+                        const statusInputs = form.querySelectorAll('input[name$="_status"]');
+                        for (let inp of statusInputs) {
+                            if (inp.value === 'Tidak Patuh') {
+                                const slug = inp.id.replace('_status', '');
+                                const noteArea = document.getElementById(slug + '_note');
+                                if (!noteArea || !noteArea.value.trim()) {
+                                    e.preventDefault();
+                                    alert('Catatan pada item ketidakpatuhan yang aktif wajib diisi.');
+                                    if (noteArea) noteArea.focus();
+                                    return false;
+                                }
                             }
                         }
-                    });
 
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', () => {
-                            window.updateJobCompliance();
-                            const modal = document.getElementById('decisionModalOverlay');
-                            if (modal) {
-                                modal.addEventListener('click', (e) => {
-                                    if (e.target === modal) window.closeDecisionModal();
-                                });
+                        // Check decision notes if reject or revision
+                        if (decision === 'reject') {
+                            const noteReject = document.getElementById('noteReject');
+                            if (!noteReject || !noteReject.value.trim()) {
+                                e.preventDefault();
+                                alert('Catatan alasan penolakan lowongan wajib diisi.');
+                                if (noteReject) noteReject.focus();
+                                return false;
                             }
-                        });
-                    } else {
-                        window.updateJobCompliance();
+                            document.getElementById('finalVerifierNotes').value = noteReject.value.trim();
+                        } else if (decision === 'revision') {
+                            const noteRevision = document.getElementById('noteRevision');
+                            if (!noteRevision || !noteRevision.value.trim()) {
+                                e.preventDefault();
+                                alert('Catatan revisi untuk pemberi kerja wajib diisi.');
+                                if (noteRevision) noteRevision.focus();
+                                return false;
+                            }
+                            document.getElementById('finalVerifierNotes').value = noteRevision.value.trim();
+                        }
+
+                        return true;
+                    }
+
+                    document.addEventListener('DOMContentLoaded', () => {
                         const modal = document.getElementById('decisionModalOverlay');
                         if (modal) {
                             modal.addEventListener('click', (e) => {
-                                if (e.target === modal) window.closeDecisionModal();
+                                if (e.target === modal) closeDecisionModal();
                             });
                         }
-                    }
+                    });
                     </script>
 
                 <?php else: ?>
@@ -6264,11 +6308,7 @@ document.addEventListener('click', function(e) {
                                         if ($jStatus === 'Tayang') {
                                             $badgeHtml = '<span class="pill-badge verified">● Disetujui</span>';
                                         } elseif ($jStatus === 'Menunggu Verifikasi') {
-                                            if (!empty($vJob['assigned_to'])) {
-                                                $badgeHtml = '<span class="pill-badge assigned">● Ditugaskan</span>';
-                                            } else {
-                                                $badgeHtml = '<span class="pill-badge pending">● Menunggu</span>';
-                                            }
+                                            $badgeHtml = '<span class="pill-badge assigned">● Ditugaskan</span>';
                                         } elseif ($jStatus === 'Perlu Direvisi') {
                                             $badgeHtml = '<span class="pill-badge revision">● Revisi</span>';
                                         } elseif ($jStatus === 'Ditolak' || $jStatus === 'CANCELED') {
