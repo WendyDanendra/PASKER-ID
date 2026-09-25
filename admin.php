@@ -6245,17 +6245,13 @@ document.addEventListener('click', function(e) {
                                         if ($jStatus === 'Tayang') {
                                             $badgeHtml = '<span class="pill-badge verified">● Disetujui</span>';
                                         } elseif ($jStatus === 'Menunggu Verifikasi') {
-                                            if (!empty($vJob['assigned_to'])) {
-                                                $badgeHtml = '<span class="pill-badge assigned">● Ditugaskan</span>';
-                                            } else {
-                                                $badgeHtml = '<span class="pill-badge pending">● Menunggu</span>';
-                                            }
+                                            $badgeHtml = '<span class="pill-badge assigned">● Ditugaskan</span>';
                                         } elseif ($jStatus === 'Perlu Direvisi') {
                                             $badgeHtml = '<span class="pill-badge revision">● Revisi</span>';
                                         } elseif ($jStatus === 'Ditolak' || $jStatus === 'CANCELED') {
                                             $badgeHtml = '<span class="pill-badge danger">● Ditolak</span>';
                                         } else {
-                                            $badgeHtml = '<span class="pill-badge pending">● ' . e($jStatus) . '</span>';
+                                            $badgeHtml = '<span class="pill-badge assigned">● ' . e($jStatus) . '</span>';
                                         }
 
                                         // Blacklist Status Indicator
