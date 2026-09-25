@@ -552,8 +552,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
         $stmtStatusCheck = db()->prepare('SELECT status FROM job_posts WHERE id = ?');
         $stmtStatusCheck->execute([$jobId]);
         $currStatus = (string)($stmtStatusCheck->fetchColumn() ?? '');
-        if ($currStatus === 'Ditutup') {
-            flash('error', 'Lowongan ini berstatus Ditutup dan tidak dapat diverifikasi atau dibuka kembali.');
+        if ($currStatus === 'Ditutup' || strcasecmp($currStatus, 'Draft') === 0) {
+            flash('error', 'Lowongan ini berstatus Draft / Ditutup dan tidak dapat diverifikasi.');
             redirect($redirectUrl);
             exit;
         }
@@ -1069,6 +1069,9 @@ if ($view === 'verifikasi_job') {
         $query .= ' WHERE (j.entity_type = "Individu" OR j.entity_type = "Individual" OR j.entity_type IS NULL)';
     }
 
+    // Filter out jobs with status Draft as they have not been submitted for verification yet
+    $query .= ' AND j.status NOT IN ("Draft", "draft")';
+
     if ($search !== '') {
         $query .= ' AND (j.title LIKE ? OR j.location LIKE ? OR j.kbji_code LIKE ? OR u.name LIKE ? OR ep.owner_name LIKE ?)';
         $like = '%' . $search . '%';
@@ -1140,6 +1143,11 @@ if ($view === 'verifikasi_job') {
         $stmtSel = db()->prepare('SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, ep.domicile_city_id as emp_domicile_city_id, ep.phone, ep.whatsapp, ep.social_media, ep.instagram, ep.address, u.name as user_name, u.email as user_email FROM job_posts j JOIN users u ON u.id = j.user_id LEFT JOIN employer_profiles ep ON ep.user_id = u.id WHERE j.id = ? LIMIT 1');
         $stmtSel->execute([$detailId]);
         $selectedJob = $stmtSel->fetch();
+        if ($selectedJob) {
+            if (strcasecmp((string)($selectedJob['status'] ?? ''), 'Draft') === 0) {
+                $selectedJob = null;
+            }
+        }
         if ($selectedJob) {
             $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
             if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
