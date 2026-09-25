@@ -5191,7 +5191,7 @@ document.addEventListener('click', function(e) {
                             <div style="padding:22px 26px 16px 26px; border-bottom:1px solid #f1f5f9; position:relative;">
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                                     <h2 style="font-size:17px; font-weight:800; color:#0f172a; margin:0 0 6px 0;">Ambil Keputusan Verifikasi</h2>
-                                    <button type="button" onclick="closeDecisionModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:2px; line-height:1;" title="Tutup">
+                                    <button type="button" onclick="requestCloseDecisionModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:2px; line-height:1;" title="Tutup">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
@@ -5327,7 +5327,7 @@ document.addEventListener('click', function(e) {
 
                                 <!-- MODAL FOOTER BUTTONS -->
                                 <div style="padding:16px 26px; border-top:1px solid #f1f5f9; display:flex; justify-content:flex-end; align-items:center; gap:12px; background:#ffffff;">
-                                    <button type="button" onclick="closeDecisionModal()" style="height:42px; padding:0 22px; font-size:13.5px; background:#ffffff; color:#0f172a; border:1px solid #e2e8f0; border-radius:10px; font-weight:600; cursor:pointer;">
+                                    <button type="button" onclick="requestCloseDecisionModal()" style="height:42px; padding:0 22px; font-size:13.5px; background:#ffffff; color:#0f172a; border:1px solid #e2e8f0; border-radius:10px; font-weight:600; cursor:pointer;">
                                         Batalkan
                                     </button>
                                     <button type="submit" id="btnSubmitJobDecision" style="height:42px; padding:0 24px; font-size:13.5px; background:#00a8e8; color:#ffffff; border:none; border-radius:10px; font-weight:700; cursor:not-allowed; opacity:0.6;" disabled>
@@ -5338,11 +5338,41 @@ document.addEventListener('click', function(e) {
                         </div>
                     </div>
 
+                    <!-- MODAL POPUP KONFIRMASI: BATALKAN / TUTUP -->
+                    <div id="cancelConfirmModalOverlay" style="display:none; position:fixed; inset:0; z-index:1000000; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(2px); align-items:center; justify-content:center;">
+                        <div style="background:#ffffff; border-radius:14px; width:430px; max-width:92vw; padding:24px 26px; box-shadow:0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1); position:relative; animation:popupScale 0.18s cubic-bezier(0.16, 1, 0.3, 1);">
+                            <!-- HEADER -->
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <h3 style="font-size:17px; font-weight:700; color:#0f172a; margin:0;">Konfirmasi</h3>
+                                <button type="button" onclick="closeCancelConfirmModal()" style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:3px; display:inline-flex; align-items:center; justify-content:center; line-height:1;" title="Tutup">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <!-- BODY TEXT -->
+                            <p style="font-size:13.5px; color:#475569; margin:0 0 24px 0; line-height:1.5;">
+                                Data yang sudah diisi pada form ini akan hilang. Yakin ingin menutup?
+                            </p>
+                            <!-- ACTIONS -->
+                            <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
+                                <button type="button" onclick="closeCancelConfirmModal()" style="padding:8px 20px; font-size:13px; font-weight:600; color:#374151; background:#ffffff; border:1px solid #d1d5db; border-radius:8px; cursor:pointer; transition:all 0.15s ease;">
+                                    Batalkan
+                                </button>
+                                <button type="button" onclick="confirmCancelAndCloseDrawer()" style="padding:8px 20px; font-size:13px; font-weight:600; color:#ffffff; background:#e11d48; border:none; border-radius:8px; cursor:pointer; transition:all 0.15s ease; box-shadow:0 2px 4px rgba(225, 29, 72, 0.25);">
+                                    Lanjutkan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- TOGGLE SWITCH & SIDE PANEL CUSTOM STYLES -->
                     <style>
                     @keyframes slideInRight {
                         from { transform: translateX(100%); }
                         to { transform: translateX(0); }
+                    }
+                    @keyframes popupScale {
+                        from { opacity: 0; transform: scale(0.95); }
+                        to { opacity: 1; transform: scale(1); }
                     }
                     .side-panel-content {
                         animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -5614,6 +5644,92 @@ document.addEventListener('click', function(e) {
                         }
                     }
 
+                    function requestCloseDecisionModal() {
+                        const confirmModal = document.getElementById('cancelConfirmModalOverlay');
+                        if (confirmModal) {
+                            confirmModal.style.display = 'flex';
+                        }
+                    }
+
+                    function closeCancelConfirmModal() {
+                        const confirmModal = document.getElementById('cancelConfirmModalOverlay');
+                        if (confirmModal) {
+                            confirmModal.style.display = 'none';
+                        }
+                    }
+
+                    function confirmCancelAndCloseDrawer() {
+                        closeCancelConfirmModal();
+                        closeDecisionModal();
+                        resetDecisionForm();
+                    }
+
+                    function resetDecisionForm() {
+                        const form = document.getElementById('jobVerificationForm');
+                        if (!form) return;
+
+                        const toggles = form.querySelectorAll('input[type="checkbox"]');
+                        toggles.forEach(toggle => {
+                            toggle.checked = false;
+                            const slug = toggle.id.replace('_toggle', '');
+                            const statusInput = document.getElementById(slug + '_status');
+                            const noteWrapper = document.getElementById(slug + '_note_wrapper');
+                            const noteArea = document.getElementById(slug + '_note');
+                            const label = document.getElementById(slug + '_label');
+                            if (statusInput) statusInput.value = 'Patuh';
+                            if (noteWrapper) noteWrapper.style.display = 'none';
+                            if (noteArea) noteArea.value = '';
+                            if (label) {
+                                label.innerHTML = label.textContent.replace('*', '').trim();
+                                label.style.fontWeight = '500';
+                            }
+                        });
+
+                        const inputDecision = document.getElementById('inputDecision');
+                        if (inputDecision) inputDecision.value = '';
+
+                        const cards = [
+                            document.getElementById('cardSetujui'),
+                            document.getElementById('cardTolak'),
+                            document.getElementById('cardRevisi')
+                        ];
+                        cards.forEach(card => {
+                            if (card) {
+                                card.style.borderColor = '#e2e8f0';
+                                card.style.display = 'flex';
+                            }
+                        });
+
+                        const dots = [
+                            document.getElementById('radioDotSetujui'),
+                            document.getElementById('radioDotTolak'),
+                            document.getElementById('radioDotRevisi')
+                        ];
+                        dots.forEach(dot => {
+                            if (dot) {
+                                dot.style.borderColor = '#cbd5e1';
+                                const inner = dot.querySelector('.inner-dot');
+                                if (inner) inner.style.display = 'none';
+                            }
+                        });
+
+                        const noteReject = document.getElementById('noteReject');
+                        if (noteReject) noteReject.value = '';
+                        const noteRevision = document.getElementById('noteRevision');
+                        if (noteRevision) noteRevision.value = '';
+                        const finalNotes = document.getElementById('finalVerifierNotes');
+                        if (finalNotes) finalNotes.value = '';
+
+                        const fbApprove = document.getElementById('decisionFeedbackApprove');
+                        const fbReject = document.getElementById('decisionFeedbackReject');
+                        const fbRevision = document.getElementById('decisionFeedbackRevision');
+                        if (fbApprove) fbApprove.style.display = 'none';
+                        if (fbReject) fbReject.style.display = 'none';
+                        if (fbRevision) fbRevision.style.display = 'none';
+
+                        updateButtonAndNotesState();
+                    }
+
                     function handleComplianceToggle(slug, catName) {
                         const toggle = document.getElementById(slug + '_toggle');
                         const isChecked = toggle ? toggle.checked : false;
@@ -5824,7 +5940,14 @@ document.addEventListener('click', function(e) {
                         const modal = document.getElementById('decisionModalOverlay');
                         if (modal) {
                             modal.addEventListener('click', (e) => {
-                                if (e.target === modal) closeDecisionModal();
+                                if (e.target === modal) requestCloseDecisionModal();
+                            });
+                        }
+
+                        const confirmModal = document.getElementById('cancelConfirmModalOverlay');
+                        if (confirmModal) {
+                            confirmModal.addEventListener('click', (e) => {
+                                if (e.target === confirmModal) closeCancelConfirmModal();
                             });
                         }
                     });
