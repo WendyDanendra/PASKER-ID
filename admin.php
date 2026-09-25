@@ -5064,7 +5064,7 @@ document.addEventListener('click', function(e) {
                                 </div>
                             </div>
                             <div>
-                                <button type="button" onclick="openDecisionModal()" class="primary-btn" style="height:40px; padding:0 20px; font-size:13px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 2px 4px rgba(2,132,199,0.2);">
+                                <button type="button" id="btnAmbilKeputusan" data-action="open-decision-modal" onclick="openDecisionModal()" class="primary-btn" style="height:40px; padding:0 20px; font-size:13px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 2px 4px rgba(2,132,199,0.2);">
                                     <i class="fa-solid fa-gavel"></i> Ambil Keputusan
                                 </button>
                             </div>
@@ -5253,7 +5253,7 @@ document.addEventListener('click', function(e) {
                                         <div style="display:flex; flex-direction:column; gap:10px;">
                                             
                                             <!-- SETUJUI CARD -->
-                                            <label id="cardSetujui" onclick="selectDecision('approve')" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
+                                            <label id="cardSetujui" onclick="selectDecision('approve', event)" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
                                                 <span id="dotSetujui" class="custom-radio-dot" style="width:18px; height:18px; border-radius:50%; border:2px solid #cbd5e1; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
                                                     <span class="inner-dot" style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:none;"></span>
                                                 </span>
@@ -5264,7 +5264,7 @@ document.addEventListener('click', function(e) {
                                             </label>
 
                                             <!-- TOLAK CARD -->
-                                            <label id="cardTolak" onclick="selectDecision('reject')" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
+                                            <label id="cardTolak" onclick="selectDecision('reject', event)" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
                                                 <span id="dotTolak" class="custom-radio-dot" style="width:18px; height:18px; border-radius:50%; border:2px solid #cbd5e1; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
                                                     <span class="inner-dot" style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:none;"></span>
                                                 </span>
@@ -5275,7 +5275,7 @@ document.addEventListener('click', function(e) {
                                             </label>
 
                                             <!-- REVISI CARD -->
-                                            <label id="cardRevisi" onclick="selectDecision('revision')" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
+                                            <label id="cardRevisi" onclick="selectDecision('revision', event)" style="display:flex; align-items:center; gap:12px; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; background:#fff;">
                                                 <span id="dotRevisi" class="custom-radio-dot" style="width:18px; height:18px; border-radius:50%; border:2px solid #cbd5e1; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
                                                     <span class="inner-dot" style="width:8px; height:8px; border-radius:50%; background:#00a8e8; display:none;"></span>
                                                 </span>
@@ -5575,24 +5575,26 @@ document.addEventListener('click', function(e) {
                     </style>
 
                     <script>
-                    function openDecisionModal() {
+                    window.openDecisionModal = function() {
                         const modal = document.getElementById('decisionModalOverlay');
                         if (modal) {
                             modal.style.display = 'flex';
                             document.body.style.overflow = 'hidden';
-                            updateJobCompliance();
+                            if (typeof window.updateJobCompliance === 'function') {
+                                window.updateJobCompliance();
+                            }
                         }
-                    }
+                    };
 
-                    function closeDecisionModal() {
+                    window.closeDecisionModal = function() {
                         const modal = document.getElementById('decisionModalOverlay');
                         if (modal) {
                             modal.style.display = 'none';
                             document.body.style.overflow = '';
                         }
-                    }
+                    };
 
-                    function toggleComplianceItem(slug) {
+                    window.toggleComplianceItem = function(slug) {
                         const toggle = document.getElementById(slug + '_toggle');
                         const statusInput = document.getElementById(slug + '_status');
                         const noteBox = document.getElementById(slug + '_note_box');
@@ -5620,18 +5622,28 @@ document.addEventListener('click', function(e) {
                                 }
                             }
                         }
-                        updateJobCompliance();
-                    }
+                        if (typeof window.updateJobCompliance === 'function') {
+                            window.updateJobCompliance();
+                        }
+                    };
 
-                    function selectDecision(val) {
+                    window.selectDecision = function(val, e) {
+                        if (e && e.target && e.target.tagName === 'INPUT') {
+                            if (typeof window.updateJobCompliance === 'function') {
+                                window.updateJobCompliance();
+                            }
+                            return;
+                        }
                         const radio = document.getElementById(val === 'approve' ? 'optApprove' : (val === 'reject' ? 'optReject' : 'optRevision'));
                         if (radio && !radio.disabled) {
                             radio.checked = true;
-                            updateJobCompliance();
+                            if (typeof window.updateJobCompliance === 'function') {
+                                window.updateJobCompliance();
+                            }
                         }
-                    }
+                    };
 
-                    function updateJobCompliance() {
+                    window.updateJobCompliance = function() {
                         const form = document.getElementById('jobVerificationForm');
                         if (!form) return;
 
@@ -5741,17 +5753,37 @@ document.addEventListener('click', function(e) {
                                 btnSubmit.style.background = '#f59e0b';
                             }
                         }
-                    }
+                    };
 
-                    document.addEventListener('DOMContentLoaded', () => {
-                        updateJobCompliance();
+                    document.addEventListener('click', (e) => {
+                        const triggerBtn = e.target.closest('#btnAmbilKeputusan') || e.target.closest('[data-action="open-decision-modal"]');
+                        if (triggerBtn) {
+                            e.preventDefault();
+                            if (typeof window.openDecisionModal === 'function') {
+                                window.openDecisionModal();
+                            }
+                        }
+                    });
+
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', () => {
+                            window.updateJobCompliance();
+                            const modal = document.getElementById('decisionModalOverlay');
+                            if (modal) {
+                                modal.addEventListener('click', (e) => {
+                                    if (e.target === modal) window.closeDecisionModal();
+                                });
+                            }
+                        });
+                    } else {
+                        window.updateJobCompliance();
                         const modal = document.getElementById('decisionModalOverlay');
                         if (modal) {
                             modal.addEventListener('click', (e) => {
-                                if (e.target === modal) closeDecisionModal();
+                                if (e.target === modal) window.closeDecisionModal();
                             });
                         }
-                    });
+                    }
                     </script>
 
                 <?php else: ?>
