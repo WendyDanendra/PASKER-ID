@@ -392,10 +392,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span><i class="fa-solid fa-key" style="margin-right:6px;"></i> Klik Akun Demo (Simulasi)</span>
                     <small style="opacity:0.8;">Pre-fill Otomatis</small>
                 </div>
-                <div class="demo-item" onclick="fillCredential('andi@paskerid.test', 'Pusatpasarkerj4')">
-                    <span>Andi Pratama (Menunggu Verifikasi)</span>
-                    <code>andi@paskerid.test</code>
-                </div>
                 <div class="demo-item" onclick="fillCredential('perorangan@paskerid.test', 'Pusatpasarkerj4')">
                     <span>Pemberi Kerja Individu (Budi Santoso)</span>
                     <code>perorangan@paskerid.test</code>
