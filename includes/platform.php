@@ -286,6 +286,18 @@ function job_public_salary(array $job): string
     return $min ?: $max;
 }
 
+function format_salary_range($min, $max): string
+{
+    if (!empty($min) && !empty($max)) {
+        return format_rupiah($min) . ' – ' . format_rupiah($max);
+    } elseif (!empty($min)) {
+        return 'Mulai ' . format_rupiah($min);
+    } elseif (!empty($max)) {
+        return 'Hingga ' . format_rupiah($max);
+    }
+    return 'Negosiasi';
+}
+
 function job_apply_deadline(array $job): string
 {
     $days = (int) (job_to_form_data($job)['expiry_days'] ?: 30);
