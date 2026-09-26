@@ -767,7 +767,94 @@ function initHierarchicalLocationSelector() {
     });
 }
 
-// (Legacy initEmployerProfileForm removed; defined comprehensively below)
+function initEmployerProfileForm() {
+    const nikInput = document.getElementById('inputNik');
+    const nikError = document.getElementById('nikErrorMsg');
+    const addrInput = document.getElementById('inputAddress');
+    const cbSameLoc = document.getElementById('cbSameLocation');
+    const noticeLoc = document.getElementById('siapkerjaLocNotice');
+    const docInput = document.getElementById('inputPermitDoc');
+    const photoInput = document.getElementById('inputWorkplacePhoto');
+    const form = document.getElementById('formEmployerProfile');
+
+    if (nikInput) {
+        nikInput.addEventListener('input', () => {
+            nikInput.value = nikInput.value.replace(/\D/g, '').slice(0, 16);
+            if (nikInput.value.length === 16) {
+                if (nikError) nikError.style.display = 'none';
+                nikInput.setCustomValidity('');
+            }
+        });
+        nikInput.addEventListener('blur', () => {
+            if (nikInput.value.length !== 16 && nikInput.value.length > 0) {
+                if (nikError) nikError.style.display = 'block';
+                nikInput.setCustomValidity('NIK harus terdiri dari 16 digit angka.');
+            } else {
+                if (nikError) nikError.style.display = 'none';
+                nikInput.setCustomValidity('');
+            }
+        });
+    }
+
+    if (addrInput) {
+        addrInput.addEventListener('input', () => {
+            autoGeocodeLocation();
+        });
+    }
+
+    if (cbSameLoc) {
+        cbSameLoc.addEventListener('change', () => {
+            if (cbSameLoc.checked) {
+                if (noticeLoc) noticeLoc.style.display = 'block';
+            } else {
+                if (noticeLoc) noticeLoc.style.display = 'none';
+            }
+        });
+    }
+
+    if (docInput) {
+        docInput.addEventListener('change', () => {
+            const preview = document.getElementById('permitDocPreview');
+            const nameEl = document.getElementById('permitDocName');
+            if (docInput.files && docInput.files[0]) {
+                if (nameEl) nameEl.textContent = '📄 ' + docInput.files[0].name;
+                if (preview) preview.style.display = 'flex';
+            }
+        });
+    }
+
+    if (photoInput) {
+        photoInput.addEventListener('change', () => {
+            const preview = document.getElementById('workplacePhotoPreview');
+            const nameEl = document.getElementById('workplacePhotoName');
+            if (photoInput.files && photoInput.files[0]) {
+                if (nameEl) nameEl.textContent = '📷 ' + photoInput.files[0].name;
+                if (preview) preview.style.display = 'flex';
+            }
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            if (nikInput && nikInput.value.length !== 16) {
+                e.preventDefault();
+                if (nikError) nikError.style.display = 'block';
+                nikInput.setCustomValidity('NIK harus terdiri dari 16 digit angka.');
+                nikInput.reportValidity();
+                return false;
+            }
+        });
+    }
+
+    // Initial map check
+    const initialLat = document.getElementById('inputLat')?.value;
+    const initialLng = document.getElementById('inputLng')?.value;
+    if (initialLat && initialLng) {
+        updatePkiMap(initialLat, initialLng);
+    } else {
+        autoGeocodeLocation();
+    }
+}
 
 function initRichEditors(root) {
     root.querySelectorAll('[data-rich-editor]').forEach((editor) => {
@@ -2610,7 +2697,7 @@ function initHierarchicalLocationSelector() {
             locDisplay.textContent = `${selVillage}, ${selDistrict}, ${selCity}, ${selProv}`;
             locDisplay.classList.remove('placeholder');
         } else {
-            locDisplay.textContent = 'Pilih lokasi...';
+            locDisplay.textContent = 'Pilih lokasi domisili';
             locDisplay.classList.add('placeholder');
         }
     }
@@ -2620,7 +2707,7 @@ function initHierarchicalLocationSelector() {
         if (!selectPostal) return;
         selectPostal.innerHTML = '';
         if (!selProv || !selCity || !selDistrict || !selVillage) {
-            selectPostal.innerHTML = '<option value="">Pilih kode pos...</option>';
+            selectPostal.innerHTML = '<option value="">Pilih Kode Pos</option>';
             selectPostal.disabled = true;
             return;
         }
@@ -2630,161 +2717,50 @@ function initHierarchicalLocationSelector() {
             postalVal = ID_LOCATIONS[selProv][selCity][selDistrict][selVillage];
         }
 
-        selectPostal.innerHTML = `<option value="">Pilih kode pos...</option><option value="${postalVal}" selected>${postalVal}</option>`;
+        selectPostal.innerHTML = `<option value="${postalVal}" selected>${postalVal}</option>`;
         selectPostal.disabled = false;
-        clearFieldError('wrap_postal_code', 'lbl_postal_code');
-    }
-}
-
-function escapeHtml(text) {
-    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function setFieldError(wrapId, labelId, errorMsg) {
-    const label = document.getElementById(labelId);
-    if (label) {
-        label.classList.add('field-label-error');
-    }
-    const wrap = document.getElementById(wrapId);
-    if (wrap) {
-        let errEl = wrap.querySelector('.field-error-msg');
-        if (!errEl) {
-            errEl = document.createElement('div');
-            errEl.className = 'field-error-msg';
-            wrap.appendChild(errEl);
-        }
-        errEl.textContent = errorMsg;
-        errEl.style.display = 'block';
-    }
-}
-
-function clearFieldError(wrapId, labelId) {
-    const label = document.getElementById(labelId);
-    if (label) {
-        label.classList.remove('field-label-error');
-        label.style.color = '';
-    }
-    const wrap = document.getElementById(wrapId);
-    if (wrap) {
-        const errEl = wrap.querySelector('.field-error-msg');
-        if (errEl) {
-            errEl.remove();
-        }
     }
 }
 
 // Global Document Upload helper
 window.removeUploadedDoc = function(type) {
     if (type === 'permit') {
-        const input = document.getElementById('inputPermitDoc');
-        if (input) input.value = '';
-        const existing = document.getElementById('existingPermitDoc');
-        if (existing) existing.remove();
         const container = document.getElementById('docPermitContainer');
         if (container) {
-            container.innerHTML = `
-                <button type="button" class="btn-upload-trigger" id="btnTriggerPermitDoc" onclick="document.getElementById('inputPermitDoc').click();">
-                    <i class="fa-solid fa-plus"></i> Tambah Dokumen
-                </button>
-                <div id="docPermitPreview" style="display:none;" class="uploaded-item-card">
-                    <span id="docPermitName" style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
-                    <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('permit')">Hapus</button>
-                </div>`;
+            container.innerHTML = `<input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;" required>`;
         }
     } else if (type === 'photo') {
-        const input = document.getElementById('inputWorkplacePhoto');
-        if (input) input.value = '';
-        const existing = document.getElementById('existingWorkplacePhoto');
-        if (existing) existing.remove();
         const container = document.getElementById('docPhotoContainer');
         if (container) {
-            container.innerHTML = `
-                <button type="button" class="btn-upload-trigger" id="btnTriggerWorkplacePhoto" onclick="document.getElementById('inputWorkplacePhoto').click();">
-                    <i class="fa-solid fa-plus"></i> Tambah Foto
-                </button>
-                <div id="docPhotoPreview" style="display:none;" class="uploaded-item-card">
-                    <span id="docPhotoName" style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
-                    <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('photo')">Hapus</button>
-                </div>`;
+            container.innerHTML = `<input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">`;
         }
     }
 };
 
 function initEmployerProfileForm() {
-    // 1. File change handlers
-    const inputPermitDoc = document.getElementById('inputPermitDoc');
-    if (inputPermitDoc) {
-        inputPermitDoc.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const fileName = this.files[0].name;
-                const container = document.getElementById('docPermitContainer');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="uploaded-item-card" id="docPermitCard">
-                            <span style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><i class="fa-solid fa-file-pdf" style="color:#dc2626; margin-right:6px;"></i> ${escapeHtml(fileName)}</span>
-                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('permit')">Hapus</button>
-                        </div>`;
-                }
-                clearFieldError('wrap_permit_document', 'lbl_permit_document');
-            }
-        });
-    }
-
-    const inputWorkplacePhoto = document.getElementById('inputWorkplacePhoto');
-    if (inputWorkplacePhoto) {
-        inputWorkplacePhoto.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const fileName = this.files[0].name;
-                const container = document.getElementById('docPhotoContainer');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="uploaded-item-card" id="docPhotoCard">
-                            <span style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><i class="fa-solid fa-image" style="color:#0284c7; margin-right:6px;"></i> ${escapeHtml(fileName)}</span>
-                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('photo')">Hapus</button>
-                        </div>`;
-                }
-                clearFieldError('wrap_workplace_photo', 'lbl_workplace_photo');
-            }
-        });
-    }
-
-    // 2. NIK input (only digits, up to 16)
+    // NIK validation (16 digits only)
     const inputNik = document.getElementById('inputNik');
+    const nikErr = document.getElementById('nikErrorMsg');
+
     if (inputNik) {
         inputNik.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '').slice(0, 16);
             if (this.value.length === 16) {
-                clearFieldError('wrap_nik', 'lbl_nik');
+                if (nikErr) nikErr.style.display = 'none';
+            }
+        });
+        inputNik.addEventListener('blur', function() {
+            if (this.value.length > 0 && this.value.length !== 16) {
+                if (nikErr) nikErr.style.display = 'block';
+            } else {
+                if (nikErr) nikErr.style.display = 'none';
             }
         });
     }
 
-    // 3. Clear errors on input/change
-    const fieldsToWatch = [
-        { id: 'input_owner_name', wrap: 'wrap_owner_name', label: 'lbl_owner_name', event: 'input' },
-        { id: 'input_phone', wrap: 'wrap_phone', label: 'lbl_phone', event: 'input' },
-        { id: 'input_whatsapp', wrap: 'wrap_whatsapp', label: 'lbl_whatsapp', event: 'input' },
-        { id: 'select_profession', wrap: 'wrap_profession', label: 'lbl_profession', event: 'change' },
-        { id: 'input_npwp', wrap: 'wrap_npwp', label: 'lbl_npwp', event: 'input' },
-        { id: 'inputDomicileAddress', wrap: 'wrap_domicile_address', label: 'lbl_domicile_address', event: 'input' },
-        { id: 'inputAddress', wrap: 'wrap_address', label: 'lbl_address', event: 'input' },
-        { id: 'selectPostalCode', wrap: 'wrap_postal_code', label: 'lbl_postal_code', event: 'change' },
-        { id: 'cbUserConsent', wrap: 'wrap_user_consent', label: 'lbl_user_consent', event: 'change' }
-    ];
-
-    fieldsToWatch.forEach(item => {
-        const el = document.getElementById(item.id);
-        if (el) {
-            el.addEventListener(item.event, () => {
-                clearFieldError(item.wrap, item.label);
-            });
-        }
-    });
-
-    // 4. SIAPKerja checkbox
+    // SIAPKerja checkbox notice
     const cbSameLoc = document.getElementById('cbSameLocation');
-    const domicileInput = document.getElementById('inputDomicileAddress');
-    const addrInput = document.getElementById('inputAddress');
+    const noticeLoc = document.getElementById('siapkerjaNotice') || document.getElementById('siapkerjaLocNotice');
     const selectPostal = document.getElementById('selectPostalCode');
     const locDisplay = document.getElementById('locDisplayValue');
     const locInput = document.getElementById('hierarchicalLocationInput');
@@ -2793,16 +2769,7 @@ function initEmployerProfileForm() {
     if (cbSameLoc) {
         cbSameLoc.addEventListener('change', function() {
             if (this.checked) {
-                // Auto-fill Alamat Lengkap berdasarkan Alamat Domisili
-                if (domicileInput && addrInput) {
-                    if (domicileInput.value.trim() !== '') {
-                        addrInput.value = domicileInput.value.trim();
-                    } else if (!addrInput.value.trim()) {
-                        addrInput.value = 'Pekayon Jaya, Bekasi Selatan, Kota Bekasi';
-                    }
-                    clearFieldError('wrap_address', 'lbl_address');
-                }
-
+                if (noticeLoc) noticeLoc.style.display = 'block';
                 const siapkerjaData = {
                     province: 'Jawa Barat',
                     city: 'Kota Bekasi',
@@ -2821,140 +2788,43 @@ function initEmployerProfileForm() {
                 if (document.getElementById('hiddenDomicileCityId')) document.getElementById('hiddenDomicileCityId').value = siapkerjaData.city;
 
                 if (selectPostal) {
-                    selectPostal.innerHTML = `<option value="">Pilih kode pos...</option><option value="${siapkerjaData.postal}" selected>${siapkerjaData.postal}</option>`;
+                    selectPostal.innerHTML = `<option value="${siapkerjaData.postal}" selected>${siapkerjaData.postal}</option>`;
                     selectPostal.disabled = true;
                 }
-                clearFieldError('wrap_location', 'lbl_location');
-                clearFieldError('wrap_postal_code', 'lbl_postal_code');
-
-                if (locInput) locInput.style.pointerEvents = 'none';
+                if (locInput) locInput.style.cursor = 'default';
                 if (locCaret) locCaret.style.display = 'none';
             } else {
-                if (locInput) locInput.style.pointerEvents = 'auto';
+                if (noticeLoc) noticeLoc.style.display = 'none';
+                if (locInput) locInput.style.cursor = 'pointer';
                 if (locCaret) locCaret.style.display = 'block';
-                if (selectPostal) selectPostal.disabled = false;
             }
             autoGeocodeLocation();
         });
-
-        if (domicileInput && addrInput) {
-            domicileInput.addEventListener('input', function() {
-                if (cbSameLoc.checked) {
-                    addrInput.value = this.value;
-                    clearFieldError('wrap_address', 'lbl_address');
-                    autoGeocodeLocation();
-                }
-            });
-        }
     }
 
     // Address input triggers geocoding map
-    if (addrInput) {
-        addrInput.addEventListener('input', function() {
+    const inputAddress = document.getElementById('inputAddress');
+    if (inputAddress) {
+        inputAddress.addEventListener('input', function() {
             autoGeocodeLocation();
         });
     }
 
-    // 5. Form submit validation
+    // Form submit validation
     const form = document.getElementById('formEmployerProfile');
     if (form) {
         form.addEventListener('submit', function(e) {
-            let hasError = false;
-            let firstInvalidEl = null;
-
-            function markInvalid(wrapId, labelId, msg, focusTarget) {
-                hasError = true;
-                setFieldError(wrapId, labelId, msg);
-                if (!firstInvalidEl) {
-                    firstInvalidEl = focusTarget || document.getElementById(wrapId);
-                }
-            }
-
-            // 1. Identitas Pemberi Kerja
-            const ownerName = document.getElementById('input_owner_name');
-            if (!ownerName || !ownerName.value.trim()) {
-                markInvalid('wrap_owner_name', 'lbl_owner_name', 'Nama Pemberi Kerja wajib diisi.', ownerName);
-            }
-
-            const nik = document.getElementById('inputNik');
-            if (!nik || !nik.value.trim()) {
-                markInvalid('wrap_nik', 'lbl_nik', 'NIK wajib diisi.', nik);
-            } else if (nik.value.trim().length !== 16) {
-                markInvalid('wrap_nik', 'lbl_nik', 'NIK harus terdiri dari 16 digit angka.', nik);
-            }
-
-            const phone = document.getElementById('input_phone');
-            if (!phone || !phone.value.trim()) {
-                markInvalid('wrap_phone', 'lbl_phone', 'Nomor Telepon wajib diisi.', phone);
-            }
-
-            const whatsapp = document.getElementById('input_whatsapp');
-            if (!whatsapp || !whatsapp.value.trim()) {
-                markInvalid('wrap_whatsapp', 'lbl_whatsapp', 'Nomor WhatsApp wajib diisi.', whatsapp);
-            }
-
-            const profession = document.getElementById('select_profession');
-            if (!profession || !profession.value.trim()) {
-                markInvalid('wrap_profession', 'lbl_profession', 'Jenis Profesi / Usaha Individu wajib dipilih.', profession);
-            }
-
-            const npwp = document.getElementById('input_npwp');
-            if (!npwp || !npwp.value.trim()) {
-                markInvalid('wrap_npwp', 'lbl_npwp', 'NPWP wajib diisi.', npwp);
-            }
-
-            // 2. Alamat Domisili Pemberi Kerja
-            const domicile = document.getElementById('inputDomicileAddress');
-            if (!domicile || !domicile.value.trim()) {
-                markInvalid('wrap_domicile_address', 'lbl_domicile_address', 'Alamat Domisili wajib diisi.', domicile);
-            }
-
-            // 3. Tempat Usaha / Kegiatan
-            const village = document.getElementById('hiddenVillage');
-            const city = document.getElementById('hiddenCity');
-            if ((!village || !village.value.trim()) && (!city || !city.value.trim())) {
-                markInvalid('wrap_location', 'lbl_location', 'Lokasi Tempat Usaha / Kegiatan wajib dipilih.', document.getElementById('hierarchicalLocationInput'));
-            }
-
-            const address = document.getElementById('inputAddress');
-            if (!address || !address.value.trim()) {
-                markInvalid('wrap_address', 'lbl_address', 'Alamat Lengkap Tempat Usaha wajib diisi.', address);
-            }
-
-            const postalCode = document.getElementById('selectPostalCode');
-            if (!postalCode || !postalCode.value.trim()) {
-                markInvalid('wrap_postal_code', 'lbl_postal_code', 'Kode Pos wajib dipilih.', postalCode);
-            }
-
-            // 4. Dokumen & Bukti Tempat Usaha
-            const hasExistingPermit = !!document.getElementById('existingPermitDoc')?.value;
-            const permitFileInput = document.getElementById('inputPermitDoc');
-            const hasNewPermit = permitFileInput && permitFileInput.files && permitFileInput.files.length > 0;
-            if (!hasExistingPermit && !hasNewPermit) {
-                markInvalid('wrap_permit_document', 'lbl_permit_document', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.', document.getElementById('btnTriggerPermitDoc') || document.getElementById('wrap_permit_document'));
-            }
-
-            const hasExistingPhoto = !!document.getElementById('existingWorkplacePhoto')?.value;
-            const photoFileInput = document.getElementById('inputWorkplacePhoto');
-            const hasNewPhoto = photoFileInput && photoFileInput.files && photoFileInput.files.length > 0;
-            if (!hasExistingPhoto && !hasNewPhoto) {
-                markInvalid('wrap_workplace_photo', 'lbl_workplace_photo', 'Foto Bukti Tempat Usaha / Lokasi wajib diunggah minimal 1 foto.', document.getElementById('btnTriggerWorkplacePhoto') || document.getElementById('wrap_workplace_photo'));
-            }
-
-            // 6. Pernyataan
-            const consent = document.getElementById('cbUserConsent');
-            if (!consent || !consent.checked) {
-                markInvalid('wrap_user_consent', 'lbl_user_consent', 'Anda wajib menyetujui pernyataan ini untuk mengajukan profil.', consent);
-            }
-
-            if (hasError) {
+            if (inputNik && inputNik.value.length !== 16) {
                 e.preventDefault();
-                if (firstInvalidEl) {
-                    firstInvalidEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    if (typeof firstInvalidEl.focus === 'function') {
-                        firstInvalidEl.focus();
-                    }
-                }
+                if (nikErr) nikErr.style.display = 'block';
+                inputNik.focus();
+                alert('NIK harus terdiri dari 16 digit angka.');
+                return false;
+            }
+            const cbConsent = document.getElementById('cbUserConsent');
+            if (cbConsent && !cbConsent.checked) {
+                e.preventDefault();
+                alert('Anda harus menyetujui pernyataan persetujuan sebelum mengajukan verifikasi.');
                 return false;
             }
         });

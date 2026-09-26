@@ -185,9 +185,31 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
             if (!in_array('social_media', $cols, true)) {
                 $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN social_media TEXT');
             }
-            if (!in_array('domicile_address', $cols, true)) {
-                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN domicile_address TEXT');
+            $pkiCols = [
+                'domicile_province' => 'TEXT',
+                'domicile_city' => 'TEXT',
+                'domicile_district' => 'TEXT',
+                'domicile_village' => 'TEXT',
+                'domicile_postal_code' => 'TEXT',
+                'domicile_address' => 'TEXT',
+                'workplace_same_as_domicile' => 'INTEGER DEFAULT 1',
+                'workplace_province' => 'TEXT',
+                'workplace_city' => 'TEXT',
+                'workplace_district' => 'TEXT',
+                'workplace_village' => 'TEXT',
+                'workplace_postal_code' => 'TEXT',
+                'workplace_address' => 'TEXT',
+                'workplace_detail' => 'TEXT',
+            ];
+            foreach ($pkiCols as $pkiCol => $pkiDef) {
+                if (!in_array($pkiCol, $cols, true)) {
+                    $pdo->exec("ALTER TABLE employer_profiles ADD COLUMN {$pkiCol} {$pkiDef}");
+                }
             }
+            try {
+                $pdo->exec("UPDATE users SET name = 'Wendy Danendra' WHERE email = 'perorangan@paskerid.test' AND name != 'Wendy Danendra'");
+                $pdo->exec("UPDATE employer_profiles SET owner_name = 'Wendy Danendra' WHERE user_id = 2 AND owner_name != 'Wendy Danendra'");
+            } catch (Throwable $ignored) {}
         } catch (Throwable $ignored) {}
     } catch (Throwable $ignored) {}
 
@@ -553,8 +575,21 @@ function ensure_database_schema(PDO $pdo): void
                 'consent_data_hash' => "TEXT NULL AFTER assignment_reason",
                 'consent_given_at' => "DATETIME NULL AFTER consent_data_hash",
                 'officer_statement' => "TEXT NULL AFTER consent_given_at",
-                'officer_name' => "VARCHAR(120) NULL AFTER officer_statement",
                 'entity_type' => "VARCHAR(50) DEFAULT 'Individu' AFTER officer_name",
+                'domicile_province' => "VARCHAR(120) NULL",
+                'domicile_city' => "VARCHAR(120) NULL",
+                'domicile_district' => "VARCHAR(120) NULL",
+                'domicile_village' => "VARCHAR(120) NULL",
+                'domicile_postal_code' => "VARCHAR(20) NULL",
+                'domicile_address' => "TEXT NULL",
+                'workplace_same_as_domicile' => "TINYINT(1) DEFAULT 1",
+                'workplace_province' => "VARCHAR(120) NULL",
+                'workplace_city' => "VARCHAR(120) NULL",
+                'workplace_district' => "VARCHAR(120) NULL",
+                'workplace_village' => "VARCHAR(120) NULL",
+                'workplace_postal_code' => "VARCHAR(20) NULL",
+                'workplace_address' => "TEXT NULL",
+                'workplace_detail' => "TEXT NULL",
             ];
 
             foreach ($addCols as $col => $definition) {

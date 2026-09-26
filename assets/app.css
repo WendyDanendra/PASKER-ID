@@ -5821,102 +5821,459 @@ html.dark-theme .profile-field-block .pfl-value {
     flex-shrink: 0;
 }
 
-/* ── Form Profil Pemberi Kerja Individu Enhancement ── */
-.form-tooltip {
+/* ═══════════════════════════════════════════════════════════════
+   FORM PROFIL PEMBERI KERJA INDIVIDU (SHARED COMPONENT STYLES)
+   ═══════════════════════════════════════════════════════════════ */
+
+.pki-demo-banner {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+}
+.pki-demo-banner-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #0369a1;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+.pki-demo-banner-text {
+    font-size: 13px;
+    color: #0369a1;
+    line-height: 1.5;
+}
+
+.pki-form-section {
+    margin-bottom: 24px;
+}
+.pki-section-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 4px;
+    letter-spacing: 0.2px;
+}
+.pki-section-desc {
+    font-size: 12.5px;
+    color: #64748b;
+    margin-bottom: 16px;
+}
+.pki-section-divider {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 24px 0;
+}
+
+.pki-field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+@media (max-width: 768px) {
+    .pki-field-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.pki-field {
+    margin-bottom: 16px;
+    position: relative;
+}
+.pki-field label,
+.pki-field .pki-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 6px;
+    transition: color 0.15s ease;
+}
+.pki-field .req {
+    color: #dc2626 !important;
+    font-weight: 700;
+}
+.pki-field input[type="text"],
+.pki-field input[type="number"],
+.pki-field select,
+.pki-field textarea {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #0f172a;
+    background: #ffffff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    box-sizing: border-box;
+}
+.pki-field input[type="text"],
+.pki-field input[type="number"],
+.pki-field select {
+    height: 42px;
+    padding: 0 14px;
+}
+.pki-field textarea {
+    min-height: 84px;
+    padding: 10px 14px;
+    line-height: 1.5;
+    font-family: inherit;
+    resize: vertical;
+}
+.pki-field input:focus,
+.pki-field select:focus,
+.pki-field textarea:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.pki-helper-text {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 5px;
+    line-height: 1.4;
+}
+.pki-error-text {
+    display: none;
+    font-size: 12px;
+    color: #dc2626 !important;
+    margin-top: 5px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* Validation error state: Label & helper turn red, BORDER REMAINS NORMAL */
+.pki-field.has-error > label,
+.pki-field.has-error > .pki-label,
+.pki-field.has-error .pki-consent-text {
+    color: #dc2626 !important;
+}
+.pki-field.has-error .pki-helper-text {
+    display: none !important;
+}
+.pki-field.has-error .pki-error-text {
+    display: block !important;
+}
+.pki-field.has-error input,
+.pki-field.has-error select,
+.pki-field.has-error textarea,
+.pki-field.has-error .hierarchical-loc-field,
+.pki-field.has-error .pki-upload-box {
+    border-color: #cbd5e1 !important; /* STRICTLY NORMAL BORDER */
+}
+
+/* Tooltip Popover (Floating, never shifts layout) */
+.pki-tooltip-wrap {
     position: relative;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    margin-left: 6px;
-    cursor: pointer;
+    margin-left: 5px;
     vertical-align: middle;
+}
+.pki-tooltip-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
     color: #64748b;
-    font-size: 13px;
+    font-size: 13.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
+    transition: color 0.15s ease;
 }
-.form-tooltip:hover {
+.pki-tooltip-btn:hover,
+.pki-tooltip-btn:focus-visible {
     color: #0284c7;
+    outline: none;
 }
-.form-tooltip .tooltip-text {
-    visibility: hidden;
-    opacity: 0;
-    width: max-content;
-    max-width: 280px;
-    background-color: #0f172a;
-    color: #ffffff;
-    text-align: left;
-    border-radius: 6px;
-    padding: 7px 11px;
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1.4;
+.pki-tooltip-popover {
     position: absolute;
-    z-index: 1000;
     bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%);
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
-    transition: opacity 0.2s ease, visibility 0.2s ease;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.45;
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: max-content;
+    max-width: 280px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
     pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 99999;
+    text-align: left;
     white-space: normal;
 }
-.form-tooltip .tooltip-text::after {
-    content: "";
+.pki-tooltip-popover::after {
+    content: '';
     position: absolute;
     top: 100%;
     left: 50%;
-    margin-left: -5px;
+    transform: translateX(-50%);
     border-width: 5px;
     border-style: solid;
     border-color: #0f172a transparent transparent transparent;
 }
-.form-tooltip:hover .tooltip-text {
-    visibility: visible;
+.pki-tooltip-wrap:hover .pki-tooltip-popover,
+.pki-tooltip-wrap:focus-within .pki-tooltip-popover,
+.pki-tooltip-btn:focus .pki-tooltip-popover,
+.pki-tooltip-popover.is-open {
     opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-2px);
+    pointer-events: auto;
 }
 
-.field-error-msg {
-    color: #dc2626;
-    font-size: 12px;
-    margin-top: 4px;
-    font-weight: 500;
-    line-height: 1.4;
-}
-.field-label-error {
-    color: #dc2626 !important;
-}
-.field-label-error .req {
-    color: #dc2626 !important;
-}
-
-.btn-upload-trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: #ffffff;
-    border: 1.5px dashed #0284c7;
-    border-radius: 8px;
-    color: #0284c7;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.btn-upload-trigger:hover {
-    background: #f0f9ff;
-    border-color: #0369a1;
-    color: #0369a1;
-}
-.uploaded-item-card {
+/* Karirhub Upload Box */
+.pki-upload-box {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
+    padding: 10px 16px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+    min-height: 48px;
+    box-sizing: border-box;
+}
+.pki-upload-box:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+.pki-upload-box-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #64748b;
+    font-size: 13.5px;
+}
+.pki-upload-cloud-icon {
+    color: #0284c7;
+    font-size: 16px;
+}
+.pki-upload-action-btn {
+    background: #0284c7;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    pointer-events: none;
+    transition: background 0.15s;
+}
+.pki-upload-box:hover .pki-upload-action-btn {
+    background: #0369a1;
+}
+
+.pki-upload-file-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
     background: #f8fafc;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
+    box-sizing: border-box;
+}
+.pki-upload-file-left {
+    display: flex;
+    align-items: center;
     gap: 12px;
+    min-width: 0;
+}
+.pki-file-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.pki-file-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+.pki-file-size {
+    font-size: 11px;
+    color: #64748b;
+}
+.pki-upload-file-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pki-file-btn-change {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #0284c7;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.pki-file-btn-change:hover {
+    background: #f0f9ff;
+    border-color: #93c5fd;
+}
+.pki-file-btn-delete {
+    background: transparent;
+    border: none;
+    color: #dc2626;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 13px;
+    transition: color 0.15s;
+}
+.pki-file-btn-delete:hover {
+    color: #b91c1c;
+}
+
+/* Google Maps Container */
+.pki-map-container {
+    height: 240px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    overflow: hidden;
+    position: relative;
+    background: #f8fafc;
+}
+.pki-map-open-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+    transition: all 0.15s ease;
+}
+.pki-map-open-btn:hover {
+    background: #f0f9ff;
+    color: #0369a1;
+    border-color: #0284c7;
+}
+.pki-map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 24px;
+    background: #f8fafc;
+}
+
+/* Consent Box */
+.pki-consent-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 8px;
+}
+.pki-consent-checkbox {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    max-width: 18px;
+    margin-top: 2px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: #0284c7;
+}
+.pki-consent-text {
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.55;
+    cursor: pointer;
+    font-weight: 400;
+    margin: 0;
+    flex: 1;
+    transition: color 0.15s ease;
+}
+
+/* Modal and Page Footer Actions */
+.pki-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+.pki-btn-cancel {
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+.pki-btn-cancel:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+.pki-btn-submit {
+    height: 40px;
+    padding: 0 22px;
+    border-radius: 8px;
+    border: none;
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+.pki-btn-submit:hover {
+    background: #0369a1;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
 }
 
 
