@@ -3836,17 +3836,17 @@
 
     <!-- ─── POP-UP FORM PROFIL PEMBERI KERJA INDIVIDU (SECTION D) ─────────────── -->
     <div class="modal-backdrop <?php echo $showProfileModal ? 'open' : ''; ?>" data-modal="modal-employer-profile">
-        <div class="modal-panel" style="width:min(900px, 95vw);">
-            <div class="modal-header">
+        <div class="modal-panel" style="width:min(680px, 95vw);">
+            <div class="modal-header" style="padding:16px 20px 12px;">
                 <div>
-                    <div class="modal-title">FORM PROFIL PEMBERI KERJA INDIVIDU</div>
-                    <div class="modal-subtitle">Lengkapi biodata individu untuk pengajuan verifikasi Hak Akses Pemberi Kerja Individu.</div>
+                    <div class="modal-title" style="font-size:15px;">FORM PROFIL PEMBERI KERJA INDIVIDU</div>
+                    <div class="modal-subtitle" style="font-size:12px;">Lengkapi biodata individu untuk pengajuan verifikasi Hak Akses Pemberi Kerja Individu.</div>
                 </div>
                 <button type="button" class="ghost-btn" data-close-modal="modal-employer-profile" style="font-size:18px; padding:4px 10px;">×</button>
             </div>
             <form method="post" action="dashboard.php" enctype="multipart/form-data" id="formEmployerProfile">
                 <input type="hidden" name="submit_profile" value="1">
-                <div class="modal-body" style="padding:24px;">
+                <div class="modal-body" style="padding:16px 20px;">
                     <?php
                     $isRevision = true;
                     $formData = $profile ?? [];
