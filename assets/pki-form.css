@@ -479,27 +479,38 @@ a {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
     height: 38px !important;
-    padding: 0 10px 0 12px !important;
+    padding: 0 8px 0 12px !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
     background: #ffffff !important;
     cursor: pointer !important;
     transition: border-color 0.15s ease !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
 }
 .pki-upload-box:hover {
     border-color: #0284c7 !important;
 }
 .pki-upload-text {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
     font-size: 12px !important;
     color: #64748b !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
     gap: 6px !important;
+}
+.pki-upload-text > span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    min-width: 0 !important;
 }
 .pki-upload-text.has-file {
     color: #0f172a !important;
@@ -519,6 +530,8 @@ a {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
 }
 .pki-upload-btn:hover {
     background: #e2e8f0 !important;

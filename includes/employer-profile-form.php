@@ -262,10 +262,10 @@ if (file_exists($pkiCssPath)) {
                     <?php if (!empty($vPermitDoc)): ?>
                         <i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> <?php echo e(basename($vPermitDoc)); ?>
                     <?php else: ?>
-                        Klik untuk meng-upload berkas / file
+                        Pilih file untuk diunggah
                     <?php endif; ?>
                 </span>
-                <div style="display:flex; align-items:center; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
                     <?php if (!empty($vPermitDoc)): ?>
                         <button type="button" class="pki-upload-clear-btn" title="Hapus berkas" onclick="pkiClearUpload(event, 'permit_document')">
                             <i class="fa-solid fa-xmark"></i>
@@ -293,10 +293,10 @@ if (file_exists($pkiCssPath)) {
                     <?php if (!empty($vPhoto)): ?>
                         <i class="fa-solid fa-image" style="color:#0284c7;"></i> <?php echo e(basename($vPhoto)); ?>
                     <?php else: ?>
-                        Klik untuk meng-upload foto
+                        Pilih foto untuk diunggah
                     <?php endif; ?>
                 </span>
-                <div style="display:flex; align-items:center; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
                     <?php if (!empty($vPhoto)): ?>
                         <button type="button" class="pki-upload-clear-btn" title="Hapus foto" onclick="pkiClearUpload(event, 'workplace_photo')">
                             <i class="fa-solid fa-xmark"></i>

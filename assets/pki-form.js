@@ -684,8 +684,8 @@
         if (textBox) {
             textBox.classList.remove('has-file');
             textBox.textContent = fieldId === 'permit_document'
-                ? 'Klik untuk meng-upload berkas / file'
-                : 'Klik untuk meng-upload foto';
+                ? 'Pilih file untuk diunggah'
+                : 'Pilih foto untuk diunggah';
         }
 
         if (btn) btn.textContent = 'Upload';
