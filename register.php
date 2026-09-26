@@ -320,10 +320,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     <hr class="modal-section-hr">
                     <div class="modal-section">
                         <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. PERNYATAAN PERSETUJUAN</div>
-                        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; line-height:1.5;">
-                            <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="margin-top:3px;">
-                            <span>Saya menyatakan bahwa seluruh informasi yang saya berikan adalah benar dan dapat dipertanggungjawabkan. Saya berkomitmen untuk tidak melakukan penipuan, mempublikasikan lowongan palsu, atau tindakan lain yang merugikan pelamar maupun melanggar hukum. Apabila terbukti melakukan pelanggaran, saya bersedia menerima sanksi sesuai ketentuan hukum yang berlaku. <span class="req">*</span></span>
-                        </label>
+                        <div style="display:flex; align-items:flex-start; gap:12px; margin-top:8px;">
+                            <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="width:18px; height:18px; min-width:18px; max-width:18px; margin-top:2px; cursor:pointer; flex-shrink:0; accent-color:#0284c7;">
+                            <label for="cbUserConsent" style="font-size:13px; color:#334155; line-height:1.55; cursor:pointer; font-weight:400; margin:0; flex:1;">
+                                Saya menyatakan bahwa seluruh informasi yang saya berikan adalah benar dan dapat dipertanggungjawabkan. Saya berkomitmen untuk tidak melakukan penipuan, mempublikasikan lowongan palsu, atau tindakan lain yang merugikan pelamar maupun melanggar hukum. Apabila terbukti melakukan pelanggaran, saya bersedia menerima sanksi sesuai ketentuan hukum yang berlaku. <span class="req" style="color:#dc2626; font-weight:700;">*</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 

@@ -355,7 +355,7 @@ body {
     color: #1e293b;
 }
 
-.field input,
+.field input:not([type="checkbox"]):not([type="radio"]),
 .field select,
 .field textarea {
     width: 100%;
@@ -367,6 +367,23 @@ body {
     font-size: 15px;
     outline: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.field input[type="checkbox"],
+.field input[type="radio"] {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+    padding: 0 !important;
+    margin: 3px 0 0 0 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    background: #ffffff !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    accent-color: #0284c7 !important;
+    box-shadow: none !important;
 }
 
 .field textarea {
@@ -4995,7 +5012,7 @@ html.dark-theme .modal-header h3 {
     color: #f8fafc !important;
 }
 
-html.dark-theme .field input,
+html.dark-theme .field input:not([type="checkbox"]):not([type="radio"]),
 html.dark-theme .field select,
 html.dark-theme .field textarea {
     background: #0b132b !important;
