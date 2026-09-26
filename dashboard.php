@@ -314,32 +314,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $facebook    = trim($_POST['facebook'] ?? '');
         $instagram   = trim($_POST['instagram'] ?? '');
 
-        $domProv     = trim($_POST['domicile_province'] ?? $_POST['province'] ?? '');
-        $domCity     = trim($_POST['domicile_city'] ?? $_POST['city'] ?? '');
-        $domDist     = trim($_POST['domicile_district'] ?? $_POST['district'] ?? '');
-        $domVill     = trim($_POST['domicile_village'] ?? $_POST['village'] ?? '');
-        $domPostal   = trim($_POST['domicile_postal_code'] ?? $_POST['postal_code'] ?? '');
-        $domAddress  = trim($_POST['domicile_address'] ?? $_POST['address'] ?? '');
+        $sameLoc     = isset($_POST['same_location_siapkerja']) ? 1 : 0;
+        $province    = trim($_POST['province'] ?? '');
+        $city        = trim($_POST['city'] ?? '');
+        $district    = trim($_POST['district'] ?? '');
+        $village     = trim($_POST['village'] ?? '');
+        $postalCode  = trim($_POST['postal_code'] ?? '');
 
-        $workSame    = isset($_POST['workplace_same_as_domicile']) ? 1 : 0;
-        $workProv    = trim($_POST['workplace_province'] ?? ($workSame ? $domProv : ''));
-        $workCity    = trim($_POST['workplace_city'] ?? ($workSame ? $domCity : ''));
-        $workDist    = trim($_POST['workplace_district'] ?? ($workSame ? $domDist : ''));
-        $workVill    = trim($_POST['workplace_village'] ?? ($workSame ? $domVill : ''));
-        $workPostal  = trim($_POST['workplace_postal_code'] ?? ($workSame ? $domPostal : ''));
-        $workAddress = trim($_POST['workplace_address'] ?? ($workSame ? $domAddress : ''));
-        $workDetail  = trim($_POST['workplace_detail'] ?? $_POST['address_detail'] ?? '');
-
-        $sameLoc     = $workSame;
-        $province    = $workProv ?: $domProv;
-        $city        = $workCity ?: $domCity;
-        $district    = $workDist ?: $domDist;
-        $village     = $workVill ?: $domVill;
-        $postalCode  = $workPostal ?: $domPostal;
-
-        $sameAddr    = $workSame;
-        $address     = $workAddress ?: $domAddress;
-        $addressDetail = $workDetail;
+        $sameAddr    = isset($_POST['same_address_siapkerja']) ? 1 : 0;
+        $address     = trim($_POST['address'] ?? '');
+        $addressDetail = trim($_POST['address_detail'] ?? '');
 
         $latitude    = trim($_POST['latitude'] ?? '');
         $longitude   = trim($_POST['longitude'] ?? '');
@@ -347,7 +331,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $consent     = isset($_POST['user_consent']) ? 1 : 0;
 
         if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || !$consent) {
-            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Industri/Sektor, NPWP) dan centang persetujuan pengguna.');
+            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Profesi, NPWP) dan centang persetujuan pengguna.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }
@@ -369,11 +353,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
         $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
-        $permitDoc = $permitDoc ?: trim($_POST['existing_permit_document'] ?? ($profile['permit_document'] ?? $profile['doc_permission'] ?? ''));
-        $workplacePhoto = $workplacePhoto ?: trim($_POST['existing_workplace_photo'] ?? ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? ''));
+        $permitDoc = $permitDoc ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null);
+        $workplacePhoto = $workplacePhoto ?: ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? null);
 
         if (empty($permitDoc)) {
-            flash('error', 'File Pendukung wajib diunggah minimal 1 file.');
+            flash('error', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }
@@ -384,8 +368,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt = db()->prepare('UPDATE employer_profiles SET 
                 owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
                 linkedin = ?, facebook = ?, instagram = ?,
-                domicile_province = ?, domicile_city = ?, domicile_district = ?, domicile_village = ?, domicile_postal_code = ?, domicile_address = ?,
-                workplace_same_as_domicile = ?, workplace_province = ?, workplace_city = ?, workplace_district = ?, workplace_village = ?, workplace_postal_code = ?, workplace_address = ?, workplace_detail = ?,
                 same_location_siapkerja = ?, province = ?, city = ?, domicile_city_id = ?, district = ?, village = ?, postal_code = ?,
                 same_address_siapkerja = ?, address = ?, address_detail = ?,
                 latitude = ?, longitude = ?, permit_document = ?, doc_permission = ?,
@@ -400,8 +382,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt->execute([
                 $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
-                $domProv, $domCity, $domDist, $domVill, $domPostal, $domAddress,
-                $workSame, $workProv, $workCity, $workDist, $workVill, $workPostal, $workAddress, $workDetail,
                 $sameLoc, $province, $city, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc,
@@ -413,29 +393,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt = db()->prepare('INSERT INTO employer_profiles (
                 user_id, owner_name, nik, phone, whatsapp, profession, npwp,
                 linkedin, facebook, instagram,
-                domicile_province, domicile_city, domicile_district, domicile_village, domicile_postal_code, domicile_address,
-                workplace_same_as_domicile, workplace_province, workplace_city, workplace_district, workplace_village, workplace_postal_code, workplace_address, workplace_detail,
                 same_location_siapkerja, province, city, domicile_city_id, district, village, postal_code,
                 same_address_siapkerja, address, address_detail,
                 latitude, longitude, permit_document, doc_permission, workplace_photo, doc_location_photo,
                 description, user_consent, consent_accepted,
                 entity_type, verification_status, verified, active_until, extension_requested, extension_status
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?,
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?,
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?,
-                "Individu", "PENDING", 0, NULL, 0, "NONE"
-            )');
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Individu", "PENDING", 0, NULL, 0, "NONE")');
             $stmt->execute([
                 $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
-                $domProv, $domCity, $domDist, $domVill, $domPostal, $domAddress,
-                $workSame, $workProv, $workCity, $workDist, $workVill, $workPostal, $workAddress, $workDetail,
                 $sameLoc, $province, $city, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,

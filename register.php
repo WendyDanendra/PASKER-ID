@@ -34,31 +34,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
         $facebook = trim($_POST['facebook'] ?? '');
         $instagram = trim($_POST['instagram'] ?? '');
         $description = trim($_POST['description'] ?? '');
-
-        $domProv = trim($_POST['domicile_province'] ?? $_POST['province'] ?? '');
-        $domCity = trim($_POST['domicile_city'] ?? $_POST['city'] ?? '');
-        $domDist = trim($_POST['domicile_district'] ?? $_POST['district'] ?? '');
-        $domVill = trim($_POST['domicile_village'] ?? $_POST['village'] ?? '');
-        $domPostal = trim($_POST['domicile_postal_code'] ?? $_POST['postal_code'] ?? '');
-        $domAddress = trim($_POST['domicile_address'] ?? $_POST['address'] ?? '');
-
-        $workSame = isset($_POST['workplace_same_as_domicile']) ? 1 : 0;
-        $workProv = trim($_POST['workplace_province'] ?? ($workSame ? $domProv : ''));
-        $workCity = trim($_POST['workplace_city'] ?? ($workSame ? $domCity : ''));
-        $workDist = trim($_POST['workplace_district'] ?? ($workSame ? $domDist : ''));
-        $workVill = trim($_POST['workplace_village'] ?? ($workSame ? $domVill : ''));
-        $workPostal = trim($_POST['workplace_postal_code'] ?? ($workSame ? $domPostal : ''));
-        $workAddress = trim($_POST['workplace_address'] ?? ($workSame ? $domAddress : ''));
-        $workDetail = trim($_POST['workplace_detail'] ?? $_POST['address_notes'] ?? $_POST['address_detail'] ?? '');
-
-        $province = $workProv ?: $domProv;
-        $city = $workCity ?: $domCity;
-        $district = $workDist ?: $domDist;
-        $village = $workVill ?: $domVill;
-        $domicileCityId = $city;
-        $postalCode = $workPostal ?: $domPostal;
-        $address = $workAddress ?: $domAddress;
-        $addressNotes = $workDetail;
+        $province = trim($_POST['province'] ?? '');
+        $city = trim($_POST['city'] ?? '');
+        $district = trim($_POST['district'] ?? '');
+        $village = trim($_POST['village'] ?? '');
+        $domicileCityId = trim($_POST['domicile_city_id'] ?? $city);
+        $postalCode = trim($_POST['postal_code'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $addressNotes = trim($_POST['address_detail'] ?? ($_POST['address_notes'] ?? ''));
         $userConsent = !empty($_POST['user_consent']) ? 1 : 0;
 
         create_user($ownerName, $uniqueEmail, $tempPassword, 'employer');
@@ -68,11 +51,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             
             // Store uploaded documents
             $permitDoc = store_upload('permit_document', 'employer/' . $userId, ['pdf', 'jpg', 'jpeg', 'png'])
-                ?: store_upload('supporting_doc', 'employer/' . $userId, ['pdf', 'jpg', 'jpeg', 'png'])
-                ?: trim($_POST['existing_permit_document'] ?? 'dokumen-legalitas.pdf');
-
-            $workplacePhoto = store_upload('workplace_photo', 'employer/' . $userId, ['jpg', 'jpeg', 'png', 'webp'])
-                ?: trim($_POST['existing_workplace_photo'] ?? 'foto-rumah.jpg');
+                ?: store_upload('supporting_doc', 'employer/' . $userId, ['pdf', 'jpg', 'jpeg', 'png']);
+            $workplacePhoto = store_upload('workplace_photo', 'employer/' . $userId, ['jpg', 'jpeg', 'png', 'webp']);
 
             // Update user profile complete and domicile
             db()->prepare('UPDATE users SET profile_complete = 1, domicile_city_id = ?, city = ? WHERE id = ?')->execute([$domicileCityId, $city, $userId]);
@@ -83,34 +63,62 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 $facebook ? "Facebook: {$facebook}" : null
             ]));
             $pdo = db();
+            $hasSocialMediaColumn = false;
+            try {
+                if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
+                    $colCheck = $pdo->query("SHOW COLUMNS FROM employer_profiles LIKE 'social_media'");
+                    $hasSocialMediaColumn = $colCheck && (bool) $colCheck->fetch();
+                } else {
+                    $cols = array_column($pdo->query('PRAGMA table_info(employer_profiles)')->fetchAll(), 'name');
+                    $hasSocialMediaColumn = in_array('social_media', $cols, true);
+                }
+            } catch (Throwable $ignored) {}
 
-            $stmtEp = $pdo->prepare('INSERT INTO employer_profiles (
-                user_id, owner_name, nik, profession, phone, whatsapp, npwp,
-                domicile_province, domicile_city, domicile_district, domicile_village, domicile_postal_code, domicile_address,
-                workplace_same_as_domicile, workplace_province, workplace_city, workplace_district, workplace_village, workplace_postal_code, workplace_address, workplace_detail,
-                province, city, district, village, postal_code, address, address_detail,
-                latitude, longitude, description, linkedin, instagram, facebook, social_media,
-                permit_document, doc_permission, workplace_photo, doc_location_photo,
-                entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?,
-                "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
-            )');
+            if ($hasSocialMediaColumn) {
+                $stmtEp = $pdo->prepare('INSERT INTO employer_profiles (
+                    user_id, owner_name, nik, profession, phone, whatsapp, npwp,
+                    province, city, district, village, postal_code, address, address_detail,
+                    latitude, longitude, description, linkedin, instagram, facebook, social_media,
+                    permit_document, doc_permission, workplace_photo, doc_location_photo,
+                    entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
+                )');
 
-            $stmtEp->execute([
-                $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
-                $domProv, $domCity, $domDist, $domVill, $domPostal, $domAddress,
-                $workSame, $workProv, $workCity, $workDist, $workVill, $workPostal, $workAddress, $workDetail,
-                $province, $city, $district, $village, $postalCode, $address, $addressNotes,
-                '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook, $socialSummary,
-                $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
-                $domicileCityId, $userConsent
-            ]);
+                $stmtEp->execute([
+                    $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
+                    $province, $city, $district, $village, $postalCode, $address, $addressNotes,
+                    '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook, $socialSummary,
+                    $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
+                    $domicileCityId, $userConsent
+                ]);
+            } else {
+                $stmtEp = $pdo->prepare('INSERT INTO employer_profiles (
+                    user_id, owner_name, nik, profession, phone, whatsapp, npwp,
+                    province, city, district, village, postal_code, address, address_detail,
+                    latitude, longitude, description, linkedin, instagram, facebook,
+                    permit_document, doc_permission, workplace_photo, doc_location_photo,
+                    entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
+                )');
+
+                $stmtEp->execute([
+                    $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
+                    $province, $city, $district, $village, $postalCode, $address, $addressNotes,
+                    '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook,
+                    $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
+                    $domicileCityId, $userConsent
+                ]);
+            }
 
             try {
                 $stmtLog = db()->prepare("INSERT INTO audit_logs (entity_type, entity_id, actor_name, actor_role, action, details, created_at) VALUES ('employer', ?, ?, 'employer', 'Profil dikirim untuk verifikasi.', 'Pengajuan profil pemberi kerja baru.', CURRENT_TIMESTAMP)");
@@ -137,7 +145,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pendaftaran Profil Pemberi Kerja Individu - <?php echo APP_NAME; ?></title>
+    <title>Simulasi Onboarding - <?php echo APP_NAME; ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/app.css">
@@ -160,17 +168,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                     </div>
                 <?php endif; ?>
 
-                <div class="modal-body" style="padding:24px;">
-                    <?php
-                    $isRevision = false;
-                    include __DIR__ . '/partials/employer-profile-form.php';
-                    ?>
-                </div>
+                <form method="post" id="registrationForm" enctype="multipart/form-data">
+                    <input type="hidden" name="register_action" value="simulate_employer_session">
+                    <div class="modal-body" style="padding:24px;">
+                        <?php
+                        $isRevision = false;
+                        $formData = [];
+                        $cancelButtonHtml = '<a href="employer-type.php" class="ghost-btn" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Batal</a>';
+                        include __DIR__ . '/includes/employer-profile-form.php';
+                        ?>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-
-    <!-- POPUP DIALOG BERHASIL -->
     <div class="modal-backdrop <?php echo $showSuccessPopup ? 'open' : ''; ?>" id="modalPendaftaranBerhasil">
         <div class="popup-dialog-card">
             <div class="popup-dialog-icon success"><i class="fa-solid fa-circle-check"></i></div>
@@ -183,8 +194,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             <a class="primary-btn" href="dashboard.php#dashboard" style="width:100%; text-align:center; justify-content:center;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
-
+    <script src="assets/pki-form.js"></script>
     <script>
+    (function () {
         var modal = document.getElementById('modalPendaftaranBerhasil');
         if (modal) {
             modal.addEventListener('click', function (event) {
@@ -193,6 +205,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 }
             });
         }
+    })();
     </script>
 </body>
 </html>
