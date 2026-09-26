@@ -5,6 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* Global Font Consistency - Never default to Times New Roman */
+body,
 .auth-shell-single,
 .auth-panel,
 .profile-modal-preview,
@@ -35,11 +36,19 @@ select,
 textarea,
 button,
 label,
-span,
-div,
 p,
 a {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+/* Explicitly preserve Font Awesome icon fonts */
+.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands, [class*="fa-"], [class^="fa-"],
+.fa::before, .fas::before, .far::before, .fab::before, .fa-solid::before, .fa-regular::before, .fa-brands::before, [class*="fa-"]::before, [class^="fa-"]::before {
+    font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    text-rendering: auto !important;
+    line-height: 1 !important;
 }
 
 /* Card & Shell Compact Width */
@@ -229,13 +238,19 @@ a {
 }
 .pki-tooltip .tooltip-icon {
     font-size: 12px !important;
+    width: 12px !important;
+    height: 12px !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
     color: #94a3b8 !important;
-    transition: color 0.15s ease !important;
+    fill: currentColor !important;
+    transition: color 0.15s ease, fill 0.15s ease !important;
 }
 .pki-tooltip:hover .tooltip-icon,
 .pki-tooltip:focus .tooltip-icon,
 .pki-tooltip:focus-within .tooltip-icon {
     color: #0284c7 !important;
+    fill: #0284c7 !important;
 }
 .pki-tooltip .tooltip-popover {
     display: block !important;

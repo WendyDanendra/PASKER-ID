@@ -44,8 +44,9 @@ if (!empty($vVillage) && !empty($vDistrict) && !empty($vCity) && !empty($vProvin
 }
 
 $googleMapsApiKey = getenv('GOOGLE_MAPS_API_KEY') ?: ($_ENV['GOOGLE_MAPS_API_KEY'] ?? '');
+$infoIconSvg = '<svg class="tooltip-icon" width="13" height="13" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" style="display:inline-block; vertical-align:-1px; cursor:pointer;"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg>';
 ?>
-<link rel="stylesheet" href="assets/pki-form.css?v=20260926_3">
+<link rel="stylesheet" href="assets/pki-form.css?v=20260926_4">
 <style>
 <?php
 $pkiCssPath = __DIR__ . '/../assets/pki-form.css';
@@ -57,7 +58,7 @@ if (file_exists($pkiCssPath)) {
 
 <!-- BANNER MODE DEMO -->
 <div class="pki-demo-banner">
-    <i class="fa-solid fa-circle-info"></i>
+    <svg width="15" height="15" viewBox="0 0 512 512" fill="#0284c7" aria-hidden="true" style="display:inline-block; vertical-align:top; margin-top:2px; flex-shrink:0;"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg>
     <div>
         <div class="pki-demo-banner-title">MODE DEMO</div>
         <div class="pki-demo-banner-text">Pada implementasi produksi, data identitas akan terisi otomatis dari SIAPKerja. Pada demo ini, data dapat diisi manual untuk kebutuhan pengujian.</div>
@@ -107,7 +108,7 @@ if (file_exists($pkiCssPath)) {
             <label class="pki-field-label" id="label_profession" for="pki_profession">
                 Industri / Sektor <span class="req">*</span>
                 <span class="pki-tooltip" tabindex="0" role="tooltip">
-                    <i class="fa-solid fa-circle-info tooltip-icon"></i>
+                    <?php echo $infoIconSvg; ?>
                     <span class="tooltip-popover">Pilih industri atau sektor yang paling sesuai dengan kegiatan utama usaha Anda.</span>
                 </span>
             </label>
@@ -170,7 +171,7 @@ if (file_exists($pkiCssPath)) {
         <label class="pki-field-label" id="label_location" for="pki_hierarchicalLocationInput">
             Lokasi Tempat Usaha / Kegiatan <span class="req">*</span>
             <span class="pki-tooltip" tabindex="0" role="tooltip">
-                <i class="fa-solid fa-circle-info tooltip-icon"></i>
+                <?php echo $infoIconSvg; ?>
                 <span class="tooltip-popover">Lokasi tempat Anda menjalankan usaha atau kegiatan sebagai Pemberi Kerja Individu.</span>
             </span>
         </label>
@@ -215,7 +216,7 @@ if (file_exists($pkiCssPath)) {
         <label class="pki-field-label" id="label_address_detail" for="pki_inputAddressDetail">
             Detail Alamat / Patokan (Opsional)
             <span class="pki-tooltip" tabindex="0" role="tooltip">
-                <i class="fa-solid fa-circle-info tooltip-icon"></i>
+                <?php echo $infoIconSvg; ?>
                 <span class="tooltip-popover">Tambahkan informasi yang membantu mengenali lokasi, seperti nomor bangunan, blok, lantai, atau patokan terdekat.</span>
             </span>
         </label>
@@ -252,7 +253,7 @@ if (file_exists($pkiCssPath)) {
             <label class="pki-field-label" id="label_permit_document">
                 File Pendukung <span class="req">*</span>
                 <span class="pki-tooltip" tabindex="0" role="tooltip">
-                    <i class="fa-solid fa-circle-info tooltip-icon"></i>
+                    <?php echo $infoIconSvg; ?>
                     <span class="tooltip-popover">Unggah file yang mendukung validitas identitas atau kegiatan usaha Pemberi Kerja Individu.</span>
                 </span>
             </label>
@@ -283,7 +284,7 @@ if (file_exists($pkiCssPath)) {
             <label class="pki-field-label" id="label_workplace_photo">
                 Foto Bukti Tempat Usaha / Lokasi <span class="req">*</span>
                 <span class="pki-tooltip" tabindex="0" role="tooltip">
-                    <i class="fa-solid fa-circle-info tooltip-icon"></i>
+                    <?php echo $infoIconSvg; ?>
                     <span class="tooltip-popover">Unggah foto bagian depan rumah, tempat usaha, atau lokasi kegiatan yang sesuai dengan alamat tempat usaha/kegiatan yang dicantumkan pada profil.</span>
                 </span>
             </label>
@@ -340,7 +341,7 @@ if (file_exists($pkiCssPath)) {
         <label class="pki-field-label" id="label_description" for="pki_description">
             Deskripsi Singkat Usaha / Rekrutmen
             <span class="pki-tooltip" tabindex="0" role="tooltip">
-                <i class="fa-solid fa-circle-info tooltip-icon"></i>
+                <?php echo $infoIconSvg; ?>
                 <span class="tooltip-popover">Jelaskan secara singkat usaha atau kegiatan yang dijalankan serta gambaran kebutuhan rekrutmen yang dilakukan.</span>
             </span>
         </label>
@@ -353,11 +354,11 @@ if (file_exists($pkiCssPath)) {
 
 <!-- 5. PERNYATAAN -->
 <div class="modal-section" style="margin-bottom:12px;">
-    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. PERNYATAAN</div>
+    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. PERNYATAAN <span class="req">*</span></div>
     <div class="pki-field" style="margin-bottom:0;">
         <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; line-height:1.55; cursor:pointer;" id="label_user_consent_container">
             <input type="checkbox" name="user_consent" id="pki_user_consent" value="1" <?php echo $vConsent ? 'checked' : ''; ?> style="margin-top:3px; flex-shrink:0;">
-            <span id="label_user_consent_text">Saya menyatakan bahwa seluruh informasi yang saya berikan benar dan dapat dipertanggungjawabkan serta tidak digunakan untuk penipuan, lowongan palsu, atau tindakan yang melanggar hukum. <span class="req">*</span></span>
+            <span id="label_user_consent_text">Saya menyatakan bahwa seluruh informasi yang saya berikan benar dan dapat dipertanggungjawabkan serta tidak digunakan untuk penipuan, lowongan palsu, atau tindakan yang melanggar hukum.</span>
         </label>
         <div class="pki-field-helper" id="helper_user_consent" style="display:none;">Centang pernyataan persetujuan untuk melanjutkan.</div>
     </div>
