@@ -42,12 +42,30 @@ a {
 }
 
 /* Explicitly preserve Font Awesome icon fonts */
-.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands, [class*="fa-"], [class^="fa-"],
-.fa::before, .fas::before, .far::before, .fab::before, .fa-solid::before, .fa-regular::before, .fa-brands::before, [class*="fa-"]::before, [class^="fa-"]::before {
+.fa-solid, .fas,
+.fa-solid::before, .fas::before {
     font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+    font-weight: 900 !important;
     font-style: normal !important;
     font-variant: normal !important;
-    text-rendering: auto !important;
+    line-height: 1 !important;
+}
+
+.fa-regular, .far,
+.fa-regular::before, .far::before {
+    font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    line-height: 1 !important;
+}
+
+.fa-brands, .fab,
+.fa-brands::before, .fab::before {
+    font-family: "Font Awesome 6 Brands", "FontAwesome" !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
+    font-variant: normal !important;
     line-height: 1 !important;
 }
 
