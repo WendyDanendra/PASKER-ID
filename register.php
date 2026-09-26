@@ -155,15 +155,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
     <div class="auth-shell auth-shell-single">
         <div class="auth-panel">
             <div class="auth-card profile-modal-preview">
-                <div class="modal-header" style="padding:16px 20px 12px;">
+                <div class="modal-header">
                     <div>
-                        <div class="modal-title" style="font-size:15px;">FORM PROFIL PEMBERI KERJA INDIVIDU</div>
-                        <div class="modal-subtitle" style="font-size:12px;">Lengkapi biodata individu untuk pengajuan verifikasi Hak Akses Pemberi Kerja Individu.</div>
+                        <div class="modal-title">FORM PROFIL PEMBERI KERJA INDIVIDU</div>
+                        <div class="modal-subtitle">Lengkapi biodata individu untuk pengajuan verifikasi Hak Akses Pemberi Kerja Individu.</div>
                     </div>
                 </div>
 
                 <?php $flash = get_flash(); if ($flash): ?>
-                    <div style="margin:12px 20px 0; padding:10px 14px; border-radius:6px; font-size:13px; font-weight:600; background:<?php echo $flash['type'] === 'error' ? '#fef2f2' : '#f0fdf4'; ?>; color:<?php echo $flash['type'] === 'error' ? '#991b1b' : '#166534'; ?>; border:1px solid <?php echo $flash['type'] === 'error' ? '#fecaca' : '#bbf7d0'; ?>;">
+                    <div style="margin:16px 24px 0; padding:12px 16px; border-radius:8px; font-size:13.5px; font-weight:600; background:<?php echo $flash['type'] === 'error' ? '#fef2f2' : '#f0fdf4'; ?>; color:<?php echo $flash['type'] === 'error' ? '#991b1b' : '#166534'; ?>; border:1px solid <?php echo $flash['type'] === 'error' ? '#fecaca' : '#bbf7d0'; ?>;">
                         <i class="fa-solid <?php echo $flash['type'] === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'; ?>" style="margin-right:6px;"></i>
                         <?php echo e($flash['message']); ?>
                     </div>
@@ -171,7 +171,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
 
                 <form method="post" id="registrationForm" enctype="multipart/form-data">
                     <input type="hidden" name="register_action" value="simulate_employer_session">
-                    <div class="modal-body" style="padding:16px 20px;">
+                    <div class="modal-body" style="padding:24px;">
                         <?php
                         $isRevision = false;
                         $formData = [];

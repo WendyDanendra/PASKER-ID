@@ -1,24 +1,90 @@
 /* ==========================================================================
-   FORM PROFIL PEMBERI KERJA INDIVIDU (PKI) - SLEEK & COMPACT STYLES
+   FORM PROFIL PEMBERI KERJA INDIVIDU (PKI) - COMPACT & CONSISTENT STYLES
    ========================================================================== */
 
-/* Universal Font & Sizing */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Global Font Consistency - Never default to Times New Roman */
+.auth-shell-single,
+.auth-panel,
+.profile-modal-preview,
+.modal-panel,
+.modal-header,
+.modal-body,
+.modal-footer,
+.modal-section,
 .pki-demo-banner,
 .pki-field,
 .pki-field-label,
 .pki-field-helper,
-.modal-section,
-.modal-section .section-title,
+.pki-upload-box,
+.pki-upload-text,
+.pki-upload-btn,
 .hierarchical-loc-field,
 .loc-dropdown-popup,
-.pki-upload-box,
+.loc-breadcrumbs,
+.loc-opt-row,
+.pki-map-container,
+.pki-map-placeholder,
 #label_user_consent_container,
-.modal-footer button,
-.modal-footer a {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+.modal-header .modal-title,
+.modal-header .modal-subtitle,
+.modal-section .section-title,
+input,
+select,
+textarea,
+button,
+label,
+span,
+div,
+p,
+a {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
 
-/* Demo Banner (Compact) */
+/* Card & Shell Compact Width */
+.auth-shell-single {
+    padding: 24px 16px !important;
+}
+
+.auth-shell-single .auth-panel {
+    max-width: 680px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.08) !important;
+}
+
+.modal-panel[data-modal="modal-employer-profile"],
+.modal-panel[style*="width:min(900px"] {
+    max-width: 680px !important;
+    width: min(680px, 95vw) !important;
+    border-radius: 16px !important;
+}
+
+.modal-header {
+    padding: 18px 24px 14px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.modal-header .modal-title {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    letter-spacing: -0.2px !important;
+    line-height: 1.3 !important;
+}
+
+.modal-header .modal-subtitle {
+    font-size: 12px !important;
+    color: #64748b !important;
+    margin-top: 3px !important;
+    line-height: 1.4 !important;
+}
+
+.modal-body {
+    padding: 20px 24px !important;
+}
+
+/* Demo Banner Compact */
 .pki-demo-banner {
     display: flex !important;
     align-items: flex-start !important;
@@ -27,12 +93,12 @@
     background: #f0f9ff !important;
     border: 1px solid #bae6fd !important;
     border-radius: 8px !important;
-    margin-bottom: 16px !important;
+    margin-bottom: 18px !important;
 }
 .pki-demo-banner i {
     color: #0284c7 !important;
     font-size: 15px !important;
-    margin-top: 2px !important;
+    margin-top: 1px !important;
     flex-shrink: 0 !important;
 }
 .pki-demo-banner-title {
@@ -49,20 +115,7 @@
     line-height: 1.4 !important;
 }
 
-/* Grid & Section Spacing */
-.pki-grid-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px 14px !important;
-    margin-bottom: 0 !important;
-}
-@media (max-width: 640px) {
-    .pki-grid-2 {
-        grid-template-columns: 1fr !important;
-        gap: 10px !important;
-    }
-}
-
+/* Sections & Titles */
 .modal-section {
     margin-bottom: 16px !important;
 }
@@ -75,11 +128,24 @@
 }
 .modal-section-hr {
     border: none !important;
-    border-top: 1px solid #e2e8f0 !important;
+    border-top: 1px solid #f1f5f9 !important;
     margin: 16px 0 !important;
 }
 
-/* Fields & Labels (Compact) */
+/* Grid & Fields */
+.pki-grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px 16px !important;
+    margin-bottom: 0 !important;
+}
+@media (max-width: 700px) {
+    .pki-grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+}
+
 .pki-field {
     display: flex !important;
     flex-direction: column !important;
@@ -106,7 +172,7 @@
     color: #ef4444 !important;
 }
 
-/* Inputs & Controls (38px Compact Height, Normal Border on Error) */
+/* Compact Inputs & Controls - Normal Border Always */
 .pki-field input[type="text"],
 .pki-field select,
 .pki-field textarea {
@@ -115,7 +181,7 @@
     padding: 0 12px !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
-    font-size: 13px !important;
+    font-size: 12.5px !important;
     color: #0f172a !important;
     background: #ffffff !important;
     box-sizing: border-box !important;
@@ -130,17 +196,17 @@
 }
 .pki-field textarea {
     height: auto !important;
-    min-height: 68px !important;
+    min-height: 72px !important;
     padding: 8px 12px !important;
-    line-height: 1.45 !important;
+    line-height: 1.4 !important;
     resize: vertical !important;
 }
 
-/* Helper Text (Clean & Compact) */
+/* Helper Text */
 .pki-field-helper {
     font-size: 11px !important;
     color: #64748b !important;
-    margin-top: 3px !important;
+    margin-top: 4px !important;
     line-height: 1.35 !important;
     font-weight: 400 !important;
 }
@@ -150,7 +216,7 @@
     display: block !important;
 }
 
-/* Tooltip Popover (Floating & Elegant) */
+/* Tooltip Popover */
 .pki-tooltip {
     position: relative !important;
     display: inline-flex !important;
@@ -176,15 +242,15 @@
     position: absolute !important;
     bottom: calc(100% + 6px) !important;
     left: 50% !important;
-    transform: translateX(-50%) translateY(3px) !important;
+    transform: translateX(-50%) translateY(4px) !important;
     width: max-content !important;
     max-width: 260px !important;
     background: #0f172a !important;
     color: #ffffff !important;
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     font-weight: 400 !important;
     line-height: 1.4 !important;
-    padding: 6px 10px !important;
+    padding: 7px 10px !important;
     border-radius: 6px !important;
     box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.35) !important;
     z-index: 9999 !important;
@@ -214,22 +280,22 @@
     transform: translateX(-50%) translateY(0) !important;
 }
 
-/* Hierarchical Location Picker (Compact) */
+/* Hierarchical Location Picker */
 .hierarchical-loc-field {
     min-height: 38px !important;
-    padding: 8px 12px !important;
+    height: 38px !important;
+    padding: 0 12px !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
-    font-size: 13px !important;
+    font-size: 12.5px !important;
     color: #0f172a !important;
     background: #ffffff !important;
     cursor: pointer !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
-    outline: none !important;
     box-sizing: border-box !important;
+    outline: none !important;
 }
 .hierarchical-loc-field:focus {
     border-color: #0284c7 !important;
@@ -241,15 +307,15 @@
 
 .loc-dropdown-popup {
     position: absolute !important;
-    top: calc(100% + 3px) !important;
+    top: calc(100% + 4px) !important;
     left: 0 !important;
     right: 0 !important;
     background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.12) !important;
     z-index: 500 !important;
-    max-height: 240px !important;
+    max-height: 250px !important;
     overflow-y: auto !important;
     padding: 4px 0 !important;
 }
@@ -289,7 +355,7 @@
     align-items: center !important;
     justify-content: space-between !important;
     padding: 7px 12px !important;
-    font-size: 12.5px !important;
+    font-size: 12px !important;
     color: #1e293b !important;
     cursor: pointer !important;
     transition: background 0.12s ease !important;
@@ -317,17 +383,17 @@
     box-shadow: inset 0 0 0 2px #fff !important;
 }
 .loc-opt-row .sel-tag {
-    font-size: 10px !important;
+    font-size: 10.5px !important;
     font-weight: 700 !important;
     color: #0284c7 !important;
     background: #e0f2fe !important;
-    padding: 2px 6px !important;
-    border-radius: 4px !important;
+    padding: 1px 6px !important;
+    border-radius: 3px !important;
 }
 
-/* Map Container (Compact 180px Height) */
+/* Map Container Compact */
 .pki-map-container {
-    height: 180px !important;
+    height: 190px !important;
     width: 100% !important;
     border-radius: 8px !important;
     border: 1px solid #cbd5e1 !important;
@@ -361,18 +427,18 @@
     z-index: -1 !important;
 }
 .pki-map-placeholder .map-icon {
-    font-size: 24px;
+    font-size: 26px;
     margin-bottom: 4px;
 }
 .pki-map-placeholder .map-title {
     font-size: 12.5px;
     font-weight: 700;
     color: #334155;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
 }
 .pki-map-placeholder .map-desc {
     font-size: 11px;
-    max-width: 320px;
+    max-width: 300px;
     line-height: 1.35;
     color: #64748b;
 }
@@ -391,12 +457,12 @@
     z-index: 3 !important;
 }
 
-/* Upload Box Karirhub Style (Compact 40px) */
+/* Compact Upload Box */
 .pki-upload-box {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    height: 40px !important;
+    height: 38px !important;
     padding: 0 10px 0 12px !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
@@ -444,7 +510,7 @@
 .pki-upload-clear-btn {
     height: 24px !important;
     width: 24px !important;
-    border-radius: 4px !important;
+    border-radius: 5px !important;
     border: none !important;
     background: transparent !important;
     color: #94a3b8 !important;
@@ -452,21 +518,21 @@
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
-    transition: all 0.15s ease !important;
+    font-size: 11px !important;
 }
 .pki-upload-clear-btn:hover {
     color: #ef4444 !important;
     background: #fee2e2 !important;
 }
 
-/* Pernyataan Persetujuan */
+/* Checkbox Pernyataan */
 #label_user_consent_container {
     display: flex !important;
     align-items: flex-start !important;
     gap: 8px !important;
     font-size: 12px !important;
     color: #334155 !important;
-    line-height: 1.45 !important;
+    line-height: 1.5 !important;
     cursor: pointer !important;
 }
 #pki_user_consent {
@@ -478,14 +544,14 @@
     cursor: pointer !important;
 }
 
-/* Footer Buttons (Compact 36px) */
+/* Compact Modal Footer */
 .modal-footer {
     padding: 14px 0 0 0 !important;
     margin-top: 16px !important;
     display: flex !important;
     justify-content: flex-end !important;
     gap: 10px !important;
-    border-top: 1px solid #e2e8f0 !important;
+    border-top: 1px solid #f1f5f9 !important;
 }
 .modal-footer .ghost-btn {
     height: 36px !important;
@@ -494,7 +560,7 @@
     background: #ffffff !important;
     color: #334155 !important;
     font-weight: 600 !important;
-    font-size: 13px !important;
+    font-size: 12.5px !important;
     border-radius: 6px !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
@@ -509,7 +575,7 @@
     background: #0284c7 !important;
     color: #ffffff !important;
     font-weight: 700 !important;
-    font-size: 13px !important;
+    font-size: 12.5px !important;
     border-radius: 6px !important;
     border: none !important;
     cursor: pointer !important;
@@ -517,7 +583,7 @@
     align-items: center !important;
     justify-content: center !important;
     gap: 6px !important;
-    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.16) !important;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2) !important;
     transition: all 0.15s ease !important;
 }
 .modal-footer .primary-btn:hover {
