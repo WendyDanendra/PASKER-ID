@@ -2679,16 +2679,17 @@ function initHierarchicalLocationSelector() {
         selVillage = vill;
         updateHiddenFields();
         updateDisplayField();
+        updatePostalDropdown();
         closeLocDropdown();
         autoGeocodeLocation();
     };
 
     function updateHiddenFields() {
-        document.getElementById('hiddenProvince').value = selProv;
-        document.getElementById('hiddenCity').value = selCity;
-        document.getElementById('hiddenDistrict').value = selDistrict;
-        document.getElementById('hiddenVillage').value = selVillage;
-        document.getElementById('hiddenDomicileCityId').value = selCity;
+        if (document.getElementById('hiddenProvince')) document.getElementById('hiddenProvince').value = selProv;
+        if (document.getElementById('hiddenCity')) document.getElementById('hiddenCity').value = selCity;
+        if (document.getElementById('hiddenDistrict')) document.getElementById('hiddenDistrict').value = selDistrict;
+        if (document.getElementById('hiddenVillage')) document.getElementById('hiddenVillage').value = selVillage;
+        if (document.getElementById('hiddenDomicileCityId')) document.getElementById('hiddenDomicileCityId').value = selCity;
     }
 
     function updateDisplayField() {
@@ -2699,6 +2700,25 @@ function initHierarchicalLocationSelector() {
             locDisplay.textContent = 'Pilih lokasi domisili';
             locDisplay.classList.add('placeholder');
         }
+    }
+
+    function updatePostalDropdown() {
+        const selectPostal = document.getElementById('selectPostalCode');
+        if (!selectPostal) return;
+        selectPostal.innerHTML = '';
+        if (!selProv || !selCity || !selDistrict || !selVillage) {
+            selectPostal.innerHTML = '<option value="">Pilih Kode Pos</option>';
+            selectPostal.disabled = true;
+            return;
+        }
+
+        let postalVal = '17148';
+        if (typeof ID_LOCATIONS !== 'undefined' && ID_LOCATIONS[selProv]?.[selCity]?.[selDistrict]?.[selVillage]) {
+            postalVal = ID_LOCATIONS[selProv][selCity][selDistrict][selVillage];
+        }
+
+        selectPostal.innerHTML = `<option value="${postalVal}" selected>${postalVal}</option>`;
+        selectPostal.disabled = false;
     }
 }
 
@@ -2738,20 +2758,47 @@ function initEmployerProfileForm() {
         });
     }
 
-    // SIAPKerja checkbox notices
+    // SIAPKerja checkbox notice
     const cbSameLoc = document.getElementById('cbSameLocation');
-    const cbSameAddr = document.getElementById('cbSameAddress');
-    const noticeLoc = document.getElementById('siapkerjaLocNotice');
-    const noticeAddr = document.getElementById('siapkerjaAddrNotice');
+    const noticeLoc = document.getElementById('siapkerjaNotice') || document.getElementById('siapkerjaLocNotice');
+    const selectPostal = document.getElementById('selectPostalCode');
+    const locDisplay = document.getElementById('locDisplayValue');
+    const locInput = document.getElementById('hierarchicalLocationInput');
+    const locCaret = document.getElementById('locCaret');
 
-    if (cbSameLoc && noticeLoc) {
+    if (cbSameLoc) {
         cbSameLoc.addEventListener('change', function() {
-            noticeLoc.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-    if (cbSameAddr && noticeAddr) {
-        cbSameAddr.addEventListener('change', function() {
-            noticeAddr.style.display = this.checked ? 'block' : 'none';
+            if (this.checked) {
+                if (noticeLoc) noticeLoc.style.display = 'block';
+                const siapkerjaData = {
+                    province: 'Jawa Barat',
+                    city: 'Kota Bekasi',
+                    district: 'Bekasi Selatan',
+                    village: 'Pekayon Jaya',
+                    postal: '17148'
+                };
+                if (locDisplay) {
+                    locDisplay.textContent = `${siapkerjaData.village}, ${siapkerjaData.district}, ${siapkerjaData.city}, ${siapkerjaData.province}`;
+                    locDisplay.classList.remove('placeholder');
+                }
+                if (document.getElementById('hiddenProvince')) document.getElementById('hiddenProvince').value = siapkerjaData.province;
+                if (document.getElementById('hiddenCity')) document.getElementById('hiddenCity').value = siapkerjaData.city;
+                if (document.getElementById('hiddenDistrict')) document.getElementById('hiddenDistrict').value = siapkerjaData.district;
+                if (document.getElementById('hiddenVillage')) document.getElementById('hiddenVillage').value = siapkerjaData.village;
+                if (document.getElementById('hiddenDomicileCityId')) document.getElementById('hiddenDomicileCityId').value = siapkerjaData.city;
+
+                if (selectPostal) {
+                    selectPostal.innerHTML = `<option value="${siapkerjaData.postal}" selected>${siapkerjaData.postal}</option>`;
+                    selectPostal.disabled = true;
+                }
+                if (locInput) locInput.style.cursor = 'default';
+                if (locCaret) locCaret.style.display = 'none';
+            } else {
+                if (noticeLoc) noticeLoc.style.display = 'none';
+                if (locInput) locInput.style.cursor = 'pointer';
+                if (locCaret) locCaret.style.display = 'block';
+            }
+            autoGeocodeLocation();
         });
     }
 

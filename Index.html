@@ -3923,28 +3923,28 @@
 
                     <hr class="modal-section-hr">
 
-                    <!-- 3. WILAYAH ADMINISTRATIF DOMISILI -->
+                    <!-- 3. ALAMAT DOMISILI PEMBERI KERJA -->
                     <div class="modal-section" style="margin-bottom:24px;">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">3. WILAYAH ADMINISTRATIF DOMISILI</div>
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">3. ALAMAT DOMISILI PEMBERI KERJA</div>
 
                         <div style="margin-bottom:14px;">
                             <label style="font-size:13px; font-weight:600; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
                                 <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" <?php echo !empty($profile['same_location_siapkerja']) ? 'checked' : ''; ?>>
-                                <span>Sama seperti lokasi domisili di SIAPKerja</span>
+                                <span>Sama seperti lokasi Domisili?</span>
                             </label>
-                            <div id="siapkerjaLocNotice" style="display:none; color:#0284c7; font-size:12px; margin-top:6px; background:#f0f9ff; padding:8px 12px; border-radius:6px; border:1px solid #bae6fd;">
-                                <i class="fa-solid fa-circle-info"></i> Data domisili SIAPKerja belum tersedia pada akun mockup. Silakan isi secara manual.
+                            <div id="siapkerjaNotice" style="display:<?php echo !empty($profile['same_location_siapkerja']) ? 'block' : 'none'; ?>; color:#0284c7; font-size:12px; margin-top:6px; background:#f0f9ff; padding:8px 12px; border-radius:6px; border:1px solid #bae6fd; font-weight:500;">
+                                <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Lokasi domisili akan menggunakan data dari akun SIAPKerja.
                             </div>
                         </div>
 
-                        <!-- HIDDEN LOCATION FIELDS (KEPT FOR BACKEND IDENTIFIERS) -->
+                        <!-- HIDDEN LOCATION FIELDS FOR BACKEND -->
                         <input type="hidden" name="province" id="hiddenProvince" value="<?php echo e($profile['province'] ?? ''); ?>">
                         <input type="hidden" name="city" id="hiddenCity" value="<?php echo e($profile['city'] ?? ''); ?>">
                         <input type="hidden" name="district" id="hiddenDistrict" value="<?php echo e($profile['district'] ?? ''); ?>">
                         <input type="hidden" name="village" id="hiddenVillage" value="<?php echo e($profile['village'] ?? ''); ?>">
                         <input type="hidden" name="domicile_city_id" id="hiddenDomicileCityId" value="<?php echo e($profile['domicile_city_id'] ?? $profile['city'] ?? ''); ?>">
 
-                        <div class="field-grid" style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
+                        <div class="field-grid" style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px;">
                             <div class="field" style="position: relative;">
                                 <label>Lokasi Domisili Pemberi Kerja <span class="req">*</span></label>
                                 <div id="hierarchicalLocationInput" class="hierarchical-loc-field" tabindex="0">
@@ -3968,36 +3968,23 @@
                             </div>
 
                             <div class="field">
-                                <label>Kode Pos</label>
-                                <input type="text" name="postal_code" id="inputPostalCode" value="<?php echo e($profile['postal_code'] ?? ''); ?>" placeholder="Masukkan kode pos">
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="modal-section-hr">
-
-                    <!-- 4. ALAMAT, DOKUMEN & PETA -->
-                    <div class="modal-section" style="margin-bottom:24px;">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. ALAMAT, DOKUMEN & PETA</div>
-
-                        <div style="margin-bottom:14px;">
-                            <label style="font-size:13px; font-weight:600; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
-                                <input type="checkbox" name="same_address_siapkerja" id="cbSameAddress" value="1" <?php echo !empty($profile['same_address_siapkerja']) ? 'checked' : ''; ?>>
-                                <span>Sama seperti alamat lengkap domisili di SIAPKerja</span>
-                            </label>
-                            <div id="siapkerjaAddrNotice" style="display:none; color:#0284c7; font-size:12px; margin-top:6px; background:#f0f9ff; padding:8px 12px; border-radius:6px; border:1px solid #bae6fd;">
-                                <i class="fa-solid fa-circle-info"></i> Data domisili SIAPKerja belum tersedia pada akun mockup. Silakan isi secara manual.
+                                <label>Kode Pos <span class="req">*</span></label>
+                                <select name="postal_code" id="selectPostalCode" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" <?php echo empty($profile['postal_code']) ? 'disabled' : ''; ?>>
+                                    <option value="">Pilih Kode Pos</option>
+                                    <?php if (!empty($profile['postal_code'])): ?>
+                                        <option value="<?php echo e($profile['postal_code']); ?>" selected><?php echo e($profile['postal_code']); ?></option>
+                                    <?php endif; ?>
+                                </select>
                             </div>
                         </div>
 
                         <div class="field" style="margin-bottom:14px;">
-                            <label>Alamat Lengkap Pemberi Kerja <span class="req">*</span></label>
-                            <input type="text" name="address" id="inputAddress" value="<?php echo e($profile['address'] ?? ($seekerProfile['domicile_address'] ?? $seekerProfile['ktp_address'] ?? '')); ?>" placeholder="Masukkan nama jalan, nomor bangunan, RT/RW, dan alamat lengkap...">
+                            <label>Alamat Lengkap <span class="req">*</span></label>
+                            <input type="text" name="address" id="inputAddress" value="<?php echo e($profile['address'] ?? ($seekerProfile['domicile_address'] ?? $seekerProfile['ktp_address'] ?? '')); ?>" required placeholder="Masukkan nama jalan, nomor bangunan, RT/RW, dan alamat lengkap...">
                         </div>
-
                         <div class="field" style="margin-bottom:16px;">
                             <label>Detail Alamat / Patokan (Opsional)</label>
-                            <input type="text" name="address_detail" id="inputAddressDetail" value="<?php echo e($profile['address_detail'] ?? ''); ?>" placeholder="Contoh: Ruko lantai 2, sebelah Kantor Kelurahan">
+                            <input type="text" name="address_detail" id="inputAddressDetail" value="<?php echo e($profile['address_detail'] ?? $profile['address_notes'] ?? ''); ?>" placeholder="Contoh: Ruko lantai 2, sebelah Kantor Kelurahan">
                         </div>
 
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
@@ -4018,7 +4005,7 @@
                                 <div style="font-size:12px; color:#64748b; margin-top:4px;">Minimal 1 dokumen wajib</div>
                             </div>
                             <div class="field">
-                                <label>Foto Bukti Tempat Usaha / Lokasi</label>
+                                <label>Foto Bukti Tempat Usaha / Lokasi <span class="req">*</span></label>
                                 <div id="docPhotoContainer">
                                     <?php if (!empty($profile['workplace_photo']) || !empty($profile['doc_location_photo'])): ?>
                                         <?php $pPath = $profile['workplace_photo'] ?? $profile['doc_location_photo']; ?>
@@ -4031,7 +4018,7 @@
                                         <input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">
                                     <?php endif; ?>
                                 </div>
-                                <div style="font-size:12px; color:#64748b; margin-top:4px;">Opsional</div>
+                                <div style="font-size:12px; color:#64748b; margin-top:4px;">Wajib diunggah</div>
                             </div>
                         </div>
 
@@ -4040,19 +4027,19 @@
                         <input type="hidden" name="longitude" id="inputLng" value="<?php echo e($profile['longitude'] ?? ''); ?>">
 
                         <!-- MAP PREVIEW BOX -->
-                        <div class="field">
-                            <label style="margin-bottom:8px; font-weight:700; color:#0f172a;">Peta Lokasi</label>
-                            <div id="pkiMapContainer" class="pki-map-box">
-                                <div id="mapPlaceholder" class="map-placeholder-content">
-                                    <div class="map-icon-lg">🗺</div>
-                                    <div class="map-title-lg">Pratinjau peta belum tersedia</div>
-                                    <div class="map-sub-lg">Pilih Lokasi Domisili Pemberi Kerja dan isi Alamat Lengkap Pemberi Kerja untuk memuat peta.</div>
+                        <div class="field" id="mapFieldContainer" style="margin-top:16px;">
+                            <label style="margin-bottom:8px; font-weight:700; color:#0f172a; display:block;">Peta Lokasi</label>
+                            <div id="pkiMapContainer" style="height:220px; width:100%; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; position:relative; background:#f8fafc;">
+                                <div id="mapPlaceholder" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#64748b; text-align:center; padding:20px;">
+                                    <div style="font-size:28px; margin-bottom:6px;">🗺</div>
+                                    <div style="font-size:14px; font-weight:700; color:#334155; margin-bottom:4px;">Pratinjau peta belum tersedia</div>
+                                    <div style="font-size:12px; max-width:360px; line-height:1.4;">Tuliskan Alamat Lengkap untuk menampilkan peta lokasi.</div>
                                 </div>
                                 <div id="leafletMap" style="height:100%; width:100%; display:none;"></div>
                             </div>
                             <div id="mapOpenLinkWrapper" style="display:none; margin-top:8px; text-align:right;">
-                                <a id="btnOpenMap" href="#" target="_blank" class="ghost-btn" style="height:32px; padding:0 12px; font-size:12px; text-decoration:none;">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Peta
+                                <a id="btnOpenMap" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:6px; color:#0284c7; font-size:12.5px; text-decoration:none; font-weight:600;">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Maps
                                 </a>
                             </div>
                         </div>
@@ -4060,13 +4047,13 @@
 
                     <hr class="modal-section-hr">
 
-                    <!-- 5. PERNYATAAN PERSETUJUAN -->
+                    <!-- 4. PERNYATAAN PERSETUJUAN -->
                     <div class="modal-section">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. PERNYATAAN PERSETUJUAN</div>
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. PERNYATAAN PERSETUJUAN</div>
                         <div class="field">
-                            <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.5;">
-                                <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="margin-top:3px;">
-                                <span>Saya menyatakan bahwa seluruh data yang diisikan adalah benar, sah, dan valid sesuai hukum yang berlaku. <span class="req">*</span></span>
+                            <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; line-height:1.5; cursor:pointer;">
+                                <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="margin-top:3px;" <?php echo !empty($profile['user_consent']) ? 'checked' : ''; ?>>
+                                <span>Saya menyatakan bahwa seluruh informasi yang saya berikan adalah benar dan dapat dipertanggungjawabkan. Saya berkomitmen untuk tidak melakukan penipuan, mempublikasikan lowongan palsu, atau tindakan lain yang merugikan pelamar maupun melanggar hukum. Apabila terbukti melakukan pelanggaran, saya bersedia menerima sanksi sesuai ketentuan hukum yang berlaku. <span class="req">*</span></span>
                             </label>
                         </div>
                     </div>
