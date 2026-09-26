@@ -185,6 +185,9 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
             if (!in_array('social_media', $cols, true)) {
                 $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN social_media TEXT');
             }
+            if (!in_array('domicile_address', $cols, true)) {
+                $pdo->exec('ALTER TABLE employer_profiles ADD COLUMN domicile_address TEXT');
+            }
         } catch (Throwable $ignored) {}
     } catch (Throwable $ignored) {}
 

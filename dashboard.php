@@ -321,6 +321,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $village     = trim($_POST['village'] ?? '');
         $postalCode  = trim($_POST['postal_code'] ?? '');
 
+        $domicileAddress = trim($_POST['domicile_address'] ?? '');
         $sameAddr    = isset($_POST['same_address_siapkerja']) ? 1 : 0;
         $address     = trim($_POST['address'] ?? '');
         $addressDetail = trim($_POST['address_detail'] ?? '');
@@ -330,8 +331,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $consent     = isset($_POST['user_consent']) ? 1 : 0;
 
-        if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || !$consent) {
-            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Profesi, NPWP) dan centang persetujuan pengguna.');
+        if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || $domicileAddress === '' || $address === '' || !$consent) {
+            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Profesi, NPWP, Domisili, Alamat Tempat Usaha) dan centang pernyataan.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }
@@ -362,6 +363,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
+        if (empty($workplacePhoto)) {
+            flash('error', 'Foto Bukti Tempat Usaha / Lokasi wajib diunggah minimal 1 foto.');
+            redirect('dashboard.php?open_profile=1');
+            exit;
+        }
+
         $isReactivation = ($isFullDisable || ($profile['verification_status'] ?? '') === 'FULL_DISABLED');
 
         if ($profile) {
@@ -369,7 +376,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
                 linkedin = ?, facebook = ?, instagram = ?,
                 same_location_siapkerja = ?, province = ?, city = ?, domicile_city_id = ?, district = ?, village = ?, postal_code = ?,
-                same_address_siapkerja = ?, address = ?, address_detail = ?,
+                domicile_address = ?, same_address_siapkerja = ?, address = ?, address_detail = ?,
                 latitude = ?, longitude = ?, permit_document = ?, doc_permission = ?,
                 workplace_photo = ?, doc_location_photo = ?,
                 description = ?, user_consent = ?, consent_accepted = ?,
@@ -383,7 +390,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
                 $sameLoc, $province, $city, $city, $district, $village, $postalCode,
-                $sameAddr, $address, $addressDetail,
+                $domicileAddress, $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc,
                 $workplacePhoto, $workplacePhoto,
                 $description, $consent, $consent,
@@ -394,16 +401,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 user_id, owner_name, nik, phone, whatsapp, profession, npwp,
                 linkedin, facebook, instagram,
                 same_location_siapkerja, province, city, domicile_city_id, district, village, postal_code,
-                same_address_siapkerja, address, address_detail,
+                domicile_address, same_address_siapkerja, address, address_detail,
                 latitude, longitude, permit_document, doc_permission, workplace_photo, doc_location_photo,
                 description, user_consent, consent_accepted,
                 entity_type, verification_status, verified, active_until, extension_requested, extension_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Individu", "PENDING", 0, NULL, 0, "NONE")');
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Individu", "PENDING", 0, NULL, 0, "NONE")');
             $stmt->execute([
                 $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
                 $sameLoc, $province, $city, $city, $district, $village, $postalCode,
-                $sameAddr, $address, $addressDetail,
+                $domicileAddress, $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
                 $description, $consent, $consent
             ]);

@@ -3838,42 +3838,55 @@
         <div class="modal-panel" style="width:min(900px, 95vw);">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title">FORM PROFIL PEMBERI KERJA INDIVIDU</div>
-                    <div class="modal-subtitle">Lengkapi biodata individu untuk pengajuan verifikasi Hak Akses Pemberi Kerja Individu.</div>
+                    <div class="modal-title">PROFIL PEMBERI KERJA INDIVIDU</div>
+                    <div class="modal-subtitle">Lengkapi data berikut untuk mengajukan verifikasi profil.</div>
                 </div>
                 <button type="button" class="ghost-btn" data-close-modal="modal-employer-profile" style="font-size:18px; padding:4px 10px;">×</button>
             </div>
-            <form method="post" action="dashboard.php" enctype="multipart/form-data" id="formEmployerProfile">
+            <form method="post" action="dashboard.php" enctype="multipart/form-data" id="formEmployerProfile" novalidate>
                 <input type="hidden" name="submit_profile" value="1">
                 <div class="modal-body" style="padding:24px;">
 
-                    <!-- 1. IDENTITAS PERORANGAN -->
+                    <!-- BANNER MODE DEMO -->
+                    <div class="demo-mode-banner" style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px 16px; margin-bottom:20px; display:flex; gap:12px; align-items:flex-start;">
+                        <i class="fa-solid fa-circle-info" style="color:#0284c7; font-size:16px; margin-top:2px; flex-shrink:0;"></i>
+                        <div>
+                            <div style="font-weight:700; font-size:13px; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px;">ℹ MODE DEMO</div>
+                            <div style="font-size:12.5px; color:#0c4a6e; line-height:1.45;">Pada implementasi produksi, data identitas dan domisili akan terisi otomatis dari SIAPKerja. Pada demo ini, data dapat diisi manual untuk kebutuhan pengujian.</div>
+                        </div>
+                    </div>
+
+                    <!-- 1. IDENTITAS PEMBERI KERJA -->
                     <div class="modal-section" style="margin-bottom:24px;">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:4px;">1. IDENTITAS PERORANGAN</div>
-                        <div style="font-size:12.5px; color:#64748b; margin-bottom:16px;">Lengkapi informasi utama Pemberi Kerja Individu.</div>
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">1. IDENTITAS PEMBERI KERJA</div>
 
                         <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                            <div class="field">
-                                <label>Nama Pemberi Kerja <span class="req">*</span></label>
-                                <input type="text" name="owner_name" value="<?php echo e($profile['owner_name'] ?? $user['name']); ?>" required placeholder="Masukkan nama lengkap">
+                            <div class="field" id="wrap_owner_name" style="grid-column:1 / -1;">
+                                <label id="lbl_owner_name">Nama Pemberi Kerja <span class="req">*</span></label>
+                                <input type="text" name="owner_name" id="input_owner_name" value="<?php echo e($profile['owner_name'] ?? ''); ?>" placeholder="Masukkan nama pemberi kerja">
                             </div>
-                            <div class="field">
-                                <label>NIK <span class="req">*</span></label>
-                                <input type="text" name="nik" id="inputNik" value="<?php echo e($profile['nik'] ?? $seekerProfile['nik'] ?? ''); ?>" required placeholder="Masukkan 16 digit NIK" maxlength="16">
-                                <div id="nikErrorMsg" style="display:none; color:#dc2626; font-size:12px; margin-top:4px; font-weight:600;">NIK harus terdiri dari 16 digit angka.</div>
+                            <div class="field" id="wrap_nik" style="grid-column:1 / -1;">
+                                <label id="lbl_nik">NIK <span class="req">*</span></label>
+                                <input type="text" name="nik" id="inputNik" value="<?php echo e($profile['nik'] ?? ''); ?>" placeholder="Masukkan 16 digit NIK" maxlength="16">
                             </div>
-                            <div class="field">
-                                <label>Nomor Telepon Aktif <span class="req">*</span></label>
-                                <input type="text" name="phone" value="<?php echo e($profile['phone'] ?? $seekerProfile['phone'] ?? ''); ?>" required placeholder="08xxxxxxxxxx">
+                            <div class="field" id="wrap_phone">
+                                <label id="lbl_phone">Nomor Telepon <span class="req">*</span></label>
+                                <input type="text" name="phone" id="input_phone" value="<?php echo e($profile['phone'] ?? ''); ?>" placeholder="Masukkan nomor telepon aktif">
                             </div>
-                            <div class="field">
-                                <label>Nomor WhatsApp <span class="req">*</span></label>
-                                <input type="text" name="whatsapp" value="<?php echo e($profile['whatsapp'] ?? $profile['phone'] ?? $seekerProfile['phone'] ?? ''); ?>" required placeholder="08xxxxxxxxxx">
+                            <div class="field" id="wrap_whatsapp">
+                                <label id="lbl_whatsapp">Nomor WhatsApp <span class="req">*</span></label>
+                                <input type="text" name="whatsapp" id="input_whatsapp" value="<?php echo e($profile['whatsapp'] ?? ''); ?>" placeholder="Masukkan nomor WhatsApp aktif">
                             </div>
-                            <div class="field">
-                                <label>Jenis Profesi / Usaha Individu <span class="req">*</span></label>
-                                <select name="profession" required style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
-                                    <option value="">Pilih profesi / usaha</option>
+                            <div class="field" id="wrap_profession">
+                                <label id="lbl_profession">
+                                    Jenis Profesi / Usaha Individu <span class="req">*</span>
+                                    <span class="form-tooltip" tabindex="0">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        <span class="tooltip-text">Pilih kategori bidang usaha atau profesi utama yang dijalankan.</span>
+                                    </span>
+                                </label>
+                                <select name="profession" id="select_profession" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
+                                    <option value="">Pilih jenis profesi / usaha</option>
                                     <?php
                                     $professions = ['Kuliner & Katering', 'Perdagangan & Eceran', 'Jasa Perorangan / Rumah Tangga', 'Pertanian & Peternakan', 'Teknologi & Kreatif', 'Lainnya'];
                                     $savedProf = $profile['profession'] ?? '';
@@ -3887,54 +3900,40 @@
                                     ?>
                                 </select>
                             </div>
-                            <div class="field">
-                                <label>NPWP <span class="req">*</span></label>
-                                <input type="text" name="npwp" value="<?php echo e($profile['npwp'] ?? ''); ?>" required placeholder="Masukkan NPWP">
+                            <div class="field" id="wrap_npwp">
+                                <label id="lbl_npwp">NPWP <span class="req">*</span></label>
+                                <input type="text" name="npwp" id="input_npwp" value="<?php echo e($profile['npwp'] ?? ''); ?>" placeholder="Masukkan NPWP">
                             </div>
                         </div>
                     </div>
 
                     <hr class="modal-section-hr">
 
-                    <!-- 2. MEDIA SOSIAL & DESKRIPSI SINGKAT -->
+                    <!-- 2. ALAMAT DOMISILI PEMBERI KERJA -->
                     <div class="modal-section" style="margin-bottom:24px;">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:4px;">2. MEDIA SOSIAL & DESKRIPSI SINGKAT</div>
-                        <div style="font-size:12.5px; color:#64748b; margin-bottom:16px;">Bagian ini bersifat opsional.</div>
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:4px;">2. ALAMAT DOMISILI PEMBERI KERJA</div>
+                        <div style="font-size:12.5px; color:#64748b; margin-bottom:14px;">Data ini pada implementasi produksi berasal dari akun SIAPKerja.</div>
 
-                        <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-                            <div class="field">
-                                <label>LinkedIn</label>
-                                <input type="text" name="linkedin" value="<?php echo e($profile['linkedin'] ?? ''); ?>" placeholder="username atau https://linkedin.com/in/...">
+                        <div class="field" id="wrap_domicile_address">
+                            <label id="lbl_domicile_address">Alamat Domisili <span class="req">*</span></label>
+                            <textarea name="domicile_address" id="inputDomicileAddress" rows="3" placeholder="Masukkan alamat domisili" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; font-family:inherit; line-height:1.5; resize:vertical;"><?php echo e($profile['domicile_address'] ?? ($seekerProfile['domicile_address'] ?? '')); ?></textarea>
+                            <div style="font-size:12px; color:#64748b; margin-top:6px; line-height:1.4;">
+                                Contoh data produksi:<br>wilayah administratif + alamat lengkap + kode pos dari SIAPKerja.
                             </div>
-                            <div class="field">
-                                <label>Facebook</label>
-                                <input type="text" name="facebook" value="<?php echo e($profile['facebook'] ?? ''); ?>" placeholder="@username atau https://facebook.com/...">
-                            </div>
-                            <div class="field" style="grid-column: 1 / -1;">
-                                <label>Instagram</label>
-                                <input type="text" name="instagram" value="<?php echo e($profile['instagram'] ?? ''); ?>" placeholder="@username atau https://instagram.com/..." style="max-width:calc(50% - 8px);">
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label>Deskripsi Singkat Usaha / Rekrutmen</label>
-                            <textarea name="description" placeholder="Tuliskan informasi singkat mengenai kegiatan, usaha, atau kebutuhan rekrutmen..." style="min-height:80px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5;"><?php echo e($profile['description'] ?? ''); ?></textarea>
                         </div>
                     </div>
 
                     <hr class="modal-section-hr">
 
-                    <!-- 3. ALAMAT DOMISILI PEMBERI KERJA -->
+                    <!-- 3. TEMPAT USAHA / KEGIATAN PEMBERI KERJA -->
                     <div class="modal-section" style="margin-bottom:24px;">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">3. ALAMAT DOMISILI PEMBERI KERJA</div>
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">3. TEMPAT USAHA / KEGIATAN PEMBERI KERJA</div>
 
-                        <div style="margin-bottom:14px;">
+                        <div style="margin-bottom:16px;">
                             <label style="font-size:13px; font-weight:600; color:#334155; display:flex; align-items:center; gap:8px; cursor:pointer;">
                                 <input type="checkbox" name="same_location_siapkerja" id="cbSameLocation" value="1" <?php echo !empty($profile['same_location_siapkerja']) ? 'checked' : ''; ?>>
-                                <span>Sama seperti lokasi Domisili?</span>
+                                <span>Alamat tempat usaha/kegiatan sama dengan alamat domisili di SIAPKerja</span>
                             </label>
-                            <div id="siapkerjaNotice" style="display:<?php echo !empty($profile['same_location_siapkerja']) ? 'block' : 'none'; ?>; color:#0284c7; font-size:12px; margin-top:6px; background:#f0f9ff; padding:8px 12px; border-radius:6px; border:1px solid #bae6fd; font-weight:500;">
-                                <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Lokasi domisili akan menggunakan data dari akun SIAPKerja.
-                            </div>
                         </div>
 
                         <!-- HIDDEN LOCATION FIELDS FOR BACKEND -->
@@ -3944,82 +3943,61 @@
                         <input type="hidden" name="village" id="hiddenVillage" value="<?php echo e($profile['village'] ?? ''); ?>">
                         <input type="hidden" name="domicile_city_id" id="hiddenDomicileCityId" value="<?php echo e($profile['domicile_city_id'] ?? $profile['city'] ?? ''); ?>">
 
-                        <div class="field-grid" style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px;">
-                            <div class="field" style="position: relative;">
-                                <label>Lokasi Domisili Pemberi Kerja <span class="req">*</span></label>
-                                <div id="hierarchicalLocationInput" class="hierarchical-loc-field" tabindex="0">
-                                    <span id="locDisplayValue" class="<?php echo !empty($profile['village']) ? '' : 'placeholder'; ?>">
-                                        <?php
-                                        if (!empty($profile['village']) && !empty($profile['district']) && !empty($profile['city']) && !empty($profile['province'])) {
-                                            echo e($profile['village'] . ', ' . $profile['district'] . ', ' . $profile['city'] . ', ' . $profile['province']);
-                                        } else {
-                                            echo 'Pilih lokasi domisili';
-                                        }
-                                        ?>
-                                    </span>
-                                    <i id="locCaret" class="fa-solid fa-chevron-down" style="color:#64748b; font-size:12px;"></i>
-                                </div>
-                                <div id="hierarchicalLocDropdown" class="loc-dropdown-popup" style="display: none;">
-                                    <div id="locBreadcrumbs" class="loc-breadcrumbs">
-                                        <span class="crumb-btn active" data-level="1">Pilih Provinsi</span>
-                                    </div>
-                                    <div id="locOptionsList" class="loc-options-list"></div>
-                                </div>
+                        <div class="field" id="wrap_location" style="position: relative; margin-bottom:14px;">
+                            <label id="lbl_location">
+                                Lokasi Tempat Usaha / Kegiatan <span class="req">*</span>
+                                <span class="form-tooltip" tabindex="0">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <span class="tooltip-text">Tentukan lokasi tempat usaha secara berjenjang mulai dari Provinsi hingga Kelurahan/Desa.</span>
+                                </span>
+                            </label>
+                            <div id="hierarchicalLocationInput" class="hierarchical-loc-field" tabindex="0">
+                                <span id="locDisplayValue" class="<?php echo !empty($profile['village']) ? '' : 'placeholder'; ?>">
+                                    <?php
+                                    if (!empty($profile['village']) && !empty($profile['district']) && !empty($profile['city']) && !empty($profile['province'])) {
+                                        echo e($profile['village'] . ', ' . $profile['district'] . ', ' . $profile['city'] . ', ' . $profile['province']);
+                                    } else {
+                                        echo 'Pilih lokasi...';
+                                    }
+                                    ?>
+                                </span>
+                                <i id="locCaret" class="fa-solid fa-chevron-down" style="color:#64748b; font-size:12px;"></i>
                             </div>
-
-                            <div class="field">
-                                <label>Kode Pos <span class="req">*</span></label>
-                                <select name="postal_code" id="selectPostalCode" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" <?php echo empty($profile['postal_code']) ? 'disabled' : ''; ?>>
-                                    <option value="">Pilih Kode Pos</option>
-                                    <?php if (!empty($profile['postal_code'])): ?>
-                                        <option value="<?php echo e($profile['postal_code']); ?>" selected><?php echo e($profile['postal_code']); ?></option>
-                                    <?php endif; ?>
-                                </select>
+                            <div id="hierarchicalLocDropdown" class="loc-dropdown-popup" style="display: none;">
+                                <div id="locBreadcrumbs" class="loc-breadcrumbs">
+                                    <span class="crumb-btn active" data-level="1">Pilih Provinsi</span>
+                                </div>
+                                <div id="locOptionsList" class="loc-options-list"></div>
+                            </div>
+                            <div style="font-size:12px; color:#64748b; margin-top:4px;">
+                                Pemilihan lokasi:<br>Provinsi → Kabupaten/Kota → Kecamatan → Kelurahan/Desa
                             </div>
                         </div>
 
-                        <div class="field" style="margin-bottom:14px;">
-                            <label>Alamat Lengkap <span class="req">*</span></label>
-                            <input type="text" name="address" id="inputAddress" value="<?php echo e($profile['address'] ?? ($seekerProfile['domicile_address'] ?? $seekerProfile['ktp_address'] ?? '')); ?>" required placeholder="Masukkan nama jalan, nomor bangunan, RT/RW, dan alamat lengkap...">
-                        </div>
-                        <div class="field" style="margin-bottom:16px;">
-                            <label>Detail Alamat / Patokan (Opsional)</label>
-                            <input type="text" name="address_detail" id="inputAddressDetail" value="<?php echo e($profile['address_detail'] ?? $profile['address_notes'] ?? ''); ?>" placeholder="Contoh: Ruko lantai 2, sebelah Kantor Kelurahan">
+                        <div class="field" id="wrap_address" style="margin-bottom:14px;">
+                            <label id="lbl_address">Alamat Lengkap Tempat Usaha <span class="req">*</span></label>
+                            <input type="text" name="address" id="inputAddress" value="<?php echo e($profile['address'] ?? ''); ?>" placeholder="Masukkan alamat lengkap tempat usaha">
                         </div>
 
-                        <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-                            <div class="field">
-                                <label>Dokumen Pendukung <span class="req">*</span></label>
-                                <div id="docPermitContainer">
-                                    <?php if (!empty($profile['permit_document']) || !empty($profile['doc_permission'])): ?>
-                                        <?php $dPath = $profile['permit_document'] ?? $profile['doc_permission']; ?>
-                                        <div id="docPermitCard" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;">
-                                            <span style="font-size:13px; color:#0f172a; font-weight:600;"><i class="fa-solid fa-file-pdf" style="color:#dc2626; margin-right:6px;"></i> <?php echo e(basename($dPath)); ?></span>
-                                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('permit')">Hapus</button>
-                                        </div>
-                                        <input type="hidden" name="existing_permit_document" id="existingPermitDoc" value="<?php echo e($dPath); ?>">
-                                    <?php else: ?>
-                                        <input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png" style="display:block; width:100%;" required>
-                                    <?php endif; ?>
-                                </div>
-                                <div style="font-size:12px; color:#64748b; margin-top:4px;">Minimal 1 dokumen wajib</div>
-                            </div>
-                            <div class="field">
-                                <label>Foto Bukti Tempat Usaha / Lokasi <span class="req">*</span></label>
-                                <div id="docPhotoContainer">
-                                    <?php if (!empty($profile['workplace_photo']) || !empty($profile['doc_location_photo'])): ?>
-                                        <?php $pPath = $profile['workplace_photo'] ?? $profile['doc_location_photo']; ?>
-                                        <div id="docPhotoCard" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;">
-                                            <span style="font-size:13px; color:#0f172a; font-weight:600;"><i class="fa-solid fa-image" style="color:#0284c7; margin-right:6px;"></i> <?php echo e(basename($pPath)); ?></span>
-                                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('photo')">Hapus</button>
-                                        </div>
-                                        <input type="hidden" name="existing_workplace_photo" id="existingWorkplacePhoto" value="<?php echo e($pPath); ?>">
-                                    <?php else: ?>
-                                        <input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp" style="display:block; width:100%;">
-                                    <?php endif; ?>
-                                </div>
-                                <div style="font-size:12px; color:#64748b; margin-top:4px;">Wajib diunggah</div>
-                            </div>
+                        <div class="field" id="wrap_postal_code" style="margin-bottom:14px;">
+                            <label id="lbl_postal_code">Kode Pos <span class="req">*</span></label>
+                            <select name="postal_code" id="selectPostalCode" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;" <?php echo empty($profile['postal_code']) ? 'disabled' : ''; ?>>
+                                <option value="">Pilih kode pos...</option>
+                                <?php if (!empty($profile['postal_code'])): ?>
+                                    <option value="<?php echo e($profile['postal_code']); ?>" selected><?php echo e($profile['postal_code']); ?></option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+
+                        <div class="field" id="wrap_address_detail" style="margin-bottom:16px;">
+                            <label id="lbl_address_detail">
+                                Detail Alamat / Patokan
+                                <span class="form-tooltip" tabindex="0">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <span class="tooltip-text">Petunjuk tambahan lokasi seperti nomor patokan gedung, blok, atau penanda jalan terdekat.</span>
+                                </span>
+                            </label>
+                            <input type="text" name="address_detail" id="inputAddressDetail" value="<?php echo e($profile['address_detail'] ?? ''); ?>" placeholder="Masukkan detail alamat atau patokan">
                         </div>
 
                         <!-- HIDDEN MAP LAT/LNG -->
@@ -4029,16 +4007,16 @@
                         <!-- MAP PREVIEW BOX -->
                         <div class="field" id="mapFieldContainer" style="margin-top:16px;">
                             <label style="margin-bottom:8px; font-weight:700; color:#0f172a; display:block;">Peta Lokasi</label>
-                            <div id="pkiMapContainer" style="height:220px; width:100%; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; position:relative; background:#f8fafc;">
+                            <div id="pkiMapContainer" style="height:180px; width:100%; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; position:relative; background:#f8fafc;">
                                 <div id="mapPlaceholder" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#64748b; text-align:center; padding:20px;">
-                                    <div style="font-size:28px; margin-bottom:6px;">🗺</div>
-                                    <div style="font-size:14px; font-weight:700; color:#334155; margin-bottom:4px;">Pratinjau peta belum tersedia</div>
-                                    <div style="font-size:12px; max-width:360px; line-height:1.4;">Tuliskan Alamat Lengkap untuk menampilkan peta lokasi.</div>
+                                    <div style="font-size:24px; margin-bottom:4px;">🗺</div>
+                                    <div style="font-size:13px; font-weight:700; color:#334155; margin-bottom:2px;">Pratinjau peta belum tersedia</div>
+                                    <div style="font-size:12px; max-width:340px; line-height:1.4;">Tuliskan Alamat Lengkap untuk menampilkan peta lokasi.</div>
                                 </div>
                                 <div id="leafletMap" style="height:100%; width:100%; display:none;"></div>
                             </div>
-                            <div id="mapOpenLinkWrapper" style="display:none; margin-top:8px; text-align:right;">
-                                <a id="btnOpenMap" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:6px; color:#0284c7; font-size:12.5px; text-decoration:none; font-weight:600;">
+                            <div id="mapOpenLinkWrapper" style="display:none; margin-top:6px; text-align:right;">
+                                <a id="btnOpenMap" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:6px; color:#0284c7; font-size:12px; text-decoration:none; font-weight:600;">
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Maps
                                 </a>
                             </div>
@@ -4047,32 +4025,124 @@
 
                     <hr class="modal-section-hr">
 
-                    <!-- 4. PERNYATAAN PERSETUJUAN -->
-                    <div class="modal-section">
-                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. PERNYATAAN PERSETUJUAN</div>
+                    <!-- 4. DOKUMEN & BUKTI TEMPAT USAHA -->
+                    <div class="modal-section" style="margin-bottom:24px;">
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">4. DOKUMEN & BUKTI TEMPAT USAHA</div>
+
+                        <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <!-- Dokumen Pendukung -->
+                            <div class="field" id="wrap_permit_document">
+                                <label id="lbl_permit_document">
+                                    Dokumen Pendukung <span class="req">*</span>
+                                    <span class="form-tooltip" tabindex="0">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        <span class="tooltip-text">Unggah dokumen perizinan, NIB, surat keterangan usaha, atau identitas legalitas usaha lainnya.</span>
+                                    </span>
+                                </label>
+                                <div style="font-size:12px; color:#64748b; margin-bottom:10px;">Upload minimal 1 dokumen pendukung.</div>
+                                <input type="file" name="permit_document" id="inputPermitDoc" accept=".pdf,.jpg,.jpeg,.png" style="display:none;">
+                                <div id="docPermitContainer">
+                                    <?php if (!empty($profile['permit_document']) || !empty($profile['doc_permission'])): ?>
+                                        <?php $dPath = $profile['permit_document'] ?? $profile['doc_permission']; ?>
+                                        <div class="uploaded-item-card" id="docPermitCard">
+                                            <span style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><i class="fa-solid fa-file-pdf" style="color:#dc2626; margin-right:6px;"></i> <?php echo e(basename($dPath)); ?></span>
+                                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('permit')">Hapus</button>
+                                        </div>
+                                        <input type="hidden" name="existing_permit_document" id="existingPermitDoc" value="<?php echo e($dPath); ?>">
+                                    <?php else: ?>
+                                        <button type="button" class="btn-upload-trigger" id="btnTriggerPermitDoc" onclick="document.getElementById('inputPermitDoc').click();">
+                                            <i class="fa-solid fa-plus"></i> Tambah Dokumen
+                                        </button>
+                                        <div id="docPermitPreview" style="display:none;" class="uploaded-item-card">
+                                            <span id="docPermitName" style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('permit')">Hapus</button>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Foto Bukti Tempat Usaha -->
+                            <div class="field" id="wrap_workplace_photo">
+                                <label id="lbl_workplace_photo">
+                                    Foto Bukti Tempat Usaha / Lokasi <span class="req">*</span>
+                                    <span class="form-tooltip" tabindex="0">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        <span class="tooltip-text">Unggah foto nyata tempat usaha, plang nama, atau ruang kerja tempat aktivitas usaha berlangsung.</span>
+                                    </span>
+                                </label>
+                                <div style="font-size:12px; color:#64748b; margin-bottom:10px;">Upload minimal 1 foto yang menggambarkan tempat usaha/kegiatan sesuai alamat yang dicantumkan.</div>
+                                <input type="file" name="workplace_photo" id="inputWorkplacePhoto" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
+                                <div id="docPhotoContainer">
+                                    <?php if (!empty($profile['workplace_photo']) || !empty($profile['doc_location_photo'])): ?>
+                                        <?php $pPath = $profile['workplace_photo'] ?? $profile['doc_location_photo']; ?>
+                                        <div class="uploaded-item-card" id="docPhotoCard">
+                                            <span style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><i class="fa-solid fa-image" style="color:#0284c7; margin-right:6px;"></i> <?php echo e(basename($pPath)); ?></span>
+                                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('photo')">Hapus</button>
+                                        </div>
+                                        <input type="hidden" name="existing_workplace_photo" id="existingWorkplacePhoto" value="<?php echo e($pPath); ?>">
+                                    <?php else: ?>
+                                        <button type="button" class="btn-upload-trigger" id="btnTriggerWorkplacePhoto" onclick="document.getElementById('inputWorkplacePhoto').click();">
+                                            <i class="fa-solid fa-plus"></i> Tambah Foto
+                                        </button>
+                                        <div id="docPhotoPreview" style="display:none;" class="uploaded-item-card">
+                                            <span id="docPhotoName" style="font-size:13px; color:#0f172a; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                                            <button type="button" class="ghost-btn" style="height:28px; padding:0 10px; font-size:12px; color:#dc2626; border-color:#fca5a5;" onclick="removeUploadedDoc('photo')">Hapus</button>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="modal-section-hr">
+
+                    <!-- 5. MEDIA SOSIAL & DESKRIPSI -->
+                    <div class="modal-section" style="margin-bottom:24px;">
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. MEDIA SOSIAL & DESKRIPSI</div>
+
+                        <div class="field-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                            <div class="field">
+                                <label>LinkedIn</label>
+                                <input type="text" name="linkedin" id="input_linkedin" value="<?php echo e($profile['linkedin'] ?? ''); ?>" placeholder="Masukkan URL LinkedIn">
+                            </div>
+                            <div class="field">
+                                <label>Facebook</label>
+                                <input type="text" name="facebook" id="input_facebook" value="<?php echo e($profile['facebook'] ?? ''); ?>" placeholder="Masukkan URL Facebook">
+                            </div>
+                            <div class="field" style="grid-column: 1 / -1;">
+                                <label>Instagram</label>
+                                <input type="text" name="instagram" id="input_instagram" value="<?php echo e($profile['instagram'] ?? ''); ?>" placeholder="Masukkan akun Instagram" style="max-width:calc(50% - 8px);">
+                            </div>
+                        </div>
+                        <div class="field" id="wrap_description">
+                            <label id="lbl_description">
+                                Deskripsi Singkat Usaha / Rekrutmen
+                                <span class="form-tooltip" tabindex="0">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <span class="tooltip-text">Deskripsikan profil usaha, produk/layanan, serta tujuan rekrutmen tenaga kerja.</span>
+                                </span>
+                            </label>
+                            <textarea name="description" id="input_description" placeholder="Masukkan deskripsi singkat usaha / kebutuhan rekrutmen" style="min-height:80px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5;"><?php echo e($profile['description'] ?? ''); ?></textarea>
+                        </div>
+                    </div>
+
+                    <hr class="modal-section-hr">
+
+                    <!-- 6. PERNYATAAN -->
+                    <div class="modal-section" id="wrap_user_consent">
+                        <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">6. PERNYATAAN</div>
                         <div style="display:flex; align-items:flex-start; gap:12px; margin-top:8px;">
-                            <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" required style="width:18px; height:18px; min-width:18px; max-width:18px; margin-top:2px; cursor:pointer; flex-shrink:0; accent-color:#0284c7;" <?php echo !empty($profile['user_consent']) ? 'checked' : ''; ?>>
-                            <label for="cbUserConsent" style="font-size:13px; color:#334155; line-height:1.55; cursor:pointer; font-weight:400; margin:0; flex:1;">
-                                Saya menyatakan bahwa seluruh informasi yang saya berikan adalah benar dan dapat dipertanggungjawabkan. Saya berkomitmen untuk tidak melakukan penipuan, mempublikasikan lowongan palsu, atau tindakan lain yang merugikan pelamar maupun melanggar hukum. Apabila terbukti melakukan pelanggaran, saya bersedia menerima sanksi sesuai ketentuan hukum yang berlaku. <span class="req" style="color:#dc2626; font-weight:700;">*</span>
+                            <input type="checkbox" name="user_consent" id="cbUserConsent" value="1" style="width:18px; height:18px; min-width:18px; max-width:18px; margin-top:2px; cursor:pointer; flex-shrink:0; accent-color:#0284c7;" <?php echo !empty($profile['user_consent']) ? 'checked' : ''; ?>>
+                            <label id="lbl_user_consent" for="cbUserConsent" style="font-size:13px; color:#334155; line-height:1.55; cursor:pointer; font-weight:400; margin:0; flex:1;">
+                                Saya menyatakan bahwa seluruh informasi yang saya berikan benar, dapat dipertanggungjawabkan, serta tidak digunakan untuk penipuan, lowongan palsu, atau tindakan yang melanggar hukum. <span class="req" style="color:#dc2626; font-weight:700;">*</span>
                             </label>
                         </div>
                     </div>
 
                 </div>
-                <div class="modal-footer" style="padding:16px 24px;">
+                <div class="modal-footer" style="padding:16px 24px; display:flex; justify-content:flex-end; gap:12px;">
                     <button type="button" class="ghost-btn" data-close-modal="modal-employer-profile">Batal</button>
-                    <button type="submit" class="primary-btn" id="btnSubmitProfile">
-                        <i class="fa-solid fa-paper-plane"></i>
-                        <?php
-                        if ($verificationStatus === 'FULL_DISABLED') {
-                            echo 'Ajukan Verifikasi Ulang';
-                        } elseif ($verificationStatus === 'NEEDS_REVISION') {
-                            echo 'Ajukan Kembali';
-                        } else {
-                            echo 'Ajukan Verifikasi';
-                        }
-                        ?>
-                    </button>
+                    <button type="submit" class="primary-btn" id="btnSubmitProfile">Ajukan Profil</button>
                 </div>
             </form>
         </div>
