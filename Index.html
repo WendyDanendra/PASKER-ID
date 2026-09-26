@@ -3833,16 +3833,27 @@
         </div>
     </div>
 
-    <!-- ─── POP-UP FORM PROFIL PEMBERI KERJA INDIVIDU (SHARED COMPONENT) ─────────────── -->
+    <!-- ─── POP-UP FORM PROFIL PEMBERI KERJA INDIVIDU (SECTION D) ─────────────── -->
     <div class="modal-backdrop <?php echo $showProfileModal ? 'open' : ''; ?>" data-modal="modal-employer-profile">
-        <div class="modal-panel" style="width:min(900px, 95vw); max-height:92vh; display:flex; flex-direction:column; padding:0; overflow:hidden;">
-            <?php
-            $formMode = 'revision';
-            $formAction = 'dashboard.php';
-            $formData = $profile ?? [];
-            $isModal = true;
-            include __DIR__ . '/partials/employer-profile-form.php';
-            ?>
+        <div class="modal-panel" style="width:min(900px, 95vw); max-height:90vh; overflow-y:auto;">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">FORM PROFIL PEMBERI KERJA INDIVIDU</div>
+                    <div class="modal-subtitle">Lengkapi biodata individu untuk pengajuan verifikasi Hak Akses Pemberi Kerja Individu.</div>
+                </div>
+                <button type="button" class="ghost-btn" data-close-modal="modal-employer-profile" style="font-size:18px; padding:4px 10px;">×</button>
+            </div>
+            <div class="modal-body" style="padding:24px;">
+                <?php
+                $isRevision = true;
+                $formData = array_merge(
+                    isset($user) && is_array($user) ? $user : [],
+                    isset($profile) && is_array($profile) ? $profile : [],
+                    isset($seekerProfile) && is_array($seekerProfile) ? $seekerProfile : []
+                );
+                include __DIR__ . '/partials/employer-profile-form.php';
+                ?>
+            </div>
         </div>
     </div>
 

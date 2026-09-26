@@ -314,49 +314,40 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $facebook    = trim($_POST['facebook'] ?? '');
         $instagram   = trim($_POST['instagram'] ?? '');
 
-        $sameLoc     = isset($_POST['workplace_same_as_domicile']) ? (int)$_POST['workplace_same_as_domicile'] : (isset($_POST['same_location_siapkerja']) ? 1 : 0);
-        $domProv     = trim($_POST['domicile_province'] ?? '');
-        $domCity     = trim($_POST['domicile_city'] ?? '');
-        $domDist     = trim($_POST['domicile_district'] ?? '');
-        $domVill     = trim($_POST['domicile_village'] ?? '');
-        $domPostal   = trim($_POST['domicile_postal_code'] ?? '');
-        $domAddress  = trim($_POST['domicile_address'] ?? '');
+        $domProv     = trim($_POST['domicile_province'] ?? $_POST['province'] ?? '');
+        $domCity     = trim($_POST['domicile_city'] ?? $_POST['city'] ?? '');
+        $domDist     = trim($_POST['domicile_district'] ?? $_POST['district'] ?? '');
+        $domVill     = trim($_POST['domicile_village'] ?? $_POST['village'] ?? '');
+        $domPostal   = trim($_POST['domicile_postal_code'] ?? $_POST['postal_code'] ?? '');
+        $domAddress  = trim($_POST['domicile_address'] ?? $_POST['address'] ?? '');
 
-        $workProv    = trim($_POST['workplace_province'] ?? '');
-        $workCity    = trim($_POST['workplace_city'] ?? '');
-        $workDist    = trim($_POST['workplace_district'] ?? '');
-        $workVill    = trim($_POST['workplace_village'] ?? '');
-        $workPostal  = trim($_POST['workplace_postal_code'] ?? '');
-        $workAddress = trim($_POST['workplace_address'] ?? '');
-        $workDetail  = trim($_POST['workplace_detail'] ?? ($_POST['address_detail'] ?? ''));
+        $workSame    = isset($_POST['workplace_same_as_domicile']) ? 1 : 0;
+        $workProv    = trim($_POST['workplace_province'] ?? ($workSame ? $domProv : ''));
+        $workCity    = trim($_POST['workplace_city'] ?? ($workSame ? $domCity : ''));
+        $workDist    = trim($_POST['workplace_district'] ?? ($workSame ? $domDist : ''));
+        $workVill    = trim($_POST['workplace_village'] ?? ($workSame ? $domVill : ''));
+        $workPostal  = trim($_POST['workplace_postal_code'] ?? ($workSame ? $domPostal : ''));
+        $workAddress = trim($_POST['workplace_address'] ?? ($workSame ? $domAddress : ''));
+        $workDetail  = trim($_POST['workplace_detail'] ?? $_POST['address_detail'] ?? '');
 
-        if ($sameLoc) {
-            $workProv    = $domProv;
-            $workCity    = $domCity;
-            $workDist    = $domDist;
-            $workVill    = $domVill;
-            $workPostal  = $domPostal;
-            $workAddress = $domAddress;
-        }
+        $sameLoc     = $workSame;
+        $province    = $workProv ?: $domProv;
+        $city        = $workCity ?: $domCity;
+        $district    = $workDist ?: $domDist;
+        $village     = $workVill ?: $domVill;
+        $postalCode  = $workPostal ?: $domPostal;
 
-        // Backward compatibility mappings
-        $province    = $workProv ?: ($domProv ?: trim($_POST['province'] ?? ''));
-        $city        = $workCity ?: ($domCity ?: trim($_POST['city'] ?? ''));
-        $district    = $workDist ?: ($domDist ?: trim($_POST['district'] ?? ''));
-        $village     = $workVill ?: ($domVill ?: trim($_POST['village'] ?? ''));
-        $postalCode  = $workPostal ?: ($domPostal ?: trim($_POST['postal_code'] ?? ''));
-        $address     = $workAddress ?: ($domAddress ?: trim($_POST['address'] ?? ''));
-        $addressDetail = $workDetail ?: trim($_POST['address_detail'] ?? '');
-        $domicileCityId = $domCity ?: $city;
+        $sameAddr    = $workSame;
+        $address     = $workAddress ?: $domAddress;
+        $addressDetail = $workDetail;
 
-        $sameAddr    = $sameLoc;
         $latitude    = trim($_POST['latitude'] ?? '');
         $longitude   = trim($_POST['longitude'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $consent     = isset($_POST['user_consent']) ? 1 : 0;
 
         if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || !$consent) {
-            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Industri/Sektor, NPWP) dan centang pernyataan persetujuan.');
+            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Industri/Sektor, NPWP) dan centang persetujuan pengguna.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }
@@ -378,17 +369,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
         $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
-        $permitDoc = $permitDoc ?: ($_POST['existing_permit_document'] ?? ($profile['permit_document'] ?? $profile['doc_permission'] ?? null));
-        $workplacePhoto = $workplacePhoto ?: ($_POST['existing_workplace_photo'] ?? ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? null));
+        $permitDoc = $permitDoc ?: trim($_POST['existing_permit_document'] ?? ($profile['permit_document'] ?? $profile['doc_permission'] ?? ''));
+        $workplacePhoto = $workplacePhoto ?: trim($_POST['existing_workplace_photo'] ?? ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? ''));
 
         if (empty($permitDoc)) {
             flash('error', 'File Pendukung wajib diunggah minimal 1 file.');
-            redirect('dashboard.php?open_profile=1');
-            exit;
-        }
-
-        if (empty($workplacePhoto)) {
-            flash('error', 'Foto Bukti Tempat Usaha / Lokasi wajib diunggah minimal 1 foto.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }
@@ -416,8 +401,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
                 $domProv, $domCity, $domDist, $domVill, $domPostal, $domAddress,
-                $sameLoc, $workProv, $workCity, $workDist, $workVill, $workPostal, $workAddress, $workDetail,
-                $sameLoc, $province, $city, $domicileCityId, $district, $village, $postalCode,
+                $workSame, $workProv, $workCity, $workDist, $workVill, $workPostal, $workAddress, $workDetail,
+                $sameLoc, $province, $city, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc,
                 $workplacePhoto, $workplacePhoto,
@@ -450,8 +435,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $user['id'], $ownerName, $nik, $phone, $whatsapp, $profession, $npwp,
                 $linkedin, $facebook, $instagram,
                 $domProv, $domCity, $domDist, $domVill, $domPostal, $domAddress,
-                $sameLoc, $workProv, $workCity, $workDist, $workVill, $workPostal, $workAddress, $workDetail,
-                $sameLoc, $province, $city, $domicileCityId, $district, $village, $postalCode,
+                $workSame, $workProv, $workCity, $workDist, $workVill, $workPostal, $workAddress, $workDetail,
+                $sameLoc, $province, $city, $city, $district, $village, $postalCode,
                 $sameAddr, $address, $addressDetail,
                 $latitude, $longitude, $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
                 $description, $consent, $consent

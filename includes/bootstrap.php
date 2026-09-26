@@ -575,6 +575,7 @@ function ensure_database_schema(PDO $pdo): void
                 'consent_data_hash' => "TEXT NULL AFTER assignment_reason",
                 'consent_given_at' => "DATETIME NULL AFTER consent_data_hash",
                 'officer_statement' => "TEXT NULL AFTER consent_given_at",
+                'officer_name' => "VARCHAR(120) NULL AFTER officer_statement",
                 'entity_type' => "VARCHAR(50) DEFAULT 'Individu' AFTER officer_name",
                 'domicile_province' => "VARCHAR(120) NULL",
                 'domicile_city' => "VARCHAR(120) NULL",
