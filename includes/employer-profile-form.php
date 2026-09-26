@@ -354,7 +354,7 @@ if (file_exists($pkiCssPath)) {
 
 <!-- 5. PERNYATAAN -->
 <div class="modal-section" style="margin-bottom:12px;">
-    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. PERNYATAAN <span class="req">*</span></div>
+    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. PERNYATAAN <span class="req" style="color:#ef4444 !important; font-weight:700;">*</span></div>
     <div class="pki-field" style="margin-bottom:0;">
         <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; line-height:1.55; cursor:pointer;" id="label_user_consent_container">
             <input type="checkbox" name="user_consent" id="pki_user_consent" value="1" <?php echo $vConsent ? 'checked' : ''; ?> style="margin-top:3px; flex-shrink:0;">

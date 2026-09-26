@@ -172,6 +172,8 @@ a {
     position: relative !important;
     user-select: none !important;
 }
+.req,
+.section-title .req,
 .pki-field-label .req {
     color: #ef4444 !important;
     font-weight: 700 !important;
