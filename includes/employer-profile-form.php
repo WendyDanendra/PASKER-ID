@@ -232,13 +232,13 @@ if (file_exists($pkiCssPath)) {
                 <div style="font-size:13.5px; font-weight:700; color:#334155; margin-bottom:4px;">Pratinjau peta belum tersedia</div>
                 <div style="font-size:12px; color:#64748b; max-width:360px; line-height:1.4;">Lengkapi lokasi dan alamat terlebih dahulu.</div>
             </div>
-            <div id="pki_googleMapWrapper" style="display:none; width:100%; height:100%;">
-                <iframe id="pki_gmapIframe" width="100%" height="100%" style="border:0;" loading="lazy" allowfullscreen src="about:blank"></iframe>
+            <div id="pki_googleMapWrapper" class="pki-map-wrapper" style="display:none; width:100%; height:100%;">
+                <iframe id="pki_gmapIframe" width="100%" height="100%" style="border:0;" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
             </div>
         </div>
-        <div id="pki_mapOpenLinkWrapper" style="display:none; margin-top:8px; text-align:right;">
+        <div id="pki_mapOpenLinkWrapper" class="pki-map-open-link" style="display:none; margin-top:8px; text-align:right;">
             <a id="pki_btnOpenMap" href="#" target="_blank" class="ghost-btn" style="height:32px; padding:0 12px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; color:#0284c7; font-weight:600;">
-                Buka di Maps <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                Buka di Maps ↗
             </a>
         </div>
         <div class="pki-field-helper" style="margin-top:6px;">Peta muncul otomatis setelah lokasi dan alamat lengkap tersedia.</div>

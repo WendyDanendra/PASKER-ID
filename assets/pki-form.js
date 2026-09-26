@@ -531,13 +531,20 @@
     function initAddressListeners() {
         const addrInput = document.getElementById('pki_inputAddress');
         if (addrInput) {
-            addrInput.addEventListener('input', function () {
-                clearFieldError('address');
-                updateMapPreview();
+            ['input', 'change', 'keyup', 'paste', 'blur'].forEach(ev => {
+                addrInput.addEventListener(ev, function () {
+                    clearFieldError('address');
+                    updateMapPreview();
+                });
             });
-            addrInput.addEventListener('change', function () {
-                clearFieldError('address');
-                updateMapPreview();
+        }
+
+        const detailInput = document.getElementById('pki_inputAddressDetail');
+        if (detailInput) {
+            ['input', 'change', 'keyup', 'paste'].forEach(ev => {
+                detailInput.addEventListener(ev, function () {
+                    updateMapPreview();
+                });
             });
         }
 
@@ -545,15 +552,17 @@
         if (postalSelect) {
             postalSelect.addEventListener('change', function () {
                 clearFieldError('postal_code');
+                updateMapPreview();
             });
         }
     }
 
     // ─── 4. Live Google Maps Preview ───
     function updateMapPreview() {
-        const village = document.getElementById('pki_hiddenVillage')?.value || '';
-        const city = document.getElementById('pki_hiddenCity')?.value || '';
-        const prov = document.getElementById('pki_hiddenProvince')?.value || '';
+        const village = document.getElementById('pki_hiddenVillage')?.value?.trim() || '';
+        const district = document.getElementById('pki_hiddenDistrict')?.value?.trim() || '';
+        const city = document.getElementById('pki_hiddenCity')?.value?.trim() || '';
+        const prov = document.getElementById('pki_hiddenProvince')?.value?.trim() || '';
         const address = document.getElementById('pki_inputAddress')?.value?.trim() || '';
 
         const placeholder = document.getElementById('pki_mapPlaceholder');
@@ -564,16 +573,27 @@
 
         if (!placeholder || !mapWrapper) return;
 
-        // Both location and address must be complete
-        if ((village || city) && address.length >= 3) {
-            placeholder.style.display = 'none';
-            mapWrapper.style.display = 'block';
-            if (openLinkWrapper) openLinkWrapper.style.display = 'block';
+        const hasLocation = Boolean(village || district || city || prov);
+        const hasAddress = Boolean(address && address.length > 0);
 
-            const fullQuery = `${address}, ${village ? village + ', ' : ''}${city ? city + ', ' : ''}${prov ? prov + ', ' : ''}Indonesia`;
+        // Both location and address must be complete to show the map
+        if (hasLocation && hasAddress) {
+            placeholder.classList.add('is-hidden');
+            placeholder.style.display = 'none';
+            mapWrapper.classList.add('is-visible');
+            mapWrapper.style.display = 'block';
+
+            if (openLinkWrapper) {
+                openLinkWrapper.classList.add('is-visible');
+                openLinkWrapper.style.display = 'block';
+            }
+
+            const queryParts = [address, village, district, city, prov, 'Indonesia'].filter(Boolean);
+            const fullQuery = queryParts.join(', ');
 
             if (btnOpenMap) {
                 btnOpenMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullQuery)}`;
+                btnOpenMap.innerHTML = 'Buka di Maps ↗';
             }
 
             if (gmapIframe) {
@@ -582,17 +602,25 @@
                 if (apiKey) {
                     embedUrl = `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(apiKey)}&q=${encodeURIComponent(fullQuery)}`;
                 } else {
-                    embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(fullQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                    embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(fullQuery)}&output=embed`;
                 }
+
                 if (gmapIframe.getAttribute('data-last-query') !== fullQuery) {
                     gmapIframe.setAttribute('data-last-query', fullQuery);
                     gmapIframe.src = embedUrl;
                 }
             }
         } else {
+            placeholder.classList.remove('is-hidden');
             placeholder.style.display = 'flex';
+            mapWrapper.classList.remove('is-visible');
             mapWrapper.style.display = 'none';
-            if (openLinkWrapper) openLinkWrapper.style.display = 'none';
+
+            if (openLinkWrapper) {
+                openLinkWrapper.classList.remove('is-visible');
+                openLinkWrapper.style.display = 'none';
+            }
+
             if (gmapIframe) {
                 gmapIframe.src = 'about:blank';
                 gmapIframe.removeAttribute('data-last-query');

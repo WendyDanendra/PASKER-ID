@@ -311,9 +311,9 @@
     border-radius: 4px !important;
 }
 
-/* Map Container */
+/* Map Container & States */
 .pki-map-container {
-    height: 220px !important;
+    height: 240px !important;
     width: 100% !important;
     border-radius: 10px !important;
     border: 1px solid #cbd5e1 !important;
@@ -324,30 +324,66 @@
     box-sizing: border-box !important;
 }
 .pki-map-placeholder {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    height: 100% !important;
-    color: #64748b !important;
-    text-align: center !important;
-    padding: 20px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    color: #64748b;
+    text-align: center;
+    padding: 20px;
+    background: #f8fafc;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+}
+.pki-map-placeholder.is-hidden {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
 }
 .pki-map-placeholder .map-icon {
-    font-size: 32px !important;
-    margin-bottom: 6px !important;
+    font-size: 32px;
+    margin-bottom: 6px;
 }
 .pki-map-placeholder .map-title {
-    font-size: 13.5px !important;
-    font-weight: 700 !important;
-    color: #334155 !important;
-    margin-bottom: 4px !important;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 4px;
 }
 .pki-map-placeholder .map-desc {
-    font-size: 12px !important;
-    max-width: 320px !important;
-    line-height: 1.4 !important;
-    color: #64748b !important;
+    font-size: 12px;
+    max-width: 340px;
+    line-height: 1.4;
+    color: #64748b;
+}
+
+.pki-map-wrapper {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+.pki-map-wrapper.is-visible {
+    display: block !important;
+    z-index: 3 !important;
+}
+
+.pki-map-open-link {
+    display: none;
+    margin-top: 8px;
+    text-align: right;
+}
+.pki-map-open-link.is-visible {
+    display: block !important;
 }
 
 /* Upload Box Karirhub Style */
