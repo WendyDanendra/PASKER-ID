@@ -726,11 +726,6 @@
             helper.textContent = errorMsg;
             helper.style.display = 'block';
         }
-
-        if (fieldId === 'user_consent') {
-            const consentText = document.getElementById('label_user_consent_text');
-            if (consentText) consentText.style.color = '#ef4444';
-        }
     }
 
     function clearFieldError(fieldId) {
@@ -744,11 +739,6 @@
             if (fieldId === 'user_consent') {
                 helper.style.display = 'none';
             }
-        }
-
-        if (fieldId === 'user_consent') {
-            const consentText = document.getElementById('label_user_consent_text');
-            if (consentText) consentText.style.color = '#334155';
         }
     }
 
@@ -894,7 +884,7 @@
             // 12. Pernyataan
             const consent = document.getElementById('pki_user_consent')?.checked;
             if (!consent) {
-                flagError('user_consent', 'Anda wajib menyetujui pernyataan sebelum mengajukan profil.', document.getElementById('pki_user_consent'));
+                flagError('user_consent', 'Anda harus menyetujui pernyataan sebelum mengajukan profil.', document.getElementById('pki_user_consent'));
             } else {
                 clearFieldError('user_consent');
             }

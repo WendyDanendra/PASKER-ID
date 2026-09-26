@@ -7471,23 +7471,43 @@ html.dark-theme .profile-field-block .pfl-value {
     background: #fee2e2 !important;
 }
 
-/* Pernyataan */
-#label_user_consent_container {
-    display: flex !important;
-    align-items: flex-start !important;
-    gap: 10px !important;
-    font-size: 13px !important;
+/* Pernyataan & Checkbox */
+.pki-consent-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 12px 14px !important;
+    font-size: 12px !important;
     color: #334155 !important;
-    line-height: 1.55 !important;
+    line-height: 1.6 !important;
+    margin-bottom: 12px !important;
+    text-align: left !important;
+}
+#label_user_consent_container {
+    display: inline-flex !important;
+    align-items: flex-start !important;
+    gap: 9px !important;
+    font-size: 12.5px !important;
+    color: #1e293b !important;
+    font-weight: 500 !important;
+    line-height: 1.45 !important;
     cursor: pointer !important;
+    user-select: none !important;
 }
 #pki_user_consent {
-    width: 17px !important;
-    height: 17px !important;
+    width: 16px !important;
+    height: 16px !important;
     accent-color: #0284c7 !important;
-    margin-top: 3px !important;
+    margin-top: 2px !important;
     flex-shrink: 0 !important;
     cursor: pointer !important;
+}
+#helper_user_consent.error {
+    color: #ef4444 !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    margin-top: 4px !important;
+    display: block !important;
 }
 
 /* Footer Buttons */

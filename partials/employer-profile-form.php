@@ -354,13 +354,18 @@ if (file_exists($pkiCssPath)) {
 
 <!-- 5. PERNYATAAN -->
 <div class="modal-section" style="margin-bottom:12px;">
-    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">5. PERNYATAAN <span class="req" style="color:#ef4444 !important; font-weight:700;">*</span></div>
+    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:12px;">5. PERNYATAAN <span class="req" style="color:#ef4444 !important; font-weight:700;">*</span></div>
+    
+    <div class="pki-consent-box" id="pki_consent_statement_box" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; font-size:12.5px; color:#334155; line-height:1.6; margin-bottom:12px;">
+        Saya menyatakan bahwa seluruh informasi yang saya berikan benar, valid, dan dapat dipertanggungjawabkan. Saya berkomitmen untuk tidak melakukan penipuan, mempublikasikan lowongan palsu, atau tindakan lain yang merugikan pelamar/kandidat maupun melanggar hukum. Apabila terbukti melakukan pelanggaran, saya bersedia menerima sanksi sesuai ketentuan yang berlaku.
+    </div>
+
     <div class="pki-field" style="margin-bottom:0;">
-        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; line-height:1.55; cursor:pointer;" id="label_user_consent_container">
-            <input type="checkbox" name="user_consent" id="pki_user_consent" value="1" <?php echo $vConsent ? 'checked' : ''; ?> style="margin-top:3px; flex-shrink:0;">
-            <span id="label_user_consent_text">Saya menyatakan bahwa seluruh informasi yang saya berikan benar dan dapat dipertanggungjawabkan serta tidak digunakan untuk penipuan, lowongan palsu, atau tindakan yang melanggar hukum.</span>
+        <label style="display:inline-flex; align-items:flex-start; gap:9px; font-size:12.5px; color:#1e293b; font-weight:500; line-height:1.45; cursor:pointer; user-select:none;" id="label_user_consent_container">
+            <input type="checkbox" name="user_consent" id="pki_user_consent" value="1" style="margin-top:2px; flex-shrink:0; cursor:pointer;">
+            <span id="label_user_consent_text">Saya telah membaca dan menyetujui pernyataan di atas. <span class="req" style="color:#ef4444 !important; font-weight:700;">*</span></span>
         </label>
-        <div class="pki-field-helper" id="helper_user_consent" style="display:none;">Centang pernyataan persetujuan untuk melanjutkan.</div>
+        <div class="pki-field-helper" id="helper_user_consent" style="display:none;"></div>
     </div>
 </div>
 
