@@ -354,7 +354,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
                         <div class="card">
                             <div class="mini-icon" style="background:#e0f2fe;color:#0284c7;"><i class="fa-solid fa-id-card"></i></div>
                             <h3>Biodata</h3>
-                            <div class="value" style="font-size:20px;color:#059669;"><i class="fa-solid fa-check-circle" style="font-size:18px;"></i> Lengkap</div>
+                            <div class="value" style="font-size:20px;color:#059669;"><i class="fa-solid fa-circle-check" style="font-size:18px;"></i> Lengkap</div>
                             <div class="desc neutral">Terverifikasi sistem</div>
                         </div>
                         <div class="card">

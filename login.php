@@ -450,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <button class="btn-submit" type="submit">
-                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    <i class="fa-solid fa-right-to-bracket"></i>
                     Masuk Layanan
                 </button>
             </form>

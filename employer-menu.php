@@ -341,7 +341,7 @@ if (current_user()) {
     <header class="top-nav-bar">
         <div class="top-nav-left">
             <a href="index.php" class="nav-back-link">
-                Kembali ke Halaman Utama
+                <i class="fa-solid fa-arrow-left"></i> Kembali ke Halaman Utama
             </a>
         </div>
         <div class="top-nav-center">

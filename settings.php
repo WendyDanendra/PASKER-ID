@@ -80,6 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        body, button, input, select, textarea, label, p, a, h1, h2, h3, h4 {
             font-family: 'Inter', sans-serif;
         }
 

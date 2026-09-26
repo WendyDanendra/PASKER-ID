@@ -1826,7 +1826,7 @@ $modal = <<<HTML
                                     <option value="Disabilitas Rungu">Disabilitas Rungu / Wicara</option>
                                     <option value="Disabilitas Mental">Disabilitas Mental</option>
                                 </select>
-                                <div class="field-hint"><i class="fa-regular fa-circle-info"></i> Pilih jenis disabilitas yang tidak diperbolehkan untuk melamar.</div>
+                                <div class="field-hint"><i class="fa-solid fa-circle-info"></i> Pilih jenis disabilitas yang tidak diperbolehkan untuk melamar.</div>
                             </div>
                         </div>
 

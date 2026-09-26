@@ -41,32 +41,50 @@ a {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
 
-/* Explicitly preserve Font Awesome icon fonts */
-.fa-solid, .fas,
-.fa-solid::before, .fas::before {
-    font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+/* Explicitly preserve Font Awesome 6 icon fonts */
+.fa-solid, .fas {
+    font-family: "Font Awesome 6 Free" !important;
     font-weight: 900 !important;
     font-style: normal !important;
     font-variant: normal !important;
+    text-rendering: auto !important;
     line-height: 1 !important;
 }
+.fa-solid::before, .fas::before {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+}
 
-.fa-regular, .far,
+.fa-regular, .far {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    text-rendering: auto !important;
+    line-height: 1 !important;
+}
 .fa-regular::before, .far::before {
-    font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+    font-family: "Font Awesome 6 Free" !important;
     font-weight: 400 !important;
-    font-style: normal !important;
-    font-variant: normal !important;
-    line-height: 1 !important;
 }
 
-.fa-brands, .fab,
-.fa-brands::before, .fab::before {
-    font-family: "Font Awesome 6 Brands", "FontAwesome" !important;
+.fa-brands, .fab {
+    font-family: "Font Awesome 6 Brands" !important;
     font-weight: 400 !important;
     font-style: normal !important;
     font-variant: normal !important;
+    text-rendering: auto !important;
     line-height: 1 !important;
+}
+.fa-brands::before, .fab::before {
+    font-family: "Font Awesome 6 Brands" !important;
+    font-weight: 400 !important;
+}
+
+.fa, [class*="fa-"], [class^="fa-"] {
+    font-style: normal !important;
+    text-rendering: auto !important;
+    display: inline-block;
 }
 
 /* Card & Shell Compact Width */
