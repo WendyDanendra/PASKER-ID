@@ -1365,13 +1365,13 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
 
         <!-- Navigation Icons -->
         <div class="sidebar-rail-nav">
-            <a href="admin.php?view=directory_individual" class="rail-btn <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>" title="Individual">
+            <a href="admin.php?view=directory_individual" class="rail-btn <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>" title="Individual" style="text-decoration:none;">
                 <i class="fa-solid fa-user"></i>
             </a>
-            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>" title="Verifikasi Pemberi Kerja">
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>" title="Verifikasi Pemberi Kerja" style="text-decoration:none;">
                 <i class="fa-solid fa-user-check"></i>
             </a>
-            <a href="admin.php?view=verifikasi_job&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>" title="Verifikasi Lowongan">
+            <a href="admin.php?view=verifikasi_job&entity=Individu" class="rail-btn <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>" title="Verifikasi Lowongan" style="text-decoration:none;">
                 <i class="fa-solid fa-briefcase"></i>
             </a>
         </div>
@@ -1444,17 +1444,17 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         </div>
 
         <div class="drawer-menu-list">
-            <a href="admin.php?view=directory_individual" class="drawer-menu-item <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>">
+            <a href="admin.php?view=directory_individual" class="drawer-menu-item <?php echo str_starts_with($view, 'directory') ? 'active' : ''; ?>" style="text-decoration:none;">
                 <i class="fa-solid fa-user"></i>
-                <span>Individual</span>
+                <span style="text-decoration:none;">Individual</span>
             </a>
-            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>">
+            <a href="admin.php?view=verifikasi_employer&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_employer') ? 'active' : ''; ?>" style="text-decoration:none;">
                 <i class="fa-solid fa-user-check"></i>
-                <span>Verifikasi Pemberi Kerja</span>
+                <span style="text-decoration:none;">Verifikasi Pemberi Kerja</span>
             </a>
-            <a href="admin.php?view=verifikasi_job&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>">
+            <a href="admin.php?view=verifikasi_job&entity=Individu" class="drawer-menu-item <?php echo str_starts_with($view, 'verifikasi_job') ? 'active' : ''; ?>" style="text-decoration:none;">
                 <i class="fa-solid fa-briefcase"></i>
-                <span>Verifikasi Lowongan</span>
+                <span style="text-decoration:none;">Verifikasi Lowongan</span>
             </a>
         </div>
     </div>

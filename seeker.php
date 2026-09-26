@@ -184,13 +184,13 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
 
         <!-- Navigation Icons -->
         <div class="sidebar-rail-nav">
-            <a href="seeker.php?page=dashboard" class="rail-btn <?php echo $page === 'dashboard' ? 'active' : ''; ?>" title="Dasbor">
+            <a href="seeker.php?page=dashboard" class="rail-btn <?php echo $page === 'dashboard' ? 'active' : ''; ?>" title="Dasbor" style="text-decoration:none;">
                 <i class="fa-solid fa-chart-line"></i>
             </a>
-            <a href="seeker.php?page=jobs" class="rail-btn <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>" title="Lowongan Kerja">
+            <a href="seeker.php?page=jobs" class="rail-btn <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>" title="Lowongan Kerja" style="text-decoration:none;">
                 <i class="fa-solid fa-briefcase"></i>
             </a>
-            <a href="profile-seeker.php" class="rail-btn <?php echo $page === 'profile' ? 'active' : ''; ?>" title="Profil Saya">
+            <a href="profile-seeker.php" class="rail-btn <?php echo $page === 'profile' ? 'active' : ''; ?>" title="Profil Saya" style="text-decoration:none;">
                 <i class="fa-regular fa-user"></i>
             </a>
         </div>
@@ -266,17 +266,17 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
         </div>
 
         <div class="drawer-menu-list">
-            <a href="seeker.php?page=dashboard" class="drawer-menu-item <?php echo $page === 'dashboard' ? 'active' : ''; ?>">
+            <a href="seeker.php?page=dashboard" class="drawer-menu-item <?php echo $page === 'dashboard' ? 'active' : ''; ?>" style="text-decoration:none;">
                 <i class="fa-solid fa-chart-line"></i>
-                <span>Dasbor</span>
+                <span style="text-decoration:none;">Dasbor</span>
             </a>
-            <a href="seeker.php?page=jobs" class="drawer-menu-item <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>">
+            <a href="seeker.php?page=jobs" class="drawer-menu-item <?php echo in_array($page, ['jobs', 'job', 'employer'], true) ? 'active' : ''; ?>" style="text-decoration:none;">
                 <i class="fa-solid fa-briefcase"></i>
-                <span>Lowongan</span>
+                <span style="text-decoration:none;">Lowongan</span>
             </a>
-            <a href="profile-seeker.php" class="drawer-menu-item <?php echo $page === 'profile' ? 'active' : ''; ?>">
+            <a href="profile-seeker.php" class="drawer-menu-item <?php echo $page === 'profile' ? 'active' : ''; ?>" style="text-decoration:none;">
                 <i class="fa-regular fa-user"></i>
-                <span>Profil Saya</span>
+                <span style="text-decoration:none;">Profil Saya</span>
             </a>
         </div>
     </div>

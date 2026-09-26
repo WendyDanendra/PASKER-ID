@@ -609,12 +609,21 @@ body {
     cursor: pointer;
     text-align: left;
     transition: 0.2s ease;
+    text-decoration: none !important;
 }
 
 .menu-item:hover,
-.menu-item.active {
+.menu-item.active,
+.menu-item:focus,
+.menu-item:visited {
     background: #eef8fc;
     color: #1e97c4;
+    text-decoration: none !important;
+}
+
+.menu-item span,
+.menu-item strong {
+    text-decoration: none !important;
 }
 
 .menu-item i {
@@ -2829,16 +2838,22 @@ html, body {
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
+    text-decoration: none !important;
 }
 
-.rail-btn:hover {
+.rail-btn:hover,
+.rail-btn:focus,
+.rail-btn:active,
+.rail-btn:visited {
     background: #f1f5f9;
     color: #0284c7;
+    text-decoration: none !important;
 }
 
 .rail-btn.active {
     background: #e0f2fe;
     color: #0284c7;
+    text-decoration: none !important;
 }
 
 .rail-spacer {
@@ -3128,6 +3143,11 @@ html, body {
     transition: all 0.2s;
     text-align: left;
     width: 100%;
+    text-decoration: none !important;
+}
+
+.drawer-menu-item span {
+    text-decoration: none !important;
 }
 
 .drawer-menu-item i {
@@ -3137,9 +3157,13 @@ html, body {
     color: #64748b;
 }
 
-.drawer-menu-item:hover {
+.drawer-menu-item:hover,
+.drawer-menu-item:focus,
+.drawer-menu-item:active,
+.drawer-menu-item:visited {
     background: #f8fafc;
     color: #0284c7;
+    text-decoration: none !important;
 }
 
 .drawer-menu-item:hover i {
@@ -3150,10 +3174,28 @@ html, body {
     background: #e0f2fe;
     color: #0284c7;
     font-weight: 700;
+    text-decoration: none !important;
 }
 
-.drawer-menu-item.active i {
-    color: #0284c7;
+.sidebar-rail a,
+.sidebar-rail a:hover,
+.sidebar-rail a:focus,
+.sidebar-rail a:visited,
+.sidebar-rail a:active,
+.sidebar-rail span,
+.nav-drawer a,
+.nav-drawer a:hover,
+.nav-drawer a:focus,
+.nav-drawer a:visited,
+.nav-drawer a:active,
+.nav-drawer span,
+.sidebar a,
+.sidebar a:hover,
+.sidebar a:focus,
+.sidebar a:visited,
+.sidebar a:active,
+.sidebar span {
+    text-decoration: none !important;
 }
 
 /* TOPBAR */
