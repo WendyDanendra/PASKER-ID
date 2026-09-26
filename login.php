@@ -393,7 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <small style="opacity:0.8;">Pre-fill Otomatis</small>
                 </div>
                 <div class="demo-item" onclick="fillCredential('perorangan@paskerid.test', 'Pusatpasarkerj4')">
-                    <span>Pemberi Kerja Individu (Budi Santoso)</span>
+                    <span>Pemberi Kerja Individu (Wendy Danendra)</span>
                     <code>perorangan@paskerid.test</code>
                 </div>
                 <div class="demo-item" onclick="fillCredential('seeker@paskerid.test', 'Pusatpasarkerj4')">
