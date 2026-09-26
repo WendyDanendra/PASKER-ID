@@ -195,7 +195,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             <a class="primary-btn" href="dashboard.php#dashboard" style="width:100%; text-align:center; justify-content:center;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
-    <script src="assets/pki-form.js?v=20260926_v4"></script>
+    <script src="assets/pki-form.js?v=20260926_v5"></script>
     <script>
     (function () {
         var modal = document.getElementById('modalPendaftaranBerhasil');

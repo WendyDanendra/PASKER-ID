@@ -236,12 +236,7 @@ if (file_exists($pkiCssPath)) {
                 <iframe id="pki_gmapIframe" width="100%" height="100%" style="border:0;" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
             </div>
         </div>
-        <div id="pki_mapOpenLinkWrapper" class="pki-map-open-link" style="display:none; margin-top:8px; text-align:right;">
-            <a id="pki_btnOpenMap" href="#" target="_blank" class="ghost-btn" style="height:32px; padding:0 12px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; color:#0284c7; font-weight:600;">
-                Buka di Maps ↗
-            </a>
-        </div>
-        <div class="pki-field-helper" style="margin-top:6px;">Peta muncul otomatis setelah lokasi dan alamat lengkap tersedia.</div>
+        <div class="pki-field-helper" id="helper_map" style="margin-top:8px;">Peta muncul otomatis setelah lokasi dan alamat lengkap tersedia.</div>
     </div>
 </div>
 
