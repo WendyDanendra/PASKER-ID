@@ -45,6 +45,15 @@ if (!empty($vVillage) && !empty($vDistrict) && !empty($vCity) && !empty($vProvin
 
 $googleMapsApiKey = getenv('GOOGLE_MAPS_API_KEY') ?: ($_ENV['GOOGLE_MAPS_API_KEY'] ?? '');
 ?>
+<link rel="stylesheet" href="assets/pki-form.css?v=20260926_3">
+<style>
+<?php
+$pkiCssPath = __DIR__ . '/../assets/pki-form.css';
+if (file_exists($pkiCssPath)) {
+    echo file_get_contents($pkiCssPath);
+}
+?>
+</style>
 
 <!-- BANNER MODE DEMO -->
 <div class="pki-demo-banner">
