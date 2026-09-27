@@ -2544,6 +2544,10 @@
                                         <span class="status-pill revision" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">
                                             Perlu Direvisi
                                         </span>
+                                    <?php elseif ($dStatus === 'Ditolak'): ?>
+                                        <span class="status-pill rejected" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">
+                                            Ditolak
+                                        </span>
                                     <?php elseif ($dStatus === 'Draft'): ?>
                                         <span class="status-pill draft" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">
                                             Draft
@@ -2576,7 +2580,7 @@
                                         <div style="background:#0ea5e9; width:<?php echo $percent; ?>%; height:100%; border-radius:6px;"></div>
                                     </div>
                                     <div style="font-size:14px; font-weight:800; color:#0f172a;">
-                                        <?php echo $acceptedCount; ?> / <?php echo $totalQuota; ?> terisi
+                                        <?php echo $acceptedCount; ?> / <?php echo $totalQuota; ?> telah terisi
                                     </div>
                                 </div>
 
@@ -2621,10 +2625,11 @@
                             </div>
 
                             <div style="padding:28px;">
-                                <!-- CARD HASIL VERIFIKASI (UNTUK PERLU REVISI / PERLU DIREVISI) -->
-                                <?php if (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true) || !empty($detailJob['verifier_notes']) || !empty($detailJob['admin_notes'])): ?>
+                                <!-- CARD HASIL VERIFIKASI (UNTUK PERLU REVISI / PERLU DIREVISI / DITOLAK) -->
+                                <?php if ($dStatus === 'Ditolak' || in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true) || !empty($detailJob['verifier_notes']) || !empty($detailJob['admin_notes'])): ?>
                                     <?php
-                                        $vNotes = $detailJob['verifier_notes'] ?: ($detailJob['admin_notes'] ?: 'Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.');
+                                        $isRejected = ($dStatus === 'Ditolak');
+                                        $vNotes = $detailJob['verifier_notes'] ?: ($detailJob['admin_notes'] ?: ($isRejected ? 'Lowongan tidak memenuhi standar ketentuan yang berlaku.' : 'Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.'));
                                         $vChecklistRaw = json_decode($detailJob['compliance_checklist'] ?? '{}', true) ?: [];
                                         $vDate = !empty($detailJob['updated_at']) ? date('d M Y', strtotime($detailJob['updated_at'])) : date('d M Y');
                                         
@@ -2635,29 +2640,45 @@
                                             'Tidak sesuai substansi' => 'Kesesuaian substansi',
                                         ];
                                     ?>
-                                    <div style="background:#fff; border:1px solid #fed7aa; border-radius:14px; padding:20px 24px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                                    <div style="background:#fff; border:1px solid <?php echo $isRejected ? '#fee2e2' : '#fed7aa'; ?>; border-radius:14px; padding:20px 24px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
                                         <!-- Top Row: Icon, Title, Date & Badge -->
                                         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
                                             <div style="display:flex; align-items:flex-start; gap:12px;">
-                                                <div style="width:30px; height:30px; border-radius:50%; background:#fff7ed; border:1px solid #ffedd5; color:#d97706; display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; margin-top:2px;">
-                                                    <i class="fa-solid fa-triangle-exclamation"></i>
-                                                </div>
-                                                <div>
-                                                    <h3 style="font-size:15px; font-weight:800; color:#0f172a; margin:0 0 4px 0;">Hasil Verifikasi</h3>
-                                                    <p style="font-size:12.5px; color:#64748b; margin:0; line-height:1.4;">Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.</p>
-                                                </div>
+                                                <?php if ($isRejected): ?>
+                                                    <div style="width:32px; height:32px; border-radius:50%; background:#fef2f2; border:1px solid #fee2e2; color:#dc2626; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-top:2px;">
+                                                        <i class="fa-regular fa-circle-xmark"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h3 style="font-size:15px; font-weight:800; color:#0f172a; margin:0 0 4px 0;">Hasil Verifikasi</h3>
+                                                        <p style="font-size:12.5px; color:#64748b; margin:0; line-height:1.4;">Lowongan Anda tidak disetujui oleh verifikator. Perhatikan catatan di bawah untuk informasi lebih lanjut.</p>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div style="width:32px; height:32px; border-radius:50%; background:#fff7ed; border:1px solid #ffedd5; color:#d97706; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-top:2px;">
+                                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h3 style="font-size:15px; font-weight:800; color:#0f172a; margin:0 0 4px 0;">Hasil Verifikasi</h3>
+                                                        <p style="font-size:12.5px; color:#64748b; margin:0; line-height:1.4;">Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.</p>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
                                             <div style="display:flex; align-items:center; gap:10px;">
                                                 <span style="font-size:12px; color:#94a3b8; font-weight:500;"><?php echo $vDate; ?></span>
-                                                <span class="status-pill revision" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:3px 12px; border-radius:9999px; font-size:11px; font-weight:700;">
-                                                    Perlu Revisi
-                                                </span>
+                                                <?php if ($isRejected): ?>
+                                                    <span class="status-pill rejected" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:3px 12px; border-radius:9999px; font-size:11px; font-weight:700;">
+                                                        Ditolak
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="status-pill revision" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:3px 12px; border-radius:9999px; font-size:11px; font-weight:700;">
+                                                        Perlu Revisi
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
 
                                         <!-- Catatan Verifikator Utama -->
                                         <?php if (!empty($vNotes)): ?>
-                                            <div style="margin-bottom:16px; padding-left:42px;">
+                                            <div style="margin:14px 0 16px 0; padding-left:12px; border-left:2px solid #0f172a;">
                                                 <div style="font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px;">Catatan Verifikator</div>
                                                 <div style="font-size:13px; color:#1e293b; line-height:1.5; font-weight:500;">
                                                     <?php echo nl2br(e($vNotes)); ?>
@@ -2680,7 +2701,7 @@
                                                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #f1f5f9; padding-bottom:8px;">
                                                             <span style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($catLabel); ?></span>
                                                             <?php if ($isPatuh): ?>
-                                                                <span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; padding:2px 12px; border-radius:9999px; font-size:11px; font-weight:700;">Patuh</span>
+                                                                <span style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; padding:2px 12px; border-radius:9999px; font-size:11px; font-weight:700;">Patuh</span>
                                                             <?php else: ?>
                                                                 <span style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:2px 12px; border-radius:9999px; font-size:11px; font-weight:700;">Tidak Patuh</span>
                                                             <?php endif; ?>
@@ -2700,7 +2721,7 @@
 
                                 <!-- TAB 1: LAMARAN (LOCKED STATE) -->
                                 <div id="tabPanePageLamaran">
-                                    <?php if (in_array($dStatus, ['Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Perlu Revisi'], true)): ?>
+                                    <?php if (in_array($dStatus, ['Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Perlu Revisi', 'Ditolak'], true)): ?>
                                         <div style="position:relative; min-height:340px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; padding:20px 0;">
                                             <!-- Faded Background Table Simulation -->
                                             <div style="position:absolute; inset:0; opacity:0.18; filter:blur(2.5px); pointer-events:none; padding:10px;">
@@ -2717,19 +2738,22 @@
                                             </div>
 
                                             <!-- Overlay Locked Card -->
-                                            <div style="position:relative; z-index:2; border:1px solid #fed7aa; border-radius:16px; padding:48px 36px; text-align:center; background:rgba(255, 255, 255, 0.96); backdrop-filter:blur(10px); max-width:580px; width:92%; box-shadow:0 10px 25px -5px rgba(245, 158, 11, 0.12), 0 8px 10px -6px rgba(0,0,0,0.04);">
-                                                <div style="width:64px; height:64px; background:#fff7ed; border:1px solid #ffedd5; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; color:#d97706; font-size:26px;">
-                                                    🔒
+                                            <div style="position:relative; z-index:2; border:1px solid #e2e8f0; border-radius:16px; padding:44px 36px; text-align:center; background:rgba(255, 255, 255, 0.98); backdrop-filter:blur(10px); max-width:580px; width:92%; box-shadow:0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0,0,0,0.02);">
+                                                <div style="width:48px; height:48px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#0f172a; font-size:26px;">
+                                                    <i class="fa-solid fa-lock"></i>
                                                 </div>
                                                 <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:10px;">Proses seleksi terkunci</h3>
-                                                <p style="font-size:13.5px; color:#64748b; line-height:1.6; margin:0;">
+                                                <p style="font-size:13px; color:#64748b; line-height:1.6; margin:0;">
                                                     <?php if ($dStatus === 'Menunggu Verifikasi'): ?>
                                                         Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang.<br>Lowongan telah diajukan dan sedang menunggu verifikasi oleh admin.
                                                     <?php elseif (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true)): ?>
                                                         Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang.<br>Lowongan dikembalikan oleh admin dan perlu diperbaiki sebelum diajukan ulang.
+                                                    <?php elseif ($dStatus === 'Ditolak'): ?>
+                                                        Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang. Lowongan ditolak oleh admin. Lowongan tidak dapat diubah, diajukan ulang, maupun ditayangkan.
                                                     <?php else: ?>
                                                         Proses seleksi belum dapat dilakukan karena lowongan belum berstatus Tayang.<br>Lowongan masih dalam tahap penyusunan dan belum diajukan untuk diverifikasi.
                                                     <?php endif; ?>
+                                                </p>
                                             </div>
                                         </div>
                                     <?php else: ?>
