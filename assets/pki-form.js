@@ -870,7 +870,7 @@
             const existingPermit = document.getElementById('pki_existing_permit_document')?.value?.trim();
             const hasPermit = (permitFileInput && permitFileInput.files && permitFileInput.files.length > 0) || Boolean(existingPermit);
             if (!hasPermit) {
-                flagError('permit_document', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.', document.getElementById('pki_box_permit_document'));
+                flagError('permit_document', 'File Pendukung wajib diunggah minimal 1 dokumen.', document.getElementById('pki_box_permit_document'));
             } else {
                 clearFieldError('permit_document');
             }
