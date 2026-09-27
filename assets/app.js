@@ -1838,6 +1838,309 @@ document.addEventListener('DOMContentLoaded', () => {
         target.innerHTML = items.map(mapper).join('');
     }
 
+    function switchApplicantModalTab(tab) {
+        const profilPane = document.getElementById('tabApplicantProfilPane');
+        const aktivitasPane = document.getElementById('tabApplicantAktivitasPane');
+        const profilBtn = document.getElementById('tabApplicantProfilBtn');
+        const aktivitasBtn = document.getElementById('tabApplicantAktivitasBtn');
+        
+        if (profilPane && aktivitasPane && profilBtn && aktivitasBtn) {
+            profilPane.style.display = (tab === 'profil') ? 'block' : 'none';
+            aktivitasPane.style.display = (tab === 'aktivitas') ? 'block' : 'none';
+            
+            profilBtn.style.borderBottomColor = (tab === 'profil') ? '#0ea5e9' : 'transparent';
+            profilBtn.style.color = (tab === 'profil') ? '#0ea5e9' : '#64748b';
+            profilBtn.style.fontWeight = (tab === 'profil') ? '700' : '600';
+            
+            aktivitasBtn.style.borderBottomColor = (tab === 'aktivitas') ? '#0ea5e9' : 'transparent';
+            aktivitasBtn.style.color = (tab === 'aktivitas') ? '#0ea5e9' : '#64748b';
+            aktivitasBtn.style.fontWeight = (tab === 'aktivitas') ? '700' : '600';
+        }
+    }
+    window.switchApplicantModalTab = switchApplicantModalTab;
+
+    // Status Color Map
+    const statusColorMap = {
+        'Lamaran Masuk': '#f59e0b',
+        'Sedang Dipelajari': '#f97316',
+        'Wawancara': '#3b82f6',
+        'Diterima': '#10b981',
+        'Ditolak': '#ef4444'
+    };
+
+    function showToastNotification(message, type = 'success') {
+        let toastContainer = document.getElementById('paskerToastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'paskerToastContainer';
+            toastContainer.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:999999; display:flex; flex-direction:column; gap:10px; pointer-events:none;';
+            document.body.appendChild(toastContainer);
+        }
+        const toast = document.createElement('div');
+        toast.style.cssText = 'background:#0f172a; color:#fff; padding:12px 18px; border-radius:10px; font-size:13px; font-weight:600; box-shadow:0 10px 25px -5px rgba(0,0,0,0.2); display:flex; align-items:center; gap:10px; pointer-events:auto; transition:all 0.3s cubic-bezier(0.16,1,0.3,1); transform:translateY(20px); opacity:0;';
+        const iconHtml = (type === 'success') 
+            ? '<i class="fa-solid fa-circle-check" style="color:#10b981; font-size:16px;"></i>' 
+            : '<i class="fa-solid fa-circle-exclamation" style="color:#f59e0b; font-size:16px;"></i>';
+        toast.innerHTML = `${iconHtml} <span>${escapeHtml(message)}</span>`;
+        toastContainer.appendChild(toast);
+        
+        requestAnimationFrame(() => {
+            toast.style.transform = 'translateY(0)';
+            toast.style.opacity = '1';
+        });
+
+        setTimeout(() => {
+            toast.style.transform = 'translateY(20px)';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3200);
+    }
+    window.showToastNotification = showToastNotification;
+
+    function toggleCustomStatusDropdown(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('customStatusDropdownMenu');
+        if (!menu) return;
+        const isShowing = menu.style.display === 'block';
+        menu.style.display = isShowing ? 'none' : 'block';
+    }
+    window.toggleCustomStatusDropdown = toggleCustomStatusDropdown;
+
+    function selectApplicantStatus(statusName, dotColor, skipAjax = false) {
+        const elStatus = document.getElementById('applicantStatus');
+        const dot = document.getElementById('customStatusDot');
+        const label = document.getElementById('customStatusLabel');
+        const menu = document.getElementById('customStatusDropdownMenu');
+        const appId = document.getElementById('applicantId')?.value;
+        const col = dotColor || statusColorMap[statusName] || '#f59e0b';
+
+        if (elStatus) elStatus.value = statusName;
+        if (label) label.textContent = statusName;
+        if (dot) dot.style.background = col;
+
+        document.querySelectorAll('.status-check-icon').forEach(icon => {
+            icon.style.display = (icon.getAttribute('data-status') === statusName) ? 'block' : 'none';
+        });
+
+        const badge = document.getElementById('applicantStatusBadge');
+        if (badge) {
+            badge.textContent = statusName;
+            if (statusName === 'Diterima') {
+                badge.style.background = '#ecfdf5'; badge.style.color = '#059669'; badge.style.borderColor = '#a7f3d0';
+            } else if (statusName === 'Ditolak') {
+                badge.style.background = '#fef2f2'; badge.style.color = '#dc2626'; badge.style.borderColor = '#fecaca';
+            } else if (statusName === 'Wawancara') {
+                badge.style.background = '#eff6ff'; badge.style.color = '#2563eb'; badge.style.borderColor = '#bfdbfe';
+            } else if (statusName === 'Sedang Dipelajari') {
+                badge.style.background = '#fff7ed'; badge.style.color = '#ea580c'; badge.style.borderColor = '#fed7aa';
+            } else {
+                badge.style.background = '#fffbeb'; badge.style.color = '#d97706'; badge.style.borderColor = '#fde68a';
+            }
+        }
+
+        if (menu) menu.style.display = 'none';
+
+        if (!skipAjax && appId) {
+            const formData = new FormData();
+            formData.append('update_application_status', '1');
+            formData.append('application_id', appId);
+            formData.append('status', statusName);
+            formData.append('ajax', '1');
+            fetch('dashboard.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.ok) {
+                        moveCardToKanbanStage(appId, statusName);
+                        showToastNotification(`Status berhasil diubah ke "${statusName}"`);
+                    }
+                })
+                .catch(() => {});
+        }
+    }
+    window.selectApplicantStatus = selectApplicantStatus;
+
+    function moveCardToKanbanStage(appId, targetStage) {
+        const card = document.querySelector(`.app-card-item[data-app-id="${appId}"]`);
+        if (!card) return;
+        
+        card.setAttribute('data-stage', targetStage);
+        const targetZone = document.querySelector(`.kanban-drop-zone[data-stage="${targetStage}"]`);
+        if (targetZone) {
+            const emptyPlaceholder = targetZone.querySelector('.kanban-empty-placeholder');
+            if (emptyPlaceholder) emptyPlaceholder.remove();
+            targetZone.appendChild(card);
+        }
+        updateKanbanBadges();
+    }
+    window.moveCardToKanbanStage = moveCardToKanbanStage;
+
+    function updateKanbanBadges() {
+        document.querySelectorAll('.kanban-stage-col').forEach(col => {
+            const stage = col.getAttribute('data-stage');
+            const zone = col.querySelector('.kanban-drop-zone');
+            if (!zone) return;
+            const cards = zone.querySelectorAll('.app-card-item');
+            const badge = col.querySelector('.kanban-stage-badge');
+            if (badge) badge.textContent = cards.length;
+            
+            if (cards.length === 0 && !zone.querySelector('.kanban-empty-placeholder')) {
+                zone.innerHTML = '<div class="kanban-empty-placeholder" style="display:flex; align-items:center; justify-content:center; height:180px; color:#94a3b8; font-size:12.5px;">Tidak ada data.</div>';
+            }
+        });
+    }
+    window.updateKanbanBadges = updateKanbanBadges;
+
+    // Drag and drop handlers
+    window.isDraggingCard = false;
+
+    function handleKanbanDragStart(e, el) {
+        window.isDraggingCard = true;
+        e.dataTransfer.setData('text/plain', el.getAttribute('data-app-id'));
+        e.dataTransfer.setData('source-stage', el.getAttribute('data-stage'));
+        el.classList.add('is-dragging');
+        el.style.opacity = '0.4';
+    }
+    window.handleKanbanDragStart = handleKanbanDragStart;
+
+    function handleKanbanDragEnd(e, el) {
+        el.classList.remove('is-dragging');
+        el.style.opacity = '1';
+        setTimeout(() => { window.isDraggingCard = false; }, 150);
+    }
+    window.handleKanbanDragEnd = handleKanbanDragEnd;
+
+    function handleKanbanDragOver(e) {
+        e.preventDefault();
+        const dropZone = e.currentTarget;
+        dropZone.style.backgroundColor = '#ecfdf5';
+        dropZone.style.borderColor = '#10b981';
+    }
+    window.handleKanbanDragOver = handleKanbanDragOver;
+
+    function handleKanbanDragLeave(e) {
+        const dropZone = e.currentTarget;
+        dropZone.style.backgroundColor = '#f8fafc';
+        dropZone.style.borderColor = '#e2e8f0';
+    }
+    window.handleKanbanDragLeave = handleKanbanDragLeave;
+
+    function handleKanbanDrop(e, targetStage) {
+        e.preventDefault();
+        const dropZone = e.currentTarget;
+        dropZone.style.backgroundColor = '#f8fafc';
+        dropZone.style.borderColor = '#e2e8f0';
+
+        const appId = e.dataTransfer.getData('text/plain');
+        const sourceStage = e.dataTransfer.getData('source-stage');
+        if (!appId || sourceStage === targetStage) return;
+
+        moveCardToKanbanStage(appId, targetStage);
+
+        const formData = new FormData();
+        formData.append('update_application_status', '1');
+        formData.append('application_id', appId);
+        formData.append('status', targetStage);
+        formData.append('ajax', '1');
+        fetch('dashboard.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.ok) {
+                    showToastNotification(`Status pelamar dipindahkan ke "${targetStage}"`);
+                }
+            })
+            .catch(() => {});
+    }
+    window.handleKanbanDrop = handleKanbanDrop;
+
+    function handleKanbanCardClick(e, appId) {
+        if (window.isDraggingCard) return;
+        openApplicantProfile(appId);
+    }
+    window.handleKanbanCardClick = handleKanbanCardClick;
+
+    // Tag Modal Handlers
+    function openApplicantTagModal() {
+        const modal = document.getElementById('applicantTagModal');
+        if (modal) modal.style.display = 'flex';
+    }
+    window.openApplicantTagModal = openApplicantTagModal;
+
+    function closeApplicantTagModal() {
+        const modal = document.getElementById('applicantTagModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeApplicantTagModal = closeApplicantTagModal;
+
+    function applyQuickTag(tagName) {
+        const input = document.getElementById('customTagInput');
+        if (input) input.value = tagName;
+    }
+    window.applyQuickTag = applyQuickTag;
+
+    function saveApplicantTag() {
+        const input = document.getElementById('customTagInput');
+        const tagVal = (input ? input.value : '').trim();
+        const appId = document.getElementById('applicantId')?.value;
+        const tagDisplay = document.getElementById('applicantTag');
+        if (tagDisplay) tagDisplay.textContent = tagVal || 'Belum ditandai';
+
+        if (appId) {
+            const card = document.querySelector(`.app-card-item[data-app-id="${appId}"]`);
+            if (card) {
+                const tagBadgeContainer = card.querySelector('.card-tag-badge');
+                if (tagBadgeContainer) {
+                    if (tagVal) {
+                        tagBadgeContainer.style.display = 'block';
+                        tagBadgeContainer.querySelector('span').textContent = tagVal;
+                    } else {
+                        tagBadgeContainer.style.display = 'none';
+                    }
+                }
+            }
+        }
+        closeApplicantTagModal();
+        showToastNotification('Tag pelamar berhasil disimpan');
+    }
+    window.saveApplicantTag = saveApplicantTag;
+
+    // Interview Modal Handlers
+    function openApplicantInterviewModal() {
+        const modal = document.getElementById('applicantInterviewModal');
+        const dateInput = document.getElementById('interviewDate');
+        if (dateInput && !dateInput.value) {
+            const tmr = new Date();
+            tmr.setDate(tmr.getDate() + 1);
+            dateInput.value = tmr.toISOString().split('T')[0];
+        }
+        if (modal) modal.style.display = 'flex';
+    }
+    window.openApplicantInterviewModal = openApplicantInterviewModal;
+
+    function closeApplicantInterviewModal() {
+        const modal = document.getElementById('applicantInterviewModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeApplicantInterviewModal = closeApplicantInterviewModal;
+
+    function saveApplicantInterview() {
+        const date = document.getElementById('interviewDate')?.value;
+        const time = document.getElementById('interviewTime')?.value;
+
+        // Change status to Wawancara
+        selectApplicantStatus('Wawancara', '#3b82f6');
+        closeApplicantInterviewModal();
+        showToastNotification(`Wawancara dijadwalkan pada ${date || 'besok'} pukul ${time || '09:00'} WIB`);
+    }
+    window.saveApplicantInterview = saveApplicantInterview;
+
+    document.addEventListener('click', (e) => {
+        const container = document.getElementById('customStatusDropdownContainer');
+        const menu = document.getElementById('customStatusDropdownMenu');
+        if (menu && container && !container.contains(e.target)) {
+            menu.style.display = 'none';
+        }
+    });
+
     function openApplicantProfile(applicationId) {
         const modal = document.querySelector('[data-modal="applicant-profile"]');
         if (!modal) {
@@ -1850,41 +2153,110 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const data = payload.data;
-                document.getElementById('applicantId').value = data.id;
-                document.getElementById('applicantName').textContent = data.seeker_name || 'Profil Pelamar';
-                document.getElementById('applicantJob').textContent = data.job_title || '';
-                document.getElementById('applicantStatus').value = data.status || 'Lamaran Masuk';
-                const rows = [
-                    ['Email', data.seeker_email],
-                    ['Telepon', data.phone],
-                    ['NIK', data.nik],
-                    ['Jenis kelamin', data.gender],
-                    ['Status pernikahan', data.marital_status],
-                    ['Tempat, tanggal lahir', [data.birth_place, data.birth_date].filter(Boolean).join(', ')],
-                    ['Alamat KTP', data.ktp_address],
-                    ['Alamat domisili', data.domicile_address],
-                ];
-                document.getElementById('applicantBiodata').innerHTML = rows.map(([label, value]) => (
-                    `<div class="summary-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '-')}</strong></div>`
-                )).join('');
-                fillList(document.getElementById('applicantEducation'), data.profile.education, (item) => (
-                    `<div class="record-item"><strong>${escapeHtml(item.level || '')} ${escapeHtml(item.school_name || '')}</strong><span>${escapeHtml(item.major || '')} ${escapeHtml(item.graduation_year || '')}</span></div>`
-                ));
-                fillList(document.getElementById('applicantExperience'), data.profile.experience, (item) => (
-                    `<div class="record-item"><strong>${escapeHtml(item.company_name || '')} - ${escapeHtml(item.position || '')}</strong><span>${escapeHtml(item.duration || '')} ${escapeHtml(item.notes || '')}</span></div>`
-                ));
-                fillList(document.getElementById('applicantSkills'), data.profile.skills, (item) => (
-                    `<div class="record-item"><strong>${escapeHtml(item.skill_name || '')}</strong><span>${escapeHtml(item.level || '')}</span></div>`
-                ));
+                const setElemText = (id, val, def) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val || def || '-';
+                };
+
+                const elId = document.getElementById('applicantId');
+                if (elId) elId.value = data.id;
+
+                setElemText('applicantName', data.seeker_name, 'Muhamad Amar Basyari');
+                setElemText('applicantAppliedDate', data.applied_date, '20 Sep 2026');
+                setElemText('applicantActivityDate', data.applied_date, '20 Sep 2026');
+                
+                const curStatus = data.status || 'Lamaran Masuk';
+                selectApplicantStatus(curStatus, statusColorMap[curStatus], true);
+
+                const avatarEl = document.getElementById('applicantAvatar');
+                if (avatarEl) {
+                    avatarEl.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(data.seeker_name || 'Pencari Kerja') + '&background=0ea5e9&color=fff&size=128';
+                }
+
+                setElemText('applicantLocation', data.location, 'Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH');
+                setElemText('applicantTag', data.tag, 'Belum ditandai');
+                setElemText('applicantAbout', data.about, 'Saya adalah pribadi yang disiplin, bertanggung jawab, cepat belajar, dan mampu beradaptasi dengan lingkungan kerja baru serta bekerja secara individu maupun dalam tim.');
+                setElemText('applicantBirthInfo', data.birth_info, 'Brebes, 19 Desember 2006');
+                setElemText('applicantKtpAddress', data.ktp_address, 'Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES');
+                setElemText('applicantDomicileAddress', data.domicile_address, 'Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH');
+
+                // Education
+                const eduContainer = document.getElementById('applicantEducation');
+                if (eduContainer) {
+                    if (data.profile && data.profile.education && data.profile.education.length > 0) {
+                        eduContainer.innerHTML = data.profile.education.map(item => `
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:8px;">
+                                <div style="font-size:13.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.level || 'Pendidikan')}</div>
+                                <div style="font-size:12.5px; color:#475569; margin:2px 0;">${escapeHtml(item.school_name || '')}</div>
+                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.major || '')}</div>
+                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.graduation_year || '')}</div>
+                                ${item.gpa ? `<div style="font-size:12px; color:#059669; font-weight:600; margin:2px 0;">${escapeHtml(item.gpa)}</div>` : ''}
+                                ${item.location ? `<div style="font-size:12px; color:#64748b;">${escapeHtml(item.location)}</div>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        eduContainer.innerHTML = '<div style="font-size:13px; color:#64748b;">Belum ada riwayat pendidikan yang tercatat.</div>';
+                    }
+                }
+
+                // Trainings
+                const trainContainer = document.getElementById('applicantTrainings');
+                if (trainContainer) {
+                    if (data.profile && data.profile.trainings && data.profile.trainings.length > 0) {
+                        trainContainer.innerHTML = data.profile.trainings.map(item => `
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:8px;">
+                                <div style="font-size:13.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.training_name || 'Pelatihan')}</div>
+                                <div style="font-size:12.5px; color:#475569; margin:2px 0;">${escapeHtml(item.organizer || '')}</div>
+                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.year || '')}</div>
+                                ${item.certificate ? `<div style="font-size:12px; color:#64748b; margin-top:4px;">${escapeHtml(item.certificate)}</div>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        trainContainer.innerHTML = '<div style="font-size:13px; color:#64748b;">Belum ada riwayat pelatihan yang tercatat.</div>';
+                    }
+                }
+
+                // Experience
+                const expContainer = document.getElementById('applicantExperience');
+                if (expContainer) {
+                    if (data.profile && data.profile.experience && data.profile.experience.length > 0) {
+                        expContainer.innerHTML = data.profile.experience.map(item => `
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:8px;">
+                                <div style="font-size:13.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.position || '')} - ${escapeHtml(item.company_name || '')}</div>
+                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.duration || '')}</div>
+                                ${item.notes ? `<div style="font-size:12.5px; color:#334155; margin-top:4px;">${escapeHtml(item.notes)}</div>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        expContainer.innerHTML = '<div style="font-size:13px; color:#64748b;">Belum ada pengalaman kerja yang tercatat.</div>';
+                    }
+                }
+
+                // Skills
+                const skillsContainer = document.getElementById('applicantSkills');
+                if (skillsContainer) {
+                    if (data.profile && data.profile.skills && data.profile.skills.length > 0) {
+                        skillsContainer.innerHTML = data.profile.skills.map(item => `
+                            <span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${escapeHtml(item.skill_name || item)}</span>
+                        `).join('');
+                    } else {
+                        skillsContainer.innerHTML = '<span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">Bahasa Korea</span> <span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">Operator forklift</span>';
+                    }
+                }
+
+                switchApplicantModalTab('profil');
+                modal.style.display = 'flex';
                 modal.classList.add('open');
                 modal.onclick = (event) => {
                     if (event.target === modal) {
+                        modal.style.display = 'none';
                         modal.classList.remove('open');
                     }
                 };
             })
             .catch(() => {});
     }
+    window.openApplicantProfile = openApplicantProfile;
 
     document.querySelectorAll('[data-open-applicant]').forEach((trigger) => {
         trigger.addEventListener('click', () => {

@@ -2548,6 +2548,10 @@
                                         <span class="status-pill rejected" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">
                                             Ditolak
                                         </span>
+                                    <?php elseif ($dStatus === 'Tayang'): ?>
+                                        <span class="status-pill approved" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#ecfdf5; color:#059669; border:1px solid #a7f3d0;">
+                                            Tayang
+                                        </span>
                                     <?php elseif ($dStatus === 'Draft'): ?>
                                         <span class="status-pill draft" style="padding:4px 14px; border-radius:9999px; font-size:12px; font-weight:700; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">
                                             Draft
@@ -2560,7 +2564,11 @@
                                 </div>
 
                                 <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#64748b;">
-                                    <div><i class="fa-regular fa-calendar" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Kadaluarsa:</strong> <?php echo $expDate; ?></div>
+                                    <?php if ($dStatus === 'Tayang'): ?>
+                                        <div><i class="fa-regular fa-calendar" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Ditayangkan:</strong> <?php echo date('d M Y', strtotime($detailJob['created_at'])); ?> — <strong>Kadaluarsa:</strong> <?php echo $expDate; ?></div>
+                                    <?php else: ?>
+                                        <div><i class="fa-regular fa-calendar" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Kadaluarsa:</strong> <?php echo $expDate; ?></div>
+                                    <?php endif; ?>
                                     <div><i class="fa-solid fa-graduation-cap" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Pendidikan Minimal:</strong> <?php echo e($detailJob['min_education'] ?: ($detailData['education_required'] ?: 'Tidak ditentukan')); ?></div>
                                     <div><i class="fa-solid fa-location-dot" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Lokasi:</strong> <?php echo e($detailJob['location'] ?: 'Kota Bekasi'); ?></div>
                                 </div>
@@ -2609,6 +2617,19 @@
                                             </form>
                                         <?php endif; ?>
                                     </div>
+                                <?php elseif ($dStatus === 'Tayang'): ?>
+                                    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                                        <form method="post" action="dashboard.php#lowongan" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menutup lowongan ini?')">
+                                            <input type="hidden" name="close_job" value="1">
+                                            <input type="hidden" name="job_id" value="<?php echo $detailJob['id']; ?>">
+                                            <button type="submit" style="background:#dc2626; color:#fff; border:none; padding:9px 18px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 3px rgba(220,38,38,0.2);">
+                                                <i class="fa-regular fa-circle-xmark"></i> Tutup Lowongan
+                                            </button>
+                                        </form>
+                                        <button type="button" style="border:1px solid #cbd5e1; background:#fff; color:#334155; padding:9px 14px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i> Lainnya
+                                        </button>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -2625,8 +2646,8 @@
                             </div>
 
                             <div style="padding:28px;">
-                                <!-- CARD HASIL VERIFIKASI (UNTUK PERLU REVISI / PERLU DIREVISI / DITOLAK) -->
-                                <?php if ($dStatus === 'Ditolak' || in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true) || !empty($detailJob['verifier_notes']) || !empty($detailJob['admin_notes'])): ?>
+                                <!-- CARD HASIL VERIFIKASI (HANYA UNTUK PERLU REVISI / PERLU DIREVISI / DITOLAK) -->
+                                <?php if (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi', 'Ditolak'], true)): ?>
                                     <?php
                                         $isRejected = ($dStatus === 'Ditolak');
                                         $vNotes = $detailJob['verifier_notes'] ?: ($detailJob['admin_notes'] ?: ($isRejected ? 'Lowongan tidak memenuhi standar ketentuan yang berlaku.' : 'Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.'));
@@ -2719,7 +2740,7 @@
                                     </div>
                                 <?php endif; ?>
 
-                                <!-- TAB 1: LAMARAN (LOCKED STATE) -->
+                                <!-- TAB 1: LAMARAN (LOCKED STATE OR ACTIVE APPLICANTS) -->
                                 <div id="tabPanePageLamaran">
                                     <?php if (in_array($dStatus, ['Draft', 'Menunggu Verifikasi', 'Perlu Direvisi', 'Perlu Revisi', 'Ditolak'], true)): ?>
                                         <div style="position:relative; min-height:340px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; padding:20px 0;">
@@ -2758,30 +2779,229 @@
                                         </div>
                                     <?php else: ?>
                                         <?php
-                                            $detailAppsStmt = db()->prepare('SELECT a.*, u.name as seeker_name, u.email as seeker_email FROM job_applications a JOIN users u ON u.id = a.seeker_id WHERE a.job_id = ? ORDER BY a.created_at DESC');
+                                            $detailAppsStmt = db()->prepare('SELECT a.*, u.name as seeker_name, u.email as seeker_email,
+                                                sp.birth_place, sp.birth_date, sp.domicile_address, sp.ktp_address
+                                                FROM job_applications a
+                                                JOIN users u ON u.id = a.seeker_id
+                                                LEFT JOIN seeker_profiles sp ON sp.user_id = a.seeker_id
+                                                WHERE a.job_id = ? ORDER BY a.created_at DESC');
                                             $detailAppsStmt->execute([$detailJob['id']]);
                                             $detailApps = $detailAppsStmt->fetchAll() ?: [];
+
+                                            // Stages grouping for Kanban
+                                            $kanbanStages = [
+                                                'Lamaran Masuk' => ['color' => '#f59e0b', 'items' => []],
+                                                'Sedang Dipelajari' => ['color' => '#f97316', 'items' => []],
+                                                'Wawancara' => ['color' => '#0284c7', 'items' => []],
+                                                'Diterima' => ['color' => '#16a34a', 'items' => []],
+                                                'Ditolak' => ['color' => '#dc2626', 'items' => []],
+                                            ];
+
+                                            foreach ($detailApps as $app) {
+                                                $st = normalize_application_status($app['status'] ?? 'Lamaran Masuk');
+                                                if (isset($kanbanStages[$st])) {
+                                                    $kanbanStages[$st]['items'][] = $app;
+                                                } else {
+                                                    $kanbanStages['Lamaran Masuk']['items'][] = $app;
+                                                }
+                                            }
                                         ?>
-                                        <?php if (!$detailApps): ?>
-                                            <div style="text-align:center; padding:40px; color:#64748b; font-size:14px;">Belum ada pelamar pada lowongan ini.</div>
+
+                                        <!-- Top Toolbar: Search, Tag Filter, Action Filter & View Mode Switcher -->
+                                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #f1f5f9;">
+                                            <!-- Left: Search & Tag Filter -->
+                                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                                <div style="position:relative; display:inline-flex; align-items:center;">
+                                                    <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:14px; color:#94a3b8; font-size:13px;"></i>
+                                                    <input type="text" id="appFilterSearch" placeholder="Cari pelamar..." oninput="applyApplicantFilters()" style="padding:8px 16px 8px 36px; border:1px solid #cbd5e1; border-radius:20px; font-size:13px; width:220px; outline:none; background:#fff;">
+                                                </div>
+
+                                                <div style="position:relative; display:inline-flex; align-items:center;">
+                                                    <select id="appFilterTag" onchange="applyApplicantFilters()" style="padding:8px 16px; border:1px solid #cbd5e1; border-radius:20px; font-size:13px; color:#475569; background:#fff; cursor:pointer; outline:none;">
+                                                        <option value="">🏷 Ditandai</option>
+                                                        <option value="all">Semua</option>
+                                                        <option value="tagged">Ditandai</option>
+                                                        <option value="untagged">Belum Ditandai</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <!-- Right: Filter Button & View Switchers -->
+                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                <button type="button" style="border:1px solid #cbd5e1; background:#fff; color:#475569; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                                    <i class="fa-solid fa-filter"></i> Filter
+                                                </button>
+                                                
+                                                <div style="display:flex; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; background:#fff;">
+                                                    <button type="button" id="btnAppKanban" onclick="switchAppDisplayView('kanban')" title="Tampilan Kanban" style="padding:7px 12px; border:none; background:#f1f5f9; color:#0f172a; cursor:pointer; font-size:13px;">
+                                                        <i class="fa-solid fa-table-columns"></i>
+                                                    </button>
+                                                    <button type="button" id="btnAppGrid" onclick="switchAppDisplayView('grid')" title="Tampilan Grid" style="padding:7px 12px; border:none; border-left:1px solid #e2e8f0; background:#fff; color:#64748b; cursor:pointer; font-size:13px;">
+                                                        <i class="fa-solid fa-grip"></i>
+                                                    </button>
+                                                    <button type="button" id="btnAppList" onclick="switchAppDisplayView('list')" title="Tampilan List" style="padding:7px 12px; border:none; border-left:1px solid #e2e8f0; background:#fff; color:#64748b; cursor:pointer; font-size:13px;">
+                                                        <i class="fa-solid fa-list"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <?php if (empty($detailApps)): ?>
+                                            <!-- Empty State when no applicants (Gambar 2) -->
+                                            <div style="border:1px dashed #e2e8f0; border-radius:12px; padding:64px 20px; text-align:center; background:#fff; margin-top:10px;">
+                                                <div style="width:56px; height:56px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0; display:inline-flex; align-items:center; justify-content:center; color:#94a3b8; font-size:24px; margin-bottom:14px;">
+                                                    <i class="fa-regular fa-folder-open"></i>
+                                                </div>
+                                                <h4 style="font-size:15px; font-weight:700; color:#1e293b; margin:0 0 6px 0;">Belum ada pelamar</h4>
+                                                <p style="font-size:13px; color:#64748b; margin:0;">Pelamar yang masuk pada lowongan ini akan ditampilkan di sini.</p>
+                                            </div>
                                         <?php else: ?>
-                                            <table class="applicant-table" style="width:100%;">
-                                                <thead>
-                                                    <tr><th>Pelamar</th><th>Status</th><th>Aksi</th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php foreach ($detailApps as $app): ?>
-                                                        <tr data-open-applicant="<?php echo (int)$app['id']; ?>">
-                                                            <td><strong><?php echo e($app['seeker_name']); ?></strong><div class="tiny"><?php echo e($app['seeker_email']); ?></div></td>
-                                                            <td><span class="tag"><?php echo e($app['status']); ?></span></td>
-                                                            <td>Lihat profil</td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
+                                            <!-- 1. KANBAN VIEW (DEFAULT) -->
+                                            <div id="appContainerKanban" style="display:grid; grid-template-columns: repeat(5, minmax(210px, 1fr)); gap:14px; overflow-x:auto; padding-bottom:14px;">
+                                                <?php foreach ($kanbanStages as $stName => $stData): ?>
+                                                    <?php $slug = preg_replace('/[^a-zA-Z0-9]/', '', $stName); ?>
+                                                    <div class="kanban-stage-col" data-stage="<?php echo e($stName); ?>" style="display:flex; flex-direction:column; min-width:210px;">
+                                                        <!-- Stage Header -->
+                                                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:10px;">
+                                                            <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#1e293b;">
+                                                                <span style="width:8px; height:8px; border-radius:50%; background:<?php echo $stData['color']; ?>;"></span>
+                                                                <?php echo e($stName); ?>
+                                                            </div>
+                                                            <span id="kanbanBadge_<?php echo $slug; ?>" class="kanban-stage-badge" data-stage="<?php echo e($stName); ?>" style="background:#f1f5f9; color:#475569; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;">
+                                                                <?php echo count($stData['items']); ?>
+                                                            </span>
+                                                        </div>
+
+                                                        <!-- Stage Column Content (Drop Zone) -->
+                                                        <div class="kanban-drop-zone" data-stage="<?php echo e($stName); ?>" ondragover="handleKanbanDragOver(event)" ondragleave="handleKanbanDragLeave(event)" ondrop="handleKanbanDrop(event, '<?php echo e($stName); ?>')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; min-height:260px; display:flex; flex-direction:column; gap:10px; transition:background-color 0.2s, border-color 0.2s;">
+                                                            <?php if (empty($stData['items'])): ?>
+                                                                <div class="kanban-empty-placeholder" style="display:flex; align-items:center; justify-content:center; height:180px; color:#94a3b8; font-size:12.5px;">
+                                                                    Tidak ada data.
+                                                                </div>
+                                                            <?php else: ?>
+                                                                <?php foreach ($stData['items'] as $app): ?>
+                                                                    <div class="app-card-item kanban-card" draggable="true" data-app-id="<?php echo (int)$app['id']; ?>" data-stage="<?php echo e($stName); ?>" data-name="<?php echo strtolower($app['seeker_name']); ?>" data-email="<?php echo strtolower($app['seeker_email']); ?>" ondragstart="handleKanbanDragStart(event, this)" ondragend="handleKanbanDragEnd(event, this)" onclick="handleKanbanCardClick(event, <?php echo (int)$app['id']; ?>)" style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; cursor:grab; box-shadow:0 1px 2px rgba(0,0,0,0.03); transition:all 0.2s;" onmouseover="this.style.borderColor='#0ea5e9';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.08)'" onmouseout="this.style.borderColor='#e2e8f0';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
+                                                                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                                                                            <div style="display:flex; align-items:center; gap:10px;">
+                                                                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($app['seeker_name']); ?>&background=0ea5e9&color=fff" style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                                                                                <div style="overflow:hidden;">
+                                                                                    <div style="font-size:13px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;"><?php echo e($app['seeker_name']); ?></div>
+                                                                                    <div style="font-size:11px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;"><?php echo e($app['seeker_email']); ?></div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <i class="fa-solid fa-paperclip" style="color:#cbd5e1; font-size:12px; margin-top:2px;"></i>
+                                                                        </div>
+                                                                        
+                                                                        <div style="font-size:11px; color:#64748b; display:flex; flex-direction:column; gap:4px; border-top:1px dashed #f1f5f9; padding-top:8px;">
+                                                                            <div style="display:flex; align-items:center; gap:6px;">
+                                                                                <i class="fa-regular fa-building" style="color:#94a3b8; font-size:10px;"></i> Fresh Graduate
+                                                                            </div>
+                                                                            <div style="display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                                                <i class="fa-solid fa-location-dot" style="color:#94a3b8; font-size:10px;"></i> <?php echo e($app['domicile_address'] ?: ($app['ktp_address'] ?: 'Karangmaja, Banjarharjo, KAB. BREBES')); ?>
+                                                                            </div>
+                                                                            <div class="card-tag-badge" style="display:none; margin-top:4px;">
+                                                                                <span style="background:#eff6ff; color:#0284c7; border:1px solid #bfdbfe; padding:2px 8px; border-radius:12px; font-size:10.5px; font-weight:600;"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+
+                                            <!-- 2. GRID VIEW -->
+                                            <div id="appContainerGrid" style="display:none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
+                                                <?php foreach ($detailApps as $app): ?>
+                                                    <?php $m = application_status_meta($app['status']); ?>
+                                                    <div class="app-card-item" data-app-id="<?php echo (int)$app['id']; ?>" data-name="<?php echo strtolower($app['seeker_name']); ?>" data-email="<?php echo strtolower($app['seeker_email']); ?>" onclick="openApplicantProfile(<?php echo (int)$app['id']; ?>)" style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.03); transition:all 0.2s;" onmouseover="this.style.borderColor='#0ea5e9'" onmouseout="this.style.borderColor='#e2e8f0'">
+                                                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                                                            <div style="display:flex; align-items:center; gap:12px;">
+                                                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($app['seeker_name']); ?>&background=0ea5e9&color=fff" style="width:42px; height:42px; border-radius:50%; object-fit:cover;">
+                                                                <div>
+                                                                    <div style="font-size:14px; font-weight:700; color:#0f172a;"><?php echo e($app['seeker_name']); ?></div>
+                                                                    <div style="font-size:12px; color:#64748b;"><?php echo e($app['seeker_email']); ?></div>
+                                                                </div>
+                                                            </div>
+                                                            <span class="tag <?php echo e($m['class']); ?>"><?php echo e($m['label']); ?></span>
+                                                        </div>
+                                                        <div style="font-size:12px; color:#64748b; display:flex; flex-direction:column; gap:6px; border-top:1px dashed #f1f5f9; padding-top:10px;">
+                                                            <div><i class="fa-regular fa-building" style="color:#94a3b8; width:14px;"></i> Fresh Graduate</div>
+                                                            <div><i class="fa-solid fa-location-dot" style="color:#94a3b8; width:14px;"></i> <?php echo e($app['domicile_address'] ?: ($app['ktp_address'] ?: 'Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH')); ?></div>
+                                                            <div><i class="fa-regular fa-calendar" style="color:#94a3b8; width:14px;"></i> Mendaftar: <?php echo date('d M Y', strtotime($app['created_at'])); ?></div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+
+                                            <!-- 3. LIST VIEW (TABLE) -->
+                                            <div id="appContainerList" style="display:none;">
+                                                <table class="applicant-table" style="width:100%;">
+                                                    <thead>
+                                                        <tr><th>Pelamar</th><th>Status</th><th>Tanggal Melamar</th><th>Aksi</th></tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($detailApps as $app): ?>
+                                                            <?php $m = application_status_meta($app['status']); ?>
+                                                            <tr class="app-card-item" data-app-id="<?php echo (int)$app['id']; ?>" data-name="<?php echo strtolower($app['seeker_name']); ?>" data-email="<?php echo strtolower($app['seeker_email']); ?>" onclick="openApplicantProfile(<?php echo (int)$app['id']; ?>)" style="cursor:pointer;">
+                                                                <td>
+                                                                    <div style="display:flex; align-items:center; gap:10px;">
+                                                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($app['seeker_name']); ?>&background=0ea5e9&color=fff" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                                                                        <div>
+                                                                            <strong><?php echo e($app['seeker_name']); ?></strong>
+                                                                            <div class="tiny"><?php echo e($app['seeker_email']); ?></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td><span class="tag <?php echo e($m['class']); ?>"><?php echo e($m['label']); ?></span></td>
+                                                                <td style="font-size:12.5px; color:#64748b;"><?php echo date('d M Y', strtotime($app['created_at'])); ?></td>
+                                                                <td><button type="button" class="ghost-btn" style="padding:4px 10px; font-size:11.5px;">Lihat Profil</button></td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
+
+                                <script>
+                                function switchAppDisplayView(view) {
+                                    const kanban = document.getElementById('appContainerKanban');
+                                    const grid = document.getElementById('appContainerGrid');
+                                    const list = document.getElementById('appContainerList');
+                                    const btnKanban = document.getElementById('btnAppKanban');
+                                    const btnGrid = document.getElementById('btnAppGrid');
+                                    const btnList = document.getElementById('btnAppList');
+
+                                    if (!kanban || !grid || !list) return;
+
+                                    kanban.style.display = (view === 'kanban') ? 'grid' : 'none';
+                                    grid.style.display = (view === 'grid') ? 'grid' : 'none';
+                                    list.style.display = (view === 'list') ? 'block' : 'none';
+
+                                    btnKanban.style.background = (view === 'kanban') ? '#f1f5f9' : '#fff';
+                                    btnKanban.style.color = (view === 'kanban') ? '#0f172a' : '#64748b';
+
+                                    btnGrid.style.background = (view === 'grid') ? '#f1f5f9' : '#fff';
+                                    btnGrid.style.color = (view === 'grid') ? '#0f172a' : '#64748b';
+
+                                    btnList.style.background = (view === 'list') ? '#f1f5f9' : '#fff';
+                                    btnList.style.color = (view === 'list') ? '#0f172a' : '#64748b';
+                                }
+
+                                function applyApplicantFilters() {
+                                    const query = (document.getElementById('appFilterSearch')?.value || '').toLowerCase().trim();
+                                    const items = document.querySelectorAll('.app-card-item');
+                                    items.forEach(el => {
+                                        const name = el.getAttribute('data-name') || '';
+                                        const email = el.getAttribute('data-email') || '';
+                                        const match = !query || name.includes(query) || email.includes(query);
+                                        el.style.display = match ? '' : 'none';
+                                    });
+                                }
+                                </script>
 
                                 <!-- TAB 2: RINCIAN LOWONGAN -->
                                 <div id="tabPanePageRincian" style="display:none; padding:10px 0;">
