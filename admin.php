@@ -1707,7 +1707,7 @@ window.CITY_MASTER = [
                         $headerBadgeText = 'Terverifikasi';
                         $headerStatusBadge = '<span class="pill-badge verified" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; display:inline-flex; align-items:center; gap:6px;"><span style="font-size:8px;">●</span> Terverifikasi</span>';
                     } elseif ($vStatus === 'NEEDS_REVISION') {
-                        $headerStatusBadge = '<span class="pill-badge revision" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; display:inline-flex; align-items:center; gap:6px;"><span style="font-size:8px;">●</span> Revisi Diminta</span>';
+                        $headerStatusBadge = '<span class="pill-badge revision" style="background:#fff7ed; color:#ea580c; border:1px solid #ffedd5; font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; display:inline-flex; align-items:center; gap:6px;"><span style="font-size:8px;">●</span> Diminta Revisi</span>';
                     } elseif ($vStatus === 'REJECTED' || $vStatus === 'FULL_DISABLED') {
                         $headerStatusBadge = '<span class="pill-badge rejected" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; display:inline-flex; align-items:center; gap:6px;"><span style="font-size:8px;">●</span> Ditolak</span>';
                     } else {
@@ -2772,7 +2772,7 @@ document.addEventListener('click', function(e) {
                                         } elseif ($vStatus === 'NEEDS_REVISION') {
                                             $revNum = (int)($emp['revision_count'] ?? ($emp['rejection_count'] ?? 1));
                                             $revNum = max(1, min(3, $revNum));
-                                            $badgeHtml = '<span class="pill-badge revision" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Revisi Diminta (ke-' . $revNum . ')</span>';
+                                            $badgeHtml = '<span class="pill-badge revision" style="background:#fff7ed; color:#ea580c; border:1px solid #ffedd5; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Diminta Revisi (ke-' . $revNum . ')</span>';
                                         } elseif ($vStatus === 'REJECTED' || $vStatus === 'FULL_DISABLED') {
                                             $badgeHtml = '<span class="pill-badge rejected" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Ditolak</span>';
                                         } else {
@@ -3109,7 +3109,7 @@ document.addEventListener('click', function(e) {
                                             $statusClass = 'revision';
                                             $revNum = (int)($selectedEmployer['revision_count'] ?? ($selectedEmployer['rejection_count'] ?? 1));
                                             $revNum = max(1, min(3, $revNum));
-                                            $statusLabel = "Revisi Diminta (ke-{$revNum})";
+                                            $statusLabel = "Diminta Revisi (ke-{$revNum})";
                                         } elseif ($status === 'APPROVED') {
                                             $statusClass = 'verified';
                                             $statusLabel = 'Terverifikasi';
@@ -3126,7 +3126,7 @@ document.addEventListener('click', function(e) {
                                         $isDinasFlow = ($isRevisionStatus && ($revNum >= 3 || in_array($selectedEmployer['manual_review_status'] ?? '', ['MANUAL_DINAS_REVIEW', 'CONSENT_PENDING', 'CONSENT_GIVEN', 'INVALID'])));
                                         $isAdminPusat = ($user['role'] === 'admin' || $user['role'] === 'admin_pusat' || strcasecmp((string)$user['name'], 'Admin Pusat') === 0);
                                     ?>
-                                    <span class="pill-badge <?php echo $statusClass; ?>" style="<?php echo $isRevisionStatus ? 'background:#fef3c7; color:#d97706; border:1px solid #fde68a;' : ''; ?>">
+                                    <span class="pill-badge <?php echo $statusClass; ?>" style="<?php echo $isRevisionStatus ? 'background:#fff7ed; color:#ea580c; border:1px solid #ffedd5;' : ($statusClass === 'pending' ? 'background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;' : ''); ?>">
                                         ● <?php echo e($statusLabel); ?>
                                     </span>
                                 </div>
@@ -4472,16 +4472,16 @@ document.addEventListener('click', function(e) {
                                             <td style="padding:14px 16px; color:#334155; font-size:13px;"><?php echo e($vEmp['phone'] ?: '0'); ?></td>
                                             <td style="padding:14px 16px; font-size:13px; white-space:nowrap;">
                                                 <?php if ($vEmp['verification_status'] === 'APPROVED'): ?>
-                                                    <span class="pill-badge verified">● Terverifikasi</span>
+                                                    <span class="pill-badge verified" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;">● Terverifikasi</span>
                                                 <?php elseif ($vEmp['verification_status'] === 'PENDING'): ?>
-                                                    <span class="pill-badge pending">● Menunggu</span>
+                                                    <span class="pill-badge pending" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd;">● Dikirim</span>
                                                 <?php elseif (in_array($vEmp['verification_status'], ['NEEDS_REVISION', 'REVISION'])): ?>
                                                     <?php $revCount = max(1, min(3, (int)($vEmp['revision_count'] ?? $vEmp['rejection_count'] ?? 1))); ?>
-                                                    <span class="pill-badge revision">● Revisi Diminta (ke-<?php echo $revCount; ?>)</span>
+                                                    <span class="pill-badge revision" style="background:#fff7ed; color:#ea580c; border:1px solid #ffedd5;">● Diminta Revisi (ke-<?php echo $revCount; ?>)</span>
                                                 <?php elseif ($vEmp['verification_status'] === 'REJECTED'): ?>
-                                                    <span class="pill-badge danger">● Ditolak</span>
+                                                    <span class="pill-badge danger" style="background:#fef2f2; color:#dc2626; border:1px solid #fee2e2;">● Ditolak</span>
                                                 <?php else: ?>
-                                                    <span class="pill-badge revision">● <?php echo e($vEmp['verification_status']); ?></span>
+                                                    <span class="pill-badge revision" style="background:#fff7ed; color:#ea580c; border:1px solid #ffedd5;">● <?php echo e($vEmp['verification_status']); ?></span>
                                                 <?php endif; ?>
                                             </td>
                                             <td style="padding:14px 16px; color:#64748b; font-size:13px;">-</td>

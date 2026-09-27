@@ -6027,18 +6027,21 @@ html.dark-theme .profile-field-block .pfl-value {
 }
 
 .pill-badge.pending {
-    background: #fff7ed;
-    color: #ea580c;
+    background: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
 }
 
 .pill-badge.revision {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #ffedd5;
 }
 
 .pill-badge.rejected, .pill-badge.danger {
     background: #fef2f2;
     color: #dc2626;
+    border: 1px solid #fee2e2;
 }
 
 .pill-badge.suspended {
