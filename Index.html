@@ -3948,6 +3948,11 @@
     </div>
 
     <!-- ─── MODAL USER CONSENT PEMBERI KERJA INDIVIDU (JALUR DINAS) ─────────── -->
+    <?php
+    $isVerifiedModal = in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true);
+    $manualStatusModal = $profile['manual_review_status'] ?? '';
+    $isConsentAlreadyGiven = ($manualStatusModal === 'CONSENT_GIVEN' || $isVerifiedModal || !empty($profile['consent_agreed']));
+    ?>
     <div class="modal-backdrop" data-modal="modal-user-consent">
         <div class="modal-panel" style="width:min(600px, 95vw); max-height:calc(100vh - 40px); border-radius:16px; overflow-y:auto; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
             <div class="modal-header" style="background:#f0f9ff; border-bottom:1px solid #bae6fd; padding:18px 24px 16px; display:flex; justify-content:space-between; align-items:flex-start;">
@@ -3963,6 +3968,16 @@
             </div>
             <form method="post" action="dashboard.php" style="margin:0;">
                 <div class="modal-body" style="padding:20px 24px 24px; font-size:13px; color:#334155;">
+                    <?php if ($isVerifiedModal): ?>
+                        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px 16px; margin-bottom:16px; color:#15803d; font-weight:600; display:flex; align-items:center; gap:8px; font-size:13px;">
+                            <i class="fa-solid fa-circle-check" style="font-size:16px;"></i> Akun Anda telah Terverifikasi. Persetujuan profil telah selesai.
+                        </div>
+                    <?php elseif ($manualStatusModal === 'CONSENT_GIVEN' || !empty($profile['consent_agreed'])): ?>
+                        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px 16px; margin-bottom:16px; color:#15803d; font-weight:600; display:flex; align-items:center; gap:8px; font-size:13px;">
+                            <i class="fa-solid fa-circle-check" style="font-size:16px;"></i> Persetujuan (User Consent) telah Anda berikan<?php echo !empty($profile['consent_given_at']) ? ' pada ' . date('d M Y, H:i', strtotime($profile['consent_given_at'])) . ' WIB' : ''; ?>. Menunggu verifikasi Petugas Dinas.
+                        </div>
+                    <?php endif; ?>
+
                     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; margin-bottom:16px;">
                         <div style="font-size:12px; font-weight:700; color:#0f172a; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
                             <i class="fa-solid fa-list-check" style="color:#0284c7;"></i> Rincian Pengajuan Ulang Profil
@@ -4007,8 +4022,13 @@
                     <!-- CHECKBOX CONSENT -->
                     <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; padding:12px 16px; margin-bottom:20px;">
                         <label style="display:flex; align-items:center; gap:12px; font-weight:700; color:#0f172a; font-size:13.5px; cursor:pointer; margin:0;">
-                            <input type="checkbox" id="checkUserConsentPki" name="user_consent_agreed" value="1" required onchange="var b=document.getElementById('btnSubmitUserConsentPki'); b.disabled = !this.checked; b.style.opacity = this.checked ? '1' : '0.55'; b.style.cursor = this.checked ? 'pointer' : 'not-allowed';" style="width:18px; height:18px; cursor:pointer; accent-color:#0284c7;">
-                            <span>Saya menyetujui pernyataan di atas</span>
+                            <?php if ($isConsentAlreadyGiven): ?>
+                                <input type="checkbox" checked disabled style="width:18px; height:18px; cursor:not-allowed; accent-color:#16a34a;">
+                                <span style="color:#166534;">Saya menyetujui pernyataan di atas (Sudah Disetujui)</span>
+                            <?php else: ?>
+                                <input type="checkbox" id="checkUserConsentPki" name="user_consent_agreed" value="1" required onchange="var b=document.getElementById('btnSubmitUserConsentPki'); b.disabled = !this.checked; b.style.opacity = this.checked ? '1' : '0.55'; b.style.cursor = this.checked ? 'pointer' : 'not-allowed';" style="width:18px; height:18px; cursor:pointer; accent-color:#0284c7;">
+                                <span>Saya menyetujui pernyataan di atas</span>
+                            <?php endif; ?>
                         </label>
                     </div>
 
@@ -4017,9 +4037,15 @@
                         <button type="button" class="ghost-btn" data-close-modal="modal-user-consent" style="background:#ffffff; border:1.5px solid #cbd5e1; color:#334155; height:40px; padding:0 20px; font-weight:600; border-radius:8px; font-size:13.5px; cursor:pointer; transition:all 0.15s ease;">
                             Tutup
                         </button>
-                        <button type="submit" name="give_manual_dinas_consent" id="btnSubmitUserConsentPki" value="1" disabled class="primary-btn" style="background:#0284c7; color:#ffffff; padding:0 22px; height:40px; font-weight:700; border-radius:8px; border:none; display:inline-flex; align-items:center; gap:8px; font-size:13.5px; cursor:not-allowed; opacity:0.55; box-shadow:0 2px 4px rgba(2, 132, 199, 0.2); transition:all 0.15s ease;">
-                            <i class="fa-solid fa-check"></i> Kirim Persetujuan
-                        </button>
+                        <?php if ($isConsentAlreadyGiven): ?>
+                            <button type="button" disabled class="primary-btn" style="background:#16a34a; color:#ffffff; padding:0 22px; height:40px; font-weight:700; border-radius:8px; border:none; display:inline-flex; align-items:center; gap:8px; font-size:13.5px; cursor:not-allowed; opacity:0.9;">
+                                <i class="fa-solid fa-circle-check"></i> Persetujuan Sudah Dikirim
+                            </button>
+                        <?php else: ?>
+                            <button type="submit" name="give_manual_dinas_consent" id="btnSubmitUserConsentPki" value="1" disabled class="primary-btn" style="background:#0284c7; color:#ffffff; padding:0 22px; height:40px; font-weight:700; border-radius:8px; border:none; display:inline-flex; align-items:center; gap:8px; font-size:13.5px; cursor:not-allowed; opacity:0.55; box-shadow:0 2px 4px rgba(2, 132, 199, 0.2); transition:all 0.15s ease;">
+                                <i class="fa-solid fa-check"></i> Kirim Persetujuan
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </form>
@@ -4126,10 +4152,26 @@
                 <button type="button" class="ghost-btn" data-close-modal="modal-notifications">×</button>
             </div>
             <div class="list" style="max-height:300px; overflow-y:auto;">
-                <?php if (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING'): ?>
+                <?php
+                $isVerifiedAcc = in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true);
+                $manualStatusNotif = $profile['manual_review_status'] ?? '';
+                $isConsentPendingNotif = ($manualStatusNotif === 'CONSENT_PENDING' && !$isVerifiedAcc);
+                $isConsentGivenNotif = ($manualStatusNotif === 'CONSENT_GIVEN' && !$isVerifiedAcc);
+                ?>
+                <?php if ($isConsentPendingNotif): ?>
                     <div class="list-item" style="background:#eff6ff; border-color:#bfdbfe; cursor:pointer;" data-close-modal="modal-notifications" data-open-modal="modal-user-consent">
                         <strong style="color:#0284c7; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-file-signature"></i> Persetujuan Data Diperlukan (Jalur Dinas)</strong>
                         <div class="tiny" style="color:#1e40af; margin-top:3px;">Petugas Dinas telah menyiapkan data perbaikan profil Anda. Klik di sini untuk meninjau dan menyetujui (User Consent).</div>
+                    </div>
+                <?php elseif ($isConsentGivenNotif): ?>
+                    <div class="list-item" style="background:#f0fdf4; border-color:#bbf7d0;">
+                        <strong style="color:#15803d; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-circle-check"></i> Persetujuan Profil Telah Dikirim</strong>
+                        <div class="tiny" style="color:#166534; margin-top:3px;">Persetujuan (User Consent) Anda telah diterima<?php echo !empty($profile['consent_given_at']) ? ' pada ' . date('d M Y, H:i', strtotime($profile['consent_given_at'])) . ' WIB' : ''; ?>. Menunggu peninjauan verifikasi Petugas Dinas.</div>
+                    </div>
+                <?php elseif ($isVerifiedAcc): ?>
+                    <div class="list-item" style="background:#f0fdf4; border-color:#bbf7d0;">
+                        <strong style="color:#15803d; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-circle-check"></i> Status Profil Terverifikasi</strong>
+                        <div class="tiny" style="color:#166534; margin-top:3px;">Akun Pemberi Kerja Individu Anda telah disetujui dan terverifikasi oleh Petugas Dinas.</div>
                     </div>
                 <?php endif; ?>
                 <div class="list-item">

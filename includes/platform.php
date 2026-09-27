@@ -567,16 +567,19 @@ function job_to_form_data(array $job): array
     ];
 }
 
-function render_notif_dropdown(array $notifications, int $unread): string
+function render_notif_dropdown(array $notifications, int $unread, string $verStatus = '', string $manualStatus = ''): string
 {
     $items = '';
     if (!$notifications) {
         $items = '<div class="notif-empty">Belum ada notifikasi.</div>';
     } else {
+        $isVerified = in_array($verStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true);
         foreach ($notifications as $row) {
             $unreadClass = empty($row['is_read']) ? ' unread' : '';
-            $isConsent = (stripos($row['title'], 'Persetujuan') !== false || stripos($row['title'], 'Consent') !== false);
-            $modalAttr = $isConsent ? ' data-open-modal="modal-user-consent" style="cursor:pointer;"' : '';
+            $isConsentTitle = (stripos($row['title'], 'Persetujuan') !== false || stripos($row['title'], 'Consent') !== false);
+            // Hanya izinkan modal-user-consent jika manualStatus === 'CONSENT_PENDING' dan belum terverifikasi
+            $canOpenConsent = ($isConsentTitle && $manualStatus === 'CONSENT_PENDING' && !$isVerified);
+            $modalAttr = $canOpenConsent ? ' data-open-modal="modal-user-consent" style="cursor:pointer;"' : '';
             $items .= '<div class="notif-item' . $unreadClass . '"' . $modalAttr . '>';
             $items .= '<strong>' . e($row['title']) . '</strong>';
             $items .= '<p>' . e($row['message']) . '</p>';

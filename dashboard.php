@@ -918,6 +918,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             redirect('dashboard.php');
             exit;
         }
+        if (in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true)) {
+            flash('info', 'Profil Anda telah terverifikasi oleh Petugas Dinas. Persetujuan consent tidak diperlukan lagi.');
+            redirect('dashboard.php');
+            exit;
+        }
         $stmtEmp = db()->prepare('SELECT * FROM employer_profiles WHERE user_id = ? LIMIT 1');
         $stmtEmp->execute([$user['id']]);
         $emp = $stmtEmp->fetch();
@@ -932,6 +937,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             }
             record_audit_log('employer', $user['id'], 'CONSENT_GIVEN', 'Pemohon telah membaca dan menyetujui perubahan data profil yang diajukan oleh Petugas Dinas.', $user['name'], 'employer');
             flash('success', 'Terima kasih! Persetujuan (Consent) Anda telah berhasil diberikan. Petugas Dinas akan segera menyelesaikan verifikasi dan mengaktifkan akun Anda.');
+        } elseif ($emp && ($emp['manual_review_status'] === 'CONSENT_GIVEN' || !empty($emp['consent_agreed']))) {
+            flash('info', 'Persetujuan (Consent) Anda sudah pernah dikirim sebelumnya dan sedang diproses Petugas Dinas.');
         } else {
             flash('error', 'Status permohonan consent tidak valid atau telah diperbarui.');
         }
@@ -2409,7 +2416,7 @@ if (!$applicants) {
 
 $notifications = user_notifications((int) $user['id']);
 $unread = unread_notification_count((int) $user['id']);
-$html = str_replace('<div class="notif"><i class="fa-regular fa-bell"></i></div>', render_notif_dropdown($notifications, $unread), $html);
+$html = str_replace('<div class="notif"><i class="fa-regular fa-bell"></i></div>', render_notif_dropdown($notifications, $unread, $verificationStatus, $profile['manual_review_status'] ?? ''), $html);
 $html = preg_replace('/<h3>Draft<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Draft</h3><div class="value">' . $jobCounts['Draft'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Dikirim<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Dikirim</h3><div class="value">' . $jobCounts['Menunggu Verifikasi'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Perlu Direvisi</h3><div class="value">' . $jobCounts['Perlu Direvisi'] . '</div>', $html, 1);
