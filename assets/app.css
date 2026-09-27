@@ -2568,13 +2568,14 @@ html.dark-theme .brand-text p {
 
 .pki-grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 16px;
+    width: 100%;
 }
 @media (max-width: 640px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -2582,6 +2583,7 @@ html.dark-theme .brand-text p {
     margin-bottom: 16px;
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 .pki-field-label {
     display: flex;
@@ -6126,13 +6128,14 @@ html.dark-theme .profile-field-block .pfl-value {
 /* Grid & Layout */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 16px 20px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
 }
 @media (max-width: 768px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 14px !important;
     }
 }
@@ -6602,13 +6605,14 @@ html.dark-theme .profile-field-block .pfl-value {
 /* Grid & Layout */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 16px 20px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
 }
 @media (max-width: 768px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 14px !important;
     }
 }
@@ -7114,13 +7118,14 @@ html.dark-theme .profile-field-block .pfl-value {
 /* Grid & Layout */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 16px 20px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
 }
 @media (max-width: 768px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 14px !important;
     }
 }
@@ -7147,6 +7152,8 @@ html.dark-theme .profile-field-block .pfl-value {
     flex-direction: column !important;
     margin-bottom: 16px !important;
     position: relative !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
 }
 .pki-field-label {
     display: flex !important;

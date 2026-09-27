@@ -180,13 +180,16 @@ a {
 /* Grid & Fields */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px 16px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 @media (max-width: 700px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 10px !important;
     }
 }
@@ -196,6 +199,9 @@ a {
     flex-direction: column !important;
     margin-bottom: 12px !important;
     position: relative !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 .pki-field-label {
     display: flex !important;
@@ -526,31 +532,48 @@ a {
     transition: border-color 0.15s ease !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
 }
 .pki-upload-box:hover {
     border-color: #0284c7 !important;
 }
 .pki-upload-text {
-    flex: 1 1 auto !important;
+    flex: 1 1 0% !important;
     min-width: 0 !important;
+    max-width: 100% !important;
     font-size: 12px !important;
     color: #64748b !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
     gap: 6px !important;
+}
+.pki-upload-text i {
+    flex-shrink: 0 !important;
+    font-size: 13px !important;
 }
 .pki-upload-text > span {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 0% !important;
+    display: block !important;
 }
 .pki-upload-text.has-file {
     color: #0f172a !important;
     font-weight: 600 !important;
+}
+.pki-upload-box > div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
 }
 .pki-upload-btn {
     height: 28px !important;
