@@ -3922,18 +3922,26 @@
                     </div>
                 <?php endif; ?>
             </div>
-            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; background:#f8fafc; border-top:1px solid #f1f5f9;">
-                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; height:38px; padding:0 20px; font-weight:600; border-radius:8px; font-size:13px; cursor:pointer;">
-                    Tutup
-                </button>
-                <?php if (!$isMaxRevModal): ?>
-                    <button type="button" class="primary-btn" style="background:#dc2626; color:#ffffff; height:38px; padding:0 20px; font-weight:700; border-radius:8px; font-size:13px; border:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">
-                        <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil Sekarang
+            <div class="modal-footer" style="padding:16px 24px; background:#f8fafc; border-top:1px solid #f1f5f9;">
+                <?php if ($isMaxRevModal && ($profile['manual_review_status'] ?? '') !== 'CONSENT_PENDING'): ?>
+                    <button type="button" class="primary-btn" data-close-modal="modal-verification-result" style="width:100%; background:#0284c7; color:#ffffff; height:42px; font-size:13.5px; font-weight:700; border-radius:8px; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                        Saya Mengerti
                     </button>
-                <?php elseif (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING'): ?>
-                    <button type="button" class="primary-btn" style="background:#0284c7; color:#ffffff; height:38px; padding:0 20px; font-weight:700; border-radius:8px; font-size:13px; border:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;" data-close-modal="modal-verification-result" data-open-modal="modal-user-consent">
-                        <i class="fa-solid fa-signature"></i> Tinjau & Berikan Persetujuan
-                    </button>
+                <?php else: ?>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; width:100%;">
+                        <button type="button" class="ghost-btn" data-close-modal="modal-verification-result" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; height:40px; padding:0 20px; font-weight:600; border-radius:8px; font-size:13.5px; cursor:pointer;">
+                            Tutup
+                        </button>
+                        <?php if (!$isMaxRevModal): ?>
+                            <button type="button" class="primary-btn" style="background:#dc2626; color:#ffffff; height:40px; padding:0 20px; font-weight:700; border-radius:8px; font-size:13.5px; border:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">
+                                <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil Sekarang
+                            </button>
+                        <?php elseif (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING'): ?>
+                            <button type="button" class="primary-btn" style="background:#0284c7; color:#ffffff; height:40px; padding:0 20px; font-weight:700; border-radius:8px; font-size:13.5px; border:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;" data-close-modal="modal-verification-result" data-open-modal="modal-user-consent">
+                                <i class="fa-solid fa-signature"></i> Tinjau & Berikan Persetujuan
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
