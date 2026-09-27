@@ -3306,13 +3306,19 @@ function openConfirmCloseJobModal(jobId) {
     const modal = document.getElementById('modalConfirmCloseJob');
     const inputJobId = document.getElementById('modalCloseJobId');
     if (inputJobId && jobId) inputJobId.value = jobId;
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('open');
+    }
 }
 window.openConfirmCloseJobModal = openConfirmCloseJobModal;
 
 function closeConfirmCloseJobModal() {
     const modal = document.getElementById('modalConfirmCloseJob');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('open');
+    }
 }
 window.closeConfirmCloseJobModal = closeConfirmCloseJobModal;
 

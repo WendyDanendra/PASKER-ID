@@ -2543,48 +2543,14 @@ if (!str_contains($html, 'window.testCloseJob')) {
     $html = str_replace('</body>', <<<'JS'
     <script>
     window.testCloseJob = function(jobId, sisaKuota) {
-        document.getElementById("close_job_id").value = jobId;
-        document.getElementById("close_sisa_kuota").value = sisaKuota;
-        if (parseInt(sisaKuota, 10) <= 0) {
-            let form = document.getElementById("direct_close_form");
-            if (!form) {
-                form = document.createElement("form");
-                form.id = "direct_close_form";
-                form.method = "POST";
-                form.action = "dashboard.php#lowongan";
-                
-                const inputClose = document.createElement("input");
-                inputClose.type = "hidden";
-                inputClose.name = "close_job";
-                inputClose.value = "1";
-                form.appendChild(inputClose);
-                
-                const inputJobId = document.createElement("input");
-                inputJobId.type = "hidden";
-                inputJobId.name = "job_id";
-                inputJobId.id = "direct_close_job_id";
-                form.appendChild(inputJobId);
-                
-                const inputSisa = document.createElement("input");
-                inputSisa.type = "hidden";
-                inputSisa.name = "sisa_kuota";
-                inputSisa.value = "0";
-                form.appendChild(inputSisa);
-
-                const inputRepost = document.createElement("input");
-                inputRepost.type = "hidden";
-                inputRepost.name = "repost";
-                inputRepost.value = "0";
-                form.appendChild(inputRepost);
-
-                document.body.appendChild(form);
-            }
-            document.getElementById("direct_close_job_id").value = jobId;
-            form.submit();
-            return;
+        if (typeof openConfirmCloseJobModal === 'function') {
+            openConfirmCloseJobModal(jobId);
+        } else {
+            const modal = document.getElementById('modalConfirmCloseJob');
+            const inputJobId = document.getElementById('modalCloseJobId');
+            if (inputJobId && jobId) inputJobId.value = jobId;
+            if (modal) modal.style.display = 'flex';
         }
-        const modal = document.querySelector("[data-modal='job-close']");
-        if (modal) modal.classList.add("open");
     };
     </script>
 </body>

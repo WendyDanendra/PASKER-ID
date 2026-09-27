@@ -3526,34 +3526,7 @@
                     </div>
                 </div>
 
-                <!-- MODAL POP-UP KONFIRMASI TUTUP LOWONGAN (Gambar 2) -->
-                <div class="modal-backdrop" id="modalConfirmCloseJob" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.5); backdrop-filter:blur(2px); z-index:100000; align-items:center; justify-content:center;">
-                    <div style="background:#fff; border-radius:16px; width:min(440px, 92vw); box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); padding:24px; position:relative; overflow:hidden;">
-                        <!-- Header -->
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                            <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Konfirmasi</h3>
-                            <button type="button" onclick="closeConfirmCloseJobModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        
-                        <!-- Body -->
-                        <div style="font-size:13.5px; color:#334155; line-height:1.6; margin-bottom:24px;">
-                            Lowongan yang ditutup tidak akan menerima lamaran baru lagi, namun data pelamarnya tetap dapat dilihat. Anda dapat membuka kembali lowongan ini kapan saja. Tutup lowongan ini?
-                        </div>
-                        
-                        <!-- Action Form -->
-                        <form method="post" action="dashboard.php#lowongan" id="formConfirmCloseJob">
-                            <input type="hidden" name="close_job" value="1">
-                            <input type="hidden" name="job_id" id="modalCloseJobId" value="<?php echo (int)($detailJob['id'] ?? 0); ?>">
-                            <input type="hidden" name="sisa_kuota" value="0">
-                            <input type="hidden" name="repost" value="0">
 
-                            <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
-                                <button type="button" onclick="closeConfirmCloseJobModal()" style="padding:8px 20px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer;">Batalkan</button>
-                                <button type="submit" style="padding:8px 22px; border:none; background:#ef4444; color:#fff; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(239,68,68,0.25);">Lanjutkan</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
                 <!-- MODAL POP-UP KONFLIK KBJI -->
                 <?php
@@ -4459,48 +4432,7 @@
     <script>
     // Feature-specific handler: Tutup Lowongan
     window.testCloseJob = function(jobId, sisaKuota) {
-        document.getElementById("close_job_id").value = jobId;
-        document.getElementById("close_sisa_kuota").value = sisaKuota;
-        if (parseInt(sisaKuota, 10) <= 0) {
-            let form = document.getElementById("direct_close_form");
-            if (!form) {
-                form = document.createElement("form");
-                form.id = "direct_close_form";
-                form.method = "POST";
-                form.action = "dashboard.php#lowongan";
-
-                const inputClose = document.createElement("input");
-                inputClose.type = "hidden";
-                inputClose.name = "close_job";
-                inputClose.value = "1";
-                form.appendChild(inputClose);
-
-                const inputJobId = document.createElement("input");
-                inputJobId.type = "hidden";
-                inputJobId.name = "job_id";
-                inputJobId.id = "direct_close_job_id";
-                form.appendChild(inputJobId);
-
-                const inputSisa = document.createElement("input");
-                inputSisa.type = "hidden";
-                inputSisa.name = "sisa_kuota";
-                inputSisa.value = "0";
-                form.appendChild(inputSisa);
-
-                const inputRepost = document.createElement("input");
-                inputRepost.type = "hidden";
-                inputRepost.name = "repost";
-                inputRepost.value = "0";
-                form.appendChild(inputRepost);
-
-                document.body.appendChild(form);
-            }
-            document.getElementById("direct_close_job_id").value = jobId;
-            form.submit();
-            return;
-        }
-        const modal = document.querySelector("[data-modal='job-close']");
-        if (modal) modal.classList.add("open");
+        openConfirmCloseJobModal(jobId);
     };
 
     // Feature-specific handler: Toggle More Applicants
@@ -4519,8 +4451,6 @@
         }
     }
     window.toggleMoreApplicants = toggleMoreApplicants;
-        }
-    });
 
     // Feature-specific handler: Filter Lowongan Table
     window.filterJobsTable = function() {
@@ -4563,5 +4493,34 @@
         rows.forEach(row => tbody.appendChild(row));
     };
     </script>
+
+    <!-- MODAL POP-UP KONFIRMASI TUTUP LOWONGAN (Gambar 2) -->
+    <div class="modal-backdrop" id="modalConfirmCloseJob" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.5); backdrop-filter:blur(2px); z-index:100000; align-items:center; justify-content:center;" onclick="if(event.target===this) closeConfirmCloseJobModal()">
+        <div style="background:#fff; border-radius:16px; width:min(440px, 92vw); box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); padding:24px; position:relative; overflow:hidden;" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Konfirmasi</h3>
+                <button type="button" onclick="closeConfirmCloseJobModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <!-- Body -->
+            <div style="font-size:13.5px; color:#334155; line-height:1.6; margin-bottom:24px;">
+                Lowongan yang ditutup tidak akan menerima lamaran baru lagi, namun data pelamarnya tetap dapat dilihat. Anda dapat membuka kembali lowongan ini kapan saja. Tutup lowongan ini?
+            </div>
+            
+            <!-- Action Form -->
+            <form method="post" action="dashboard.php#lowongan" id="formConfirmCloseJob">
+                <input type="hidden" name="close_job" value="1">
+                <input type="hidden" name="job_id" id="modalCloseJobId" value="<?php echo (int)($detailJob['id'] ?? 0); ?>">
+                <input type="hidden" name="sisa_kuota" value="0">
+                <input type="hidden" name="repost" value="0">
+
+                <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
+                    <button type="button" onclick="closeConfirmCloseJobModal()" style="padding:8px 20px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer;">Batalkan</button>
+                    <button type="submit" style="padding:8px 22px; border:none; background:#ef4444; color:#fff; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(239,68,68,0.25);">Lanjutkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
