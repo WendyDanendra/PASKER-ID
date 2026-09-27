@@ -3255,77 +3255,9 @@
                                                      </div>
                                                  </div>
 
-                                                <!-- MODAL EDIT DRAFT LOWONGAN -->
-                                                <div class="modal-backdrop" data-modal="edit-job-<?php echo $j['id']; ?>">
-                                                    <div class="modal-panel" style="width:min(640px, 95vw);">
-                                                        <form method="post" action="dashboard.php#lowongan">
-                                                            <input type="hidden" name="update_job" value="1">
-                                                            <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
-                                                            <div class="modal-header">
-                                                                <div>
-                                                                    <div class="modal-title">Edit Draft Lowongan</div>
-                                                                    <div class="modal-subtitle">Perbarui informasi lowongan sebelum dikirim</div>
-                                                                </div>
-                                                                <button type="button" class="ghost-btn" data-close-modal="edit-job-<?php echo $j['id']; ?>">×</button>
-                                                            </div>
-                                                            <div class="modal-body" style="font-size:13px; color:#334155; display:grid; gap:12px;">
-                                                                <div>
-                                                                    <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Judul Lowongan *</label>
-                                                                    <input type="text" name="title" class="form-control" value="<?php echo e($j['title']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                </div>
-                                                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                                                                    <div>
-                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Lokasi Penempatan *</label>
-                                                                        <input type="text" name="location" class="form-control" value="<?php echo e($j['location']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                    </div>
-                                                                    <div>
-                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Jenis Pekerjaan *</label>
-                                                                        <select name="job_type" class="form-control" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                            <option value="Full Time" <?php echo $j['job_type'] === 'Full Time' ? 'selected' : ''; ?>>Full Time</option>
-                                                                            <option value="Part Time" <?php echo $j['job_type'] === 'Part Time' ? 'selected' : ''; ?>>Part Time</option>
-                                                                            <option value="Kontrak" <?php echo $j['job_type'] === 'Kontrak' ? 'selected' : ''; ?>>Kontrak</option>
-                                                                            <option value="Harian" <?php echo $j['job_type'] === 'Harian' ? 'selected' : ''; ?>>Harian</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                                                                    <div>
-                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Bidang Pekerjaan *</label>
-                                                                        <input type="text" name="industry" class="form-control" value="<?php echo e($j['industry']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                    </div>
-                                                                    <div>
-                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Kode KBJI *</label>
-                                                                        <input type="text" name="kbji_code" class="form-control" value="<?php echo e($j['kbji_code']); ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                    </div>
-                                                                </div>
-                                                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                                                                    <div>
-                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Pendidikan Minimal</label>
-                                                                        <input type="text" name="min_education" class="form-control" value="<?php echo e($j['min_education'] ?? ''); ?>" placeholder="Misal: SMA / SMK" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                    </div>
-                                                                    <div>
-                                                                        <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Minimum Pengalaman</label>
-                                                                        <input type="text" name="min_experience" class="form-control" value="<?php echo e($j['min_experience'] ?? ''); ?>" placeholder="Misal: 1 tahun" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                    </div>
-                                                                </div>
-                                                                <div>
-                                                                    <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Kuota Posisi Tersedia *</label>
-                                                                    <input type="number" name="quota" min="1" class="form-control" value="<?php echo (int)$j['quota']; ?>" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px;">
-                                                                </div>
-                                                                <div>
-                                                                    <label class="form-label" style="font-weight:600; font-size:12px; margin-bottom:4px; display:block;">Deskripsi Pekerjaan *</label>
-                                                                    <textarea name="description" rows="4" class="form-control" required style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-family:inherit;"><?php echo e($j['description']); ?></textarea>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
-                                                                <button type="button" class="ghost-btn" data-close-modal="edit-job-<?php echo $j['id']; ?>">Batal</button>
-                                                                <button type="submit" class="primary-btn" style="background:#0284c7;">Simpan Perubahan</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                 <!-- DRAFT DETAIL / ACTION ACTIONS -->
+                                             </td>
+                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
@@ -3425,8 +3357,14 @@
                 function openEditJobFromConflict(draftId) {
                     const conflictModal = document.querySelector('[data-modal="kbji-conflict"]');
                     if (conflictModal) conflictModal.classList.remove('open');
-                    const editModal = document.querySelector('[data-modal="edit-job-' + draftId + '"]');
-                    if (editModal) editModal.classList.add('open');
+                    if (!draftId) return;
+
+                    // Trigger standard multi-step Posting Lowongan modal in edit/prefilled mode
+                    const dummyBtn = document.createElement('button');
+                    dummyBtn.dataset.editDraft = String(draftId);
+                    document.body.appendChild(dummyBtn);
+                    dummyBtn.click();
+                    dummyBtn.remove();
                 }
                 </script>
                 <div class="section-card" style="margin-top:16px">
