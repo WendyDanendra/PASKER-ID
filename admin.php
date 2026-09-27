@@ -5433,12 +5433,12 @@ document.addEventListener('click', function(e) {
                                             ?>
                                                 <div id="<?php echo $slug; ?>_card" style="border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; background:#ffffff; transition:all 0.2s ease;">
                                                     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                                                        <span id="<?php echo $slug; ?>_label" style="font-size:13px; font-weight:<?php echo $isNonCompliant ? '700' : '500'; ?>; color:#1e293b;">
+                                                        <span id="<?php echo $slug; ?>_label" data-cat-name="<?php echo e($cat); ?>" style="font-size:13px; font-weight:<?php echo $isNonCompliant ? '700' : '500'; ?>; color:#1e293b;">
                                                             <?php echo e($cat); ?><?php if ($isNonCompliant): ?> <span style="color:#ef4444;">*</span><?php endif; ?>
                                                         </span>
                                                         <label class="switch-toggle" style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer; flex-shrink:0;">
                                                             <input type="checkbox" id="<?php echo $slug; ?>_toggle" onchange="handleComplianceToggle('<?php echo $slug; ?>', '<?php echo addslashes($cat); ?>')" <?php echo $isNonCompliant ? 'checked' : ''; ?> style="opacity:0; width:0; height:0;">
-                                                            <span class="custom-toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:<?php echo $isNonCompliant ? '#00a8e8' : '#cbd5e1'; ?>; transition:.25s; border-radius:24px;"></span>
+                                                            <span class="custom-toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; transition:.25s; border-radius:24px;"></span>
                                                         </label>
                                                         <input type="hidden" name="<?php echo $slug; ?>_status" id="<?php echo $slug; ?>_status" value="<?php echo $isNonCompliant ? 'Tidak Patuh' : 'Patuh'; ?>">
                                                     </div>
@@ -5577,6 +5577,9 @@ document.addEventListener('click', function(e) {
                     }
                     .side-panel-content {
                         animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    }
+                    .custom-toggle-slider {
+                        background-color: #cbd5e1;
                     }
                     .custom-toggle-slider:before {
                         position: absolute;
@@ -5881,7 +5884,8 @@ document.addEventListener('click', function(e) {
                             if (noteWrapper) noteWrapper.style.display = 'none';
                             if (noteArea) noteArea.value = '';
                             if (label) {
-                                label.innerHTML = label.textContent.replace('*', '').trim();
+                                const catName = label.getAttribute('data-cat-name') || label.textContent.replace('*', '').trim();
+                                label.innerHTML = catName;
                                 label.style.fontWeight = '500';
                             }
                         });
@@ -5931,13 +5935,15 @@ document.addEventListener('click', function(e) {
                         updateButtonAndNotesState();
                     }
 
-                    function handleComplianceToggle(slug, catName) {
+                    function handleComplianceToggle(slug, catNameParam) {
                         const toggle = document.getElementById(slug + '_toggle');
                         const isChecked = toggle ? toggle.checked : false;
                         const statusInput = document.getElementById(slug + '_status');
                         const noteWrapper = document.getElementById(slug + '_note_wrapper');
                         const label = document.getElementById(slug + '_label');
                         const noteTextarea = document.getElementById(slug + '_note');
+
+                        const catName = (label && label.getAttribute('data-cat-name')) ? label.getAttribute('data-cat-name') : catNameParam;
 
                         if (statusInput) {
                             statusInput.value = isChecked ? 'Tidak Patuh' : 'Patuh';
