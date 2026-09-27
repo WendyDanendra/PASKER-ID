@@ -260,9 +260,9 @@ if (file_exists($pkiCssPath)) {
             <div class="pki-upload-box" id="pki_box_permit_document" onclick="pkiTriggerUpload('permit_document')">
                 <span class="pki-upload-text <?php echo !empty($vPermitDoc) ? 'has-file' : ''; ?>" id="pki_text_permit_document">
                     <?php if (!empty($vPermitDoc)): ?>
-                        <i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> <?php echo e(basename($vPermitDoc)); ?>
+                        <i class="fa-solid fa-file-pdf" style="color:#ef4444; flex-shrink:0;"></i> <span class="pki-upload-filename"><?php echo e(basename($vPermitDoc)); ?></span>
                     <?php else: ?>
-                        Pilih file untuk diunggah
+                        <span>Pilih file untuk diunggah</span>
                     <?php endif; ?>
                 </span>
                 <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
@@ -291,9 +291,9 @@ if (file_exists($pkiCssPath)) {
             <div class="pki-upload-box" id="pki_box_workplace_photo" onclick="pkiTriggerUpload('workplace_photo')">
                 <span class="pki-upload-text <?php echo !empty($vPhoto) ? 'has-file' : ''; ?>" id="pki_text_workplace_photo">
                     <?php if (!empty($vPhoto)): ?>
-                        <i class="fa-solid fa-image" style="color:#0284c7;"></i> <?php echo e(basename($vPhoto)); ?>
+                        <i class="fa-solid fa-image" style="color:#0284c7; flex-shrink:0;"></i> <span class="pki-upload-filename"><?php echo e(basename($vPhoto)); ?></span>
                     <?php else: ?>
-                        Pilih foto untuk diunggah
+                        <span>Pilih foto untuk diunggah</span>
                     <?php endif; ?>
                 </span>
                 <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">

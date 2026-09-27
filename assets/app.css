@@ -2568,13 +2568,20 @@ html.dark-theme .brand-text p {
 
 .pki-grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.pki-grid-2 > * {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 @media (max-width: 640px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -2582,6 +2589,9 @@ html.dark-theme .brand-text p {
     margin-bottom: 16px;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 .pki-field-label {
     display: flex;
@@ -6126,13 +6136,20 @@ html.dark-theme .profile-field-block .pfl-value {
 /* Grid & Layout */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 16px 20px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+.pki-grid-2 > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 @media (max-width: 768px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 14px !important;
     }
 }
@@ -6602,13 +6619,20 @@ html.dark-theme .profile-field-block .pfl-value {
 /* Grid & Layout */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 16px 20px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+.pki-grid-2 > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 @media (max-width: 768px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 14px !important;
     }
 }
@@ -7114,13 +7138,20 @@ html.dark-theme .profile-field-block .pfl-value {
 /* Grid & Layout */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 16px 20px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+.pki-grid-2 > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 @media (max-width: 768px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 14px !important;
     }
 }
@@ -7467,6 +7498,9 @@ html.dark-theme .profile-field-block .pfl-value {
     gap: 8px !important;
     flex-wrap: nowrap !important;
     height: 38px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     padding: 0 8px 0 12px !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
@@ -7480,8 +7514,10 @@ html.dark-theme .profile-field-block .pfl-value {
     border-color: #0284c7 !important;
 }
 .pki-upload-text {
-    flex: 1 1 auto !important;
+    flex: 1 1 0% !important;
     min-width: 0 !important;
+    width: 0 !important;
+    max-width: 100% !important;
     font-size: 12px !important;
     color: #64748b !important;
     overflow: hidden !important;
@@ -7491,11 +7527,14 @@ html.dark-theme .profile-field-block .pfl-value {
     align-items: center !important;
     gap: 6px !important;
 }
-.pki-upload-text > span {
+.pki-upload-text > span,
+.pki-upload-filename {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     min-width: 0 !important;
+    flex: 1 1 0% !important;
+    display: inline-block !important;
 }
 .pki-upload-text.has-file {
     color: #0f172a !important;

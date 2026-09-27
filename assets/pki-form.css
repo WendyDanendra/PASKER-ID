@@ -180,13 +180,20 @@ a {
 /* Grid & Fields */
 .pki-grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px 16px !important;
     margin-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+.pki-grid-2 > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 @media (max-width: 700px) {
     .pki-grid-2 {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 10px !important;
     }
 }
@@ -196,6 +203,9 @@ a {
     flex-direction: column !important;
     margin-bottom: 12px !important;
     position: relative !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 .pki-field-label {
     display: flex !important;
@@ -518,6 +528,9 @@ a {
     gap: 8px !important;
     flex-wrap: nowrap !important;
     height: 38px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     padding: 0 8px 0 12px !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
@@ -531,8 +544,10 @@ a {
     border-color: #0284c7 !important;
 }
 .pki-upload-text {
-    flex: 1 1 auto !important;
+    flex: 1 1 0% !important;
     min-width: 0 !important;
+    width: 0 !important;
+    max-width: 100% !important;
     font-size: 12px !important;
     color: #64748b !important;
     overflow: hidden !important;
@@ -542,11 +557,14 @@ a {
     align-items: center !important;
     gap: 6px !important;
 }
-.pki-upload-text > span {
+.pki-upload-text > span,
+.pki-upload-filename {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     min-width: 0 !important;
+    flex: 1 1 0% !important;
+    display: inline-block !important;
 }
 .pki-upload-text.has-file {
     color: #0f172a !important;

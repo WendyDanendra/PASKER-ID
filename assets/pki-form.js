@@ -644,7 +644,7 @@
         if (textBox) {
             const iconClass = fieldId === 'permit_document' ? 'fa-file-pdf' : 'fa-image';
             const iconColor = fieldId === 'permit_document' ? '#ef4444' : '#0284c7';
-            textBox.innerHTML = `<i class="fa-solid ${iconClass}" style="color:${iconColor};"></i> <span>${file.name}</span>`;
+            textBox.innerHTML = `<i class="fa-solid ${iconClass}" style="color:${iconColor}; flex-shrink:0;"></i> <span class="pki-upload-filename">${file.name}</span>`;
             textBox.classList.add('has-file');
         }
 
