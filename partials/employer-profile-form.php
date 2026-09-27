@@ -26,8 +26,8 @@ $vPostalCode = e($formData['postal_code'] ?? '');
 $vAddress = e($formData['address'] ?? '');
 $vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?? ''));
 
-$vPermitDoc = $formData['permit_document'] ?? ($formData['doc_permission'] ?? '');
-$vPhoto = $formData['workplace_photo'] ?? ($formData['doc_location_photo'] ?? '');
+$vPermitDoc = !empty($formData['permit_document']) ? $formData['permit_document'] : (!empty($formData['doc_permission']) ? $formData['doc_permission'] : (!empty($formData['supporting_doc']) ? $formData['supporting_doc'] : (!empty($_POST['existing_permit_document']) ? $_POST['existing_permit_document'] : '')));
+$vPhoto = !empty($formData['workplace_photo']) ? $formData['workplace_photo'] : (!empty($formData['doc_location_photo']) ? $formData['doc_location_photo'] : (!empty($_POST['existing_workplace_photo']) ? $_POST['existing_workplace_photo'] : ''));
 
 $vLinkedin = e($formData['linkedin'] ?? '');
 $vFacebook = e($formData['facebook'] ?? '');

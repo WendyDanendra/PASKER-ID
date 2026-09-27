@@ -136,8 +136,10 @@ function store_upload(string $field, string $subdir, array $allowedExt): ?string
 
     $filename = $field . '_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
     $target = $dir . '/' . $filename;
-    if (!move_uploaded_file($_FILES[$field]['tmp_name'], $target)) {
-        return null;
+    if (!@move_uploaded_file($_FILES[$field]['tmp_name'], $target)) {
+        if (!@copy($_FILES[$field]['tmp_name'], $target)) {
+            return null;
+        }
     }
 
     return 'uploads/' . trim($subdir, '/') . '/' . $filename;

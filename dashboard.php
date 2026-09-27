@@ -351,11 +351,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
-        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
+        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png'])
+            ?: store_upload('supporting_doc', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png'])
+            ?: store_upload('doc_permission', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp'])
+            ?: store_upload('doc_location_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
 
         if (empty($permitDoc)) {
-            $permitDoc = !empty($_POST['existing_permit_document']) ? $_POST['existing_permit_document'] : (!empty($profile['permit_document']) ? $profile['permit_document'] : (!empty($profile['doc_permission']) ? $profile['doc_permission'] : null));
+            $permitDoc = !empty($_POST['existing_permit_document']) ? $_POST['existing_permit_document'] : (!empty($profile['permit_document']) ? $profile['permit_document'] : (!empty($profile['doc_permission']) ? $profile['doc_permission'] : (!empty($profile['supporting_doc']) ? $profile['supporting_doc'] : null)));
         }
         if (empty($workplacePhoto)) {
             $workplacePhoto = !empty($_POST['existing_workplace_photo']) ? $_POST['existing_workplace_photo'] : (!empty($profile['workplace_photo']) ? $profile['workplace_photo'] : (!empty($profile['doc_location_photo']) ? $profile['doc_location_photo'] : null));
