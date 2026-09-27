@@ -693,3 +693,96 @@ a {
 .modal-footer .primary-btn:hover {
     background: #0369a1 !important;
 }
+
+/* ─── SUCCESS POPUP MODAL STYLING ─── */
+.popup-dialog-card.success-dialog-card {
+    max-width: 440px !important;
+    width: 90% !important;
+    padding: 30px 24px 24px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+    text-align: center !important;
+    background: #ffffff !important;
+}
+
+.popup-dialog-card .popup-dialog-icon.success {
+    width: 56px !important;
+    height: 56px !important;
+    background: #dcfce7 !important;
+    color: #16a34a !important;
+    font-size: 26px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 auto 14px !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15) !important;
+}
+
+.popup-dialog-card .popup-dialog-title {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin: 0 0 16px 0 !important;
+    letter-spacing: -0.3px !important;
+}
+
+/* Alert Information Box ("Menunggu Verifikasi") without X */
+.pki-success-alert {
+    background: #fff8f1 !important;
+    border: 1px solid #ffedd5 !important;
+    border-left: 4px solid #ea580c !important;
+    border-radius: 10px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 20px !important;
+    text-align: left !important;
+}
+
+.pki-success-alert-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 6px !important;
+}
+
+.pki-success-alert-icon {
+    color: #ea580c !important;
+    font-size: 14px !important;
+}
+
+.pki-success-alert-badge {
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    color: #c2410c !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.pki-success-alert-body {
+    font-size: 13px !important;
+    color: #475569 !important;
+    line-height: 1.55 !important;
+    text-align: left !important;
+}
+
+.popup-dialog-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    height: 42px !important;
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    transition: background 0.15s ease, transform 0.1s ease !important;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
+}
+
+.popup-dialog-btn:hover {
+    background: #0369a1 !important;
+    color: #ffffff !important;
+}

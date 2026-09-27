@@ -184,15 +184,22 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
         </div>
     </div>
     <div class="modal-backdrop <?php echo $showSuccessPopup ? 'open' : ''; ?>" id="modalPendaftaranBerhasil">
-        <div class="popup-dialog-card">
+        <div class="popup-dialog-card success-dialog-card">
             <div class="popup-dialog-icon success"><i class="fa-solid fa-circle-check"></i></div>
-            <h3 style="font-size:22px; font-weight:800; color:#0f172a; margin-bottom:10px;">Pendaftaran Berhasil</h3>
-            <div style="font-size:12px; font-weight:800; letter-spacing:0.6px; color:#ea580c; margin-bottom:10px;">MENUNGGU VERIFIKASI</div>
-            <p style="font-size:14px; color:#475569; line-height:1.65; margin-bottom:20px;">
-                Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
-                Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
-            </p>
-            <a class="primary-btn" href="dashboard.php#dashboard" style="width:100%; text-align:center; justify-content:center;">Menuju Dashboard Pemberi Kerja</a>
+            <h3 class="popup-dialog-title">Pendaftaran Berhasil</h3>
+            <div class="pki-success-alert">
+                <div class="pki-success-alert-header">
+                    <i class="fa-solid fa-clock-rotate-left pki-success-alert-icon"></i>
+                    <span class="pki-success-alert-badge">MENUNGGU VERIFIKASI</span>
+                </div>
+                <div class="pki-success-alert-body">
+                    Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
+                    Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
+                </div>
+            </div>
+            <a class="primary-btn popup-dialog-btn" href="dashboard.php#dashboard">
+                Menuju Dashboard Pemberi Kerja <i class="fa-solid fa-arrow-right" style="font-size:12px;"></i>
+            </a>
         </div>
     </div>
     <script src="assets/pki-form.js?v=20260926_v5"></script>
