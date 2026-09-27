@@ -231,7 +231,7 @@ if (isset($_GET['applicant_json'])) {
 
 if (isset($_GET['job_json'])) {
     $jobId = (int) $_GET['job_json'];
-    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? AND status IN ("Perlu Direvisi", "Perlu Revisi", "Draft") LIMIT 1');
+    $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ? LIMIT 1');
     $jobStmt->execute([$jobId, $user['id']]);
     $job = $jobStmt->fetch();
     header('Content-Type: application/json');
@@ -486,7 +486,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         if ($title !== '' && $location !== '' && $kbjiCode !== '' && $quota > 0 && $description !== '') {
             if ($jobId > 0) {
                 // Update existing job maintaining its identity and draft/revision status
-                $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, salary_min = ?, salary_max = ?, details = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND status IN ("Draft", "Perlu Direvisi", "Perlu Revisi")');
+                $stmt = db()->prepare('UPDATE job_posts SET title = ?, location = ?, job_type = ?, industry = ?, kbji_code = ?, min_education = ?, min_experience = ?, quota = ?, description = ?, salary_min = ?, salary_max = ?, details = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
                 $stmt->execute([$title, $location, $jobType, $industry, $kbjiCode, $minEducation, $minExperience, $quota, $description, $salaryMin, $salaryMax, $detailsJson, $jobId, $user['id']]);
                 flash('success', 'Draft lowongan berhasil diperbarui.');
             } else {

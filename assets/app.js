@@ -1139,6 +1139,14 @@ function initJobCreateWizard() {
         }
     };
 
+    const setRadio = (name, value) => {
+        const valStr = value == null ? '' : String(value);
+        const radio = form?.querySelector(`input[name="${name}"][value="${valStr}"]`);
+        if (radio) {
+            radio.checked = true;
+        }
+    };
+
     const setRichField = (name, html) => {
         const input = form?.querySelector(`textarea[name="${name}"]`);
         if (!input) {
@@ -1181,7 +1189,7 @@ function initJobCreateWizard() {
         setFieldValue('salary_max', data.salary_max ? new Intl.NumberFormat('id-ID').format(data.salary_max) : '');
         setCheckbox('show_salary', data.show_salary);
         setCheckbox('is_remote', data.is_remote);
-        setCheckbox('is_limited', data.is_limited);
+        setRadio('is_limited', data.is_limited ? '1' : '0');
         setFieldValue('expiry_days', data.expiry_days);
         setFieldValue('quota', data.quota || 1);
         setFieldValue('education_required', data.education_required);
@@ -1334,12 +1342,22 @@ function initJobCreateWizard() {
     });
 
     document.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-revise-job], [data-edit-draft]');
+        const button = event.target.closest('[data-revise-job], [data-edit-draft], [data-edit-job]');
         if (!button) {
             return;
         }
-        const jobId = button.dataset.reviseJob || button.dataset.editDraft;
+        const jobId = button.dataset.reviseJob || button.dataset.editDraft || button.dataset.editJob;
+        if (!jobId) {
+            return;
+        }
         const hidden = document.getElementById('reviseJobId');
+        if (hidden) {
+            hidden.value = String(jobId);
+        }
+        modal.dataset.skipReset = 'true';
+        modal.classList.add('open');
+        modal.dispatchEvent(new CustomEvent('modal:open'));
+
         fetch(`dashboard.php?job_json=${encodeURIComponent(jobId)}`)
             .then((response) => {
                 if (!response.ok) {
