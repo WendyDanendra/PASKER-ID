@@ -228,8 +228,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
         $permitDoc = store_upload('permit_document', 'employer/' . $targetUserId, ['pdf', 'jpg', 'jpeg', 'png']);
         $workplacePhoto = store_upload('workplace_photo', 'employer/' . $targetUserId, ['jpg', 'jpeg', 'png', 'webp']);
-        $permitDoc = $permitDoc ?: ($oldProfile['permit_document'] ?? $oldProfile['doc_permission'] ?? null);
-        $workplacePhoto = $workplacePhoto ?: ($oldProfile['workplace_photo'] ?? $oldProfile['doc_location_photo'] ?? null);
+        $permitDoc = $permitDoc ?: (!empty($_POST['existing_permit_document']) ? trim($_POST['existing_permit_document']) : ($oldProfile['permit_document'] ?? $oldProfile['doc_permission'] ?? null));
+        $workplacePhoto = $workplacePhoto ?: (!empty($_POST['existing_workplace_photo']) ? trim($_POST['existing_workplace_photo']) : ($oldProfile['workplace_photo'] ?? $oldProfile['doc_location_photo'] ?? null));
 
         $updateSql = <<<SQL
             UPDATE employer_profiles SET
@@ -1953,26 +1953,26 @@ window.CITY_MASTER = [
                                     </div>
                                 </div>
 
-                                <!-- Dokumen Pendukung & Foto Bukti -->
+                                <!-- File Pendukung & Foto Bukti -->
                                 <div style="border-top:1px solid #f1f5f9; padding-top:16px; margin-top:14px;">
                                     <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-                                        <i class="fa-regular fa-folder-closed" style="color:#0284c7;"></i> Dokumen Pendukung & Foto Bukti
+                                        <i class="fa-regular fa-folder-closed" style="color:#0284c7;"></i> File Pendukung & Foto Bukti
                                     </div>
                                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
-                                        <!-- Dokumen Pendukung Card -->
+                                        <!-- File Pendukung Card -->
                                         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
                                             <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-                                                <div style="width:36px; height:36px; border-radius:8px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                                    <i class="fa-regular fa-file-pdf" style="font-size:16px;"></i>
+                                                <div style="width:36px; height:36px; border-radius:8px; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                                    <i class="fa-solid fa-file-pdf" style="font-size:16px;"></i>
                                                 </div>
                                                 <div style="min-width:0;">
-                                                    <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">Dokumen Pendukung</div>
+                                                    <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">File Pendukung</div>
                                                     <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($docDisplayName); ?>"><?php echo e($docDisplayName); ?></div>
                                                 </div>
                                             </div>
                                             <?php if ($hasDoc): ?>
                                                 <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-permission" style="padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:6px; flex-shrink:0; background:#ffffff; border:1px solid #0284c7; color:#0284c7; cursor:pointer;">
-                                                    <i class="fa-regular fa-eye"></i> Lihat Dokumen
+                                                    <i class="fa-regular fa-eye"></i> Lihat File
                                                 </button>
                                             <?php else: ?>
                                                 <span style="font-size:12px; color:#94a3b8; font-style:italic;">Belum diunggah</span>
@@ -3116,11 +3116,12 @@ document.addEventListener('click', function(e) {
                 ?>
                 <?php if ($selectedEmployer): ?>
                     <!-- DETAIL VIEW FOR VERIFIKASI PEMBERI KERJA -->
-                    <div style="margin-bottom:16px;">
-                        <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" style="display:inline-flex; align-items:center; gap:6px; color:#475569; font-weight:600; font-size:13px; text-decoration:none;">
-                            <i class="fa-solid fa-arrow-left"></i> Kembali
-                        </a>
-                    </div>
+                    <div class="detail-page-wrapper" style="max-width: 1200px; margin: 0 auto; width: 100%;">
+                        <div style="margin-bottom:16px;">
+                            <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" style="display:inline-flex; align-items:center; gap:8px; color:#475569; font-weight:600; font-size:13px; text-decoration:none; padding:7px 14px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.04); transition:all 0.15s;">
+                                <i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Verifikasi
+                            </a>
+                        </div>
 
                     <!-- TOP HEADER BAR -->
                     <div class="detail-header-bar" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px 24px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
@@ -3345,13 +3346,13 @@ document.addEventListener('click', function(e) {
                                                     $vPhotoName = $vHasPhoto ? basename($vPhotoPath) : 'Tidak ada foto';
                                                 ?>
                                                 <tr style="border-bottom:1px solid #f1f5f9;">
-                                                    <td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Pendukung</td>
+                                                    <td style="padding:10px 14px; font-weight:600; color:#334155;">File Pendukung</td>
                                                     <td style="padding:10px 14px; color:#0f172a;">
                                                         <?php if ($vHasDoc): ?>
                                                             <div style="display:flex; align-items:center; gap:10px;">
                                                                 <span style="font-weight:600; color:#0f172a;"><i class="fa-solid fa-file-pdf" style="color:#ef4444; margin-right:4px;"></i> <?php echo e($vDocName); ?></span>
                                                                 <button type="button" data-open-modal="modal-view-doc" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; color:#0284c7; font-weight:700; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
-                                                                    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i> Lihat Dokumen
+                                                                    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i> Lihat File
                                                                 </button>
                                                             </div>
                                                         <?php else: ?>
@@ -3596,114 +3597,250 @@ document.addEventListener('click', function(e) {
                                     </div>
 
                                     <!-- STEP 2: FORM PROFIL PEMBERI KERJA INDIVIDU (VERSI ADMIN) -->
-                                    <details id="detailsAdminProfileForm" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:16px; margin-bottom:16px;" <?php echo ($selectedEmployer['manual_review_status'] !== 'CONSENT_GIVEN') ? 'open' : ''; ?>>
-                                        <summary style="font-weight:700; color:#0f172a; cursor:pointer; font-size:13.5px; display:flex; align-items:center; gap:8px;">
-                                            <i class="fa-solid fa-pen-to-square" style="color:#0284c7;"></i> Form Profil Pemberi Kerja Individu (Versi Admin - Prefilled & Editable)
+                                    <details id="detailsAdminProfileForm" style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; padding:20px; margin-bottom:16px;" <?php echo ($selectedEmployer['manual_review_status'] !== 'CONSENT_GIVEN') ? 'open' : ''; ?>>
+                                        <summary style="font-weight:800; color:#0f172a; cursor:pointer; font-size:14.5px; display:flex; align-items:center; justify-content:space-between; user-select:none;">
+                                            <span style="display:flex; align-items:center; gap:8px;">
+                                                <i class="fa-solid fa-pen-to-square" style="color:#0284c7;"></i> Form Profil Pemberi Kerja Individu (Versi Admin - Prefilled & Editable)
+                                            </span>
+                                            <span style="font-size:11.5px; font-weight:600; color:#0284c7; background:#e0f2fe; padding:3px 10px; border-radius:999px;">
+                                                Buka / Tutup
+                                            </span>
                                         </summary>
-                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" enctype="multipart/form-data" style="margin-top:16px;">
+                                        <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>" enctype="multipart/form-data" style="margin-top:20px;">
                                             <input type="hidden" name="admin_action" value="manual_dinas_edit">
                                             <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
                                             
-                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:12.5px;">
+                                            <!-- 1. IDENTITAS PEMBERI KERJA INDIVIDU -->
+                                            <div style="font-size:12.5px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:6px;">
+                                                <i class="fa-solid fa-user"></i> 1. Identitas Pemberi Kerja Individu
+                                            </div>
+                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Nama Lengkap Pemberi Kerja:</label>
-                                                    <input type="text" name="owner_name" value="<?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Nama Lengkap Pemberi Kerja <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="owner_name" value="<?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?>" required style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">NIK:</label>
-                                                    <input type="text" name="nik" value="<?php echo e($selectedEmployer['nik'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        NIK (16 Digit) <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="nik" value="<?php echo e($selectedEmployer['nik'] ?? ''); ?>" maxlength="16" placeholder="16 digit NIK pemohon" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Nomor Telepon:</label>
-                                                    <input type="text" name="phone" value="<?php echo e($selectedEmployer['phone']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Nomor Telepon <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="phone" value="<?php echo e($selectedEmployer['phone']); ?>" required style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">WhatsApp:</label>
-                                                    <input type="text" name="whatsapp" value="<?php echo e($selectedEmployer['whatsapp'] ?? $selectedEmployer['phone']); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Nomor WhatsApp <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="whatsapp" value="<?php echo e($selectedEmployer['whatsapp'] ?? $selectedEmployer['phone']); ?>" required style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Jenis Profesi / Usaha Individu:</label>
-                                                    <input type="text" name="profession" value="<?php echo e($selectedEmployer['profession'] ?? ''); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Jenis Profesi / Usaha Individu <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="profession" value="<?php echo e($selectedEmployer['profession'] ?? ''); ?>" required placeholder="Contoh: Jasa Desain Grafis" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">NPWP:</label>
-                                                    <input type="text" name="npwp" value="<?php echo e($selectedEmployer['npwp'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        NPWP <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Opsional)</span>
+                                                     </label>
+                                                    <input type="text" name="npwp" value="<?php echo e($selectedEmployer['npwp'] ?? ''); ?>" placeholder="Contoh: 12.345.678.9-123.000" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
-                                                          <!-- SOSIAL MEDIA -->
-                                                <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Instagram:</label>
-                                                    <input type="text" name="instagram" value="<?php echo e($selectedEmployer['instagram'] ?? ''); ?>" placeholder="@username atau https://instagram.com/..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
-                                                </div>
-                                                <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Facebook / LinkedIn:</label>
-                                                    <input type="text" name="facebook" value="<?php echo e($selectedEmployer['facebook'] ?? ''); ?>" placeholder="@username atau https://facebook.com/..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
-                                                </div>                                  </div>
+                                            </div>
 
-                                                <!-- LOKASI WILAYAH -->
+                                            <!-- 2. ALAMAT & LOKASI DOMISILI -->
+                                            <div style="font-size:12.5px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:6px;">
+                                                <i class="fa-solid fa-map-location-dot"></i> 2. Lokasi Domisili & Alamat
+                                            </div>
+                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Provinsi:</label>
-                                                    <input type="text" name="province" value="<?php echo e($selectedEmployer['province'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Provinsi <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="province" value="<?php echo e($selectedEmployer['province'] ?? ''); ?>" required placeholder="Contoh: Jawa Barat" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kota / Kabupaten:</label>
-                                                    <input type="text" name="city" value="<?php echo e($selectedEmployer['city']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Kota / Kabupaten <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="city" value="<?php echo e($selectedEmployer['city']); ?>" required placeholder="Contoh: Kota Bandung" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kecamatan:</label>
-                                                    <input type="text" name="district" value="<?php echo e($selectedEmployer['district'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Kecamatan <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="district" value="<?php echo e($selectedEmployer['district'] ?? ''); ?>" required placeholder="Contoh: Coblong" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kelurahan / Desa:</label>
-                                                    <input type="text" name="village" value="<?php echo e($selectedEmployer['village'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Kelurahan / Desa <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="village" value="<?php echo e($selectedEmployer['village'] ?? ''); ?>" required placeholder="Contoh: Dago" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Kode Pos:</label>
-                                                    <input type="text" name="postal_code" value="<?php echo e($selectedEmployer['postal_code'] ?? ''); ?>" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Kode Pos <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Opsional)</span>
+                                                    </label>
+                                                    <input type="text" name="postal_code" value="<?php echo e($selectedEmployer['postal_code'] ?? ''); ?>" placeholder="Contoh: 40135" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Detail Alamat / Patokan:</label>
-                                                    <input type="text" name="address_detail" value="<?php echo e($selectedEmployer['address_detail'] ?? ''); ?>" placeholder="Patokan lokasi..." style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Detail Alamat / Patokan <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Opsional)</span>
+                                                    </label>
+                                                    <input type="text" name="address_detail" value="<?php echo e($selectedEmployer['address_detail'] ?? ''); ?>" placeholder="Patokan atau penjelas lokasi..." style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
-
-                                                <!-- ALAMAT LENGKAP -->
                                                 <div style="grid-column: span 2;">
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Alamat Lengkap Domisili:</label>
-                                                    <input type="text" name="address" value="<?php echo e($selectedEmployer['address']); ?>" required style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Alamat Lengkap Domisili <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <input type="text" name="address" value="<?php echo e($selectedEmployer['address']); ?>" required placeholder="Contoh: Jl. Ir. H. Juanda No. 25" style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
                                                 </div>
+                                            </div>
 
-                                                <!-- DESKRIPSI -->
-                                                <div style="grid-column: span 2;">
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen:</label>
-                                                    <textarea name="description" style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; min-height:60px;"><?php echo e($selectedEmployer['description']); ?></textarea>
-                                                </div>
-
-                                                <!-- DOKUMEN & FOTO -->
+                                            <!-- 3. FILE & BUKTI TEMPAT USAHA (PREFILL DOKUMEN & FOTO) -->
+                                            <div style="font-size:12.5px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:6px;">
+                                                <i class="fa-solid fa-folder-open"></i> 3. File & Bukti Tempat Usaha
+                                            </div>
+                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+                                                <!-- FILE PENDUKUNG -->
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Dokumen Pendukung:</label>
-                                                    <?php if (!empty($selectedEmployer['permit_document']) || !empty($selectedEmployer['doc_permission'])): ?>
-                                                        <div style="margin-bottom:6px; font-size:11.5px; color:#0284c7;">
-                                                            <i class="fa-solid fa-file-lines"></i> File tersimpan: <code><?php echo e(basename($selectedEmployer['permit_document'] ?? $selectedEmployer['doc_permission'])); ?></code>
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        File Pendukung <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <?php
+                                                        $adminDoc = $selectedEmployer['permit_document'] ?: ($selectedEmployer['doc_permission'] ?: '');
+                                                        $adminHasDoc = !empty($adminDoc);
+                                                        $adminDocName = $adminHasDoc ? basename($adminDoc) : '';
+                                                    ?>
+                                                    <?php if ($adminHasDoc): ?>
+                                                        <div style="background:#f8fafc; border:1.5px solid #00a8e8; border-radius:10px; padding:12px; margin-bottom:10px;">
+                                                            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;">
+                                                                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                                                    <div style="width:36px; height:36px; border-radius:8px; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
+                                                                        <i class="fa-solid fa-file-pdf"></i>
+                                                                    </div>
+                                                                    <div style="min-width:0;">
+                                                                        <div style="font-size:13px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($adminDocName); ?>">
+                                                                            <?php echo e($adminDocName); ?>
+                                                                        </div>
+                                                                        <div style="font-size:11.5px; color:#0284c7; font-weight:600; display:flex; align-items:center; gap:4px;">
+                                                                            <i class="fa-solid fa-circle-check"></i> File Terunggah Pemohon
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <span style="background:#e0f2fe; color:#0284c7; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap;">Tersimpan</span>
+                                                            </div>
+                                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                                <button type="button" data-open-modal="modal-view-doc" style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; color:#0284c7; cursor:pointer;">
+                                                                    <i class="fa-solid fa-eye"></i> Lihat File
+                                                                </button>
+                                                                <a href="<?php echo e($adminDoc); ?>" target="_blank" download style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; color:#475569; text-decoration:none;">
+                                                                    <i class="fa-solid fa-download"></i> Unduh
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                        <input type="hidden" name="existing_permit_document" value="<?php echo e($adminDoc); ?>">
+                                                        <div style="font-size:11.5px; font-weight:600; color:#64748b; margin-bottom:4px;">Ganti File Pendukung (Opsional):</div>
+                                                    <?php else: ?>
+                                                        <div style="background:#fef2f2; border:1px dashed #fca5a5; border-radius:8px; padding:10px 12px; font-size:12px; color:#991b1b; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                                            <i class="fa-solid fa-circle-exclamation"></i> Belum ada file pendukung terunggah. Silakan unggah berkas.
                                                         </div>
                                                     <?php endif; ?>
-                                                    <input type="file" name="permit_document" accept=".pdf,.jpg,.jpeg,.png" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:8px; font-size:11.5px;">
+                                                    <input type="file" name="permit_document" accept=".pdf" style="width:100%; padding:8px 10px; border:1.5px dashed #cbd5e1; border-radius:8px; font-size:12px; background:#ffffff; box-sizing:border-box;">
+                                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Format PDF • Ukuran maks 15MB</div>
                                                 </div>
+
+                                                <!-- FOTO BUKTI TEMPAT USAHA / LOKASI -->
                                                 <div>
-                                                    <label style="font-weight:600; display:block; margin-bottom:4px; color:#334155;">Foto Bukti Tempat Usaha / Lokasi:</label>
-                                                    <?php if (!empty($selectedEmployer['workplace_photo']) || !empty($selectedEmployer['doc_location_photo'])): ?>
-                                                        <div style="margin-bottom:6px; font-size:11.5px; color:#0284c7;">
-                                                            <i class="fa-solid fa-image"></i> Foto tersimpan: <code><?php echo e(basename($selectedEmployer['workplace_photo'] ?? $selectedEmployer['doc_location_photo'])); ?></code>
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Foto Bukti Tempat Usaha / Lokasi <span style="color:#ef4444;">*</span>
+                                                    </label>
+                                                    <?php
+                                                        $adminPhoto = $selectedEmployer['workplace_photo'] ?: ($selectedEmployer['doc_location_photo'] ?: '');
+                                                        $adminHasPhoto = !empty($adminPhoto);
+                                                        $adminPhotoName = $adminHasPhoto ? basename($adminPhoto) : '';
+                                                    ?>
+                                                    <?php if ($adminHasPhoto): ?>
+                                                        <div style="background:#f8fafc; border:1.5px solid #00a8e8; border-radius:10px; padding:12px; margin-bottom:10px;">
+                                                            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;">
+                                                                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                                                    <div style="width:36px; height:36px; border-radius:8px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
+                                                                        <i class="fa-solid fa-image"></i>
+                                                                    </div>
+                                                                    <div style="min-width:0;">
+                                                                        <div style="font-size:13px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($adminPhotoName); ?>">
+                                                                            <?php echo e($adminPhotoName); ?>
+                                                                        </div>
+                                                                        <div style="font-size:11.5px; color:#0284c7; font-weight:600; display:flex; align-items:center; gap:4px;">
+                                                                            <i class="fa-solid fa-circle-check"></i> Foto Terunggah Pemohon
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <span style="background:#e0f2fe; color:#0284c7; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap;">Tersimpan</span>
+                                                            </div>
+                                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                                <button type="button" data-open-modal="modal-view-photos" style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; color:#0284c7; cursor:pointer;">
+                                                                    <i class="fa-solid fa-eye"></i> Lihat Foto
+                                                                </button>
+                                                                <a href="<?php echo e($adminPhoto); ?>" target="_blank" download style="display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; color:#475569; text-decoration:none;">
+                                                                    <i class="fa-solid fa-download"></i> Unduh
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                        <input type="hidden" name="existing_workplace_photo" value="<?php echo e($adminPhoto); ?>">
+                                                        <div style="font-size:11.5px; font-weight:600; color:#64748b; margin-bottom:4px;">Ganti Foto Lokasi (Opsional):</div>
+                                                    <?php else: ?>
+                                                        <div style="background:#fef2f2; border:1px dashed #fca5a5; border-radius:8px; padding:10px 12px; font-size:12px; color:#991b1b; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                                            <i class="fa-solid fa-circle-exclamation"></i> Belum ada foto lokasi terunggah. Silakan unggah foto.
                                                         </div>
                                                     <?php endif; ?>
-                                                    <input type="file" name="workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:8px; font-size:11.5px;">
+                                                    <input type="file" name="workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="width:100%; padding:8px 10px; border:1.5px dashed #cbd5e1; border-radius:8px; font-size:12px; background:#ffffff; box-sizing:border-box;">
+                                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Format JPG, PNG, WEBP • Ukuran maks 10MB</div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 4. MEDIA SOSIAL & DESKRIPSI -->
+                                            <div style="font-size:12.5px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:6px;">
+                                                <i class="fa-solid fa-share-nodes"></i> 4. Media Sosial & Deskripsi
+                                            </div>
+                                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+                                                <div>
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Instagram <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Opsional)</span>
+                                                    </label>
+                                                    <input type="text" name="instagram" value="<?php echo e($selectedEmployer['instagram'] ?? ''); ?>" placeholder="@username atau https://instagram.com/..." style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        LinkedIn <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Opsional)</span>
+                                                    </label>
+                                                    <input type="text" name="linkedin" value="<?php echo e($selectedEmployer['linkedin'] ?? ''); ?>" placeholder="username atau https://linkedin.com/in/..." style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
+                                                </div>
+                                                <div style="grid-column: span 2;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Facebook <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Opsional)</span>
+                                                    </label>
+                                                    <input type="text" name="facebook" value="<?php echo e($selectedEmployer['facebook'] ?? ''); ?>" placeholder="@username atau https://facebook.com/..." style="width:100%; height:40px; padding:8px 12px; font-size:13.5px; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; box-sizing:border-box; background:#ffffff;">
+                                                </div>
+                                                <div style="grid-column: span 2;">
+                                                    <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                                                        Deskripsi Singkat Usaha / Rekrutmen <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Opsional)</span>
+                                                    </label>
+                                                    <textarea name="description" placeholder="Deskripsikan profil usaha atau kegiatan Anda..." style="width:100%; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13.5px; min-height:75px; color:#0f172a; box-sizing:border-box; background:#ffffff; font-family:inherit; resize:vertical;"><?php echo e($selectedEmployer['description']); ?></textarea>
                                                 </div>
                                             </div>
 
                                             <!-- FORM ACTION BUTTONS -->
-                                            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #f1f5f9; padding-top:14px;">
-                                                <button type="submit" name="save_only" value="1" class="secondary-btn" style="height:36px; padding:0 16px; font-size:12.5px; font-weight:600; border:1px solid #cbd5e1; border-radius:8px; cursor:pointer; background:#ffffff; color:#334155;">
+                                            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #e2e8f0; padding-top:16px;">
+                                                <button type="submit" name="save_only" value="1" class="secondary-btn" style="height:38px; padding:0 18px; font-size:13px; font-weight:600; border:1.5px solid #cbd5e1; border-radius:8px; cursor:pointer; background:#ffffff; color:#334155; display:inline-flex; align-items:center; gap:6px;">
                                                     <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Data
                                                 </button>
-                                                <button type="submit" name="send_consent" value="1" class="primary-btn" style="height:36px; padding:0 16px; font-size:12.5px; font-weight:700; background:#0284c7; color:#ffffff; border:none; border-radius:8px; cursor:pointer;">
+                                                <button type="submit" name="send_consent" value="1" class="primary-btn" style="height:38px; padding:0 18px; font-size:13px; font-weight:700; background:#0284c7; color:#ffffff; border:none; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
                                                     <i class="fa-solid fa-paper-plane"></i> Kirim Permintaan Consent
                                                 </button>
                                             </div>
@@ -3870,15 +4007,16 @@ document.addEventListener('click', function(e) {
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- MODAL LIHAT DOKUMEN PENDUKUNG -->
-                    <div class="modal-backdrop" data-modal="modal-view-doc">
-                        <div class="modal-panel" style="width:min(800px, 94vw); max-height:90vh; display:flex; flex-direction:column;">
-                            <div class="modal-header">
-                                <div>
-                                    <div class="modal-title">Dokumen Pendukung</div>
-                                    <div class="modal-subtitle"><?php echo e($vDocName); ?> &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
-                                </div>
+                <!-- MODAL LIHAT FILE PENDUKUNG -->
+                <div class="modal-backdrop" data-modal="modal-view-doc">
+                    <div class="modal-panel" style="width:min(800px, 94vw); max-height:90vh; display:flex; flex-direction:column;">
+                        <div class="modal-header">
+                            <div>
+                                <div class="modal-title">File Pendukung</div>
+                                <div class="modal-subtitle"><?php echo e($vDocName); ?> &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                            </div>
                                 <button type="button" data-close-modal="modal-view-doc" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                             <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px; background:#f8fafc; text-align:center;">
