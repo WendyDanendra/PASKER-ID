@@ -183,16 +183,18 @@ function bindModalsAndDrawers() {
         });
     });
 
-    document.querySelectorAll('[data-close-modal]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-close-modal]');
+        if (btn) {
             e.preventDefault();
             const modalId = btn.dataset.closeModal;
-            const modal = document.querySelector(`[data-modal="${modalId}"]`);
+            const modal = document.querySelector(`[data-modal="${modalId}"]`) || document.getElementById(modalId);
             if (modal) {
+                modal.style.display = 'none';
                 modal.classList.remove('open');
                 modal.dispatchEvent(new CustomEvent('modal:close'));
             }
-        });
+        }
     });
 
     document.querySelectorAll('[data-open-drawer]').forEach(btn => {
@@ -2259,6 +2261,16 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(() => {});
     }
     window.openApplicantProfile = openApplicantProfile;
+
+    function closeApplicantProfileModal() {
+        const modal = document.querySelector('[data-modal="applicant-profile"]');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('open');
+            modal.dispatchEvent(new CustomEvent('modal:close'));
+        }
+    }
+    window.closeApplicantProfileModal = closeApplicantProfileModal;
 
     document.querySelectorAll('[data-open-applicant]').forEach((trigger) => {
         trigger.addEventListener('click', () => {

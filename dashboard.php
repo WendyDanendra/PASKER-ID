@@ -2240,7 +2240,7 @@ $modal = <<<HTML
                         </div>
                     </div>
                 </div>
-                <button type="button" class="modal-close" data-close-modal="applicant-profile" aria-label="Tutup" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px 6px; border-radius:6px; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="modal-close" onclick="closeApplicantProfileModal()" data-close-modal="applicant-profile" aria-label="Tutup" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px 6px; border-radius:6px; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Scrollable Body Container -->
