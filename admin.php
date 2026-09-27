@@ -5748,25 +5748,20 @@ document.addEventListener('click', function(e) {
                         </div>
 
                         <!-- PERSYARATAN KHUSUS -->
+                        <?php
+                            $reqText = trim((string)($jobFormData['special_requirements'] ?? ''));
+                        ?>
+                        <?php if ($reqText !== ''): ?>
                         <div style="margin-bottom:20px;">
                             <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:6px;">Persyaratan Khusus</div>
-                            <div style="font-size:13px; color:#334155; line-height:1.6;">
-                                <?php 
-                                    $reqText = trim((string)($jobFormData['special_requirements'] ?? ''));
-                                    if ($reqText !== ''): 
-                                        echo nl2br(e($reqText));
-                                    else:
-                                ?>
-                                    • Mampu menulis dengan baik<br>
-                                    • Memahami penulisan konten digital<br>
-                                    • Memiliki kemampuan komunikasi yang baik
-                                <?php endif; ?>
-                            </div>
+                            <div style="font-size:13px; color:#334155; line-height:1.6;"><?php echo nl2br(e($reqText)); ?></div>
                         </div>
+                        <?php endif; ?>
 
                         <!-- SKILLS BADGES -->
                         <div style="margin-bottom:24px;">
                             <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:8px;">Skills</div>
+                            <?php if (!empty($skillsList)): ?>
                             <div style="display:flex; flex-wrap:wrap; gap:8px;">
                                 <?php foreach ($skillsList as $sk): ?>
                                     <span style="background:#f1f5f9; color:#475569; font-size:12px; font-weight:600; padding:4px 12px; border-radius:6px; border:1px solid #e2e8f0;">
@@ -5774,6 +5769,9 @@ document.addEventListener('click', function(e) {
                                     </span>
                                 <?php endforeach; ?>
                             </div>
+                            <?php else: ?>
+                            <div style="font-size:13px; color:#94a3b8; font-style:italic;">Tidak ada skills yang dicantumkan.</div>
+                            <?php endif; ?>
                         </div>
 
                         <!-- DIVIDER -->
@@ -5871,6 +5869,7 @@ document.addEventListener('click', function(e) {
 
                         <div style="margin-bottom:20px;">
                             <div style="font-size:12px; color:#64748b; margin-bottom:6px;">Keahlian yang Dibutuhkan</div>
+                            <?php if (!empty($skillsList)): ?>
                             <div style="display:flex; flex-wrap:wrap; gap:8px;">
                                 <?php foreach ($skillsList as $sk): ?>
                                     <span style="background:#e2e8f0; color:#334155; font-size:12px; font-weight:600; padding:4px 12px; border-radius:6px;">
@@ -5878,6 +5877,9 @@ document.addEventListener('click', function(e) {
                                     </span>
                                 <?php endforeach; ?>
                             </div>
+                            <?php else: ?>
+                            <div style="font-size:13px; color:#94a3b8; font-style:italic;">Tidak ada keahlian yang dicantumkan.</div>
+                            <?php endif; ?>
                         </div>
 
                         <div style="margin-bottom:24px;">
