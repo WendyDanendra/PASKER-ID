@@ -1643,10 +1643,12 @@ if (!empty($kbjiList)) {
     $kbjiOptionsHtml .= '<option value="5120.01">5120.01 - Juru Masak / Koki</option>'
         . '<option value="5131.00">5131.00 - Pelayan Restoran / Kafe</option>'
         . '<option value="5151.01">5151.01 - Pengurus Rumah Tangga / ART</option>'
-        . '<option value="8322.01">8322.01 - Pengemudi Mobil Pribadi</option>'
         . '<option value="5322.00">5322.00 - Pengasuh Anak / Babysitter</option>'
         . '<option value="5414.01">5414.01 - Penjaga Keamanan / Satpam</option>';
 }
+$exp1 = format_indo_date(date('Y-m-d', strtotime('+1 month')), 'short');
+$exp2 = format_indo_date(date('Y-m-d', strtotime('+2 month')), 'short');
+$exp3 = format_indo_date(date('Y-m-d', strtotime('+3 month')), 'short');
 
 $modal = <<<HTML
     <div class="modal-backdrop" data-modal="job-create">
@@ -1928,9 +1930,9 @@ $modal = <<<HTML
                                 <label>Lama expired loker <span class="req">*</span></label>
                                 <select name="expiry_days" class="form-control-custom" required>
                                     <option value="">Pilih lama expired loker</option>
-                                    <option value="30" selected>1 Bulan (<?php echo format_indo_date(date('Y-m-d', strtotime('+1 month')), 'short'); ?>)</option>
-                                    <option value="60">2 Bulan (<?php echo format_indo_date(date('Y-m-d', strtotime('+2 month')), 'short'); ?>)</option>
-                                    <option value="90">3 Bulan (<?php echo format_indo_date(date('Y-m-d', strtotime('+3 month')), 'short'); ?>)</option>
+                                    <option value="30" selected>1 Bulan ({$exp1})</option>
+                                    <option value="60">2 Bulan ({$exp2})</option>
+                                    <option value="90">3 Bulan ({$exp3})</option>
                                 </select>
                             </div>
 
