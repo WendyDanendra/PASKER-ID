@@ -190,9 +190,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             </div>
             <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 16px; text-align: center;">Pendaftaran Berhasil</h3>
             
-            <!-- Information Bar: Menunggu Verifikasi (Warna biru dengan icon, tanpa button x) -->
+            <!-- Information Bar: Menunggu Verifikasi (Warna biru dengan ikon jam, tanpa button x) -->
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #1d4ed8; font-size: 13px; font-weight: 700; margin-bottom: 18px;">
-                <i class="fa-solid fa-circle-info" style="font-size: 15px; color: #2563eb;"></i>
+                <i class="fa-regular fa-clock" style="font-size: 15px; color: #2563eb;"></i>
                 <span>Menunggu Verifikasi</span>
             </div>
 
