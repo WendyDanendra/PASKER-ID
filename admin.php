@@ -5445,7 +5445,7 @@ document.addEventListener('click', function(e) {
                             <?php endif; ?>
                         </div>
                         <?php if ($isJobFinalized && !empty($selectedJob['verifier_notes'])): ?>
-                        <div style="margin-top:4px;">
+                        <div style="margin-top:20px;">
                             <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
                                 <i class="fa-solid fa-note-sticky" style="color:#0284c7; width:14px;"></i> Catatan Keputusan
                             </div>
@@ -5455,7 +5455,7 @@ document.addEventListener('click', function(e) {
 
                         <!-- CHECKLIST VERIFIKASI -->
                         <?php if ($hasChecklistData): ?>
-                        <div>
+                        <div style="margin-top:24px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                                 <div style="font-size:13px; font-weight:700; color:#0f172a;">Checklist Verifikasi</div>
                                 <?php
