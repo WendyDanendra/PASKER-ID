@@ -351,20 +351,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png'])
-            ?: store_upload('supporting_doc', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png'])
-            ?: store_upload('doc_permission', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
-        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp'])
-            ?: store_upload('doc_location_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
+        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
+        $existingPermit = !empty($_POST['existing_permit_document']) ? trim($_POST['existing_permit_document']) : null;
+        $existingWorkplace = !empty($_POST['existing_workplace_photo']) ? trim($_POST['existing_workplace_photo']) : null;
+        $permitDoc = $permitDoc ?: ($existingPermit ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null));
+        $workplacePhoto = $workplacePhoto ?: ($existingWorkplace ?: ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? null));
 
         if (empty($permitDoc)) {
-            $permitDoc = !empty($_POST['existing_permit_document']) ? $_POST['existing_permit_document'] : (!empty($profile['permit_document']) ? $profile['permit_document'] : (!empty($profile['doc_permission']) ? $profile['doc_permission'] : (!empty($profile['supporting_doc']) ? $profile['supporting_doc'] : null)));
-        }
-        if (empty($workplacePhoto)) {
-            $workplacePhoto = !empty($_POST['existing_workplace_photo']) ? $_POST['existing_workplace_photo'] : (!empty($profile['workplace_photo']) ? $profile['workplace_photo'] : (!empty($profile['doc_location_photo']) ? $profile['doc_location_photo'] : null));
-        }
-
-        if (empty($permitDoc)) {
+            $_SESSION['profile_modal_error'] = 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.';
             flash('error', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.');
             redirect('dashboard.php?open_profile=1');
             exit;
@@ -943,6 +938,12 @@ $profession = $profile['profession'] ?? 'Kuliner';
 $city = $profile['city'] ?? 'Kota Bekasi';
 
 // Ambil flash message SEBELUM ob_start (karena session harus dibaca dulu)
+$profileModalError = $_SESSION['profile_modal_error'] ?? null;
+unset($_SESSION['profile_modal_error']);
+
+$isOpenProfile = isset($_GET['open_profile']) && $_GET['open_profile'] == '1';
+$showProfileModal = $isOpenProfile;
+
 $flashData = get_flash();
 $flashHtml = '';
 $pendingPopupMessage = null;
@@ -950,25 +951,20 @@ if ($flashData && $flashData['type'] === 'pending_popup') {
     $pendingPopupMessage = $flashData['message'];
     $flashData = null;
 } elseif ($flashData) {
-    $flashType = $flashData['type'] === 'success' ? 'success' : 'error';
-    $flashIcon = $flashType === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
-    $flashColor = $flashType === 'success'
-        ? 'background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;'
-        : 'background:#fef2f2;border:1px solid #fecaca;color:#991b1b;';
-    $flashHtml = '<div style="position:fixed;top:20px;right:20px;z-index:9999;max-width:400px;border-radius:14px;padding:14px 18px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);' . $flashColor . '">';
-    $flashHtml .= '<i class="fa-solid ' . $flashIcon . '"></i>';
-    $flashHtml .= htmlspecialchars($flashData['message'], ENT_QUOTES, 'UTF-8');
-    $flashHtml .= '<button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:inherit;opacity:0.6;">×</button>';
-    $flashHtml .= '</div>';
-}
-
-$kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
-unset($_SESSION['kbji_duplicate_error']);
-
-if (isset($_GET['open_profile']) && $_GET['open_profile'] == '1') {
-    $showProfileModal = true;
-} else {
-    $showProfileModal = false;
+    if ($isOpenProfile && $flashData['type'] === 'error') {
+        $profileModalError = $profileModalError ?: $flashData['message'];
+    } else {
+        $flashType = $flashData['type'] === 'success' ? 'success' : 'error';
+        $flashIcon = $flashType === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+        $flashColor = $flashType === 'success'
+            ? 'background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;'
+            : 'background:#fef2f2;border:1px solid #fecaca;color:#991b1b;';
+        $flashHtml = '<div style="position:fixed;top:20px;right:20px;z-index:9999;max-width:400px;border-radius:14px;padding:14px 18px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);' . $flashColor . '">';
+        $flashHtml .= '<i class="fa-solid ' . $flashIcon . '"></i>';
+        $flashHtml .= htmlspecialchars($flashData['message'], ENT_QUOTES, 'UTF-8');
+        $flashHtml .= '<button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:inherit;opacity:0.6;">×</button>';
+        $flashHtml .= '</div>';
+    }
 }
 
 $selectedJobId = isset($_GET['job_detail']) ? (int)$_GET['job_detail'] : 0;

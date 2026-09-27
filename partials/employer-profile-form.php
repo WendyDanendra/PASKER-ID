@@ -26,8 +26,8 @@ $vPostalCode = e($formData['postal_code'] ?? '');
 $vAddress = e($formData['address'] ?? '');
 $vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?? ''));
 
-$vPermitDoc = !empty($formData['permit_document']) ? $formData['permit_document'] : (!empty($formData['doc_permission']) ? $formData['doc_permission'] : (!empty($formData['supporting_doc']) ? $formData['supporting_doc'] : (!empty($_POST['existing_permit_document']) ? $_POST['existing_permit_document'] : '')));
-$vPhoto = !empty($formData['workplace_photo']) ? $formData['workplace_photo'] : (!empty($formData['doc_location_photo']) ? $formData['doc_location_photo'] : (!empty($_POST['existing_workplace_photo']) ? $_POST['existing_workplace_photo'] : ''));
+$vPermitDoc = $formData['permit_document'] ?? ($formData['doc_permission'] ?? '');
+$vPhoto = $formData['workplace_photo'] ?? ($formData['doc_location_photo'] ?? '');
 
 $vLinkedin = e($formData['linkedin'] ?? '');
 $vFacebook = e($formData['facebook'] ?? '');
@@ -64,6 +64,14 @@ if (file_exists($pkiCssPath)) {
         <div class="pki-demo-banner-text">Pada implementasi produksi, data identitas akan terisi otomatis dari SIAPKerja. Pada demo ini, data dapat diisi manual untuk kebutuhan pengujian.</div>
     </div>
 </div>
+
+<?php if (!empty($profileModalError)): ?>
+<div class="pki-alert-error" style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:center; gap:10px; color:#991b1b; font-size:13.5px; font-weight:600;">
+    <i class="fa-solid fa-circle-exclamation" style="font-size:16px; color:#dc2626; flex-shrink:0;"></i>
+    <div style="flex:1;"><?php echo e($profileModalError); ?></div>
+    <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#991b1b; cursor:pointer; font-size:18px; padding:0 4px; line-height:1; opacity:0.7;">&times;</button>
+</div>
+<?php endif; ?>
 
 <!-- 1. IDENTITAS PERORANGAN -->
 <div class="modal-section" style="margin-bottom:20px;">

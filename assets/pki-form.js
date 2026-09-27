@@ -238,9 +238,13 @@
 
     // Initialize all form features
     function initPkiForm() {
-        const forms = [document.getElementById('formEmployerProfile'), document.getElementById('registrationForm')].filter(Boolean);
+        const forms = [
+            document.getElementById('formEmployerProfile'),
+            document.getElementById('registrationForm'),
+            document.getElementById('formPkiRegister')
+        ].filter(Boolean);
         if (forms.length === 0) {
-            const fallback = document.querySelector('form[action="dashboard.php"], form#registrationForm');
+            const fallback = document.querySelector('form[action="dashboard.php"], form#registrationForm, form#formEmployerProfile');
             if (fallback) forms.push(fallback);
         }
         if (forms.length === 0) return;
@@ -866,7 +870,7 @@
             const existingPermit = document.getElementById('pki_existing_permit_document')?.value?.trim();
             const hasPermit = (permitFileInput && permitFileInput.files && permitFileInput.files.length > 0) || Boolean(existingPermit);
             if (!hasPermit) {
-                flagError('permit_document', 'File pendukung wajib diunggah minimal 1 file format pdf.', document.getElementById('pki_box_permit_document'));
+                flagError('permit_document', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.', document.getElementById('pki_box_permit_document'));
             } else {
                 clearFieldError('permit_document');
             }

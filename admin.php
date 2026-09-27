@@ -1730,8 +1730,13 @@ window.CITY_MASTER = [
 
                     $instagramHandle = $selectedEmployer['instagram'] ?: '@' . strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', $displayName));
                     $linkedinHandle = $selectedEmployer['linkedin'] ?: 'linkedin.com/in/' . strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', $displayName));
-                    $docPermissionName = $selectedEmployer['doc_permission'] ?: ($selectedEmployer['permit_document'] ?: 'dokumen-usaha.pdf');
-                    $photoCountLabel = !empty($selectedEmployer['workplace_photo']) || !empty($selectedEmployer['doc_location_photo']) ? '2 Foto' : '2 Foto';
+                    $docPermissionName = $selectedEmployer['permit_document'] ?: ($selectedEmployer['doc_permission'] ?: '');
+                    $hasDoc = !empty($docPermissionName);
+                    $docDisplayName = $hasDoc ? basename($docPermissionName) : 'Tidak ada dokumen';
+                    $photoLocationName = $selectedEmployer['workplace_photo'] ?: ($selectedEmployer['doc_location_photo'] ?: '');
+                    $hasPhoto = !empty($photoLocationName);
+                    $photoDisplayName = $hasPhoto ? basename($photoLocationName) : 'Tidak ada foto';
+                    $photoCountLabel = $hasPhoto ? '1 Foto Terlampir' : 'Tidak ada foto';
                 ?>
                     <!-- DETAIL VIEW FOR DIRECTORY INDIVIDUAL (MATCHING KEMNAKER KARIRHUB REFERENCE) -->
                     <div style="margin-bottom:14px;">
@@ -1962,12 +1967,16 @@ window.CITY_MASTER = [
                                                 </div>
                                                 <div style="min-width:0;">
                                                     <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">Dokumen Pendukung</div>
-                                                    <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($docPermissionName); ?>"><?php echo e($docPermissionName); ?></div>
+                                                    <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($docDisplayName); ?>"><?php echo e($docDisplayName); ?></div>
                                                 </div>
                                             </div>
-                                            <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-permission" style="padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:6px; flex-shrink:0; background:#ffffff; border:1px solid #0284c7; color:#0284c7; cursor:pointer;">
-                                                <i class="fa-regular fa-eye"></i> Lihat Dokumen
-                                            </button>
+                                            <?php if ($hasDoc): ?>
+                                                <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-permission" style="padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:6px; flex-shrink:0; background:#ffffff; border:1px solid #0284c7; color:#0284c7; cursor:pointer;">
+                                                    <i class="fa-regular fa-eye"></i> Lihat Dokumen
+                                                </button>
+                                            <?php else: ?>
+                                                <span style="font-size:12px; color:#94a3b8; font-style:italic;">Belum diunggah</span>
+                                            <?php endif; ?>
                                         </div>
 
                                         <!-- Foto Bukti Card -->
@@ -1978,12 +1987,16 @@ window.CITY_MASTER = [
                                                 </div>
                                                 <div style="min-width:0;">
                                                     <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">Foto Lokasi / Tempat Usaha</div>
-                                                    <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo e($photoCountLabel); ?></div>
+                                                    <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo e($photoDisplayName); ?></div>
                                                 </div>
                                             </div>
-                                            <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-photos" style="padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:6px; flex-shrink:0; background:#ffffff; border:1px solid #16a34a; color:#16a34a; cursor:pointer;">
-                                                <i class="fa-regular fa-eye"></i> Lihat Foto
-                                            </button>
+                                            <?php if ($hasPhoto): ?>
+                                                <button type="button" class="btn-lihat-detail" data-open-modal="modal-doc-photos" style="padding:6px 14px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:6px; flex-shrink:0; background:#ffffff; border:1px solid #16a34a; color:#16a34a; cursor:pointer;">
+                                                    <i class="fa-regular fa-eye"></i> Lihat Foto
+                                                </button>
+                                            <?php else: ?>
+                                                <span style="font-size:12px; color:#94a3b8; font-style:italic;">Belum diunggah</span>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -2126,48 +2139,72 @@ window.CITY_MASTER = [
 
                     <!-- MODAL LIHAT DOKUMEN PENDUKUNG -->
                     <div class="modal-backdrop" data-modal="modal-doc-permission">
-                        <div class="modal-panel" style="width:min(600px, 92vw);">
+                        <div class="modal-panel" style="width:min(760px, 94vw); max-height:90vh; display:flex; flex-direction:column;">
                             <div class="modal-header">
-                                <div class="modal-title">Dokumen Pendukung Usaha</div>
-                                <div class="modal-subtitle"><?php echo e($docPermissionName); ?></div>
-                            </div>
-                            <div class="modal-body" style="text-align:center; padding:30px 20px;">
-                                <div style="width:80px; height:80px; border-radius:12px; background:#eff6ff; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:36px; margin:0 auto 16px auto;">
-                                    <i class="fa-solid fa-file-pdf"></i>
+                                <div>
+                                    <div class="modal-title">Dokumen Pendukung Usaha</div>
+                                    <div class="modal-subtitle"><?php echo e($docDisplayName); ?> &bull; <?php echo e($displayName); ?></div>
                                 </div>
-                                <div style="font-size:15px; font-weight:700; color:#0f172a; margin-bottom:6px;"><?php echo e($docPermissionName); ?></div>
-                                <div style="font-size:13px; color:#64748b; margin-bottom:20px;">Dokumen legalitas / izin usaha mandiri pemberi kerja individu.</div>
-                                <a href="uploads/<?php echo urlencode($docPermissionName); ?>" target="_blank" class="primary-btn" style="background:#0284c7; display:inline-flex; align-items:center; gap:8px;">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Unduh / Buka Dokumen
-                                </a>
+                                <button type="button" data-close-modal="modal-doc-permission" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                            <div class="modal-footer">
+                            <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px; text-align:center;">
+                                <?php if ($hasDoc): ?>
+                                    <?php $docExt = strtolower(pathinfo($docPermissionName, PATHINFO_EXTENSION)); ?>
+                                    <?php if ($docExt === 'pdf'): ?>
+                                        <div style="width:100%; height:500px; border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; background:#ffffff; margin-bottom:14px;">
+                                            <iframe src="<?php echo e($docPermissionName); ?>" style="width:100%; height:100%; border:none;"></iframe>
+                                        </div>
+                                    <?php else: ?>
+                                        <div style="max-width:600px; margin:0 auto 14px auto; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
+                                            <img src="<?php echo e($docPermissionName); ?>" alt="Dokumen Pendukung" style="max-width:100%; max-height:460px; border-radius:8px; object-fit:contain;">
+                                        </div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <div style="padding:40px; color:#64748b;">Tidak ada dokumen pendukung yang diunggah.</div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
                                 <button type="button" class="ghost-btn" data-close-modal="modal-doc-permission">Tutup</button>
+                                <?php if ($hasDoc): ?>
+                                    <a href="<?php echo e($docPermissionName); ?>" target="_blank" download class="primary-btn" style="background:#0284c7; display:inline-flex; align-items:center; gap:8px; text-decoration:none; padding:8px 16px; border-radius:8px; font-size:13px;">
+                                        <i class="fa-solid fa-download"></i> Unduh Dokumen
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
                     <!-- MODAL LIHAT FOTO BUKTI TEMPAT USAHA -->
                     <div class="modal-backdrop" data-modal="modal-doc-photos">
-                        <div class="modal-panel" style="width:min(700px, 92vw);">
+                        <div class="modal-panel" style="width:min(760px, 94vw); max-height:90vh; display:flex; flex-direction:column;">
                             <div class="modal-header">
-                                <div class="modal-title">Foto Bukti Tempat Usaha / Lokasi</div>
-                                <div class="modal-subtitle"><?php echo e($displayName); ?> — <?php echo e($headerLocation); ?></div>
-                            </div>
-                            <div class="modal-body" style="padding:20px;">
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                                    <div style="border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; background:#f8fafc; height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                                        <i class="fa-solid fa-store" style="font-size:40px; color:#94a3b8; margin-bottom:8px;"></i>
-                                        <div style="font-size:12px; font-weight:600; color:#475569;">Foto Tampak Depan Usaha</div>
-                                    </div>
-                                    <div style="border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; background:#f8fafc; height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                                        <i class="fa-solid fa-laptop-code" style="font-size:40px; color:#94a3b8; margin-bottom:8px;"></i>
-                                        <div style="font-size:12px; font-weight:600; color:#475569;">Foto Ruang Kerja / Operasional</div>
-                                    </div>
+                                <div>
+                                    <div class="modal-title">Foto Bukti Tempat Usaha / Lokasi</div>
+                                    <div class="modal-subtitle"><?php echo e($photoDisplayName); ?> &bull; <?php echo e($displayName); ?> — <?php echo e($headerLocation); ?></div>
                                 </div>
+                                <button type="button" data-close-modal="modal-doc-photos" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                            <div class="modal-footer">
+                            <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px; text-align:center;">
+                                <?php if ($hasPhoto): ?>
+                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; max-width:640px; margin:0 auto;">
+                                        <div style="border-radius:8px; overflow:hidden; background:#0f172a; margin-bottom:12px; max-height:460px; display:flex; align-items:center; justify-content:center;">
+                                            <img src="<?php echo e($photoLocationName); ?>" alt="Foto Bukti Tempat Usaha" style="max-width:100%; max-height:460px; object-fit:contain;">
+                                        </div>
+                                        <div style="font-size:12.5px; color:#475569; text-align:left;">
+                                            <strong>Alamat:</strong> <?php echo e($headerLocation); ?>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <div style="padding:40px; color:#64748b;">Tidak ada foto tempat usaha yang diunggah.</div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
                                 <button type="button" class="ghost-btn" data-close-modal="modal-doc-photos">Tutup</button>
+                                <?php if ($hasPhoto): ?>
+                                    <a href="<?php echo e($photoLocationName); ?>" target="_blank" class="primary-btn" style="background:#16a34a; display:inline-flex; align-items:center; gap:8px; text-decoration:none; padding:8px 16px; border-radius:8px; font-size:13px;">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Foto Asli
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -3298,37 +3335,42 @@ document.addEventListener('click', function(e) {
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Detail Alamat / Patokan</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address_detail'] ?: 'Dekat persimpangan utama'); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Kode Pos</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['postal_code'] ?: '40135'); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['description'] ?: 'Usaha jasa desain grafis dan digital'); ?></td></tr>
-<?php
-$empPermitDoc = !empty($selectedEmployer['permit_document']) ? $selectedEmployer['permit_document'] : (!empty($selectedEmployer['doc_permission']) ? $selectedEmployer['doc_permission'] : '');
-$empWorkplacePhoto = !empty($selectedEmployer['workplace_photo']) ? $selectedEmployer['workplace_photo'] : (!empty($selectedEmployer['doc_location_photo']) ? $selectedEmployer['doc_location_photo'] : '');
-?>
+                                                <?php
+                                                    $vDocPath = $selectedEmployer['permit_document'] ?: ($selectedEmployer['doc_permission'] ?: '');
+                                                    $vHasDoc = !empty($vDocPath);
+                                                    $vDocName = $vHasDoc ? basename($vDocPath) : 'Tidak ada dokumen';
+
+                                                    $vPhotoPath = $selectedEmployer['workplace_photo'] ?: ($selectedEmployer['doc_location_photo'] ?: '');
+                                                    $vHasPhoto = !empty($vPhotoPath);
+                                                    $vPhotoName = $vHasPhoto ? basename($vPhotoPath) : 'Tidak ada foto';
+                                                ?>
                                                 <tr style="border-bottom:1px solid #f1f5f9;">
                                                     <td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Pendukung</td>
                                                     <td style="padding:10px 14px; color:#0f172a;">
-                                                        <?php if (!empty($empPermitDoc)): ?>
+                                                        <?php if ($vHasDoc): ?>
                                                             <div style="display:flex; align-items:center; gap:10px;">
-                                                                <span><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> <?php echo e(basename($empPermitDoc)); ?></span>
+                                                                <span style="font-weight:600; color:#0f172a;"><i class="fa-solid fa-file-pdf" style="color:#ef4444; margin-right:4px;"></i> <?php echo e($vDocName); ?></span>
                                                                 <button type="button" data-open-modal="modal-view-doc" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; color:#0284c7; font-weight:700; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
                                                                     <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i> Lihat Dokumen
                                                                 </button>
                                                             </div>
                                                         <?php else: ?>
-                                                            <span style="color:#94a3b8; font-style:italic;">Belum ada dokumen yang diunggah</span>
+                                                            <span style="color:#94a3b8; font-style:italic;">Belum ada file diunggah</span>
                                                         <?php endif; ?>
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td style="padding:10px 14px; font-weight:600; color:#334155;">Foto Bukti Tempat Usaha / Lokasi</td>
                                                     <td style="padding:10px 14px; color:#0f172a;">
-                                                        <?php if (!empty($empWorkplacePhoto)): ?>
+                                                        <?php if ($vHasPhoto): ?>
                                                             <div style="display:flex; align-items:center; gap:10px;">
-                                                                <span><i class="fa-solid fa-image" style="color:#0284c7;"></i> <?php echo e(basename($empWorkplacePhoto)); ?></span>
+                                                                <span style="font-weight:600; color:#0f172a;"><i class="fa-solid fa-image" style="color:#0284c7; margin-right:4px;"></i> <?php echo e($vPhotoName); ?></span>
                                                                 <button type="button" data-open-modal="modal-view-photos" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; color:#0284c7; font-weight:700; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
                                                                     <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i> Lihat Foto
                                                                 </button>
                                                             </div>
                                                         <?php else: ?>
-                                                            <span style="color:#94a3b8; font-style:italic;">Belum ada foto yang diunggah</span>
+                                                            <span style="color:#94a3b8; font-style:italic;">Belum ada foto diunggah</span>
                                                         <?php endif; ?>
                                                     </td>
                                                 </tr>
@@ -3831,48 +3873,49 @@ $empWorkplacePhoto = !empty($selectedEmployer['workplace_photo']) ? $selectedEmp
 
                     <!-- MODAL LIHAT DOKUMEN PENDUKUNG -->
                     <div class="modal-backdrop" data-modal="modal-view-doc">
-                        <div class="modal-panel" style="width:min(800px, 92vw); max-height:90vh; display:flex; flex-direction:column;">
+                        <div class="modal-panel" style="width:min(800px, 94vw); max-height:90vh; display:flex; flex-direction:column;">
                             <div class="modal-header">
                                 <div>
                                     <div class="modal-title">Dokumen Pendukung</div>
-                                    <div class="modal-subtitle"><?php echo !empty($empPermitDoc) ? e(basename($empPermitDoc)) : 'Dokumen Usaha'; ?> &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                    <div class="modal-subtitle"><?php echo e($vDocName); ?> &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
                                 </div>
                                 <button type="button" data-close-modal="modal-view-doc" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                             <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px; background:#f8fafc; text-align:center;">
-                                <?php if (!empty($empPermitDoc)): ?>
-                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin:0 auto; text-align:left;">
-                                        <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:14px; margin-bottom:16px;">
-                                            <div style="display:flex; align-items:center; gap:12px;">
-                                                <div style="width:40px; height:40px; border-radius:10px; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:20px;">
-                                                    <i class="fa-solid fa-file-pdf"></i>
-                                                </div>
-                                                <div>
-                                                    <div style="font-weight:700; color:#0f172a; font-size:14px;"><?php echo e(basename($empPermitDoc)); ?></div>
-                                                    <div style="font-size:12px; color:#64748b;">PDF Document &bull; Diunggah pada <?php echo date('d M Y', strtotime($selectedEmployer['created_at'])); ?></div>
-                                                </div>
+                                <?php if ($vHasDoc): ?>
+                                    <?php $docExt = strtolower(pathinfo($vDocPath, PATHINFO_EXTENSION)); ?>
+                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:16px; text-align:left; display:flex; justify-content:space-between; align-items:center;">
+                                        <div style="display:flex; align-items:center; gap:12px;">
+                                            <div style="width:40px; height:40px; border-radius:8px; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                                                <i class="fa-solid fa-file-pdf"></i>
                                             </div>
-                                            <a href="<?php echo e($empPermitDoc); ?>" target="_blank" class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; font-size:12.5px;">
-                                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka File
-                                            </a>
+                                            <div>
+                                                <div style="font-weight:700; color:#0f172a; font-size:14px;"><?php echo e($vDocName); ?></div>
+                                                <div style="font-size:12px; color:#64748b;">Diunggah oleh <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?> &bull; <?php echo date('d M Y, H:i', strtotime($selectedEmployer['created_at'])); ?></div>
+                                            </div>
                                         </div>
-                                        <?php if (str_ends_with(strtolower($empPermitDoc), '.pdf')): ?>
-                                            <iframe src="<?php echo e($empPermitDoc); ?>" style="width:100%; height:460px; border:1px solid #cbd5e1; border-radius:8px;"></iframe>
-                                        <?php else: ?>
-                                            <div style="text-align:center; padding:10px;">
-                                                <img src="<?php echo e($empPermitDoc); ?>" style="max-width:100%; max-height:460px; border-radius:8px; object-fit:contain;">
-                                            </div>
-                                        <?php endif; ?>
+                                        <a href="<?php echo e($vDocPath); ?>" target="_blank" download class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; font-size:12.5px;">
+                                            <i class="fa-solid fa-download"></i> Unduh File
+                                        </a>
                                     </div>
+                                    <?php if ($docExt === 'pdf'): ?>
+                                        <div style="width:100%; height:500px; border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; background:#ffffff;">
+                                            <iframe src="<?php echo e($vDocPath); ?>" style="width:100%; height:100%; border:none;"></iframe>
+                                        </div>
+                                    <?php else: ?>
+                                        <div style="max-width:600px; margin:0 auto; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:16px;">
+                                            <img src="<?php echo e($vDocPath); ?>" alt="Dokumen Pendukung" style="max-width:100%; max-height:500px; border-radius:8px; object-fit:contain;">
+                                        </div>
+                                    <?php endif; ?>
                                 <?php else: ?>
-                                    <div style="padding:40px; color:#64748b;">Belum ada dokumen yang diunggah oleh pemberi kerja.</div>
+                                    <div style="padding:40px; color:#64748b;">Tidak ada dokumen pendukung yang diunggah.</div>
                                 <?php endif; ?>
                             </div>
                             <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
                                 <button type="button" class="ghost-btn" data-close-modal="modal-view-doc">Tutup</button>
-                                <?php if (!empty($empPermitDoc)): ?>
-                                    <a href="<?php echo e($empPermitDoc); ?>" download class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 16px; font-size:13px;">
-                                        <i class="fa-solid fa-download"></i> Unduh File
+                                <?php if ($vHasDoc): ?>
+                                    <a href="<?php echo e($vDocPath); ?>" target="_blank" class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 16px; font-size:13px;">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Tab Baru
                                     </a>
                                 <?php endif; ?>
                             </div>
@@ -3885,32 +3928,31 @@ $empWorkplacePhoto = !empty($selectedEmployer['workplace_photo']) ? $selectedEmp
                             <div class="modal-header">
                                 <div>
                                     <div class="modal-title">Foto Bukti Tempat Usaha / Lokasi</div>
-                                    <div class="modal-subtitle"><?php echo !empty($empWorkplacePhoto) ? e(basename($empWorkplacePhoto)) : 'Foto Bukti'; ?> &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
+                                    <div class="modal-subtitle"><?php echo e($vPhotoName); ?> &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
                                 </div>
                                 <button type="button" data-close-modal="modal-view-photos" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                             <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px; background:#f8fafc; text-align:center;">
-                                <?php if (!empty($empWorkplacePhoto)): ?>
-                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.05); max-width:640px; margin:0 auto; text-align:left;">
-                                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                                            <div>
-                                                <div style="font-weight:700; font-size:14px; color:#0f172a;"><?php echo e(basename($empWorkplacePhoto)); ?></div>
-                                                <div style="font-size:12px; color:#64748b;"><?php echo e($selectedEmployer['address'] ?: 'Alamat sesuai profil'); ?></div>
-                                            </div>
-                                            <a href="<?php echo e($empWorkplacePhoto); ?>" target="_blank" class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:12px;">
-                                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Ukuran Penuh
-                                            </a>
+                                <?php if ($vHasPhoto): ?>
+                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; max-width:680px; margin:0 auto; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+                                        <div style="border-radius:8px; overflow:hidden; background:#0f172a; margin-bottom:12px; max-height:480px; display:flex; align-items:center; justify-content:center;">
+                                            <img src="<?php echo e($vPhotoPath); ?>" alt="Foto Bukti Tempat Usaha" style="max-width:100%; max-height:480px; object-fit:contain;">
                                         </div>
-                                        <div style="text-align:center; background:#0f172a; border-radius:8px; padding:10px; overflow:hidden;">
-                                            <img src="<?php echo e($empWorkplacePhoto); ?>" style="max-width:100%; max-height:480px; border-radius:6px; object-fit:contain;" alt="Foto Bukti Tempat Usaha">
+                                        <div style="text-align:left; font-size:13px; color:#475569;">
+                                            <strong>Alamat:</strong> <?php echo e($selectedEmployer['address'] ?: '-'); ?><?php echo !empty($selectedEmployer['city']) ? ', ' . e($selectedEmployer['city']) : ''; ?>
                                         </div>
                                     </div>
                                 <?php else: ?>
-                                    <div style="padding:40px; color:#64748b;">Belum ada foto yang diunggah oleh pemberi kerja.</div>
+                                    <div style="padding:40px; color:#64748b;">Tidak ada foto tempat usaha yang diunggah.</div>
                                 <?php endif; ?>
                             </div>
-                            <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+                            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
                                 <button type="button" class="ghost-btn" data-close-modal="modal-view-photos">Tutup</button>
+                                <?php if ($vHasPhoto): ?>
+                                    <a href="<?php echo e($vPhotoPath); ?>" target="_blank" class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 16px; font-size:13px;">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Foto Asli
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
