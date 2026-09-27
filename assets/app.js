@@ -3302,10 +3302,39 @@ function toggleJobLainnyaDropdown(e) {
 }
 window.toggleJobLainnyaDropdown = toggleJobLainnyaDropdown;
 
-function openConfirmCloseJobModal(jobId) {
-    const modal = document.getElementById('modalConfirmCloseJob');
+let currentCloseJobId = 0;
+let currentCloseQuota = 1;
+let currentCloseAccepted = 0;
+let currentCloseRemaining = 1;
+
+function openConfirmCloseJobModal(jobId, quota, acceptedCount) {
+    currentCloseJobId = jobId || 0;
+    currentCloseQuota = (typeof quota !== 'undefined' && quota !== null) ? parseInt(quota, 10) : 1;
+    currentCloseAccepted = (typeof acceptedCount !== 'undefined' && acceptedCount !== null) ? parseInt(acceptedCount, 10) : 0;
+    currentCloseRemaining = Math.max(0, currentCloseQuota - currentCloseAccepted);
+
+    // Set hidden inputs in formConfirmCloseJob
     const inputJobId = document.getElementById('modalCloseJobId');
-    if (inputJobId && jobId) inputJobId.value = jobId;
+    if (inputJobId && currentCloseJobId) inputJobId.value = currentCloseJobId;
+
+    // Set dynamic values in modalUnfulfilledQuotaReason
+    const spanAccepted = document.getElementById('unfulfilledAcceptedCount');
+    if (spanAccepted) spanAccepted.textContent = currentCloseAccepted;
+
+    const spanQuota = document.getElementById('unfulfilledTotalQuota');
+    if (spanQuota) spanQuota.textContent = currentCloseQuota;
+
+    const spanRemaining = document.getElementById('unfulfilledRemainingQuota');
+    if (spanRemaining) spanRemaining.textContent = currentCloseRemaining;
+
+    const unfulfilledJobId = document.getElementById('modalUnfulfilledJobId');
+    if (unfulfilledJobId && currentCloseJobId) unfulfilledJobId.value = currentCloseJobId;
+
+    const unfulfilledRemaining = document.getElementById('modalUnfulfilledRemaining');
+    if (unfulfilledRemaining) unfulfilledRemaining.value = currentCloseRemaining;
+
+    // Open first modal (Konfirmasi)
+    const modal = document.getElementById('modalConfirmCloseJob');
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('open');
@@ -3321,6 +3350,115 @@ function closeConfirmCloseJobModal() {
     }
 }
 window.closeConfirmCloseJobModal = closeConfirmCloseJobModal;
+
+function handleConfirmCloseJobContinue() {
+    // If quota is not fulfilled (sisa_kuota > 0) -> switch to modal Kuota Belum Terpenuhi
+    if (currentCloseRemaining > 0) {
+        closeConfirmCloseJobModal();
+        openUnfulfilledQuotaModal();
+    } else {
+        // Quota is completely filled -> submit standard close
+        const form = document.getElementById('formConfirmCloseJob');
+        if (form) form.submit();
+    }
+}
+window.handleConfirmCloseJobContinue = handleConfirmCloseJobContinue;
+
+function openUnfulfilledQuotaModal() {
+    const modal = document.getElementById('modalUnfulfilledQuotaReason');
+    if (modal) {
+        const errDiv = document.getElementById('unfulfilledValidationError');
+        if (errDiv) {
+            errDiv.style.display = 'none';
+            errDiv.textContent = '';
+        }
+        const checkboxes = modal.querySelectorAll('input[name="reasons[]"]');
+        checkboxes.forEach(cb => cb.checked = false);
+        const lainnyaText = document.getElementById('reasonLainnyaInput');
+        if (lainnyaText) {
+            lainnyaText.value = '';
+            lainnyaText.style.display = 'none';
+        }
+        modal.style.display = 'flex';
+        modal.classList.add('open');
+    }
+}
+window.openUnfulfilledQuotaModal = openUnfulfilledQuotaModal;
+
+function closeUnfulfilledQuotaModal() {
+    const modal = document.getElementById('modalUnfulfilledQuotaReason');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('open');
+    }
+}
+window.closeUnfulfilledQuotaModal = closeUnfulfilledQuotaModal;
+
+function toggleReasonLainnya(cb) {
+    const textarea = document.getElementById('reasonLainnyaInput');
+    if (!textarea) return;
+    if (cb.checked) {
+        textarea.style.display = 'block';
+        textarea.focus();
+    } else {
+        textarea.style.display = 'none';
+        textarea.value = '';
+    }
+}
+window.toggleReasonLainnya = toggleReasonLainnya;
+
+function submitUnfulfilledCloseJob(repostValue) {
+    const modal = document.getElementById('modalUnfulfilledQuotaReason');
+    if (!modal) return;
+
+    const errDiv = document.getElementById('unfulfilledValidationError');
+    const checkedReasons = modal.querySelectorAll('input[name="reasons[]"]:checked');
+
+    // Validasi: minimal 1 alasan
+    if (checkedReasons.length === 0) {
+        if (errDiv) {
+            errDiv.textContent = 'Mohon pilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.';
+            errDiv.style.display = 'block';
+        }
+        return;
+    }
+
+    // Validasi: jika Lainnya dipilih, wajib isi alasan manual
+    const cbLainnya = modal.querySelector('input[name="reasons[]"][value="Lainnya"]');
+    const txtLainnya = document.getElementById('reasonLainnyaInput');
+    if (cbLainnya && cbLainnya.checked) {
+        if (!txtLainnya || !txtLainnya.value.trim()) {
+            if (errDiv) {
+                errDiv.textContent = 'Opsi "Lainnya" dipilih. Mohon isi alasan secara manual.';
+                errDiv.style.display = 'block';
+            }
+            if (txtLainnya) txtLainnya.focus();
+            return;
+        }
+    }
+
+    if (errDiv) {
+        errDiv.style.display = 'none';
+    }
+
+    // Set repost value
+    const inputRepost = document.getElementById('modalUnfulfilledRepost');
+    if (inputRepost) {
+        inputRepost.value = repostValue ? '1' : '0';
+    }
+
+    // Submit form
+    const form = document.getElementById('formUnfulfilledQuota');
+    if (form) {
+        form.submit();
+    }
+}
+window.submitUnfulfilledCloseJob = submitUnfulfilledCloseJob;
+
+function testCloseJob(jobId, sisaKuota, quota, acceptedCount) {
+    openConfirmCloseJobModal(jobId, quota, acceptedCount);
+}
+window.testCloseJob = testCloseJob;
 
 function openJobPublicView(jobId) {
     const url = 'seeker.php?job_id=' + encodeURIComponent(jobId || '');

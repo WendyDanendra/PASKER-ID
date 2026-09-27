@@ -686,6 +686,11 @@ function profession_options(): array
 function pki_close_reasons(): array
 {
     return [
+        'Belum menemukan kandidat yang sesuai dengan kebutuhan',
+        'Jumlah pelamar yang memenuhi kualifikasi masih terbatas',
+        'Kandidat yang sesuai mengundurkan diri atau membatalkan proses',
+        'Kebutuhan tenaga kerja berubah atau berkurang',
+        'Proses seleksi dan rekrutmen masih berlangsung',
         'Jumlah pelamar belum mencukupi',
         'Pelamar belum sesuai kompetensi/kualifikasi',
         'Pelamar mengundurkan diri',

@@ -2542,9 +2542,9 @@ if (!str_contains($html, 'src="./assets/app.js"') && !str_contains($html, 'src="
 if (!str_contains($html, 'window.testCloseJob')) {
     $html = str_replace('</body>', <<<'JS'
     <script>
-    window.testCloseJob = function(jobId, sisaKuota) {
+    window.testCloseJob = function(jobId, sisaKuota, quota, acceptedCount) {
         if (typeof openConfirmCloseJobModal === 'function') {
-            openConfirmCloseJobModal(jobId);
+            openConfirmCloseJobModal(jobId, quota, acceptedCount);
         } else {
             const modal = document.getElementById('modalConfirmCloseJob');
             const inputJobId = document.getElementById('modalCloseJobId');

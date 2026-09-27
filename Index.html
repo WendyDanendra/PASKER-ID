@@ -2620,7 +2620,7 @@
                                 <?php elseif ($dStatus === 'Tayang'): ?>
                                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
                                         <!-- Button Tutup Lowongan -->
-                                        <button type="button" onclick="openConfirmCloseJobModal(<?php echo (int)$detailJob['id']; ?>)" style="background:#ef4444; color:#fff; border:none; padding:8px 18px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(239,68,68,0.2); transition:all 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                                        <button type="button" onclick="openConfirmCloseJobModal(<?php echo (int)$detailJob['id']; ?>, <?php echo $totalQuota; ?>, <?php echo $acceptedCount; ?>)" style="background:#ef4444; color:#fff; border:none; padding:8px 18px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(239,68,68,0.2); transition:all 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
                                             <i class="fa-regular fa-circle-xmark" style="font-size:14px;"></i> Tutup Lowongan
                                         </button>
 
@@ -3504,7 +3504,7 @@
                                                              <?php elseif ($j['status'] === 'Tayang' || $j['status'] === 'Lowongan Aktif'): ?>
                                                                  <div style="display:flex; justify-content:space-between; width:100%;">
                                                                      <button type="button" class="ghost-btn" data-close-modal="detail-draft-<?php echo $j['id']; ?>">Tutup Detail</button>
-                                                                     <button type="button" class="ghost-btn" style="color:#dc2626; border-color:#fecaca;" onclick="testCloseJob(<?php echo $j['id']; ?>, <?php echo max(0, (int)$j['quota'] - (int)$j['accepted_count']); ?>)">
+                                                                     <button type="button" class="ghost-btn" style="color:#dc2626; border-color:#fecaca;" onclick="testCloseJob(<?php echo $j['id']; ?>, <?php echo max(0, (int)$j['quota'] - (int)$j['accepted_count']); ?>, <?php echo (int)($j['quota'] ?? 1); ?>, <?php echo (int)($j['accepted_count'] ?? 0); ?>)">
                                                                          <i class="fa-solid fa-circle-xmark"></i> Tutup Lowongan
                                                                      </button>
                                                                  </div>
@@ -4431,8 +4431,8 @@
     <script src="assets/pki-form.js?v=20260926_v5"></script>
     <script>
     // Feature-specific handler: Tutup Lowongan
-    window.testCloseJob = function(jobId, sisaKuota) {
-        openConfirmCloseJobModal(jobId);
+    window.testCloseJob = function(jobId, sisaKuota, quota, acceptedCount) {
+        openConfirmCloseJobModal(jobId, quota, acceptedCount);
     };
 
     // Feature-specific handler: Toggle More Applicants
@@ -4517,7 +4517,90 @@
 
                 <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
                     <button type="button" onclick="closeConfirmCloseJobModal()" style="padding:8px 20px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer;">Batalkan</button>
-                    <button type="submit" style="padding:8px 22px; border:none; background:#ef4444; color:#fff; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(239,68,68,0.25);">Lanjutkan</button>
+                    <button type="button" onclick="handleConfirmCloseJobContinue()" style="padding:8px 22px; border:none; background:#ef4444; color:#fff; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(239,68,68,0.25);">Lanjutkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL POP-UP PEMBERITAHUAN SISTEM: KUOTA BELUM TERPENUHI (Auto-Reposting Flow) -->
+    <div class="modal-backdrop" id="modalUnfulfilledQuotaReason" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(3px); z-index:100001; align-items:center; justify-content:center;" onclick="if(event.target===this) closeUnfulfilledQuotaModal()">
+        <div style="background:#fff; border-radius:16px; width:min(520px, 94vw); max-height:90vh; overflow-y:auto; box-shadow:0 25px 35px -5px rgba(0,0,0,0.18), 0 15px 15px -5px rgba(0,0,0,0.06); padding:26px 28px; position:relative;" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:36px; height:36px; border-radius:10px; background:#eff6ff; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color:#0284c7;"></i>
+                    </div>
+                    <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; line-height:1.3;">Pemberitahuan Sistem: Kuota Belum Terpenuhi</h3>
+                </div>
+                <button type="button" onclick="closeUnfulfilledQuotaModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer; padding:4px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <!-- Description -->
+            <div style="font-size:13px; color:#475569; line-height:1.6; margin-bottom:18px;">
+                Anda menetapkan <span id="unfulfilledAcceptedCount" style="font-weight:700; color:#0f172a;">1</span> dari <span id="unfulfilledTotalQuota" style="font-weight:700; color:#0f172a;">2</span> kuota yang tersedia. Mohon isi alasan mengapa sisa kuota belum terpenuhi. Pengguna wajib memilih minimal 1 alasan. Sistem menyediakan 5 pilihan alasan yang dapat dipilih menggunakan checkbox. Apabila alasan yang sesuai tidak tersedia, pengguna dapat memilih opsi ke-6 “Lainnya” dan wajib mengisi alasan secara manual.
+            </div>
+
+            <form method="post" action="dashboard.php#lowongan" id="formUnfulfilledQuota">
+                <input type="hidden" name="close_job" value="1">
+                <input type="hidden" name="job_id" id="modalUnfulfilledJobId" value="<?php echo (int)($detailJob['id'] ?? 0); ?>">
+                <input type="hidden" name="sisa_kuota" id="modalUnfulfilledRemaining" value="1">
+                <input type="hidden" name="repost" id="modalUnfulfilledRepost" value="0">
+
+                <!-- Checkbox List -->
+                <div style="font-weight:700; font-size:12.5px; color:#1e293b; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.3px;">
+                    Pilih Alasan:
+                </div>
+                <div style="display:flex; flex-direction:column; gap:9px; margin-bottom:20px;">
+                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                        <input type="checkbox" name="reasons[]" value="Belum menemukan kandidat yang sesuai dengan kebutuhan" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                        <span>Belum menemukan kandidat yang sesuai dengan kebutuhan</span>
+                    </label>
+                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                        <input type="checkbox" name="reasons[]" value="Jumlah pelamar yang memenuhi kualifikasi masih terbatas" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                        <span>Jumlah pelamar yang memenuhi kualifikasi masih terbatas</span>
+                    </label>
+                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                        <input type="checkbox" name="reasons[]" value="Kandidat yang sesuai mengundurkan diri atau membatalkan proses" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                        <span>Kandidat yang sesuai mengundurkan diri atau membatalkan proses</span>
+                    </label>
+                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                        <input type="checkbox" name="reasons[]" value="Kebutuhan tenaga kerja berubah atau berkurang" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                        <span>Kebutuhan tenaga kerja berubah atau berkurang</span>
+                    </label>
+                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                        <input type="checkbox" name="reasons[]" value="Proses seleksi dan rekrutmen masih berlangsung" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                        <span>Proses seleksi dan rekrutmen masih berlangsung</span>
+                    </label>
+                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                        <input type="checkbox" name="reasons[]" value="Lainnya" onchange="toggleReasonLainnya(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                        <span>Lainnya</span>
+                    </label>
+                    <textarea id="reasonLainnyaInput" name="reason_lainnya" placeholder="Tuliskan alasan lainnya secara manual..." rows="2" style="display:none; width:100%; margin-top:2px; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                </div>
+
+                <!-- Error Validation Message -->
+                <div id="unfulfilledValidationError" style="display:none; color:#dc2626; font-size:12.5px; font-weight:600; margin-bottom:16px; background:#fef2f2; border:1px solid #fecaca; padding:9px 14px; border-radius:8px; line-height:1.4;"></div>
+
+                <!-- Section Opsi Posting Ulang Sisa Kuota -->
+                <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; margin-bottom:22px;">
+                    <div style="font-size:13px; font-weight:700; color:#0369a1; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-arrows-rotate"></i> Opsi Posting Ulang Sisa Kuota
+                    </div>
+                    <div style="font-size:12.5px; color:#0c4a6e; line-height:1.5;">
+                        Apakah Anda ingin mempublikasikan ulang lowongan untuk memenuhi sisa kuota (<span id="unfulfilledRemainingQuota" style="font-weight:700; color:#0284c7;">1</span> orang) yang kurang?
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <button type="button" onclick="submitUnfulfilledCloseJob(0)" style="padding:9px 18px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                        Tidak, Tutup Saja
+                    </button>
+                    <button type="button" onclick="submitUnfulfilledCloseJob(1)" style="padding:9px 20px; border:none; background:#0284c7; color:#fff; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25); display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
+                        <i class="fa-solid fa-arrows-rotate" style="font-size:12px;"></i> Ya, Posting Ulang Sisa Kuota
+                    </button>
                 </div>
             </form>
         </div>
