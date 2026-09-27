@@ -683,9 +683,9 @@
 
         if (textBox) {
             textBox.classList.remove('has-file');
-            textBox.innerHTML = '<span>' + (fieldId === 'permit_document'
+            textBox.textContent = fieldId === 'permit_document'
                 ? 'Pilih file untuk diunggah'
-                : 'Pilih foto untuk diunggah') + '</span>';
+                : 'Pilih foto untuk diunggah';
         }
 
         if (btn) btn.textContent = 'Upload';
