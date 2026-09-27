@@ -2580,15 +2580,17 @@
                                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:18px 20px; width:100%; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
                                     <div style="font-size:11px; font-weight:800; color:#64748b; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px;">KUOTA</div>
                                     <?php
-                                        $acceptedCount = (int)($detailJob['accepted_count'] ?? 0);
+                                        $accCountQuery = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
+                                        $accCountQuery->execute([(int)$detailJob['id']]);
+                                        $acceptedCount = (int)$accCountQuery->fetchColumn();
                                         $totalQuota = max(1, (int)($detailJob['quota'] ?? 1));
                                         $percent = min(100, (int)round(($acceptedCount / $totalQuota) * 100));
                                     ?>
                                     <div style="background:#e2e8f0; height:10px; border-radius:6px; overflow:hidden; margin-bottom:8px;">
-                                        <div style="background:#0ea5e9; width:<?php echo $percent; ?>%; height:100%; border-radius:6px;"></div>
+                                        <div id="jobQuotaProgressBar" style="background:#0ea5e9; width:<?php echo $percent; ?>%; height:100%; border-radius:6px; transition:width 0.3s ease;"></div>
                                     </div>
-                                    <div style="font-size:14px; font-weight:800; color:#0f172a;">
-                                        <?php echo $acceptedCount; ?> / <?php echo $totalQuota; ?> telah terisi
+                                    <div id="jobQuotaText" style="font-size:14px; font-weight:800; color:#0f172a;">
+                                        <span id="jobQuotaAcceptedSpan"><?php echo $acceptedCount; ?></span> / <span id="jobQuotaTotalSpan"><?php echo $totalQuota; ?></span> telah terisi
                                     </div>
                                 </div>
 
@@ -2620,7 +2622,7 @@
                                 <?php elseif ($dStatus === 'Tayang'): ?>
                                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
                                         <!-- Button Tutup Lowongan -->
-                                        <button type="button" onclick="openConfirmCloseJobModal(<?php echo (int)$detailJob['id']; ?>, <?php echo $totalQuota; ?>, <?php echo $acceptedCount; ?>)" style="background:#ef4444; color:#fff; border:none; padding:8px 18px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(239,68,68,0.2); transition:all 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                                        <button type="button" id="btnTutupLowonganDetail" onclick="openConfirmCloseJobModal(<?php echo (int)$detailJob['id']; ?>, <?php echo $totalQuota; ?>, <?php echo $acceptedCount; ?>)" style="background:#ef4444; color:#fff; border:none; padding:8px 18px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(239,68,68,0.2); transition:all 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
                                             <i class="fa-regular fa-circle-xmark" style="font-size:14px;"></i> Tutup Lowongan
                                         </button>
 
@@ -4427,7 +4429,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="assets/app.js?v=20260921_v3"></script>
+    <script src="assets/app.js?v=<?php echo time(); ?>"></script>
     <script src="assets/pki-form.js?v=20260926_v5"></script>
     <script>
     // Feature-specific handler: Tutup Lowongan
@@ -4509,7 +4511,7 @@
             </div>
             
             <!-- Action Form -->
-            <form method="post" action="dashboard.php#lowongan" id="formConfirmCloseJob">
+            <form method="post" action="dashboard.php#lowongan" id="formConfirmCloseJob" onsubmit="event.preventDefault(); handleConfirmCloseJobContinue();">
                 <input type="hidden" name="close_job" value="1">
                 <input type="hidden" name="job_id" id="modalCloseJobId" value="<?php echo (int)($detailJob['id'] ?? 0); ?>">
                 <input type="hidden" name="sisa_kuota" value="0">

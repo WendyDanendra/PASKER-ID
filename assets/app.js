@@ -1953,6 +1953,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(res => {
                     if (res && res.ok) {
                         moveCardToKanbanStage(appId, statusName);
+                        if (typeof res.accepted_count !== 'undefined') {
+                            updateJobQuotaDisplay(res.accepted_count, res.quota);
+                        }
                         showToastNotification(`Status berhasil diubah ke "${statusName}"`);
                     }
                 })
@@ -2047,6 +2050,9 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => r.json())
             .then(res => {
                 if (res && res.ok) {
+                    if (typeof res.accepted_count !== 'undefined') {
+                        updateJobQuotaDisplay(res.accepted_count, res.quota);
+                    }
                     showToastNotification(`Status pelamar dipindahkan ke "${targetStage}"`);
                 }
             })
@@ -3351,6 +3357,48 @@ function closeConfirmCloseJobModal() {
 }
 window.closeConfirmCloseJobModal = closeConfirmCloseJobModal;
 
+function updateJobQuotaDisplay(acceptedCount, quota) {
+    if (typeof acceptedCount === 'undefined' || acceptedCount === null) return;
+    const acc = parseInt(acceptedCount, 10);
+    const q = quota ? parseInt(quota, 10) : (currentCloseQuota || 1);
+    const pct = Math.min(100, Math.round((acc / q) * 100));
+
+    currentCloseAccepted = acc;
+    currentCloseQuota = q;
+    currentCloseRemaining = Math.max(0, q - acc);
+
+    // Update Progress Bar
+    const bar = document.getElementById('jobQuotaProgressBar');
+    if (bar) bar.style.width = pct + '%';
+
+    // Update text spans
+    const spanAcc = document.getElementById('jobQuotaAcceptedSpan');
+    if (spanAcc) spanAcc.textContent = acc;
+
+    const spanQ = document.getElementById('jobQuotaTotalSpan');
+    if (spanQ) spanQ.textContent = q;
+
+    // Update modal numbers
+    const modalAcc = document.getElementById('unfulfilledAcceptedCount');
+    if (modalAcc) modalAcc.textContent = acc;
+
+    const modalQ = document.getElementById('unfulfilledTotalQuota');
+    if (modalQ) modalQ.textContent = q;
+
+    const modalRem = document.getElementById('unfulfilledRemainingQuota');
+    if (modalRem) modalRem.textContent = currentCloseRemaining;
+
+    const inputRem = document.getElementById('modalUnfulfilledRemaining');
+    if (inputRem) inputRem.value = currentCloseRemaining;
+
+    // Update button onclick
+    const btnClose = document.getElementById('btnTutupLowonganDetail');
+    if (btnClose) {
+        btnClose.setAttribute('onclick', `openConfirmCloseJobModal(${currentCloseJobId || 0}, ${q}, ${acc})`);
+    }
+}
+window.updateJobQuotaDisplay = updateJobQuotaDisplay;
+
 function handleConfirmCloseJobContinue() {
     // If quota is not fulfilled (sisa_kuota > 0) -> switch to modal Kuota Belum Terpenuhi
     if (currentCloseRemaining > 0) {
@@ -3359,7 +3407,10 @@ function handleConfirmCloseJobContinue() {
     } else {
         // Quota is completely filled -> submit standard close
         const form = document.getElementById('formConfirmCloseJob');
-        if (form) form.submit();
+        if (form) {
+            form.onsubmit = null;
+            form.submit();
+        }
     }
 }
 window.handleConfirmCloseJobContinue = handleConfirmCloseJobContinue;

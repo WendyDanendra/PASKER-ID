@@ -347,11 +347,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $accCount = (int)$accStmt->fetchColumn();
         db()->prepare('UPDATE job_posts SET accepted_count = ? WHERE id = ?')->execute([$accCount, $jobIdForApp]);
 
+        $quotaStmt = db()->prepare('SELECT quota FROM job_posts WHERE id = ?');
+        $quotaStmt->execute([$jobIdForApp]);
+        $jobQuota = (int)$quotaStmt->fetchColumn() ?: 1;
+
         notify_user((int) $application['seeker_id'], 'Status lamaran diperbarui', 'Status lamaran Anda untuk "' . $application['title'] . '" sekarang: ' . $nextStatus . '.', 'info', $applicationId);
         
         if ($isAjax) {
             header('Content-Type: application/json');
-            echo json_encode(['ok' => true, 'status' => $nextStatus, 'application_id' => $applicationId]);
+            echo json_encode([
+                'ok' => true,
+                'status' => $nextStatus,
+                'application_id' => $applicationId,
+                'job_id' => $jobIdForApp,
+                'accepted_count' => $accCount,
+                'quota' => $jobQuota,
+                'sisa_kuota' => max(0, $jobQuota - $accCount)
+            ]);
             exit;
         }
 
@@ -1053,6 +1065,10 @@ if ($selectedJobId > 0) {
     $stmt->execute([$selectedJobId, $user['id']]);
     $detailJob = $stmt->fetch() ?: null;
     if ($detailJob) {
+        $realAccStmt = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ? AND status = "Diterima"');
+        $realAccStmt->execute([(int)$detailJob['id']]);
+        $realAcc = (int)$realAccStmt->fetchColumn();
+        $detailJob['accepted_count'] = $realAcc;
         $detailData = job_to_form_data($detailJob);
     }
 }
