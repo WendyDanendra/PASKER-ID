@@ -3292,6 +3292,66 @@ function e(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Job Options & Close Job Modal Handlers
+function toggleJobLainnyaDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('jobLainnyaDropdownMenu');
+    if (!menu) return;
+    const isShowing = menu.style.display === 'block';
+    menu.style.display = isShowing ? 'none' : 'block';
+}
+window.toggleJobLainnyaDropdown = toggleJobLainnyaDropdown;
+
+function openConfirmCloseJobModal(jobId) {
+    const modal = document.getElementById('modalConfirmCloseJob');
+    const inputJobId = document.getElementById('modalCloseJobId');
+    if (inputJobId && jobId) inputJobId.value = jobId;
+    if (modal) modal.style.display = 'flex';
+}
+window.openConfirmCloseJobModal = openConfirmCloseJobModal;
+
+function closeConfirmCloseJobModal() {
+    const modal = document.getElementById('modalConfirmCloseJob');
+    if (modal) modal.style.display = 'none';
+}
+window.closeConfirmCloseJobModal = closeConfirmCloseJobModal;
+
+function openJobPublicView(jobId) {
+    const url = 'seeker.php?job_id=' + encodeURIComponent(jobId || '');
+    window.open(url, '_blank');
+    const menu = document.getElementById('jobLainnyaDropdownMenu');
+    if (menu) menu.style.display = 'none';
+}
+window.openJobPublicView = openJobPublicView;
+
+function copyJobLink(jobId) {
+    const link = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/') + 'seeker.php?job_id=' + encodeURIComponent(jobId || '');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => {
+            if (window.showToastNotification) {
+                window.showToastNotification('Link lowongan berhasil disalin!');
+            } else {
+                alert('Link lowongan berhasil disalin!');
+            }
+        }).catch(() => {
+            prompt('Salin link lowongan berikut:', link);
+        });
+    } else {
+        prompt('Salin link lowongan berikut:', link);
+    }
+    const menu = document.getElementById('jobLainnyaDropdownMenu');
+    if (menu) menu.style.display = 'none';
+}
+window.copyJobLink = copyJobLink;
+
+document.addEventListener('click', (evt) => {
+    const container = document.getElementById('jobLainnyaDropdownContainer');
+    const menu = document.getElementById('jobLainnyaDropdownMenu');
+    if (menu && container && !container.contains(evt.target)) {
+        menu.style.display = 'none';
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     initHierarchicalLocationSelector();
     initEmployerProfileForm();
