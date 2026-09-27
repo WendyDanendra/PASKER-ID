@@ -184,20 +184,29 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
         </div>
     </div>
     <div class="modal-backdrop <?php echo $showSuccessPopup ? 'open' : ''; ?>" id="modalPendaftaranBerhasil">
-        <div class="popup-dialog-card">
-            <div class="popup-dialog-icon success"><i class="fa-solid fa-circle-check"></i></div>
-            <h3 class="popup-dialog-title">Pendaftaran Berhasil</h3>
-            <div class="pki-status-alert">
-                <div class="pki-status-alert-head">
-                    <i class="fa-solid fa-circle-info pki-status-alert-icon"></i>
-                    <span class="pki-status-alert-title">Menunggu Verifikasi</span>
-                </div>
-                <div class="pki-status-alert-body">
-                    Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
-                    Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
-                </div>
+        <div class="popup-dialog-card" style="padding: 32px 28px; border-radius: 16px; max-width: 440px;">
+            <div class="popup-dialog-icon success" style="width: 56px; height: 56px; font-size: 26px; margin: 0 auto 16px; background: #ecfdf5; color: #10b981;">
+                <i class="fa-solid fa-circle-check"></i>
             </div>
-            <a class="primary-btn" href="dashboard.php#dashboard" style="width:100%; text-align:center; justify-content:center; height:42px; font-size:13.5px; border-radius:8px;">Menuju Dashboard Pemberi Kerja</a>
+            <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 16px; text-align: center;">Pendaftaran Berhasil</h3>
+            
+            <!-- Information Bar: Menunggu Verifikasi (Warna biru dengan icon, tanpa button x) -->
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #1d4ed8; font-size: 13px; font-weight: 700; margin-bottom: 18px;">
+                <i class="fa-solid fa-circle-info" style="font-size: 15px; color: #2563eb;"></i>
+                <span>Menunggu Verifikasi</span>
+            </div>
+
+            <!-- Detail Pesan (Di bawah Menunggu Verifikasi, dipisah/tidak digabung, text-align left) -->
+            <div style="text-align: left; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;">
+                <p style="font-size: 13.5px; color: #334155; line-height: 1.55; margin-bottom: 10px; font-weight: 500;">
+                    Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.
+                </p>
+                <p style="font-size: 13px; color: #64748b; line-height: 1.55; margin: 0; font-weight: 400;">
+                    Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
+                </p>
+            </div>
+
+            <a class="primary-btn" href="dashboard.php#dashboard" style="width: 100%; text-align: center; justify-content: center; height: 42px; font-size: 13.5px; font-weight: 600; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
     <script src="assets/pki-form.js?v=20260926_v5"></script>
