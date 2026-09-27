@@ -1541,9 +1541,14 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
                 <?php endif; ?>
 
             <?php if ($flash = get_flash()): ?>
-                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px;">
-                    <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
-                    <?php echo e($flash['message']); ?>
+                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-radius:10px; padding:12px 16px;">
+                    <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                        <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i>
+                        <span><?php echo e($flash['message']); ?></span>
+                    </div>
+                    <button type="button" aria-label="Tutup Notifikasi" onclick="this.closest('.alert-box').remove()" style="background:transparent; border:none; color:inherit; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; opacity:0.6; transition:opacity 0.15s ease;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             <?php endif; ?>
 

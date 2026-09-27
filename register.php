@@ -163,9 +163,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 </div>
 
                 <?php $flash = get_flash(); if ($flash): ?>
-                    <div style="margin:16px 24px 0; padding:12px 16px; border-radius:8px; font-size:13.5px; font-weight:600; background:<?php echo $flash['type'] === 'error' ? '#fef2f2' : '#f0fdf4'; ?>; color:<?php echo $flash['type'] === 'error' ? '#991b1b' : '#166534'; ?>; border:1px solid <?php echo $flash['type'] === 'error' ? '#fecaca' : '#bbf7d0'; ?>;">
-                        <i class="fa-solid <?php echo $flash['type'] === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'; ?>" style="margin-right:6px;"></i>
-                        <?php echo e($flash['message']); ?>
+                    <div style="margin:16px 24px 0; padding:12px 16px; border-radius:8px; font-size:13.5px; font-weight:600; background:<?php echo $flash['type'] === 'error' ? '#fef2f2' : '#f0fdf4'; ?>; color:<?php echo $flash['type'] === 'error' ? '#991b1b' : '#166534'; ?>; border:1px solid <?php echo $flash['type'] === 'error' ? '#fecaca' : '#bbf7d0'; ?>; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:6px; flex:1;">
+                            <i class="fa-solid <?php echo $flash['type'] === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'; ?>"></i>
+                            <span><?php echo e($flash['message']); ?></span>
+                        </div>
+                        <button type="button" aria-label="Tutup Notifikasi" onclick="this.parentElement.remove()" style="background:transparent; border:none; color:inherit; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; opacity:0.6; transition:opacity 0.15s ease;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
                     </div>
                 <?php endif; ?>
 

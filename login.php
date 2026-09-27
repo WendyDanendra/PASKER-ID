@@ -420,14 +420,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <?php if ($error): ?>
-                <div class="alert-box alert-error" style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:12px 14px; border-radius:10px; font-size:13px; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
-                    <i class="fa-solid fa-circle-exclamation"></i> <?php echo e($error); ?>
+                <div class="alert-box alert-error" style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:12px 14px; border-radius:10px; font-size:13px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                        <i class="fa-solid fa-circle-exclamation"></i> <span><?php echo e($error); ?></span>
+                    </div>
+                    <button type="button" aria-label="Tutup Notifikasi" onclick="this.closest('.alert-box').remove()" style="background:transparent; border:none; color:inherit; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; opacity:0.6; transition:opacity 0.15s ease;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             <?php endif; ?>
 
             <?php if ($flash = get_flash()): ?>
-                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="padding:12px 14px; border-radius:10px; font-size:13px; margin-bottom:20px;">
-                    <?php echo e($flash['message']); ?>
+                <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="padding:12px 14px; border-radius:10px; font-size:13px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                        <i class="fa-solid <?php echo $flash['type'] === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>"></i> <span><?php echo e($flash['message']); ?></span>
+                    </div>
+                    <button type="button" aria-label="Tutup Notifikasi" onclick="this.closest('.alert-box').remove()" style="background:transparent; border:none; color:inherit; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; opacity:0.6; transition:opacity 0.15s ease;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             <?php endif; ?>
 
