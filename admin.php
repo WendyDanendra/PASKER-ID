@@ -5392,21 +5392,21 @@ document.addEventListener('click', function(e) {
                         </div>
 
                         <!-- ROW 3+: 2-column grid -->
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; margin-bottom:0;">
-                            <div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 24px;">
+                            <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-user" style="color:#0284c7; width:14px;"></i> Nama Petugas yang Ditugaskan
                                 </div>
                                 <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: 'Admin Pusat'); ?></div>
                             </div>
-                            <div>
+                            <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-envelope" style="color:#0284c7; width:14px;"></i> Email Petugas yang Ditugaskan
                                 </div>
                                 <div style="font-size:13px; font-weight:600; color:#0284c7;"><?php echo e($user['email'] ?? 'admin@paskerid.test'); ?></div>
                             </div>
                             <?php if ($isJobFinalized && $keputusanLabel !== ''): ?>
-                            <div>
+                            <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-gavel" style="color:#0284c7; width:14px;"></i> Keputusan Verifikasi
                                 </div>
@@ -5422,7 +5422,7 @@ document.addEventListener('click', function(e) {
                                     ?>
                                 </div>
                             </div>
-                            <div>
+                            <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-calendar-day" style="color:#0284c7; width:14px;"></i> Tanggal Keputusan
                                 </div>
@@ -5430,13 +5430,13 @@ document.addEventListener('click', function(e) {
                                     <?php echo !empty($selectedJob['updated_at']) ? date('d M Y, H:i', strtotime($selectedJob['updated_at'])) : '-'; ?>
                                 </div>
                             </div>
-                            <div>
+                            <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-id-badge" style="color:#0284c7; width:14px;"></i> Nama Verifikator
                                 </div>
                                 <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: $user['name'] ?? 'Admin Pusat'); ?></div>
                             </div>
-                            <div>
+                            <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-envelope" style="color:#0284c7; width:14px;"></i> Email Verifikator
                                 </div>
@@ -5444,6 +5444,14 @@ document.addEventListener('click', function(e) {
                             </div>
                             <?php endif; ?>
                         </div>
+                        <?php if ($isJobFinalized && !empty($selectedJob['verifier_notes'])): ?>
+                        <div style="margin-top:4px;">
+                            <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                                <i class="fa-solid fa-note-sticky" style="color:#0284c7; width:14px;"></i> Catatan Keputusan
+                            </div>
+                            <div style="font-size:13px; color:#334155; line-height:1.6; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px;"><?php echo nl2br(e($selectedJob['verifier_notes'])); ?></div>
+                        </div>
+                        <?php endif; ?>
 
                         <!-- CHECKLIST VERIFIKASI -->
                         <?php if ($hasChecklistData): ?>
@@ -5914,8 +5922,8 @@ document.addEventListener('click', function(e) {
                         <!-- DIVIDER -->
                         <hr style="border:0; border-top:1px solid #e2e8f0; margin:24px 0;">
 
-                        <!-- INFORMASI PEMBERI KERJA INDIVIDU SUBSECTION -->
-                        <h4 style="font-size:15px; font-weight:800; color:#0f172a; margin:0 0 16px 0;">Informasi Pemberi Kerja Individu</h4>
+                        <!-- INFORMASI PEMBERI KERJA SUBSECTION -->
+                        <h4 style="font-size:15px; font-weight:800; color:#0f172a; margin:0 0 16px 0;">Informasi Pemberi Kerja</h4>
 
                         <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
                             <div style="display:grid; grid-template-columns:120px 1fr; gap:10px;">
