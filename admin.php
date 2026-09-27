@@ -5373,20 +5373,26 @@ document.addEventListener('click', function(e) {
 
                     <!-- MIDDLE CARD: INFORMASI KEPUTUSAN DAN VERIFIKASI -->
                     <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:24px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                        <h3 style="font-size:15px; font-weight:700; color:#0f172a; margin:0 0 16px 0;">Informasi Keputusan dan Verifikasi</h3>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px;">
-                            <div>
-                                <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                                    <i class="fa-solid fa-clock" style="color:#d97706; width:14px;"></i> Deadline
-                                </div>
-                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo date('d M Y, H:i', strtotime('+3 days', strtotime($selectedJob['created_at']))); ?></div>
+                        <h3 style="font-size:15px; font-weight:700; color:#0f172a; margin:0 0 20px 0;">Informasi Keputusan dan Verifikasi</h3>
+
+                        <!-- ROW 1: Deadline (full width) -->
+                        <div style="margin-bottom:16px;">
+                            <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                <i class="fa-solid fa-clock" style="color:#d97706; width:14px;"></i> Deadline
                             </div>
-                            <div>
-                                <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                                    <i class="fa-solid fa-calendar-check" style="color:#0284c7; width:14px;"></i> Pemeriksaan Pada
-                                </div>
-                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo $pemeriksaanPada; ?></div>
+                            <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo date('d M Y, H:i', strtotime('+3 days', strtotime($selectedJob['created_at']))); ?></div>
+                        </div>
+
+                        <!-- ROW 2: Pemeriksaan Pada (full width) -->
+                        <div style="margin-bottom:16px;">
+                            <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                <i class="fa-solid fa-calendar-check" style="color:#0284c7; width:14px;"></i> Pemeriksaan Pada
                             </div>
+                            <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo $pemeriksaanPada; ?></div>
+                        </div>
+
+                        <!-- ROW 3+: 2-column grid -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; margin-bottom:0;">
                             <div>
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-user" style="color:#0284c7; width:14px;"></i> Nama Petugas yang Ditugaskan
@@ -5418,9 +5424,23 @@ document.addEventListener('click', function(e) {
                             </div>
                             <div>
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                    <i class="fa-solid fa-calendar-day" style="color:#0284c7; width:14px;"></i> Tanggal Keputusan
+                                </div>
+                                <div style="font-size:13px; font-weight:600; color:#1e293b;">
+                                    <?php echo !empty($selectedJob['updated_at']) ? date('d M Y, H:i', strtotime($selectedJob['updated_at'])) : '-'; ?>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-id-badge" style="color:#0284c7; width:14px;"></i> Nama Verifikator
                                 </div>
                                 <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: $user['name'] ?? 'Admin Pusat'); ?></div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                    <i class="fa-solid fa-envelope" style="color:#0284c7; width:14px;"></i> Email Verifikator
+                                </div>
+                                <div style="font-size:13px; font-weight:600; color:#0284c7;"><?php echo e($user['email'] ?? 'admin@paskerid.test'); ?></div>
                             </div>
                             <?php endif; ?>
                         </div>
