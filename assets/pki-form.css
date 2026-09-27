@@ -649,7 +649,7 @@ a {
 }
 
 /* Compact Modal Footer */
-.modal-footer {
+.modal-panel[data-modal="modal-employer-profile"] .modal-footer {
     padding: 14px 0 0 0 !important;
     margin-top: 16px !important;
     display: flex !important;

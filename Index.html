@@ -3341,35 +3341,44 @@
                 $conflictDraftId = $_GET['draft_id'] ?? ($kbjiErr['job_id'] ?? null);
                 ?>
                 <div class="modal-backdrop <?php echo ($kbjiErr || isset($_GET['kbji_conflict'])) ? 'open' : ''; ?>" data-modal="kbji-conflict">
-                    <div class="modal-panel" style="width:min(520px, 95vw);">
-                        <div class="modal-header" style="background:#fef2f2; border-bottom:1px solid #fecaca; padding:16px;">
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:20px;"></i>
+                    <div class="modal-panel" style="width:min(520px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
+                        <div class="modal-header" style="background:#fef2f2; border-bottom:1px solid #fecaca; padding:18px 20px; display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="width:40px; height:40px; border-radius:10px; background:#fee2e2; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:20px;"></i>
+                                </div>
                                 <div>
-                                    <div class="modal-title" style="color:#991b1b; font-size:16px; font-weight:700;">Jabatan KBJI Sudah Aktif</div>
-                                    <div class="modal-subtitle" style="color:#b91c1c;">Konflik Aturan Pengajuan Lowongan</div>
+                                    <div class="modal-title" style="color:#991b1b; font-size:16px; font-weight:700; line-height:1.3;">Jabatan KBJI Sudah Aktif</div>
+                                    <div class="modal-subtitle" style="color:#b91c1c; font-size:13px; font-weight:500; margin-top:2px;">Konflik Aturan Pengajuan Lowongan</div>
                                 </div>
                             </div>
-                            <button type="button" class="ghost-btn" data-close-modal="kbji-conflict">×</button>
+                            <button type="button" class="ghost-btn" data-close-modal="kbji-conflict" style="width:32px; height:32px; border-radius:8px; border:none; background:transparent; font-size:20px; color:#991b1b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
                         </div>
-                        <div class="modal-body" style="padding:20px; font-size:14px; color:#334155; text-align:center;">
-                            <p style="font-size:15px; font-weight:600; color:#1e293b; margin-bottom:12px;">
+                        <div class="modal-body" style="padding:24px 20px; font-size:14px; color:#334155; text-align:center;">
+                            <p style="font-size:15px; font-weight:600; color:#1e293b; margin-bottom:16px;">
                                 Anda masih memiliki lowongan aktif untuk jabatan ini.
                             </p>
-                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:16px; text-align:left; font-size:13px;">
-                                <div><strong>Kode KBJI:</strong> <?php echo e($kbjiErr['kbji_code'] ?? 'Sama'); ?></div>
-                                <div><strong>Lowongan Aktif Saat Ini:</strong> <?php echo e($kbjiErr['active_job_title'] ?? 'Koki Masakan Tradisional'); ?></div>
-                                <div style="margin-top:6px; color:#64748b; font-size:12px;">
-                                    <em>Catatan: Draft lowongan Anda tidak dihapus dan tetap aman tersimpan sebagai Draft.</em>
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; text-align:left; font-size:13px; line-height:1.6;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #e2e8f0;">
+                                    <span style="color:#64748b; font-weight:500;">Kode KBJI:</span>
+                                    <strong style="color:#0f172a; font-weight:600;"><?php echo e($kbjiErr['kbji_code'] ?? 'Sama'); ?></strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <span style="color:#64748b; font-weight:500;">Lowongan Aktif Saat Ini:</span>
+                                    <strong style="color:#0f172a; font-weight:600; text-align:right; max-width:60%;"><?php echo e($kbjiErr['active_job_title'] ?? 'Koki Masakan Tradisional'); ?></strong>
+                                </div>
+                                <div style="margin-top:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; color:#1e40af; font-size:12px; display:flex; align-items:flex-start; gap:8px;">
+                                    <i class="fa-solid fa-circle-info" style="margin-top:2px; flex-shrink:0;"></i>
+                                    <span>Catatan: Draft lowongan Anda tidak dihapus dan tetap aman tersimpan sebagai Draft.</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer" style="display:flex; justify-content:center; gap:12px; padding:16px; background:#f8fafc; border-top:1px solid #e2e8f0;">
-                            <button type="button" class="secondary-btn" style="border:1px solid #0284c7; color:#0284c7; background:#ffffff;" onclick="filterActiveJobsAndCloseConflict()">
+                        <div class="modal-footer" style="display:flex; justify-content:center; align-items:center; gap:12px; padding:16px 20px !important; margin-top:0 !important; background:#f8fafc; border-top:1px solid #e2e8f0; border-radius:0 0 16px 16px;">
+                            <button type="button" class="secondary-btn" style="height:40px !important; padding:0 18px !important; border:1px solid #0284c7 !important; color:#0284c7 !important; background:#ffffff !important; border-radius:8px !important; font-weight:600 !important; font-size:13px !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="filterActiveJobsAndCloseConflict()">
                                 <i class="fa-solid fa-briefcase"></i> Lihat Lowongan Aktif
                             </button>
                             <?php if ($conflictDraftId): ?>
-                                <button type="button" class="primary-btn" style="background:#0284c7;" onclick="openEditJobFromConflict(<?php echo (int)$conflictDraftId; ?>)">
+                                <button type="button" class="primary-btn" style="height:40px !important; padding:0 18px !important; background:#0284c7 !important; color:#ffffff !important; border:none !important; border-radius:8px !important; font-weight:600 !important; font-size:13px !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(2, 132, 199, 0.2);" onclick="openEditJobFromConflict(<?php echo (int)$conflictDraftId; ?>)">
                                     <i class="fa-solid fa-pen-to-square"></i> Ubah Kode KBJI
                                 </button>
                             <?php endif; ?>
