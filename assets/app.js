@@ -2185,17 +2185,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (eduContainer) {
                     if (data.profile && data.profile.education && data.profile.education.length > 0) {
                         eduContainer.innerHTML = data.profile.education.map(item => `
-                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:8px;">
-                                <div style="font-size:13.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.level || 'Pendidikan')}</div>
-                                <div style="font-size:12.5px; color:#475569; margin:2px 0;">${escapeHtml(item.school_name || '')}</div>
-                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.major || '')}</div>
-                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.graduation_year || '')}</div>
-                                ${item.gpa ? `<div style="font-size:12px; color:#059669; font-weight:600; margin:2px 0;">${escapeHtml(item.gpa)}</div>` : ''}
-                                ${item.location ? `<div style="font-size:12px; color:#64748b;">${escapeHtml(item.location)}</div>` : ''}
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px;">
+                                <div style="font-size:12.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.level || 'Pendidikan')}</div>
+                                <div style="font-size:11.5px; color:#64748b; margin:2px 0;">🏛 ${escapeHtml(item.school_name || '')}</div>
+                                <div style="font-size:11.5px; color:#64748b;">${escapeHtml(item.major || '')}</div>
+                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${escapeHtml(item.graduation_year || '')} ${item.gpa ? `· IPK: ${escapeHtml(item.gpa)}` : ''} ${item.location ? `· ${escapeHtml(item.location)}` : ''}</div>
                             </div>
                         `).join('');
                     } else {
-                        eduContainer.innerHTML = '<div style="font-size:13px; color:#64748b;">Belum ada riwayat pendidikan yang tercatat.</div>';
+                        eduContainer.innerHTML = '<div style="font-size:11.5px; color:#94a3b8;">Belum ada riwayat pendidikan yang tercatat.</div>';
                     }
                 }
 
@@ -2204,15 +2202,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (trainContainer) {
                     if (data.profile && data.profile.trainings && data.profile.trainings.length > 0) {
                         trainContainer.innerHTML = data.profile.trainings.map(item => `
-                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:8px;">
-                                <div style="font-size:13.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.training_name || 'Pelatihan')}</div>
-                                <div style="font-size:12.5px; color:#475569; margin:2px 0;">${escapeHtml(item.organizer || '')}</div>
-                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.year || '')}</div>
-                                ${item.certificate ? `<div style="font-size:12px; color:#64748b; margin-top:4px;">${escapeHtml(item.certificate)}</div>` : ''}
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px;">
+                                <div style="font-size:12.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.training_name || 'Pelatihan')}</div>
+                                <div style="font-size:11.5px; color:#64748b; margin:2px 0;">🏢 ${escapeHtml(item.organizer || '')}</div>
+                                <div style="font-size:11px; color:#94a3b8;">${escapeHtml(item.year || '')} ${item.certificate ? `· ${escapeHtml(item.certificate)}` : ''} ${item.location ? `· ${escapeHtml(item.location)}` : ''}</div>
                             </div>
                         `).join('');
                     } else {
-                        trainContainer.innerHTML = '<div style="font-size:13px; color:#64748b;">Belum ada riwayat pelatihan yang tercatat.</div>';
+                        trainContainer.innerHTML = '<div style="font-size:11.5px; color:#94a3b8;">Belum ada riwayat pelatihan yang tercatat.</div>';
                     }
                 }
 
@@ -2221,14 +2218,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (expContainer) {
                     if (data.profile && data.profile.experience && data.profile.experience.length > 0) {
                         expContainer.innerHTML = data.profile.experience.map(item => `
-                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:8px;">
-                                <div style="font-size:13.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.position || '')} - ${escapeHtml(item.company_name || '')}</div>
-                                <div style="font-size:12px; color:#64748b;">${escapeHtml(item.duration || '')}</div>
-                                ${item.notes ? `<div style="font-size:12.5px; color:#334155; margin-top:4px;">${escapeHtml(item.notes)}</div>` : ''}
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px;">
+                                <div style="font-size:12.5px; font-weight:700; color:#0f172a;">${escapeHtml(item.position || '')} - ${escapeHtml(item.company_name || '')}</div>
+                                <div style="font-size:11.5px; color:#64748b; margin:2px 0;">${escapeHtml(item.duration || '')}</div>
+                                ${item.notes ? `<div style="font-size:11.5px; color:#334155; margin-top:4px;">${escapeHtml(item.notes)}</div>` : ''}
                             </div>
                         `).join('');
                     } else {
-                        expContainer.innerHTML = '<div style="font-size:13px; color:#64748b;">Belum ada pengalaman kerja yang tercatat.</div>';
+                        expContainer.innerHTML = `
+                            <div style="border:1px dashed #e2e8f0; border-radius:8px; padding:20px; text-align:center;">
+                                <i class="fa-solid fa-briefcase" style="font-size:22px; color:#cbd5e1; margin-bottom:4px; display:block;"></i>
+                                <span style="font-size:11.5px; color:#94a3b8;">Belum ada pengalaman kerja yang tercatat.</span>
+                            </div>
+                        `;
                     }
                 }
 
@@ -2237,10 +2239,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (skillsContainer) {
                     if (data.profile && data.profile.skills && data.profile.skills.length > 0) {
                         skillsContainer.innerHTML = data.profile.skills.map(item => `
-                            <span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${escapeHtml(item.skill_name || item)}</span>
+                            <span style="background:#fff; color:#334155; border:1px solid #cbd5e1; padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:500;">${escapeHtml(item.skill_name || item)}</span>
                         `).join('');
                     } else {
-                        skillsContainer.innerHTML = '<span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">Bahasa Korea</span> <span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">Operator forklift</span>';
+                        skillsContainer.innerHTML = '<span style="background:#fff; color:#334155; border:1px solid #cbd5e1; padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:500;">Bahasa Korea</span> <span style="background:#fff; color:#334155; border:1px solid #cbd5e1; padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:500;">Operator forklift</span>';
                     }
                 }
 

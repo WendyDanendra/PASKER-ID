@@ -2222,220 +2222,218 @@ $modal = <<<HTML
             </form>
         </div>
     </div>
-    <div class="modal-backdrop" data-modal="applicant-profile" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); z-index:9999; justify-content:flex-end; align-items:stretch;">
-        <div class="modal-panel applicant-profile-panel" role="dialog" aria-modal="true" style="width:min(680px, 95vw); height:100vh; background:#fff; box-shadow:-10px 0 30px rgba(0,0,0,0.15); display:flex; flex-direction:column; overflow-y:auto; position:relative; margin-left:auto;">
+    <div class="modal-backdrop" data-modal="applicant-profile" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.45); backdrop-filter:blur(2px); z-index:9999; justify-content:flex-end; align-items:stretch;">
+        <div class="modal-panel applicant-profile-panel" role="dialog" aria-modal="true" style="width:min(460px, 95vw); height:100vh; background:#fff; box-shadow:-8px 0 25px rgba(0,0,0,0.12); display:flex; flex-direction:column; position:relative; margin-left:auto; border-radius:0; padding:0;">
             <!-- Header -->
-            <div style="padding:24px 28px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:flex-start; position:relative;">
-                <div style="display:flex; align-items:flex-start; gap:18px;">
-                    <img id="applicantAvatar" src="https://ui-avatars.com/api/?name=Pencari+Kerja&background=0ea5e9&color=fff" alt="" style="width:68px; height:68px; border-radius:50%; object-fit:cover; border:2px solid #e2e8f0; flex-shrink:0;">
+            <div style="padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:flex-start; position:relative; background:#fff;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <img id="applicantAvatar" src="https://ui-avatars.com/api/?name=Pencari+Kerja&background=0ea5e9&color=fff" alt="" style="width:46px; height:46px; border-radius:50%; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0;">
                     <div>
-                        <h2 id="applicantName" style="font-size:18px; font-weight:800; color:#0f172a; margin:0 0 6px 0;">Muhamad Amar Basyari</h2>
-                        <div style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:#64748b;">
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <i class="fa-regular fa-calendar" style="color:#94a3b8;"></i> Mendaftar: <span id="applicantAppliedDate" style="color:#1e293b; font-weight:600;">20 Sep 2026</span>
+                        <h2 id="applicantName" style="font-size:15px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Muhamad Amar Basyari</h2>
+                        <div style="display:flex; flex-direction:column; gap:2px; font-size:11.5px; color:#64748b;">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <i class="fa-regular fa-calendar" style="color:#94a3b8; font-size:11px;"></i> Mendaftar: <span id="applicantAppliedDate" style="color:#334155; font-weight:600;">20 Sep 2026</span>
                             </div>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <i class="fa-solid fa-layer-group" style="color:#94a3b8;"></i> Status: <span id="applicantStatusBadge" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; padding:2px 10px; border-radius:999px; font-size:11.5px; font-weight:700;">Lamaran Masuk</span>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <i class="fa-solid fa-layer-group" style="color:#94a3b8; font-size:11px;"></i> Status: <span id="applicantStatusBadge" style="color:#d97706; font-weight:700;">Lamaran Masuk</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <button type="button" class="modal-close" data-close-modal="applicant-profile" aria-label="Tutup" style="background:none; border:none; color:#64748b; font-size:22px; cursor:pointer; padding:4px 8px; border-radius:6px;"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="modal-close" data-close-modal="applicant-profile" aria-label="Tutup" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px 6px; border-radius:6px; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <form method="post" action="dashboard.php#lowongan" style="display:flex; flex-direction:column; flex:1;">
-                <input type="hidden" name="update_application_status" value="1">
-                <input type="hidden" name="application_id" id="applicantId" value="">
+            <!-- Scrollable Body Container -->
+            <div style="padding:18px 20px; flex:1; overflow-y:auto;">
+                <!-- Upper Metadata (2-Column Grid: Label Left, Value Right) -->
+                <div style="display:grid; grid-template-columns:85px 1fr; row-gap:12px; column-gap:10px; font-size:12px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #f1f5f9;">
+                    <!-- Lokasi -->
+                    <div style="color:#64748b; display:flex; align-items:flex-start; gap:5px; font-weight:500;">
+                        <i class="fa-solid fa-location-dot" style="margin-top:2px; color:#94a3b8;"></i> Lokasi
+                    </div>
+                    <div id="applicantLocation" style="font-weight:500; color:#1e293b; line-height:1.4;">Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH</div>
 
-                <div style="padding:24px 28px; flex:1;">
-                    <!-- Status Lamaran Picker Bar -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid #f1f5f9;">
-                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; flex:1;">
-                            <span style="font-size:13.5px; font-weight:700; color:#1e293b; white-space:nowrap;">Status Lamaran:</span>
-                            
-                            <!-- Custom Dropdown Container -->
-                            <div style="position:relative; min-width:230px; max-width:280px; flex:1;" id="customStatusDropdownContainer">
-                                <input type="hidden" name="status" id="applicantStatus" value="Lamaran Masuk">
-                                <button type="button" id="customStatusDropdownBtn" onclick="toggleCustomStatusDropdown(event)" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:8px 14px; background:#fff; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; font-size:13px; font-weight:600; color:#1e293b; box-shadow:0 1px 2px rgba(0,0,0,0.02); transition:all 0.15s;">
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                        <span id="customStatusDot" style="width:9px; height:9px; border-radius:50%; background:#f59e0b; flex-shrink:0;"></span>
-                                        <span id="customStatusLabel">Lamaran Masuk</span>
-                                    </div>
-                                    <i class="fa-solid fa-chevron-down" style="font-size:11px; color:#94a3b8;"></i>
-                                </button>
-                                
-                                <!-- Dropdown Menu -->
-                                <div id="customStatusDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); left:0; width:100%; min-width:240px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.04); padding:6px; z-index:99999;">
-                                    <div class="status-option-item" onclick="selectApplicantStatus('Lamaran Masuk', '#f59e0b')" style="padding:9px 12px; border-radius:8px; display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                        <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; flex-shrink:0;"></span>
-                                        <span>Lamaran Masuk</span>
-                                        <i class="fa-solid fa-check status-check-icon" data-status="Lamaran Masuk" style="margin-left:auto; color:#0f172a; font-size:12px;"></i>
-                                    </div>
-                                    <div class="status-option-item" onclick="selectApplicantStatus('Sedang Dipelajari', '#f97316')" style="padding:9px 12px; border-radius:8px; display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                        <span style="width:8px; height:8px; border-radius:50%; background:#f97316; flex-shrink:0;"></span>
-                                        <span>Sedang Dipelajari</span>
-                                        <i class="fa-solid fa-check status-check-icon" data-status="Sedang Dipelajari" style="margin-left:auto; color:#0f172a; font-size:12px; display:none;"></i>
-                                    </div>
-                                    <div class="status-option-item" onclick="selectApplicantStatus('Wawancara', '#3b82f6')" style="padding:9px 12px; border-radius:8px; display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                        <span style="width:8px; height:8px; border-radius:50%; background:#3b82f6; flex-shrink:0;"></span>
-                                        <span>Wawancara</span>
-                                        <i class="fa-solid fa-check status-check-icon" data-status="Wawancara" style="margin-left:auto; color:#0f172a; font-size:12px; display:none;"></i>
-                                    </div>
-                                    <div class="status-option-item" onclick="selectApplicantStatus('Diterima', '#10b981')" style="padding:9px 12px; border-radius:8px; display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                        <span style="width:8px; height:8px; border-radius:50%; background:#10b981; flex-shrink:0;"></span>
-                                        <span>Diterima</span>
-                                        <i class="fa-solid fa-check status-check-icon" data-status="Diterima" style="margin-left:auto; color:#0f172a; font-size:12px; display:none;"></i>
-                                    </div>
-                                    <div class="status-option-item" onclick="selectApplicantStatus('Ditolak', '#ef4444')" style="padding:9px 12px; border-radius:8px; display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                        <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; flex-shrink:0;"></span>
-                                        <span>Ditolak</span>
-                                        <i class="fa-solid fa-check status-check-icon" data-status="Ditolak" style="margin-left:auto; color:#0f172a; font-size:12px; display:none;"></i>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Tag Seleksi -->
+                    <div style="color:#64748b; display:flex; align-items:flex-start; gap:5px; font-weight:500;">
+                        <i class="fa-solid fa-tag" style="margin-top:2px; color:#94a3b8; transform:rotate(45deg);"></i> Tag Seleksi
+                    </div>
+                    <div id="applicantTag" style="color:#64748b; font-weight:500;">-</div>
+
+                    <!-- Tentang -->
+                    <div style="color:#64748b; display:flex; align-items:flex-start; gap:5px; font-weight:500;">
+                        <i class="fa-solid fa-user" style="margin-top:2px; color:#94a3b8;"></i> Tentang
+                    </div>
+                    <div id="applicantAbout" style="color:#334155; line-height:1.5;">Saya adalah pribadi yang disiplin, bertanggung jawab, cepat belajar, dan mampu beradaptasi dengan lingkungan kerja baru serta bekerja secara individu maupun dalam tim.</div>
+
+                    <!-- Resume -->
+                    <div style="color:#64748b; display:flex; align-items:flex-start; gap:5px; font-weight:500;">
+                        <i class="fa-solid fa-paperclip" style="margin-top:2px; color:#94a3b8;"></i> Resume
+                    </div>
+                    <div style="background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:10px 12px; color:#92400e; font-size:11.5px; line-height:1.4; display:flex; align-items:flex-start; gap:8px;">
+                        <i class="fa-solid fa-circle-info" style="color:#d97706; font-size:13px; margin-top:2px; flex-shrink:0;"></i>
+                        <div>Silahkan memproses lamaran ini dengan cara bookmark atau interview untuk dapat mendownload CV pelamar.</div>
+                    </div>
+                </div>
+
+                <!-- Tabs: Profil & Riwayat Aktivitas -->
+                <div style="display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:18px;">
+                    <button type="button" id="tabApplicantProfilBtn" onclick="switchApplicantModalTab('profil')" style="padding:8px 16px; border:none; background:none; border-bottom:2px solid #0ea5e9; color:#0ea5e9; font-weight:700; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-regular fa-user"></i> Profil
+                    </button>
+                    <button type="button" id="tabApplicantAktivitasBtn" onclick="switchApplicantModalTab('aktivitas')" style="padding:8px 16px; border:none; background:none; border-bottom:2px solid transparent; color:#64748b; font-weight:600; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-regular fa-clock"></i> Riwayat Aktivitas
+                    </button>
+                </div>
+
+                <!-- Tab Pane 1: Profil -->
+                <div id="tabApplicantProfilPane">
+                    <h3 style="font-size:13px; font-weight:700; color:#0f172a; margin:0 0 14px 0; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-id-card" style="color:#0ea5e9; font-size:13px;"></i> Informasi Profil
+                    </h3>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+                        <div>
+                            <div style="font-size:11.5px; color:#64748b; margin-bottom:2px;">Tempat, tanggal lahir</div>
+                            <div id="applicantBirthInfo" style="font-size:12px; font-weight:600; color:#1e293b;">Brebes, 19 Desember 2006</div>
                         </div>
-
-                        <!-- 2 Action Icons Beside Dropdown: Tag & Calendar -->
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <button type="button" onclick="openApplicantTagModal()" title="Tandai pelamar dengan tag" style="width:38px; height:38px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#475569; transition:all 0.15s;" onmouseover="this.style.borderColor='#0ea5e9';this.style.color='#0284c7'" onmouseout="this.style.borderColor='#cbd5e1';this.style.color='#475569'">
-                                <i class="fa-solid fa-tag" style="font-size:14px; transform:rotate(45deg);"></i>
-                            </button>
-                            <button type="button" onclick="openApplicantInterviewModal()" title="Jadwal wawancara" style="width:38px; height:38px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#475569; transition:all 0.15s;" onmouseover="this.style.borderColor='#0ea5e9';this.style.color='#0284c7'" onmouseout="this.style.borderColor='#cbd5e1';this.style.color='#475569'">
-                                <i class="fa-regular fa-calendar-check" style="font-size:15px;"></i>
-                            </button>
+                        <div>
+                            <div style="font-size:11.5px; color:#64748b; margin-bottom:2px;">Kontak</div>
+                            <div style="font-size:11px; color:#64748b; line-height:1.4;">Alamat email dan nomor telepon pelamar akan tersedia setelah Anda melakukan proses bookmark atau memilih kandidat yang dinilai potensial maupun diminati.</div>
                         </div>
                     </div>
 
-                    <!-- Upper Section Details -->
-                    <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:24px; font-size:13px;">
-                        <div>
-                            <div style="color:#64748b; font-size:12px; margin-bottom:2px; display:flex; align-items:center; gap:6px;">
-                                <i class="fa-solid fa-location-dot" style="color:#94a3b8;"></i> Lokasi
-                            </div>
-                            <div id="applicantLocation" style="font-weight:600; color:#1e293b;">Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH</div>
+                    <div style="margin-bottom:12px;">
+                        <div style="font-size:11.5px; color:#64748b; margin-bottom:2px;">Alamat</div>
+                        <div id="applicantKtpAddress" style="font-size:12px; color:#1e293b; font-weight:500;">Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES</div>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:11.5px; color:#64748b; margin-bottom:2px;">Alamat domisili</div>
+                        <div id="applicantDomicileAddress" style="font-size:12px; color:#1e293b; font-weight:500;">Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH</div>
+                    </div>
+
+                    <!-- Pengalaman Kerja -->
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-briefcase" style="color:#64748b; font-size:12px;"></i> Pengalaman Kerja
                         </div>
-                        <div>
-                            <div style="color:#64748b; font-size:12px; margin-bottom:2px; display:flex; align-items:center; gap:6px;">
-                                <i class="fa-solid fa-tag" style="color:#94a3b8;"></i> Tag Seleksi
-                            </div>
-                            <div id="applicantTag" style="font-weight:500; color:#64748b;">-</div>
+                        <div id="applicantExperience" style="border:1px dashed #e2e8f0; border-radius:8px; padding:20px; text-align:center;">
+                            <i class="fa-solid fa-briefcase" style="font-size:22px; color:#cbd5e1; margin-bottom:4px; display:block;"></i>
+                            <span style="font-size:11.5px; color:#94a3b8;">Belum ada pengalaman kerja yang tercatat.</span>
                         </div>
-                        <div>
-                            <div style="color:#64748b; font-size:12px; margin-bottom:2px; display:flex; align-items:center; gap:6px;">
-                                <i class="fa-solid fa-user" style="color:#94a3b8;"></i> Tentang
-                            </div>
-                            <div id="applicantAbout" style="color:#334155; line-height:1.6;">Saya adalah pribadi yang disiplin, bertanggung jawab, cepat belajar, dan mampu beradaptasi dengan lingkungan kerja baru serta bekerja secara individu maupun dalam tim.</div>
+                    </div>
+
+                    <!-- Pelatihan -->
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-graduation-cap" style="color:#64748b; font-size:12px;"></i> Pelatihan
                         </div>
-                        <div>
-                            <div style="color:#64748b; font-size:12px; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                                <i class="fa-solid fa-paperclip" style="color:#94a3b8;"></i> Resume
-                            </div>
-                            <div style="background:#fffbeb; border:1px solid #fef3c7; border-radius:10px; padding:12px 14px; color:#92400e; font-size:12.5px; display:flex; align-items:flex-start; gap:10px; line-height:1.5;">
-                                <i class="fa-solid fa-circle-info" style="color:#d97706; font-size:15px; margin-top:2px;"></i>
-                                <div>Silahkan memproses lamaran ini dengan cara bookmark atau interview untuk dapat mendownload CV pelamar.</div>
+                        <div id="applicantTrainings">
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px;">
+                                <div style="font-size:12.5px; font-weight:700; color:#0f172a;">Operator Forklift</div>
+                                <div style="font-size:11.5px; color:#64748b; margin:2px 0;">🏢 KEMNAKER</div>
+                                <div style="font-size:11px; color:#94a3b8;">Sep 2026 · Cibuntu, Cibitung, KAB. BEKASI, JAWA BARAT</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tabs: Profil & Riwayat Aktivitas -->
-                    <div style="display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:20px;">
-                        <button type="button" id="tabApplicantProfilBtn" onclick="switchApplicantModalTab('profil')" style="padding:10px 20px; border:none; background:none; border-bottom:2px solid #0ea5e9; color:#0ea5e9; font-weight:700; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                            <i class="fa-regular fa-user"></i> Profil
+                    <!-- Pendidikan -->
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-building-columns" style="color:#64748b; font-size:12px;"></i> Pendidikan
+                        </div>
+                        <div id="applicantEducation">
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px;">
+                                <div style="font-size:12.5px; font-weight:700; color:#0f172a;">SMA atau Sederajat</div>
+                                <div style="font-size:11.5px; color:#64748b; margin:2px 0;">🏛 SMAN 1 WALED</div>
+                                <div style="font-size:11.5px; color:#64748b;">IPS</div>
+                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">2022 – 2025 · IPK: 87 · Waled Kota, Waled, KAB. CIREBON, JAWA BARAT</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sertifikasi & Keahlian -->
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-award" style="color:#64748b; font-size:12px;"></i> Sertifikasi & Keahlian
+                        </div>
+                        <div style="font-size:11.5px; color:#64748b; margin-bottom:6px;">Keahlian</div>
+                        <div id="applicantSkills" style="display:flex; flex-wrap:wrap; gap:6px;">
+                            <span style="background:#fff; color:#334155; border:1px solid #cbd5e1; padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:500;">Bahasa Korea</span>
+                            <span style="background:#fff; color:#334155; border:1px solid #cbd5e1; padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:500;">Operator forklift</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Pane 2: Riwayat Aktivitas -->
+                <div id="tabApplicantAktivitasPane" style="display:none;">
+                    <div id="applicantTimeline" style="display:flex; flex-direction:column; gap:14px; padding-left:10px; border-left:2px solid #e2e8f0; margin-left:8px;">
+                        <div style="position:relative;">
+                            <div style="position:absolute; left:-16px; top:4px; width:10px; height:10px; border-radius:50%; background:#0ea5e9; border:2px solid #fff;"></div>
+                            <div style="font-size:12.5px; font-weight:700; color:#0f172a;">Lamaran Masuk</div>
+                            <div style="font-size:11.5px; color:#64748b;">Lamaran diajukan oleh pelamar</div>
+                            <div id="applicantActivityDate" style="font-size:11px; color:#94a3b8; margin-top:2px;">20 Sep 2026</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Bottom Footer: Status Lamaran & 2 Action Buttons (Persis Versi Perusahaan) -->
+            <div style="position:sticky; bottom:0; background:#fff; border-top:1px solid #e2e8f0; padding:12px 18px; display:flex; align-items:center; justify-content:space-between; z-index:10; box-shadow:0 -4px 12px rgba(0,0,0,0.03);">
+                <!-- Left: Status Lamaran & Dropdown -->
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:12.5px; font-weight:600; color:#475569; white-space:nowrap;">Status Lamaran:</span>
+                    
+                    <!-- Custom Dropdown Container -->
+                    <div style="position:relative;" id="customStatusDropdownContainer">
+                        <input type="hidden" name="status" id="applicantStatus" value="Lamaran Masuk">
+                        <button type="button" id="customStatusDropdownBtn" onclick="toggleCustomStatusDropdown(event)" style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:600; color:#1e293b; transition:all 0.15s;">
+                            <span id="customStatusDot" style="width:8px; height:8px; border-radius:50%; background:#f59e0b; flex-shrink:0;"></span>
+                            <span id="customStatusLabel">Lamaran Masuk</span>
+                            <i class="fa-solid fa-chevron-down" style="font-size:10px; color:#94a3b8; margin-left:4px;"></i>
                         </button>
-                        <button type="button" id="tabApplicantAktivitasBtn" onclick="switchApplicantModalTab('aktivitas')" style="padding:10px 20px; border:none; background:none; border-bottom:2px solid transparent; color:#64748b; font-weight:600; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                            <i class="fa-regular fa-clock"></i> Riwayat Aktivitas
-                        </button>
-                    </div>
-
-                    <!-- Tab Pane 1: Profil -->
-                    <div id="tabApplicantProfilPane">
-                        <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 14px 0; display:flex; align-items:center; gap:8px;">
-                            <i class="fa-solid fa-id-card" style="color:#0ea5e9;"></i> Informasi Profil
-                        </h3>
                         
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
-                            <div>
-                                <div style="font-size:12px; color:#64748b; margin-bottom:2px;">Tempat, tanggal lahir</div>
-                                <div id="applicantBirthInfo" style="font-size:13px; font-weight:600; color:#1e293b;">Brebes, 19 Desember 2006</div>
+                        <!-- Dropdown Menu (POPS UPWARD ABOVE FOOTER) -->
+                        <div id="customStatusDropdownMenu" style="display:none; position:absolute; bottom:calc(100% + 6px); left:0; min-width:210px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.12); padding:5px; z-index:99999;">
+                            <div class="status-option-item" onclick="selectApplicantStatus('Lamaran Masuk', '#f59e0b')" style="padding:8px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <span style="width:7px; height:7px; border-radius:50%; background:#f59e0b; flex-shrink:0;"></span>
+                                <span>Lamaran Masuk</span>
+                                <i class="fa-solid fa-check status-check-icon" data-status="Lamaran Masuk" style="margin-left:auto; color:#0f172a; font-size:11px;"></i>
                             </div>
-                            <div>
-                                <div style="font-size:12px; color:#64748b; margin-bottom:2px;">Kontak</div>
-                                <div style="font-size:12px; color:#64748b; line-height:1.4;">Alamat email dan nomor telepon pelamar akan tersedia setelah Anda melakukan proses bookmark atau memilih kandidat yang dinilai potensial maupun diminati.</div>
+                            <div class="status-option-item" onclick="selectApplicantStatus('Sedang Dipelajari', '#f97316')" style="padding:8px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <span style="width:7px; height:7px; border-radius:50%; background:#f97316; flex-shrink:0;"></span>
+                                <span>Sedang Dipelajari</span>
+                                <i class="fa-solid fa-check status-check-icon" data-status="Sedang Dipelajari" style="margin-left:auto; color:#0f172a; font-size:11px; display:none;"></i>
                             </div>
-                        </div>
-
-                        <div style="margin-bottom:16px;">
-                            <div style="font-size:12px; color:#64748b; margin-bottom:2px;">Alamat</div>
-                            <div id="applicantKtpAddress" style="font-size:13px; color:#1e293b; font-weight:500;">Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES</div>
-                        </div>
-
-                        <div style="margin-bottom:24px;">
-                            <div style="font-size:12px; color:#64748b; margin-bottom:2px;">Alamat domisili</div>
-                            <div id="applicantDomicileAddress" style="font-size:13px; color:#1e293b; font-weight:500;">Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH</div>
-                        </div>
-
-                        <!-- Pengalaman Kerja -->
-                        <div style="margin-bottom:24px;">
-                            <h4 style="font-size:13.5px; font-weight:700; color:#0f172a; margin:0 0 10px 0;">Pengalaman Kerja</h4>
-                            <div id="applicantExperience" style="font-size:13px; color:#64748b;">Belum ada pengalaman kerja yang tercatat.</div>
-                        </div>
-
-                        <!-- Pelatihan -->
-                        <div style="margin-bottom:24px;">
-                            <h4 style="font-size:13.5px; font-weight:700; color:#0f172a; margin:0 0 10px 0;">Pelatihan</h4>
-                            <div id="applicantTrainings">
-                                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
-                                    <div style="font-size:13.5px; font-weight:700; color:#0f172a;">Operator Forklift</div>
-                                    <div style="font-size:12.5px; color:#475569; margin:2px 0;">KEMNAKER</div>
-                                    <div style="font-size:12px; color:#64748b;">Sep 2026</div>
-                                    <div style="font-size:12px; color:#64748b; margin-top:4px;">Cibuntu, Cibitung, KAB. BEKASI, JAWA BARAT</div>
-                                </div>
+                            <div class="status-option-item" onclick="selectApplicantStatus('Wawancara', '#3b82f6')" style="padding:8px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <span style="width:7px; height:7px; border-radius:50%; background:#3b82f6; flex-shrink:0;"></span>
+                                <span>Wawancara</span>
+                                <i class="fa-solid fa-check status-check-icon" data-status="Wawancara" style="margin-left:auto; color:#0f172a; font-size:11px; display:none;"></i>
                             </div>
-                        </div>
-
-                        <!-- Pendidikan -->
-                        <div style="margin-bottom:24px;">
-                            <h4 style="font-size:13.5px; font-weight:700; color:#0f172a; margin:0 0 10px 0;">Pendidikan</h4>
-                            <div id="applicantEducation">
-                                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
-                                    <div style="font-size:13.5px; font-weight:700; color:#0f172a;">SMA atau Sederajat</div>
-                                    <div style="font-size:12.5px; color:#475569; margin:2px 0;">SMAN 1 WALED</div>
-                                    <div style="font-size:12px; color:#64748b;">IPS</div>
-                                    <div style="font-size:12px; color:#64748b;">2022 – 2025</div>
-                                    <div style="font-size:12px; color:#059669; font-weight:600; margin:2px 0;">IPK: 87</div>
-                                    <div style="font-size:12px; color:#64748b;">Waled Kota, Waled, KAB. CIREBON, JAWA BARAT</div>
-                                </div>
+                            <div class="status-option-item" onclick="selectApplicantStatus('Diterima', '#10b981')" style="padding:8px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <span style="width:7px; height:7px; border-radius:50%; background:#10b981; flex-shrink:0;"></span>
+                                <span>Diterima</span>
+                                <i class="fa-solid fa-check status-check-icon" data-status="Diterima" style="margin-left:auto; color:#0f172a; font-size:11px; display:none;"></i>
                             </div>
-                        </div>
-
-                        <!-- Sertifikasi & Keahlian -->
-                        <div style="margin-bottom:20px;">
-                            <h4 style="font-size:13.5px; font-weight:700; color:#0f172a; margin:0 0 10px 0;">Sertifikasi & Keahlian</h4>
-                            <div style="font-size:12px; color:#64748b; margin-bottom:6px;">Keahlian</div>
-                            <div id="applicantSkills" style="display:flex; flex-wrap:wrap; gap:8px;">
-                                <span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">Bahasa Korea</span>
-                                <span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">Operator forklift</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tab Pane 2: Riwayat Aktivitas -->
-                    <div id="tabApplicantAktivitasPane" style="display:none;">
-                        <div id="applicantTimeline" style="display:flex; flex-direction:column; gap:16px; padding-left:10px; border-left:2px solid #e2e8f0; margin-left:10px;">
-                            <div style="position:relative;">
-                                <div style="position:absolute; left:-17px; top:4px; width:12px; height:12px; border-radius:50%; background:#0ea5e9; border:2px solid #fff;"></div>
-                                <div style="font-size:13px; font-weight:700; color:#0f172a;">Lamaran Masuk</div>
-                                <div style="font-size:12px; color:#64748b;">Lamaran diajukan oleh pelamar</div>
-                                <div id="applicantActivityDate" style="font-size:11.5px; color:#94a3b8; margin-top:2px;">20 Sep 2026</div>
+                            <div class="status-option-item" onclick="selectApplicantStatus('Ditolak', '#ef4444')" style="padding:8px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <span style="width:7px; height:7px; border-radius:50%; background:#ef4444; flex-shrink:0;"></span>
+                                <span>Ditolak</span>
+                                <i class="fa-solid fa-check status-check-icon" data-status="Ditolak" style="margin-left:auto; color:#0f172a; font-size:11px; display:none;"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div style="padding:16px 28px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:flex-end; gap:10px;">
-                    <button type="button" class="ghost-btn" data-close-modal="applicant-profile" style="padding:8px 18px; border:1px solid #cbd5e1; background:#fff; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;">Tutup</button>
+                <!-- Right: 2 Action Icons (Tag & Jadwal Wawancara) -->
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button type="button" onclick="openApplicantTagModal()" title="Tandai pelamar dengan tag" style="width:32px; height:32px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all 0.15s;" onmouseover="this.style.borderColor='#0ea5e9';this.style.color='#0284c7'" onmouseout="this.style.borderColor='#cbd5e1';this.style.color='#64748b'">
+                        <i class="fa-solid fa-tag" style="font-size:12px; transform:rotate(45deg);"></i>
+                    </button>
+                    <button type="button" onclick="openApplicantInterviewModal()" title="Jadwal wawancara" style="width:32px; height:32px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all 0.15s;" onmouseover="this.style.borderColor='#0ea5e9';this.style.color='#0284c7'" onmouseout="this.style.borderColor='#cbd5e1';this.style.color='#64748b'">
+                        <i class="fa-regular fa-calendar-check" style="font-size:13px;"></i>
+                    </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
