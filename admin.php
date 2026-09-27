@@ -5235,12 +5235,36 @@ document.addEventListener('click', function(e) {
                         $jobFormData = job_to_form_data($selectedJob);
                         $empName = $selectedJob['owner_name'] ?: $selectedJob['user_name'];
                         $empEmail = $selectedJob['user_email'];
-                        $empPhone = $selectedJob['phone'] ?: '081234567890';
+                        $empPhone = $selectedJob['phone'] ?: '-';
                         $empWhatsapp = $selectedJob['whatsapp'] ?: $empPhone;
-                        $empSocialMedia = $selectedJob['social_media'] ?: ($selectedJob['instagram'] ?: ('Instagram @' . strtolower(str_replace(' ', '', $empName))));
-                        $empAddress = $selectedJob['address'] ?: 'Jl. Ir. H. Juanda No. 25, Kota Bandung';
+                        $empSocialMedia = $selectedJob['social_media'] ?: ($selectedJob['instagram'] ?: '-');
+                        $empAddress = $selectedJob['address'] ?: '-';
                         $jobExpiryDate = !empty($jobFormData['expiry_days']) ? date('d M Y', strtotime('+' . (int)$jobFormData['expiry_days'] . ' days', strtotime($selectedJob['created_at']))) : date('d M Y', strtotime('+30 days', strtotime($selectedJob['created_at'])));
-                        $skillsList = !empty($jobFormData['skills']) ? $jobFormData['skills'] : ['Content Writing', 'Copywriting', 'Communication'];
+                        $skillsList = !empty($jobFormData['skills']) ? $jobFormData['skills'] : [];
+                        // KBJI name lookup
+                        $kbjiCode = trim((string)($selectedJob['kbji_code'] ?? ''));
+                        $kbjiMap = kbji_name_map();
+                        $kbjiName = $kbjiMap[$kbjiCode] ?? '';
+                        $kbjiDisplay = $kbjiCode !== '' ? ($kbjiCode . ($kbjiName !== '' ? ' — ' . $kbjiName : '')) : '-';
+                        // Job status for conditional rendering
+                        $detailStatus = $selectedJob['status'] ?? '';
+                        $isJobFinalized = in_array($detailStatus, ['Tayang', 'Ditolak', 'CANCELED', 'Perlu Direvisi'], true);
+                        // Verifier info from job_posts
+                        $verifierName = $selectedJob['assigned_to'] ?? '';
+                        // Entity type label
+                        $entityTypeRaw = $selectedJob['entity_type'] ?? '';
+                        $entityTypeLabel = (strcasecmp($entityTypeRaw, 'Individu') === 0 || strcasecmp($entityTypeRaw, 'Individual') === 0) ? 'Individual' : ($entityTypeRaw ?: 'Individual');
+                        // Keputusan verifikasi label
+                        $keputusanLabel = '';
+                        if ($detailStatus === 'Tayang') $keputusanLabel = 'Disetujui';
+                        elseif ($detailStatus === 'Perlu Direvisi') $keputusanLabel = 'Revisi';
+                        elseif ($detailStatus === 'Ditolak' || $detailStatus === 'CANCELED') $keputusanLabel = 'Ditolak';
+                        // Pemeriksaan pada: use updated_at if finalized, else created_at + 1min
+                        $pemeriksaanPada = $isJobFinalized && !empty($selectedJob['updated_at']) ? date('d M Y, H:i', strtotime($selectedJob['updated_at'])) : date('d M Y, H:i', strtotime($selectedJob['created_at'] . ' + 1 minute'));
+                        // Compliance checklist
+                        $savedChecklist = json_decode($selectedJob['compliance_checklist'] ?? '{}', true) ?: [];
+                        $hasChecklistData = !empty($savedChecklist);
+                        $checklistCategories = compliance_categories();
                     ?>
 
                     <!-- DETAIL VIEW FOR VERIFIKASI LOWONGAN -->
@@ -5274,16 +5298,18 @@ document.addEventListener('click', function(e) {
                                 <div style="font-size:13px; color:#64748b; margin-top:6px; display:flex; align-items:center; gap:8px;">
                                     <strong style="color:#334155;"><?php echo e($empName); ?></strong>
                                     <span style="color:#cbd5e1;">|</span>
-                                    <span>Individual</span>
+                                    <span><?php echo e($entityTypeLabel); ?></span>
                                     <span style="color:#cbd5e1;">|</span>
                                     <span>Diajukan: <?php echo date('d M Y, H:i', strtotime($selectedJob['created_at'])); ?></span>
                                 </div>
                             </div>
+                            <?php if (!$isJobFinalized): ?>
                             <div>
                                 <button type="button" onclick="openDecisionModal()" class="primary-btn" style="height:40px; padding:0 20px; font-size:13px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 2px 4px rgba(2,132,199,0.2);">
                                     <i class="fa-solid fa-gavel"></i> Ambil Keputusan
                                 </button>
                             </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -5359,13 +5385,13 @@ document.addEventListener('click', function(e) {
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-calendar-check" style="color:#0284c7; width:14px;"></i> Pemeriksaan Pada
                                 </div>
-                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo date('d M Y, H:i', strtotime($selectedJob['created_at'] . ' + 1 minute')); ?></div>
+                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo $pemeriksaanPada; ?></div>
                             </div>
                             <div>
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-user" style="color:#0284c7; width:14px;"></i> Nama Petugas yang Ditugaskan
                                 </div>
-                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($selectedJob['assigned_to'] ?: 'Admin Pusat'); ?></div>
+                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: 'Admin Pusat'); ?></div>
                             </div>
                             <div>
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
@@ -5373,9 +5399,67 @@ document.addEventListener('click', function(e) {
                                 </div>
                                 <div style="font-size:13px; font-weight:600; color:#0284c7;"><?php echo e($user['email'] ?? 'admin@paskerid.test'); ?></div>
                             </div>
+                            <?php if ($isJobFinalized && $keputusanLabel !== ''): ?>
+                            <div>
+                                <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                    <i class="fa-solid fa-gavel" style="color:#0284c7; width:14px;"></i> Keputusan Verifikasi
+                                </div>
+                                <div>
+                                    <?php
+                                    if ($detailStatus === 'Tayang') {
+                                        echo '<span style="display:inline-flex; align-items:center; gap:6px; background:#dcfce7; color:#15803d; font-size:12px; font-weight:700; padding:3px 12px; border-radius:999px;">● Disetujui</span>';
+                                    } elseif ($detailStatus === 'Perlu Direvisi') {
+                                        echo '<span style="display:inline-flex; align-items:center; gap:6px; background:#fef3c7; color:#b45309; font-size:12px; font-weight:700; padding:3px 12px; border-radius:999px;">● Revisi</span>';
+                                    } elseif ($detailStatus === 'Ditolak' || $detailStatus === 'CANCELED') {
+                                        echo '<span style="display:inline-flex; align-items:center; gap:6px; background:#fee2e2; color:#b91c1c; font-size:12px; font-weight:700; padding:3px 12px; border-radius:999px;">● Ditolak</span>';
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                    <i class="fa-solid fa-id-badge" style="color:#0284c7; width:14px;"></i> Nama Verifikator
+                                </div>
+                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: $user['name'] ?? 'Admin Pusat'); ?></div>
+                            </div>
+                            <?php endif; ?>
                         </div>
 
-                        <!-- CHECKLIST PLACEHOLDER -->
+                        <!-- CHECKLIST VERIFIKASI -->
+                        <?php if ($hasChecklistData): ?>
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <div style="font-size:13px; font-weight:700; color:#0f172a;">Checklist Verifikasi</div>
+                                <?php
+                                $allPatuh = true;
+                                foreach ($checklistCategories as $cat) {
+                                    if (($savedChecklist[$cat]['status'] ?? 'Patuh') !== 'Patuh') { $allPatuh = false; break; }
+                                }
+                                ?>
+                                <span style="background:<?php echo $allPatuh ? '#dcfce7' : '#fee2e2'; ?>; color:<?php echo $allPatuh ? '#15803d' : '#b91c1c'; ?>; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px;">
+                                    <?php echo $allPatuh ? 'Semua Patuh' : 'Ada Pelanggaran'; ?>
+                                </span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <?php foreach ($checklistCategories as $cat):
+                                    $catData = $savedChecklist[$cat] ?? ['status' => 'Patuh', 'note' => ''];
+                                    $isNc = $catData['status'] === 'Tidak Patuh';
+                                ?>
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:10px 14px; background:<?php echo $isNc ? '#fff7ed' : '#f8fafc'; ?>; border:1px solid <?php echo $isNc ? '#fed7aa' : '#e2e8f0'; ?>; border-radius:10px; gap:12px;">
+                                    <div style="flex:1;">
+                                        <div style="font-size:13px; font-weight:<?php echo $isNc ? '700' : '500'; ?>; color:<?php echo $isNc ? '#9a3412' : '#334155'; ?>; margin-bottom:<?php echo ($isNc && !empty($catData['note'])) ? '6px' : '0'; ?>;"><?php echo e($cat); ?></div>
+                                        <?php if ($isNc && !empty($catData['note'])): ?>
+                                        <div style="font-size:12px; color:#64748b; line-height:1.5;"><?php echo nl2br(e($catData['note'])); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <span style="background:<?php echo $isNc ? '#fee2e2' : '#dcfce7'; ?>; color:<?php echo $isNc ? '#b91c1c' : '#15803d'; ?>; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; display:inline-flex; align-items:center; gap:4px;">
+                                        <?php echo $isNc ? '✕ Tidak Patuh' : '✓ Patuh'; ?>
+                                    </span>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php else: ?>
                         <div id="checklistPlaceholderBox" style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; padding:36px 20px; text-align:center;">
                             <div style="width:44px; height:44px; background:#e2e8f0; color:#64748b; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto; font-size:18px;">
                                 <i class="fa-solid fa-list-check"></i>
@@ -5383,6 +5467,7 @@ document.addEventListener('click', function(e) {
                             <div style="font-weight:700; font-size:14px; color:#0f172a; margin-bottom:4px;">Checklist verifikasi tidak tersedia</div>
                             <div style="font-size:12px; color:#64748b;">Checklist hanya akan muncul setelah diberikan keputusan oleh verifikator.</div>
                         </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- MODAL POPUP: AMBIL KEPUTUSAN VERIFIKASI (RIGHT SIDE DRAWER) -->
@@ -5641,9 +5726,17 @@ document.addEventListener('click', function(e) {
                                     <i class="fa-solid fa-circle-info" style="color:#0284c7; width:14px;"></i> Status Lowongan
                                 </div>
                                 <div>
-                                    <span class="pill-badge pending" style="background:#fef3c7; color:#d97706; font-size:12px; padding:3px 10px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
-                                        ● Menunggu Verifikasi
-                                    </span>
+                                    <?php
+                                    if ($detailStatus === 'Tayang') {
+                                        echo '<span style="background:#dcfce7; color:#15803d; font-size:12px; padding:3px 10px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">● Tayang</span>';
+                                    } elseif ($detailStatus === 'Perlu Direvisi') {
+                                        echo '<span style="background:#fef3c7; color:#b45309; font-size:12px; padding:3px 10px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">● Perlu Direvisi</span>';
+                                    } elseif ($detailStatus === 'Ditolak' || $detailStatus === 'CANCELED') {
+                                        echo '<span style="background:#fee2e2; color:#b91c1c; font-size:12px; padding:3px 10px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">● Ditolak</span>';
+                                    } else {
+                                        echo '<span style="background:#fef3c7; color:#d97706; font-size:12px; padding:3px 10px; border-radius:999px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">● ' . e($detailStatus ?: 'Menunggu Verifikasi') . '</span>';
+                                    }
+                                    ?>
                                 </div>
                             </div>
                         </div>
@@ -5694,7 +5787,7 @@ document.addEventListener('click', function(e) {
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:2px;">
                                     <i class="fa-solid fa-briefcase" style="color:#94a3b8; width:14px;"></i> Jabatan (KBJI)
                                 </div>
-                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($selectedJob['kbji_code'] ?: 'Penulis Konten'); ?></div>
+                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($kbjiDisplay); ?></div>
                             </div>
                             <div>
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:2px;">
