@@ -3949,23 +3949,25 @@
 
     <!-- ─── MODAL USER CONSENT PEMBERI KERJA INDIVIDU (JALUR DINAS) ─────────── -->
     <div class="modal-backdrop" data-modal="modal-user-consent">
-        <div class="modal-panel" style="width:min(620px, 95vw); max-height:90vh; display:flex; flex-direction:column;">
-            <div class="modal-header" style="background:#f0f9ff; border-bottom:1px solid #bae6fd;">
+        <div class="modal-panel" style="width:min(600px, 95vw); max-height:calc(100vh - 40px); border-radius:16px; overflow-y:auto; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
+            <div class="modal-header" style="background:#f0f9ff; border-bottom:1px solid #bae6fd; padding:18px 24px 16px; display:flex; justify-content:space-between; align-items:flex-start;">
                 <div>
                     <div class="modal-title" style="color:#0369a1; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
                         <i class="fa-solid fa-file-signature"></i> Persetujuan Perbaikan Data Profil (User Consent)
                     </div>
-                    <div class="modal-subtitle" style="color:#0284c7;">Konfirmasi data profil yang telah disesuaikan bersama Petugas Dinas</div>
+                    <div class="modal-subtitle" style="color:#0284c7; font-size:13px; margin-top:3px;">Konfirmasi data profil yang telah disesuaikan bersama Petugas Dinas</div>
                 </div>
-                <button type="button" class="ghost-btn" data-close-modal="modal-user-consent">×</button>
+                <button type="button" class="ghost-btn" data-close-modal="modal-user-consent" style="width:32px; height:32px; border-radius:50%; background:#ffffff; border:1px solid #bae6fd; color:#0369a1; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; flex-shrink:0; transition:all 0.2s;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <form method="post" action="dashboard.php" style="display:flex; flex-direction:column; flex:1; min-height:0; margin:0;">
-                <div class="modal-body" style="flex:1; overflow-y:auto; padding:20px; font-size:13px; color:#334155;">
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:16px;">
+            <form method="post" action="dashboard.php" style="margin:0;">
+                <div class="modal-body" style="padding:20px 24px 24px; font-size:13px; color:#334155;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; margin-bottom:16px;">
                         <div style="font-size:12px; font-weight:700; color:#0f172a; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
                             <i class="fa-solid fa-list-check" style="color:#0284c7;"></i> Rincian Pengajuan Ulang Profil
                         </div>
-                        <div style="display:grid; grid-template-columns:130px 1fr; row-gap:8px; font-size:12.5px;">
+                        <div style="display:grid; grid-template-columns:140px 1fr; row-gap:9px; font-size:12.5px;">
                             <span style="color:#64748b;">Nama Pemilik</span>
                             <strong style="color:#0f172a;"><?php echo e($profile['owner_name'] ?? $user['name']); ?></strong>
 
@@ -3993,7 +3995,7 @@
                     </div>
 
                     <!-- KOTAK PERNYATAAN USER CONSENT -->
-                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px; margin-bottom:16px;">
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px 18px; margin-bottom:16px;">
                         <div style="font-size:12px; font-weight:700; color:#1e40af; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
                             Pernyataan Persetujuan Pemohon:
                         </div>
@@ -4002,18 +4004,23 @@
                         </p>
                     </div>
 
-                    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px;">
-                        <label style="display:flex; align-items:center; gap:10px; font-weight:700; color:#0f172a; font-size:13px; cursor:pointer;">
-                            <input type="checkbox" id="checkUserConsentPki" name="user_consent_agreed" value="1" required onchange="document.getElementById('btnSubmitUserConsentPki').disabled = !this.checked;" style="width:16px; height:16px; cursor:pointer;">
-                            <span>Saya menyetujui</span>
+                    <!-- CHECKBOX CONSENT -->
+                    <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; padding:12px 16px; margin-bottom:20px;">
+                        <label style="display:flex; align-items:center; gap:12px; font-weight:700; color:#0f172a; font-size:13.5px; cursor:pointer; margin:0;">
+                            <input type="checkbox" id="checkUserConsentPki" name="user_consent_agreed" value="1" required onchange="var b=document.getElementById('btnSubmitUserConsentPki'); b.disabled = !this.checked; b.style.opacity = this.checked ? '1' : '0.55'; b.style.cursor = this.checked ? 'pointer' : 'not-allowed';" style="width:18px; height:18px; cursor:pointer; accent-color:#0284c7;">
+                            <span>Saya menyetujui pernyataan di atas</span>
                         </label>
                     </div>
-                </div>
-                <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; padding:16px 20px; border-top:1px solid #e2e8f0; background:#f8fafc;">
-                    <button type="button" class="ghost-btn" data-close-modal="modal-user-consent">Tutup</button>
-                    <button type="submit" name="give_manual_dinas_consent" id="btnSubmitUserConsentPki" value="1" disabled class="primary-btn" style="background:#0284c7; padding:0 20px; height:38px; font-weight:700;">
-                        <i class="fa-solid fa-check"></i> Kirim Persetujuan
-                    </button>
+
+                    <!-- TOMBOL AKSI LANGSUNG DI BAWAH KONTEN DENGAN PADDING AMAN -->
+                    <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:8px;">
+                        <button type="button" class="ghost-btn" data-close-modal="modal-user-consent" style="background:#ffffff; border:1.5px solid #cbd5e1; color:#334155; height:40px; padding:0 20px; font-weight:600; border-radius:8px; font-size:13.5px; cursor:pointer; transition:all 0.15s ease;">
+                            Tutup
+                        </button>
+                        <button type="submit" name="give_manual_dinas_consent" id="btnSubmitUserConsentPki" value="1" disabled class="primary-btn" style="background:#0284c7; color:#ffffff; padding:0 22px; height:40px; font-weight:700; border-radius:8px; border:none; display:inline-flex; align-items:center; gap:8px; font-size:13.5px; cursor:not-allowed; opacity:0.55; box-shadow:0 2px 4px rgba(2, 132, 199, 0.2); transition:all 0.15s ease;">
+                            <i class="fa-solid fa-check"></i> Kirim Persetujuan
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
