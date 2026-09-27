@@ -353,8 +353,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
         $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
-        $permitDoc = $permitDoc ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null);
-        $workplacePhoto = $workplacePhoto ?: ($profile['workplace_photo'] ?? $profile['doc_location_photo'] ?? null);
+
+        if (empty($permitDoc)) {
+            $permitDoc = !empty($_POST['existing_permit_document']) ? $_POST['existing_permit_document'] : (!empty($profile['permit_document']) ? $profile['permit_document'] : (!empty($profile['doc_permission']) ? $profile['doc_permission'] : null));
+        }
+        if (empty($workplacePhoto)) {
+            $workplacePhoto = !empty($_POST['existing_workplace_photo']) ? $_POST['existing_workplace_photo'] : (!empty($profile['workplace_photo']) ? $profile['workplace_photo'] : (!empty($profile['doc_location_photo']) ? $profile['doc_location_photo'] : null));
+        }
 
         if (empty($permitDoc)) {
             flash('error', 'Dokumen Pendukung wajib diunggah minimal 1 dokumen.');
