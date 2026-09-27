@@ -3867,47 +3867,71 @@
     $isMaxRevModal = ($resRevCount >= 3);
     ?>
     <div class="modal-backdrop" data-modal="modal-verification-result">
-        <div class="modal-panel" style="width:min(560px, 95vw);">
-            <div class="modal-header" style="background:#fef2f2; border-bottom:1px solid #fecaca;">
+        <div class="modal-panel" style="width:min(580px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
+            <div class="modal-header" style="background:#ffffff; border-bottom:1px solid #f1f5f9; padding:20px 24px;">
                 <div>
-                    <div class="modal-title" style="color:#991b1b;"><i class="fa-solid fa-file-circle-exclamation"></i> Hasil Verifikasi Profil (Revisi ke-<?php echo $resRevCount; ?>)</div>
-                    <div class="modal-subtitle" style="color:#b91c1c;">Catatan resmi verifikator Admin Disnaker</div>
+                    <div class="modal-title" style="color:#0f172a; font-size:18px; font-weight:800; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <span style="display:inline-flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-file-circle-exclamation" style="color:#d97706;"></i> Hasil Verifikasi Profil
+                        </span>
+                        <span style="background:#fff7ed; color:#c2410c; border:1px solid #ffedd5; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px;">
+                            Revisi ke-<?php echo $resRevCount; ?>
+                        </span>
+                    </div>
+                    <div class="modal-subtitle" style="color:#64748b; font-size:13px; margin-top:4px;">Catatan resmi peninjauan dari Verifikator Admin Disnaker</div>
                 </div>
-                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result">×</button>
+                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result" style="width:32px; height:32px; border-radius:50%; background:#f8fafc; border:1px solid #e2e8f0; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition:all 0.2s;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <div style="background:#fff; border:1px solid #fecaca; border-radius:12px; padding:16px; margin-bottom:16px;">
-                    <div style="font-size:12px; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Catatan Verifikator:</div>
-                    <div style="font-size:14px; color:#0f172a; font-weight:600; line-height:1.5;"><?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi data lokasi serta NPWP Anda.'); ?></div>
+            <div class="modal-body" style="padding:24px; background:#ffffff;">
+                <!-- CATATAN VERIFIKATOR CARD -->
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:16px 18px; margin-bottom:18px;">
+                    <div style="font-size:11.5px; font-weight:700; color:#b45309; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-comment-dots" style="color:#d97706;"></i> Catatan Verifikator:
+                    </div>
+                    <div style="font-size:14px; color:#1e293b; font-weight:600; line-height:1.55; white-space:pre-line;"><?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi data lokasi serta NPWP Anda.'); ?></div>
                 </div>
 
                 <?php if (!empty($profile['verification_checklist'])): ?>
-                    <div style="margin-bottom:16px;">
-                        <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom:8px;">Checklist Poin Pemeriksaan:</div>
-                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:13px; color:#334155;">
+                    <div style="margin-bottom:18px;">
+                        <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-list-check" style="color:#0284c7;"></i> Checklist Poin Pemeriksaan:
+                        </div>
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; font-size:13px; color:#334155; line-height:1.5;">
                             <i class="fa-solid fa-square-check" style="color:#dc2626; margin-right:6px;"></i> <?php echo e($profile['verification_checklist']); ?>
                         </div>
                     </div>
                 <?php endif; ?>
 
                 <?php if ($isMaxRevModal): ?>
-                    <div style="font-size:12.5px; color:#991b1b; background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:10px; line-height:1.5;">
-                        <i class="fa-solid fa-circle-info" style="color:#dc2626;"></i> Batas maksimal perbaikan profil mandiri telah tercapai (Revisi ke-3). Proses selanjutnya harus dilakukan bersama Petugas Dinas Tenaga Kerja domisili Anda (<strong><?php echo e($profile['city'] ?: 'Dinas Tenaga Kerja Setempat'); ?></strong>).
+                    <!-- INFORMASI BATAS MAKSIMAL (REVISI KE-3) -->
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px; display:flex; align-items:flex-start; gap:14px;">
+                        <div style="width:38px; height:38px; border-radius:10px; background:#dbeafe; color:#1d4ed8; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
+                            <i class="fa-solid fa-building-user"></i>
+                        </div>
+                        <div style="font-size:13px; color:#1e3a8a; line-height:1.55;">
+                            <strong style="color:#1e40af; font-weight:700; display:block; margin-bottom:3px; font-size:13.5px;">Proses Lanjutan Bersama Petugas Dinas</strong>
+                            Batas maksimal perbaikan profil mandiri telah tercapai (Revisi ke-3). Proses perbaikan profil selanjutnya dilakukan secara tatap muka bersama Petugas Dinas Tenaga Kerja domisili Anda (<strong><?php echo e($profile['city'] ?: 'Dinas Tenaga Kerja Setempat'); ?></strong>).
+                        </div>
                     </div>
                 <?php else: ?>
-                    <div style="font-size:12px; color:#64748b; background:#f8fafc; padding:12px; border-radius:10px;">
-                        <i class="fa-solid fa-circle-info" style="color:#0284c7;"></i> Silakan klik tombol <strong>Perbaiki Profil</strong> untuk melengkapi data. Seluruh data yang diisikan sebelumnya telah tersimpan.
+                    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:10px; font-size:13px; color:#0369a1;">
+                        <i class="fa-solid fa-circle-info" style="color:#0284c7; font-size:16px; flex-shrink:0;"></i>
+                        <div>Silakan klik tombol <strong>Perbaiki Profil</strong> untuk melengkapi data. Seluruh data yang diisikan sebelumnya telah tersimpan.</div>
                     </div>
                 <?php endif; ?>
             </div>
-            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
-                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result">Tutup</button>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; background:#f8fafc; border-top:1px solid #f1f5f9;">
+                <button type="button" class="ghost-btn" data-close-modal="modal-verification-result" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; height:38px; padding:0 20px; font-weight:600; border-radius:8px; font-size:13px; cursor:pointer;">
+                    Tutup
+                </button>
                 <?php if (!$isMaxRevModal): ?>
-                    <button type="button" class="primary-btn" style="background:#dc2626;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">
+                    <button type="button" class="primary-btn" style="background:#dc2626; color:#ffffff; height:38px; padding:0 20px; font-weight:700; border-radius:8px; font-size:13px; border:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;" data-close-modal="modal-verification-result" data-open-modal="modal-employer-profile">
                         <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil Sekarang
                     </button>
                 <?php elseif (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING'): ?>
-                    <button type="button" class="primary-btn" style="background:#0284c7;" data-close-modal="modal-verification-result" data-open-modal="modal-user-consent">
+                    <button type="button" class="primary-btn" style="background:#0284c7; color:#ffffff; height:38px; padding:0 20px; font-weight:700; border-radius:8px; font-size:13px; border:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer;" data-close-modal="modal-verification-result" data-open-modal="modal-user-consent">
                         <i class="fa-solid fa-signature"></i> Tinjau & Berikan Persetujuan
                     </button>
                 <?php endif; ?>
