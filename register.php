@@ -184,22 +184,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
         </div>
     </div>
     <div class="modal-backdrop <?php echo $showSuccessPopup ? 'open' : ''; ?>" id="modalPendaftaranBerhasil">
-        <div class="popup-dialog-card success-dialog-card">
+        <div class="popup-dialog-card">
             <div class="popup-dialog-icon success"><i class="fa-solid fa-circle-check"></i></div>
             <h3 class="popup-dialog-title">Pendaftaran Berhasil</h3>
-            <div class="pki-success-alert">
-                <div class="pki-success-alert-header">
-                    <i class="fa-solid fa-clock-rotate-left pki-success-alert-icon"></i>
-                    <span class="pki-success-alert-badge">MENUNGGU VERIFIKASI</span>
+            <div class="pki-status-alert">
+                <div class="pki-status-alert-head">
+                    <i class="fa-solid fa-circle-info pki-status-alert-icon"></i>
+                    <span class="pki-status-alert-title">Menunggu Verifikasi</span>
                 </div>
-                <div class="pki-success-alert-body">
+                <div class="pki-status-alert-body">
                     Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
                     Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
                 </div>
             </div>
-            <a class="primary-btn popup-dialog-btn" href="dashboard.php#dashboard">
-                Menuju Dashboard Pemberi Kerja <i class="fa-solid fa-arrow-right" style="font-size:12px;"></i>
-            </a>
+            <a class="primary-btn" href="dashboard.php#dashboard" style="width:100%; text-align:center; justify-content:center; height:42px; font-size:13.5px; border-radius:8px;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
     <script src="assets/pki-form.js?v=20260926_v5"></script>
