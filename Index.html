@@ -3867,8 +3867,8 @@
     $isMaxRevModal = ($resRevCount >= 3);
     ?>
     <div class="modal-backdrop" data-modal="modal-verification-result">
-        <div class="modal-panel" style="width:min(580px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
-            <div class="modal-header" style="background:#ffffff; border-bottom:1px solid #f1f5f9; padding:20px 24px;">
+        <div class="modal-panel" style="width:min(580px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
+            <div class="modal-header" style="background:#ffffff; border-bottom:1px solid #f1f5f9; padding:20px 24px 16px;">
                 <div>
                     <div class="modal-title" style="color:#0f172a; font-size:18px; font-weight:800; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <span style="display:inline-flex; align-items:center; gap:8px;">
@@ -3884,9 +3884,9 @@
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            <div class="modal-body" style="padding:24px; background:#ffffff;">
+            <div class="modal-body" style="padding:20px 24px 24px; background:#ffffff;">
                 <!-- CATATAN VERIFIKATOR CARD -->
-                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:16px 18px; margin-bottom:18px;">
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:16px 18px; margin-bottom:16px;">
                     <div style="font-size:11.5px; font-weight:700; color:#b45309; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
                         <i class="fa-solid fa-comment-dots" style="color:#d97706;"></i> Catatan Verifikator:
                     </div>
@@ -3894,7 +3894,7 @@
                 </div>
 
                 <?php if (!empty($profile['verification_checklist'])): ?>
-                    <div style="margin-bottom:18px;">
+                    <div style="margin-bottom:16px;">
                         <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
                             <i class="fa-solid fa-list-check" style="color:#0284c7;"></i> Checklist Poin Pemeriksaan:
                         </div>
@@ -3906,7 +3906,7 @@
 
                 <?php if ($isMaxRevModal): ?>
                     <!-- INFORMASI BATAS MAKSIMAL (REVISI KE-3) -->
-                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px; display:flex; align-items:flex-start; gap:14px;">
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px; display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">
                         <div style="width:38px; height:38px; border-radius:10px; background:#dbeafe; color:#1d4ed8; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
                             <i class="fa-solid fa-building-user"></i>
                         </div>
@@ -3916,13 +3916,13 @@
                         </div>
                     </div>
                 <?php else: ?>
-                    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:10px; font-size:13px; color:#0369a1;">
+                    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:10px; font-size:13px; color:#0369a1; margin-bottom:20px;">
                         <i class="fa-solid fa-circle-info" style="color:#0284c7; font-size:16px; flex-shrink:0;"></i>
                         <div>Silakan klik tombol <strong>Perbaiki Profil</strong> untuk melengkapi data. Seluruh data yang diisikan sebelumnya telah tersimpan.</div>
                     </div>
                 <?php endif; ?>
-            </div>
-            <div class="modal-footer" style="padding:16px 24px; background:#f8fafc; border-top:1px solid #f1f5f9;">
+
+                <!-- TOMBOL AKSI LANGSUNG DI BAWAH KONTEN DEKAT DENGAN KONTEN UTAMA -->
                 <?php if ($isMaxRevModal && ($profile['manual_review_status'] ?? '') !== 'CONSENT_PENDING'): ?>
                     <button type="button" class="primary-btn" data-close-modal="modal-verification-result" style="width:100%; background:#0284c7; color:#ffffff; height:42px; font-size:13.5px; font-weight:700; border-radius:8px; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer;">
                         Saya Mengerti
