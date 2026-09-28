@@ -25,7 +25,6 @@ $kbjiPublishedCountsStmt = db()->prepare('
     SELECT kbji_code, COUNT(*) as cnt
     FROM job_posts
     WHERE user_id = ?
-      AND parent_job_id IS NULL
       AND published_at IS NOT NULL
       AND published_at BETWEEN ? AND ?
       AND status NOT IN ("Draft", "Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi", "Pending", "Perlu Direvisi", "Perlu Revisi", "Ditolak", "Dibatalkan", "CANCELED")
@@ -876,14 +875,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt->execute([$reasonStr, $jobId, $user['id']]);
 
             if ($repost) {
-                // Create child posting with quota = sisa_kuota, status = Menunggu Verifikasi (no auto-publish), copying ONLY business fields (original title preserved without suffix).
-                // Verification state is RESET (compliance_checklist = NULL, additional_doc_* = NULL/0) so child enters verification as a clean case.
+                // Check Rules Engine (Layer 2 - frequency check) for child repost
+                $rulesResult = check_pki_job_rules_engine($pdo, $user['id'], $oldJob['kbji_code'], $sisaKuota, null, true);
+                $additionalDocRequired = !empty($rulesResult['additional_doc_required']);
+
+                $initialStatus = $additionalDocRequired ? 'Draft' : 'Menunggu Verifikasi';
+                $initialDocStatus = $additionalDocRequired ? 'PENDING_SUBMISSION' : null;
+                $docRequiredFlag = $additionalDocRequired ? 1 : 0;
+
+                // Create child posting with quota = sisa_kuota, copying ONLY business fields (original title preserved without suffix).
                 $insert = $pdo->prepare('INSERT INTO job_posts (
                     user_id, title, description, location, job_type, industry, entity_type, status,
                     salary_min, salary_max, quota, accepted_count, kbji_code, details, min_education, min_experience,
                     additional_doc_required, additional_doc_file, additional_doc_notes, additional_doc_status,
                     parent_job_id, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, "Menunggu Verifikasi", ?, ?, ?, 0, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, CURRENT_TIMESTAMP)');
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, CURRENT_TIMESTAMP)');
                 $insert->execute([
                     $user['id'],
                     $oldJob['title'],
@@ -892,6 +898,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $oldJob['job_type'],
                     $oldJob['industry'],
                     $oldJob['entity_type'] ?? 'Individu',
+                    $initialStatus,
                     $oldJob['salary_min'] ?? null,
                     $oldJob['salary_max'] ?? null,
                     $sisaKuota,
@@ -899,23 +906,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $oldJob['details'] ?? null,
                     $oldJob['min_education'] ?? '',
                     $oldJob['min_experience'] ?? '',
+                    $docRequiredFlag,
+                    $initialDocStatus,
                     $jobId
                 ]);
                 $childId = (int)$pdo->lastInsertId();
 
-                // Create Job Verification Case for child (WITHOUT catch ignore; exception will trigger transaction rollback!)
-                $caseStmt = $pdo->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, layer_flags, created_at) VALUES (?, ?, ?, "PENDING", "REPOST_CONTINUATION", CURRENT_TIMESTAMP)');
-                $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
+                if (!$additionalDocRequired) {
+                    // Create Job Verification Case for child (WITHOUT catch ignore; exception will trigger transaction rollback!)
+                    $caseStmt = $pdo->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, layer_flags, created_at) VALUES (?, ?, ?, "PENDING", "REPOST_CONTINUATION", CURRENT_TIMESTAMP)');
+                    $caseStmt->execute([$childId, $user['id'], $oldJob['kbji_code']]);
+                }
 
                 $pdo->commit();
-                flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
+
+                if ($additionalDocRequired) {
+                    flash('warning', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat. Karena Anda telah mempublikasikan 3 lowongan dengan KBJI yang sama bulan ini, pengajuan ke-4 ini memerlukan Dokumen/Keterangan Tambahan.');
+                    redirect('dashboard.php?open_additional_doc_modal=' . $childId . '#lowongan');
+                    exit;
+                } else {
+                    flash('success', 'Lowongan awal telah Ditutup. Posting turunan sisa kuota (' . $sisaKuota . ' posisi) berhasil dibuat dan sedang Menunggu Verifikasi.');
+                    redirect('dashboard.php#lowongan');
+                    exit;
+                }
             } else {
                 $pdo->commit();
                 flash('success', 'Lowongan berhasil Ditutup.');
+                redirect('dashboard.php#lowongan');
+                exit;
             }
-
-            redirect('dashboard.php#lowongan');
-            exit;
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();

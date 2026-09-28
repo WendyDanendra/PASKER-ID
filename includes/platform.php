@@ -749,24 +749,13 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
         ];
     }
 
-    // FSD: Continuation repost does not consume additional monthly quota or count towards same-KBJI monthly frequency
-    if ($isRepost) {
-        return [
-            'allowed' => true,
-            'layer' => 0,
-            'additional_doc_required' => false,
-            'is_repost' => true,
-        ];
-    }
-
     $startOfMonth = date('Y-m-01 00:00:00');
     $endOfMonth = date('Y-m-t 23:59:59');
 
     // LAYER 2: Monthly publication frequency of same-KBJI (1-3: normal, 4+: Dokumen/Keterangan Tambahan)
-    // Only count PUBLISHED jobs this month (Draft, Pending, Perlu Direvisi, Ditolak, Dibatalkan, CANCELED do not count).
+    // Count ALL PUBLISHED jobs this month for this KBJI (including posting ulang sisa kuota).
     // STRICTLY use published_at — no created_at fallback.
-    // Child reposts (parent_job_id IS NOT NULL) do not count towards same-KBJI frequency.
-    $stmtL2 = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE user_id = ? AND kbji_code = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND status NOT IN ("Draft", "Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi", "Pending", "Perlu Direvisi", "Perlu Revisi", "Ditolak", "Dibatalkan", "CANCELED") AND id != ?');
+    $stmtL2 = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE user_id = ? AND kbji_code = ? AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND status NOT IN ("Draft", "Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi", "Pending", "Perlu Direvisi", "Perlu Revisi", "Ditolak", "Dibatalkan", "CANCELED") AND id != ?');
     $stmtL2->execute([$userId, $kbjiCode, $startOfMonth, $endOfMonth, $jobId ?? 0]);
     $publishedSameKbjiCount = (int)$stmtL2->fetchColumn();
 
@@ -781,8 +770,8 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
     $stmtL3->execute([$userId, $startOfMonth, $endOfMonth, $jobId ?? 0]);
     $currentMonthlyPublishedQuota = (int)$stmtL3->fetchColumn();
 
-    $totalQuota = $currentMonthlyPublishedQuota + $requestedQuota;
-    if (!$additionalDocRequired && $totalQuota > 10) {
+    $totalQuota = $isRepost ? $currentMonthlyPublishedQuota : ($currentMonthlyPublishedQuota + $requestedQuota);
+    if (!$additionalDocRequired && !$isRepost && $totalQuota > 10) {
         return [
             'allowed' => false,
             'layer' => 3,
@@ -804,6 +793,7 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
         'current_monthly_quota' => $currentMonthlyPublishedQuota,
         'requested_quota' => $requestedQuota,
         'total_quota' => $totalQuota,
+        'is_repost' => $isRepost,
     ];
 }
 
