@@ -525,10 +525,72 @@
                 // Update live map
                 updateMapPreview();
             } else {
-                // When unchecked, fields remain VISIBLE and editable
-                // Do not hide or clear them abruptly so user can comfortably edit
+                // When unchecked, clear all prefilled fields so user can fill them manually from scratch
+                selProv = '';
+                selCity = '';
+                selDistrict = '';
+                selVillage = '';
+
+                setInputValue('pki_hiddenProvince', '');
+                setInputValue('pki_hiddenCity', '');
+                setInputValue('pki_hiddenDistrict', '');
+                setInputValue('pki_hiddenVillage', '');
+                setInputValue('pki_hiddenDomicileCityId', '');
+
+                const locDisplay = document.getElementById('pki_locDisplayValue');
+                if (locDisplay) {
+                    locDisplay.textContent = 'Pilih lokasi tempat usaha / kegiatan';
+                    locDisplay.classList.add('placeholder');
+                }
+
+                const addrInput = document.getElementById('pki_inputAddress');
+                if (addrInput) {
+                    addrInput.value = '';
+                }
+
+                const addrDetailInput = document.getElementById('pki_inputAddressDetail');
+                if (addrDetailInput) {
+                    addrDetailInput.value = '';
+                }
+
+                const postalSelect = document.getElementById('pki_selectPostalCode');
+                if (postalSelect) {
+                    postalSelect.innerHTML = '<option value="">Pilih kode pos</option>';
+                }
+
+                currentLocLevel = 1;
+                updateMapPreview();
             }
         });
+
+        // Add real-time input digit constraints for identity fields
+        const nikInput = document.getElementById('pki_nik');
+        if (nikInput) {
+            nikInput.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 16);
+            });
+        }
+
+        const phoneInput = document.getElementById('pki_phone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 15);
+            });
+        }
+
+        const waInput = document.getElementById('pki_whatsapp');
+        if (waInput) {
+            waInput.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 15);
+            });
+        }
+
+        const npwpInput = document.getElementById('pki_npwp');
+        if (npwpInput) {
+            npwpInput.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9.-]/g, '').slice(0, 20);
+            });
+        }
     }
 
     // ─── 3. Address Listeners for Live Map ───
@@ -811,16 +873,16 @@
 
             // 3. Nomor Telepon Aktif
             const phone = document.getElementById('pki_phone')?.value?.trim();
-            if (!phone) {
-                flagError('phone', 'Nomor telepon aktif wajib diisi.', document.getElementById('pki_phone'));
+            if (!phone || phone.length < 10 || phone.length > 15) {
+                flagError('phone', 'Nomor telepon aktif wajib diisi (10–15 digit angka).', document.getElementById('pki_phone'));
             } else {
                 clearFieldError('phone');
             }
 
             // 4. Nomor WhatsApp
             const whatsapp = document.getElementById('pki_whatsapp')?.value?.trim();
-            if (!whatsapp) {
-                flagError('whatsapp', 'Nomor WhatsApp aktif wajib diisi.', document.getElementById('pki_whatsapp'));
+            if (!whatsapp || whatsapp.length < 10 || whatsapp.length > 15) {
+                flagError('whatsapp', 'Nomor WhatsApp aktif wajib diisi (10–15 digit angka).', document.getElementById('pki_whatsapp'));
             } else {
                 clearFieldError('whatsapp');
             }
@@ -835,8 +897,9 @@
 
             // 6. NPWP
             const npwp = document.getElementById('pki_npwp')?.value?.trim();
-            if (!npwp) {
-                flagError('npwp', 'NPWP wajib diisi (15 atau 16 digit).', document.getElementById('pki_npwp'));
+            const npwpDigits = (npwp || '').replace(/\D/g, '');
+            if (!npwp || npwpDigits.length < 15 || npwpDigits.length > 16) {
+                flagError('npwp', 'NPWP wajib diisi (15 atau 16 digit angka).', document.getElementById('pki_npwp'));
             } else {
                 clearFieldError('npwp');
             }
