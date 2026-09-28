@@ -26,6 +26,24 @@ $vPostalCode = e($formData['postal_code'] ?? '');
 $vAddress = e($formData['address'] ?? '');
 $vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?? ''));
 
+// If checkbox same_location_siapkerja is unchecked, clear domicile location and address unless a non-default custom location was saved
+if (!$vSameLoc) {
+    $isPrefillDefault = (
+        empty($formData['address']) ||
+        ($formData['address'] ?? '') === 'Jl. Ir. H. Juanda No. 120, RT 03/RW 01' ||
+        (($formData['village'] ?? '') === 'Dago' && ($formData['city'] ?? '') === 'Kota Bandung')
+    );
+    if ($isPrefillDefault) {
+        $vProvince = '';
+        $vCity = '';
+        $vDistrict = '';
+        $vVillage = '';
+        $vPostalCode = '';
+        $vAddress = '';
+        $vAddressDetail = '';
+    }
+}
+
 $vPermitDoc = $formData['permit_document'] ?? ($formData['doc_permission'] ?? '');
 $vPhoto = $formData['workplace_photo'] ?? ($formData['doc_location_photo'] ?? '');
 
@@ -146,7 +164,7 @@ if (file_exists($pkiCssPath)) {
             <label class="pki-field-label" id="label_npwp" for="pki_npwp">
                 NPWP <span class="req">*</span>
             </label>
-            <input type="text" name="npwp" id="pki_npwp" value="<?php echo $vNpwp; ?>" maxlength="20" placeholder="Masukkan 15 atau 16 digit NPWP">
+            <input type="text" name="npwp" id="pki_npwp" value="<?php echo $vNpwp; ?>" maxlength="16" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" placeholder="Masukkan 15 atau 16 digit NPWP">
             <div class="pki-field-helper" id="helper_npwp">NPWP terdiri dari 15 atau 16 digit angka.</div>
         </div>
     </div>

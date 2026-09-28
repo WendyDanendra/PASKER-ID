@@ -487,79 +487,87 @@
         const cb = document.getElementById('pki_cbSameLocation');
         if (!cb) return;
 
+        function clearLocationFields() {
+            selProv = '';
+            selCity = '';
+            selDistrict = '';
+            selVillage = '';
+
+            setInputValue('pki_hiddenProvince', '');
+            setInputValue('pki_hiddenCity', '');
+            setInputValue('pki_hiddenDistrict', '');
+            setInputValue('pki_hiddenVillage', '');
+            setInputValue('pki_hiddenDomicileCityId', '');
+
+            const locDisplay = document.getElementById('pki_locDisplayValue');
+            if (locDisplay) {
+                locDisplay.textContent = 'Pilih lokasi tempat usaha / kegiatan';
+                locDisplay.classList.add('placeholder');
+            }
+
+            const addrInput = document.getElementById('pki_inputAddress');
+            if (addrInput) {
+                addrInput.value = '';
+            }
+
+            const addrDetailInput = document.getElementById('pki_inputAddressDetail');
+            if (addrDetailInput) {
+                addrDetailInput.value = '';
+            }
+
+            const postalSelect = document.getElementById('pki_selectPostalCode');
+            if (postalSelect) {
+                postalSelect.innerHTML = '<option value="">Pilih kode pos</option>';
+            }
+
+            currentLocLevel = 1;
+            updateMapPreview();
+        }
+
+        function fillDomicileData() {
+            selProv = SIAPKERJA_DOMICILE.province;
+            selCity = SIAPKERJA_DOMICILE.city;
+            selDistrict = SIAPKERJA_DOMICILE.district;
+            selVillage = SIAPKERJA_DOMICILE.village;
+
+            setInputValue('pki_hiddenProvince', selProv);
+            setInputValue('pki_hiddenCity', selCity);
+            setInputValue('pki_hiddenDistrict', selDistrict);
+            setInputValue('pki_hiddenVillage', selVillage);
+            setInputValue('pki_hiddenDomicileCityId', selCity);
+
+            const locDisplay = document.getElementById('pki_locDisplayValue');
+            if (locDisplay) {
+                locDisplay.textContent = `${selVillage}, ${selDistrict}, ${selCity}, ${selProv}`;
+                locDisplay.classList.remove('placeholder');
+            }
+
+            const addrInput = document.getElementById('pki_inputAddress');
+            if (addrInput) {
+                addrInput.value = SIAPKERJA_DOMICILE.address;
+            }
+
+            const postalSelect = document.getElementById('pki_selectPostalCode');
+            if (postalSelect) {
+                postalSelect.innerHTML = `<option value="${SIAPKERJA_DOMICILE.postal_code}" selected>${SIAPKERJA_DOMICILE.postal_code}</option>`;
+            }
+
+            clearFieldError('location');
+            clearFieldError('address');
+            clearFieldError('postal_code');
+            updateMapPreview();
+        }
+
+        // On initial page load: if checkbox is not checked, clear fields immediately!
+        if (!cb.checked) {
+            clearLocationFields();
+        }
+
         cb.addEventListener('change', function () {
             if (this.checked) {
-                // Fill fields with SIAPKerja domicile data
-                selProv = SIAPKERJA_DOMICILE.province;
-                selCity = SIAPKERJA_DOMICILE.city;
-                selDistrict = SIAPKERJA_DOMICILE.district;
-                selVillage = SIAPKERJA_DOMICILE.village;
-
-                setInputValue('pki_hiddenProvince', selProv);
-                setInputValue('pki_hiddenCity', selCity);
-                setInputValue('pki_hiddenDistrict', selDistrict);
-                setInputValue('pki_hiddenVillage', selVillage);
-                setInputValue('pki_hiddenDomicileCityId', selCity);
-
-                const locDisplay = document.getElementById('pki_locDisplayValue');
-                if (locDisplay) {
-                    locDisplay.textContent = `${selVillage}, ${selDistrict}, ${selCity}, ${selProv}`;
-                    locDisplay.classList.remove('placeholder');
-                }
-
-                const addrInput = document.getElementById('pki_inputAddress');
-                if (addrInput) {
-                    addrInput.value = SIAPKERJA_DOMICILE.address;
-                }
-
-                const postalSelect = document.getElementById('pki_selectPostalCode');
-                if (postalSelect) {
-                    postalSelect.innerHTML = `<option value="${SIAPKERJA_DOMICILE.postal_code}" selected>${SIAPKERJA_DOMICILE.postal_code}</option>`;
-                }
-
-                // Clear any error states on these fields
-                clearFieldError('location');
-                clearFieldError('address');
-                clearFieldError('postal_code');
-
-                // Update live map
-                updateMapPreview();
+                fillDomicileData();
             } else {
-                // When unchecked, clear all prefilled fields so user can fill them manually from scratch
-                selProv = '';
-                selCity = '';
-                selDistrict = '';
-                selVillage = '';
-
-                setInputValue('pki_hiddenProvince', '');
-                setInputValue('pki_hiddenCity', '');
-                setInputValue('pki_hiddenDistrict', '');
-                setInputValue('pki_hiddenVillage', '');
-                setInputValue('pki_hiddenDomicileCityId', '');
-
-                const locDisplay = document.getElementById('pki_locDisplayValue');
-                if (locDisplay) {
-                    locDisplay.textContent = 'Pilih lokasi tempat usaha / kegiatan';
-                    locDisplay.classList.add('placeholder');
-                }
-
-                const addrInput = document.getElementById('pki_inputAddress');
-                if (addrInput) {
-                    addrInput.value = '';
-                }
-
-                const addrDetailInput = document.getElementById('pki_inputAddressDetail');
-                if (addrDetailInput) {
-                    addrDetailInput.value = '';
-                }
-
-                const postalSelect = document.getElementById('pki_selectPostalCode');
-                if (postalSelect) {
-                    postalSelect.innerHTML = '<option value="">Pilih kode pos</option>';
-                }
-
-                currentLocLevel = 1;
-                updateMapPreview();
+                clearLocationFields();
             }
         });
 
@@ -588,27 +596,7 @@
         enforceDigitsOnly(document.getElementById('pki_nik'), 16);
         enforceDigitsOnly(document.getElementById('pki_phone'), 15);
         enforceDigitsOnly(document.getElementById('pki_whatsapp'), 15);
-
-        const npwpInput = document.getElementById('pki_npwp');
-        if (npwpInput) {
-            npwpInput.setAttribute('inputmode', 'numeric');
-            ['input', 'paste', 'keyup', 'change', 'blur'].forEach(ev => {
-                npwpInput.addEventListener(ev, function () {
-                    this.value = this.value.replace(/[^0-9.-]/g, '').slice(0, 20);
-                });
-            });
-            npwpInput.addEventListener('keydown', function (e) {
-                if (
-                    ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.', '-'].includes(e.key) ||
-                    (e.ctrlKey === true || e.metaKey === true)
-                ) {
-                    return;
-                }
-                if (e.key < '0' || e.key > '9') {
-                    e.preventDefault();
-                }
-            });
-        }
+        enforceDigitsOnly(document.getElementById('pki_npwp'), 16);
     }
 
     // ─── 3. Address Listeners for Live Map ───
