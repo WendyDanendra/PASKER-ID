@@ -5527,15 +5527,18 @@ document.addEventListener('click', function(e) {
 
                                     <div style="margin-bottom:20px;">
                                         <label for="admin_notes_eval" style="display:block; font-size:13px; font-weight:700; color:#0f172a; margin-bottom:6px;">
-                                            Catatan Admin
+                                            Catatan Admin <span style="color:#ef4444;">*</span>
                                         </label>
                                         <textarea
                                             name="verifier_notes"
                                             id="admin_notes_eval"
                                             rows="3"
                                             placeholder="Tuliskan catatan pemeriksaan..."
+                                            required
+                                            oninput="const err=document.getElementById('adminNotesEvalError'); if(err && this.value.trim() !== ''){ err.style.display='none'; this.style.borderColor='#cbd5e1'; }"
                                             style="width:100%; box-sizing:border-box; font-family:inherit; font-size:13px; color:#0f172a; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; resize:vertical; min-height:80px; outline:none;"
                                         ></textarea>
+                                        <div id="adminNotesEvalError" style="display:none; color:#ef4444; font-size:12px; margin-top:4px; font-weight:500;">Catatan Admin wajib diisi.</div>
                                     </div>
 
                                     <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; flex-wrap:wrap;">

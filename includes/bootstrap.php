@@ -235,6 +235,26 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         if (!in_array('additional_doc_status', $cols, true)) {
             $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_status TEXT');
         }
+        if (!in_array('additional_doc_blob', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_blob BLOB');
+        }
+        if (!in_array('additional_doc_mime', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_mime TEXT');
+        }
+        if (!in_array('additional_doc_filename', $cols, true)) {
+            $pdo->exec('ALTER TABLE job_posts ADD COLUMN additional_doc_filename TEXT');
+        }
+
+        $docCols = array_column($pdo->query('PRAGMA table_info(job_additional_documents)')->fetchAll(), 'name');
+        if (!in_array('document_blob', $docCols, true)) {
+            $pdo->exec('ALTER TABLE job_additional_documents ADD COLUMN document_blob BLOB');
+        }
+        if (!in_array('document_mime', $docCols, true)) {
+            $pdo->exec('ALTER TABLE job_additional_documents ADD COLUMN document_mime TEXT');
+        }
+        if (!in_array('document_filename', $docCols, true)) {
+            $pdo->exec('ALTER TABLE job_additional_documents ADD COLUMN document_filename TEXT');
+        }
         // Migrate status to canonical strings
         $pdo->exec('UPDATE job_posts SET status = "Menunggu Verifikasi" WHERE status = "Dikirim/Menunggu Verifikasi" OR status = "Dikirim"');
         $pdo->exec('UPDATE job_posts SET status = "Perlu Direvisi" WHERE status = "Perlu Revisi"');
@@ -618,6 +638,9 @@ function ensure_database_schema(PDO $pdo): void
                 'additional_doc_file' => "VARCHAR(255) NULL AFTER additional_doc_required",
                 'additional_doc_notes' => "TEXT NULL AFTER additional_doc_file",
                 'additional_doc_status' => "VARCHAR(50) DEFAULT 'NONE' AFTER additional_doc_notes",
+                'additional_doc_blob' => "LONGBLOB NULL AFTER additional_doc_status",
+                'additional_doc_mime' => "VARCHAR(100) NULL AFTER additional_doc_blob",
+                'additional_doc_filename' => "VARCHAR(255) NULL AFTER additional_doc_mime",
                 'admin_notes' => "TEXT NULL AFTER additional_doc_status",
                 'details' => "TEXT NULL AFTER admin_notes",
                 'min_education' => "VARCHAR(80) NULL AFTER details",
