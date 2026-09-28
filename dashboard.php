@@ -690,9 +690,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $update->execute([$additionalNotes, $filePath, $jobId, $user['id']]);
 
             try {
-                $docStmt = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, created_at) VALUES (?, ?, ?, ?, ?, "SUBMITTED", "Tidak", "Tidak", CURRENT_TIMESTAMP)');
+                $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
+                if ($driver === 'sqlite') {
+                    $docStmt = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, created_at) VALUES (?, ?, ?, ?, ?, "SUBMITTED", "Tidak", "Tidak", CURRENT_TIMESTAMP)');
+                } else {
+                    $docStmt = db()->prepare('REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, created_at) VALUES (?, ?, ?, ?, ?, "SUBMITTED", "Tidak", "Tidak", NOW())');
+                }
                 $docStmt->execute([$jobId, $user['id'], $targetJob['kbji_code'], $filePath, $additionalNotes]);
-            } catch (Throwable $ignored) {}
+            } catch (Throwable $e) {
+                error_log('[Karirhub DB Doc Error] ' . $e->getMessage());
+            }
 
             try {
                 $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, additional_doc_required, layer_flags) VALUES (?, ?, ?, "PENDING", 1, "LAYER2_ADDITIONAL_DOC")');
