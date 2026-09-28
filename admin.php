@@ -18,8 +18,8 @@ $unassignedFilter = isset($_GET['unassigned']) && $_GET['unassigned'] === '1' ? 
 $detailId = isset($_GET['detail_id']) ? (int)$_GET['detail_id'] : 0;
 
 // --- POST HANDLERS FOR ADMIN ACTIONS ---
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_action'])) {
-    $action = $_POST['admin_action'];
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (isset($_POST['admin_action']) || isset($_POST['action']))) {
+    $action = $_POST['admin_action'] ?? $_POST['action'];
     $redirectUrl = $_POST['redirect_url'] ?? "admin.php?view={$view}&entity={$entity}&tab={$tab}" . ($detailId ? "&detail_id={$detailId}" : "");
 
     // 1. AMBIL CASE / ASSIGN PEMERIKSA (EMPLOYER)
@@ -5325,6 +5325,21 @@ document.addEventListener('click', function(e) {
                         $checklistCategories = compliance_categories();
                     ?>
 
+                                        <!-- FLASH MESSAGES BANNER -->
+                    <?php
+                    $flashMsg = get_flash();
+                    if ($flashMsg):
+                        $bgColor = $flashMsg['type'] === 'success' ? '#dcfce7' : ($flashMsg['type'] === 'warning' ? '#fef3c7' : '#fee2e2');
+                        $borderColor = $flashMsg['type'] === 'success' ? '#bbf7d0' : ($flashMsg['type'] === 'warning' ? '#fde68a' : '#fecaca');
+                        $textColor = $flashMsg['type'] === 'success' ? '#15803d' : ($flashMsg['type'] === 'warning' ? '#92400e' : '#991b1b');
+                        $icon = $flashMsg['type'] === 'success' ? 'fa-circle-check' : ($flashMsg['type'] === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-xmark');
+                    ?>
+                    <div style="background:<?php echo $bgColor; ?>; border:1px solid <?php echo $borderColor; ?>; color:<?php echo $textColor; ?>; padding:14px 18px; border-radius:10px; margin-bottom:20px; font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:10px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+                        <i class="fa-solid <?php echo $icon; ?>" style="font-size:18px;"></i>
+                        <div><?php echo e($flashMsg['message']); ?></div>
+                    </div>
+                    <?php endif; ?>
+
                     <!-- DETAIL VIEW FOR VERIFIKASI LOWONGAN -->
                     <div style="margin-bottom:16px;">
                         <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>" class="btn-lihat-detail" style="display:inline-flex; align-items:center; gap:8px; color:#64748b; text-decoration:none; font-weight:600; font-size:13px;">
@@ -5468,6 +5483,7 @@ document.addEventListener('click', function(e) {
                             <?php if ($docStatus !== 'APPROVED' && $selectedJob['status'] === 'Menunggu Verifikasi'): ?>
                                 <form method="post" action="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $selectedJob['id']; ?>" id="adminAdditionalDocForm" onsubmit="return validateAdditionalDocReview(event)" style="border-top:1px solid #f1f5f9; padding-top:20px;">
                                     <input type="hidden" name="action" value="verify_additional_doc">
+                                    <input type="hidden" name="admin_action" value="verify_additional_doc">
                                     <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
                                     <input type="hidden" name="decision" id="admin_decision_input" value="">
 
@@ -5531,6 +5547,19 @@ document.addEventListener('click', function(e) {
                                         </button>
                                     </div>
                                 </form>
+                                                        <?php elseif ($docStatus === 'REJECTED' || $docStatus === 'REJECTED_QUOTA'): ?>
+                                <div style="margin-top:16px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px 18px; font-size:13px; color:#991b1b; display:flex; align-items:flex-start; gap:12px;">
+                                    <i class="fa-solid fa-circle-xmark" style="font-size:18px; color:#dc2626; margin-top:2px;"></i>
+                                    <div>
+                                        <strong style="font-size:14px;">Pemeriksaan Dokumen/Keterangan Tambahan telah Ditolak.</strong>
+                                        <p style="margin:4px 0 0 0; color:#7f1d1d;">Pengajuan lowongan ini telah dihentikan oleh Admin dan status lowongan diubah menjadi <strong>Ditolak</strong>.</p>
+                                        <?php if (!empty($selectedJob['admin_notes']) || !empty($selectedJob['verifier_notes'])): ?>
+                                            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #fca5a5; font-size:12.5px; color:#991b1b;">
+                                                <strong>Catatan Admin:</strong> <?php echo nl2br(e($selectedJob['admin_notes'] ?: $selectedJob['verifier_notes'])); ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             <?php elseif ($docStatus === 'APPROVED'): ?>
                                 <div style="margin-top:16px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:12px 16px; font-size:13px; color:#065f46; display:flex; align-items:center; gap:10px;">
                                     <i class="fa-solid fa-circle-check" style="font-size:16px; color:#059669;"></i>
