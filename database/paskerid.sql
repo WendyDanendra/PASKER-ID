@@ -187,9 +187,9 @@ INSERT INTO employer_profiles (
 );
 
 INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code) VALUES
-(2, 'Koki Masakan Tradisional', 'Membutuhkan koki berpengalaman untuk katering harian rumahan.', 'Kota Bekasi', 'Full Time', 'Kuliner', 'Individu', 'Tayang', 2, 1, '5120.01'),
-(2, 'Asisten Rumah Tangga', 'Membantu kebersihan dan kerapian rumah tinggal.', 'Kota Bekasi', 'Full Time', 'Jasa Perorangan', 'Individu', 'Draft', 1, 0, '9111.01'),
-(2, 'Staf Entri Data Katering', 'Mengelola data pesanan dan bahan makanan.', 'Kota Bekasi', 'Part Time', 'Administrasi', 'Individu', 'Dikirim/Menunggu Verifikasi', 1, 0, '4312.01');
+(2, 'Koki Masakan Tradisional', 'Membutuhkan koki berpengalaman untuk katering harian rumahan.', 'Pekayon Jaya, Bekasi Selatan, Kota Bekasi, Jawa Barat', 'Full Time', 'Kuliner', 'Individu', 'Tayang', 2, 1, '5120.01'),
+(2, 'Asisten Rumah Tangga', 'Membantu kebersihan dan kerapian rumah tinggal.', 'Pekayon Jaya, Bekasi Selatan, Kota Bekasi, Jawa Barat', 'Full Time', 'Jasa Perorangan', 'Individu', 'Draft', 1, 0, '9111.01'),
+(2, 'Staf Entri Data Katering', 'Mengelola data pesanan dan bahan makanan.', 'Pekayon Jaya, Bekasi Selatan, Kota Bekasi, Jawa Barat', 'Part Time', 'Administrasi', 'Individu', 'Dikirim/Menunggu Verifikasi', 1, 0, '4312.01');
 
 INSERT INTO kbji_data (kode_kbji, nama_jabatan) VALUES
 ('2512.01', 'Pengembang Perangkat Lunak'),

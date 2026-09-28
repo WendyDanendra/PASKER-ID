@@ -1007,21 +1007,228 @@ function initJobCreateWizard() {
     initChipField(modal, 'skills');
     initChipField(modal, 'contacts');
 
-    const chkSameDomicile = modal.querySelector('#chkSameDomicile');
-    const jobLocationInput = modal.querySelector('#jobLocationInput');
+    const initJobLocationPicker = (modalEl) => {
+        const jobLocationInput = modalEl.querySelector('#jobLocationInput');
+        const trigger = modalEl.querySelector('#jobLocationTrigger');
+        const display = modalEl.querySelector('#jobLocationDisplay');
+        const caret = modalEl.querySelector('#jobLocationCaret');
+        const dropdown = modalEl.querySelector('#jobLocationDropdown');
+        const breadcrumbs = modalEl.querySelector('#jobLocationBreadcrumbs');
+        const optionsList = modalEl.querySelector('#jobLocationOptionsList');
+        const chkSameDomicile = modalEl.querySelector('#chkSameDomicile');
 
-    if (chkSameDomicile && jobLocationInput) {
-        let savedManualLocation = '';
-        chkSameDomicile.addEventListener('change', () => {
-            if (chkSameDomicile.checked) {
-                savedManualLocation = jobLocationInput.value;
-                const domAddr = chkSameDomicile.getAttribute('data-domicile-address') || '';
-                jobLocationInput.value = domAddr;
+        if (!jobLocationInput || !trigger || !dropdown) return;
+
+        let currentLvl = 1;
+        let sProv = '', sCity = '', sDistrict = '', sVillage = '';
+
+        const parseLocationString = (str) => {
+            if (!str) {
+                sProv = ''; sCity = ''; sDistrict = ''; sVillage = '';
+                return;
+            }
+            const parts = str.split(',').map(s => s.trim());
+            if (parts.length >= 4) {
+                sVillage = parts[0];
+                sDistrict = parts[1];
+                sCity = parts[2];
+                sProv = parts[3];
+            } else if (parts.length === 3) {
+                sVillage = '';
+                sDistrict = parts[0];
+                sCity = parts[1];
+                sProv = parts[2];
+            } else if (parts.length === 2) {
+                sVillage = ''; sDistrict = '';
+                sCity = parts[0];
+                sProv = parts[1];
+            } else if (parts.length === 1) {
+                sVillage = ''; sDistrict = ''; sCity = '';
+                sProv = parts[0];
+            }
+        };
+
+        const updateDisplay = () => {
+            if (jobLocationInput.value) {
+                display.textContent = jobLocationInput.value;
+                display.classList.remove('placeholder');
             } else {
-                jobLocationInput.value = savedManualLocation;
+                display.textContent = 'Pilih lokasi loker';
+                display.classList.add('placeholder');
+            }
+        };
+
+        const renderBreadcrumbs = () => {
+            if (!breadcrumbs) return;
+            let html = '';
+            if (currentLvl === 1) {
+                html = '<span class="crumb-btn active" data-lvl="1">Pilih Provinsi</span>';
+            } else if (currentLvl === 2) {
+                html = `<span class="crumb-btn" data-lvl="1">${sProv || 'Provinsi'}</span> › <span class="crumb-btn active" data-lvl="2">Pilih Kab/Kota</span>`;
+            } else if (currentLvl === 3) {
+                html = `<span class="crumb-btn" data-lvl="1">${sProv || 'Provinsi'}</span> › <span class="crumb-btn" data-lvl="2">${sCity || 'Kab/Kota'}</span> › <span class="crumb-btn active" data-lvl="3">Pilih Kecamatan</span>`;
+            } else if (currentLvl === 4) {
+                html = `<span class="crumb-btn" data-lvl="1">${sProv || 'Provinsi'}</span> › <span class="crumb-btn" data-lvl="2">${sCity || 'Kab/Kota'}</span> › <span class="crumb-btn" data-lvl="3">${sDistrict || 'Kecamatan'}</span> › <span class="crumb-btn active" data-lvl="4">Pilih Kel/Desa</span>`;
+            }
+            breadcrumbs.innerHTML = html;
+
+            breadcrumbs.querySelectorAll('.crumb-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const lvl = parseInt(btn.getAttribute('data-lvl'), 10);
+                    if (lvl) {
+                        currentLvl = lvl;
+                        renderView();
+                    }
+                });
+            });
+        };
+
+        const renderOptions = () => {
+            if (!optionsList) return;
+            let html = '';
+            const locDb = (typeof PKI_FORM_LOCATIONS !== 'undefined') ? PKI_FORM_LOCATIONS : {};
+
+            if (currentLvl === 1) {
+                const provs = Object.keys(locDb);
+                provs.forEach(p => {
+                    const isSel = p === sProv;
+                    html += `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-val="${p}">
+                        <div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>${p}</span></div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>`;
+                });
+            } else if (currentLvl === 2) {
+                const cities = Object.keys(locDb[sProv] || {});
+                cities.forEach(c => {
+                    const isSel = c === sCity;
+                    html += `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-val="${c}">
+                        <div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>${c}</span></div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>`;
+                });
+            } else if (currentLvl === 3) {
+                const dists = Object.keys(locDb[sProv]?.[sCity] || {});
+                dists.forEach(d => {
+                    const isSel = d === sDistrict;
+                    html += `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-val="${d}">
+                        <div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>${d}</span></div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>`;
+                });
+            } else if (currentLvl === 4) {
+                const vills = locDb[sProv]?.[sCity]?.[sDistrict] || [];
+                vills.forEach(v => {
+                    const isSel = v === sVillage;
+                    html += `<div class="loc-opt-row ${isSel ? 'selected' : ''}" data-val="${v}">
+                        <div style="display:flex; align-items:center;"><span class="radio-bullet"></span><span>${v}</span></div>
+                        ${isSel ? '<span class="sel-tag">✓ Dipilih</span>' : ''}
+                    </div>`;
+                });
+            }
+            optionsList.innerHTML = html;
+
+            optionsList.querySelectorAll('.loc-opt-row').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const val = row.getAttribute('data-val');
+                    if (currentLvl === 1) {
+                        sProv = val; sCity = ''; sDistrict = ''; sVillage = '';
+                        currentLvl = 2;
+                        renderView();
+                    } else if (currentLvl === 2) {
+                        sCity = val; sDistrict = ''; sVillage = '';
+                        currentLvl = 3;
+                        renderView();
+                    } else if (currentLvl === 3) {
+                        sDistrict = val; sVillage = '';
+                        currentLvl = 4;
+                        renderView();
+                    } else if (currentLvl === 4) {
+                        sVillage = val;
+                        const fullLoc = `${sVillage}, ${sDistrict}, ${sCity}, ${sProv}`;
+                        jobLocationInput.value = fullLoc;
+                        if (chkSameDomicile) chkSameDomicile.checked = false;
+                        updateDisplay();
+                        closeDropdown();
+                    }
+                });
+            });
+        };
+
+        const renderView = () => {
+            renderBreadcrumbs();
+            renderOptions();
+        };
+
+        const openDropdown = () => {
+            dropdown.style.display = 'block';
+            if (caret) {
+                caret.classList.remove('fa-chevron-down');
+                caret.classList.add('fa-chevron-up');
+            }
+            parseLocationString(jobLocationInput.value);
+            const locDb = (typeof PKI_FORM_LOCATIONS !== 'undefined') ? PKI_FORM_LOCATIONS : {};
+            if (sProv && sCity && sDistrict && sVillage && locDb[sProv]?.[sCity]?.[sDistrict]) {
+                currentLvl = 4;
+            } else if (sProv && sCity && sDistrict && locDb[sProv]?.[sCity]?.[sDistrict]) {
+                currentLvl = 4;
+            } else if (sProv && sCity && locDb[sProv]?.[sCity]) {
+                currentLvl = 3;
+            } else if (sProv && locDb[sProv]) {
+                currentLvl = 2;
+            } else {
+                currentLvl = 1;
+            }
+            renderView();
+        };
+
+        const closeDropdown = () => {
+            dropdown.style.display = 'none';
+            if (caret) {
+                caret.classList.remove('fa-chevron-up');
+                caret.classList.add('fa-chevron-down');
+            }
+        };
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (dropdown.style.display === 'block') {
+                closeDropdown();
+            } else {
+                openDropdown();
             }
         });
-    }
+
+        dropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+
+        if (chkSameDomicile) {
+            let savedManualLocation = '';
+            chkSameDomicile.addEventListener('change', () => {
+                if (chkSameDomicile.checked) {
+                    savedManualLocation = jobLocationInput.value;
+                    const domAddr = chkSameDomicile.getAttribute('data-domicile-address') || '';
+                    jobLocationInput.value = domAddr;
+                } else {
+                    jobLocationInput.value = savedManualLocation;
+                }
+                updateDisplay();
+            });
+        }
+
+        jobLocationInput.updateDisplay = updateDisplay;
+        updateDisplay();
+    };
+
+    initJobLocationPicker(modal);
 
     const chkDisability = modal.querySelector('#chkDisability');
     const disabilityGroup = modal.querySelector('#disabilityExcludedGroup');
@@ -1205,6 +1412,10 @@ function initJobCreateWizard() {
             setChips('contacts', data.contacts);
         }
         syncRichText();
+        const jobLocInput = form?.querySelector('#jobLocationInput');
+        if (jobLocInput && typeof jobLocInput.updateDisplay === 'function') {
+            jobLocInput.updateDisplay();
+        }
     };
 
     const setStep = (next) => {
@@ -1244,6 +1455,16 @@ function initJobCreateWizard() {
         const panel = modal.querySelector(`[data-job-step="${stepNumber}"]`);
         if (!panel) {
             return true;
+        }
+
+        if (stepNumber === 1) {
+            const jobLocInput = modal.querySelector('#jobLocationInput');
+            const trigger = modal.querySelector('#jobLocationTrigger');
+            if (jobLocInput && !jobLocInput.value.trim()) {
+                trigger?.focus();
+                trigger?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
         }
 
         const fields = panel.querySelectorAll('input, select, textarea');
@@ -1340,6 +1561,10 @@ function initJobCreateWizard() {
             }
         });
         setJobCreateMode('create');
+        const jobLocInput = form?.querySelector('#jobLocationInput');
+        if (jobLocInput && typeof jobLocInput.updateDisplay === 'function') {
+            jobLocInput.updateDisplay();
+        }
         setStep(1);
     });
 

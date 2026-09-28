@@ -475,6 +475,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $description, $consent, $consent,
                 $user['id']
             ]);
+
+            // Sync location of existing jobs (Draft, Menunggu Verifikasi, Tayang, etc.) to match new "Lokasi Tempat Usaha / Kegiatan"
+            $domPartsNew = array_filter([$village, $district, $city, $province]);
+            $cleanLocationNew = !empty($domPartsNew) ? implode(', ', $domPartsNew) : $city;
+            if (!empty($cleanLocationNew)) {
+                try {
+                    $oldStreet = trim((string)($profile['address'] ?? ''));
+                    $oldCity = trim((string)($profile['city'] ?? ''));
+                    db()->prepare('UPDATE job_posts SET location = ? WHERE user_id = ? AND (location = ? OR (location LIKE ? AND ? != ""))')
+                        ->execute([$cleanLocationNew, $user['id'], $oldCity, $oldStreet ? ($oldStreet . '%') : '', $oldStreet]);
+                } catch (Throwable $ignored) {}
+            }
         } else {
             $stmt = db()->prepare('INSERT INTO employer_profiles (
                 user_id, owner_name, nik, phone, whatsapp, profession, npwp,
@@ -1698,7 +1710,6 @@ CSS;
 $drawerStyleTag = "<style id='job-create-drawer-css'>\n" . $modalStyles . "\n</style>";
 
 $domicileParts = array_filter([
-    $profile['address'] ?? '',
     $profile['village'] ?? '',
     $profile['district'] ?? '',
     $profile['city'] ?? '',
@@ -1829,9 +1840,19 @@ $modal = <<<HTML
                                 </select>
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group" style="position:relative;">
                                 <label>Lokasi loker <span class="req">*</span></label>
-                                <input type="text" name="job_location" id="jobLocationInput" class="form-control-custom" placeholder="Pilih lokasi loker" required>
+                                <input type="hidden" name="job_location" id="jobLocationInput" required>
+                                <div id="jobLocationTrigger" class="hierarchical-loc-field" tabindex="0">
+                                    <span id="jobLocationDisplay" class="placeholder">Pilih lokasi loker</span>
+                                    <i id="jobLocationCaret" class="fa-solid fa-chevron-down" style="color:#64748b; font-size:12px;"></i>
+                                </div>
+                                <div id="jobLocationDropdown" class="loc-dropdown-popup" style="display:none;">
+                                    <div id="jobLocationBreadcrumbs" class="loc-breadcrumbs">
+                                        <span class="crumb-btn active" data-level="1">Pilih Provinsi</span>
+                                    </div>
+                                    <div id="jobLocationOptionsList" class="loc-options-list"></div>
+                                </div>
                                 <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:13px; font-weight:normal; color:#475569; cursor:pointer; user-select:none;">
                                     <input type="checkbox" id="chkSameDomicile" data-domicile-address="{$employerDomicileEsc}">
                                     <span>Alamat loker sama dengan alamat domisili pemberi kerja</span>

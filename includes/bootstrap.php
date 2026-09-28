@@ -250,6 +250,37 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         // Ensure default document and photo for employer profiles if missing
         $pdo->exec("UPDATE employer_profiles SET permit_document = COALESCE(NULLIF(permit_document, ''), NULLIF(doc_permission, ''), 'dokumen-legalitas.pdf'), doc_permission = COALESCE(NULLIF(doc_permission, ''), NULLIF(permit_document, ''), 'dokumen-legalitas.pdf') WHERE permit_document IS NULL OR permit_document = '' OR doc_permission IS NULL OR doc_permission = ''");
         $pdo->exec("UPDATE employer_profiles SET workplace_photo = COALESCE(NULLIF(workplace_photo, ''), NULLIF(doc_location_photo, ''), 'foto-rumah.jpg'), doc_location_photo = COALESCE(NULLIF(doc_location_photo, ''), NULLIF(workplace_photo, ''), 'foto-rumah.jpg') WHERE workplace_photo IS NULL OR workplace_photo = '' OR doc_location_photo IS NULL OR doc_location_photo = ''");
+
+        // Sync existing job_posts locations to remove street address and match "Lokasi Tempat Usaha / Kegiatan"
+        $profiles = $pdo->query('SELECT user_id, address, village, district, city, province FROM employer_profiles')->fetchAll() ?: [];
+        foreach ($profiles as $empProf) {
+            $uId = $empProf['user_id'];
+            $streetAddress = trim((string)($empProf['address'] ?? ''));
+            $vParts = array_filter([
+                $empProf['village'] ?? '',
+                $empProf['district'] ?? '',
+                $empProf['city'] ?? '',
+                $empProf['province'] ?? ''
+            ]);
+            $cleanLocation = !empty($vParts) ? implode(', ', $vParts) : ($empProf['city'] ?? '');
+            if (!$cleanLocation) continue;
+
+            $userJobs = $pdo->prepare('SELECT id, location FROM job_posts WHERE user_id = ?');
+            $userJobs->execute([$uId]);
+            foreach ($userJobs->fetchAll() as $jRow) {
+                $curLoc = trim((string)($jRow['location'] ?? ''));
+                $shouldUpdate = false;
+                if ($streetAddress !== '' && (str_starts_with($curLoc, $streetAddress) || str_contains($curLoc, $streetAddress))) {
+                    $shouldUpdate = true;
+                } elseif ($curLoc === ($empProf['city'] ?? '') && count($vParts) > 1) {
+                    $shouldUpdate = true;
+                }
+                if ($shouldUpdate) {
+                    $upStmt = $pdo->prepare('UPDATE job_posts SET location = ? WHERE id = ?');
+                    $upStmt->execute([$cleanLocation, $jRow['id']]);
+                }
+            }
+        }
     } catch (Throwable $ignored) {}
 }
 
@@ -395,9 +426,9 @@ function init_sqlite_schema(PDO $pdo): void
             '-6.241586', '106.992416', 'Usaha katering rumahan dan jasa konsultasi menu kuliner keluarga.', 1, 1, 'APPROVED', datetime('now', '+3 months')
         )",
         "INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code) VALUES
-        (2, 'Koki Masakan Tradisional', 'Membutuhkan koki berpengalaman untuk katering harian rumahan.', 'Kota Bekasi', 'Full Time', 'Kuliner', 'Individu', 'Tayang', 2, 1, '5120.01'),
-        (2, 'Asisten Rumah Tangga', 'Membantu kebersihan dan kerapian rumah tinggal.', 'Kota Bekasi', 'Full Time', 'Jasa Perorangan', 'Individu', 'Draft', 1, 0, '9111.01'),
-        (2, 'Staf Entri Data Katering', 'Mengelola data pesanan dan bahan makanan.', 'Kota Bekasi', 'Part Time', 'Administrasi', 'Individu', 'Dikirim/Menunggu Verifikasi', 1, 0, '4312.01')",
+        (2, 'Koki Masakan Tradisional', 'Membutuhkan koki berpengalaman untuk katering harian rumahan.', 'Pekayon Jaya, Bekasi Selatan, Kota Bekasi, Jawa Barat', 'Full Time', 'Kuliner', 'Individu', 'Tayang', 2, 1, '5120.01'),
+        (2, 'Asisten Rumah Tangga', 'Membantu kebersihan dan kerapian rumah tinggal.', 'Pekayon Jaya, Bekasi Selatan, Kota Bekasi, Jawa Barat', 'Full Time', 'Jasa Perorangan', 'Individu', 'Draft', 1, 0, '9111.01'),
+        (2, 'Staf Entri Data Katering', 'Mengelola data pesanan dan bahan makanan.', 'Pekayon Jaya, Bekasi Selatan, Kota Bekasi, Jawa Barat', 'Part Time', 'Administrasi', 'Individu', 'Dikirim/Menunggu Verifikasi', 1, 0, '4312.01')",
         "INSERT INTO kbji_data (kode_kbji, nama_jabatan) VALUES
         ('2512.01', 'Pengembang Perangkat Lunak'),
         ('2512.02', 'Programmer (Programmer Komputer)'),
