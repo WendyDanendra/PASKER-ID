@@ -406,8 +406,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $consent     = isset($_POST['user_consent']) ? 1 : 0;
 
-        if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || !$consent) {
-            flash('error', 'Lengkapi semua field wajib (Nama, NIK, Telepon, WhatsApp, Profesi, NPWP) dan centang persetujuan pengguna.');
+        if ($ownerName === '' || $nik === '' || $phone === '' || $whatsapp === '' || $profession === '' || $npwp === '' || ($linkedin === '' && $facebook === '' && $instagram === '') || !$consent) {
+            flash('error', 'Lengkapi semua field wajib (termasuk minimal salah satu media sosial) dan centang persetujuan pengguna.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }

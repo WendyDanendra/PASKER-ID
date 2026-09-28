@@ -263,6 +263,15 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
                 $upStmt->execute([$cleaned, $jRow['id']]);
             }
         }
+
+        // Backfill social media for existing employers if all 3 are empty
+        $emptySocialEmps = $pdo->query("SELECT id, owner_name FROM employer_profiles WHERE (linkedin IS NULL OR linkedin = '') AND (facebook IS NULL OR facebook = '') AND (instagram IS NULL OR instagram = '')")->fetchAll() ?: [];
+        foreach ($emptySocialEmps as $empRow) {
+            $nameSlug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', (string)($empRow['owner_name'] ?? '')));
+            if ($nameSlug === '') $nameSlug = 'pemberikerja';
+            $defaultIg = '@' . $nameSlug;
+            $pdo->prepare('UPDATE employer_profiles SET instagram = ?, social_media = ? WHERE id = ?')->execute([$defaultIg, 'Instagram: ' . $defaultIg, $empRow['id']]);
+        }
     } catch (Throwable $ignored) {}
 }
 
@@ -635,6 +644,15 @@ function ensure_database_schema(PDO $pdo): void
                 $pdo->exec("ALTER TABLE `job_posts` CHANGE `status` `status` VARCHAR(60) NOT NULL DEFAULT 'Draft'");
                 $pdo->exec("UPDATE employer_profiles SET permit_document = COALESCE(NULLIF(permit_document, ''), NULLIF(doc_permission, ''), 'dokumen-legalitas.pdf'), doc_permission = COALESCE(NULLIF(doc_permission, ''), NULLIF(permit_document, ''), 'dokumen-legalitas.pdf') WHERE permit_document IS NULL OR permit_document = '' OR doc_permission IS NULL OR doc_permission = ''");
                 $pdo->exec("UPDATE employer_profiles SET workplace_photo = COALESCE(NULLIF(workplace_photo, ''), NULLIF(doc_location_photo, ''), 'foto-rumah.jpg'), doc_location_photo = COALESCE(NULLIF(doc_location_photo, ''), NULLIF(workplace_photo, ''), 'foto-rumah.jpg') WHERE workplace_photo IS NULL OR workplace_photo = '' OR doc_location_photo IS NULL OR doc_location_photo = ''");
+                
+                // Backfill social media for existing employers if all 3 are empty
+                $emptySocialEmps = $pdo->query("SELECT id, owner_name FROM employer_profiles WHERE (linkedin IS NULL OR linkedin = '') AND (facebook IS NULL OR facebook = '') AND (instagram IS NULL OR instagram = '')")->fetchAll() ?: [];
+                foreach ($emptySocialEmps as $empRow) {
+                    $nameSlug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', (string)($empRow['owner_name'] ?? '')));
+                    if ($nameSlug === '') $nameSlug = 'pemberikerja';
+                    $defaultIg = '@' . $nameSlug;
+                    $pdo->prepare('UPDATE employer_profiles SET instagram = ?, social_media = ? WHERE id = ?')->execute([$defaultIg, 'Instagram: ' . $defaultIg, $empRow['id']]);
+                }
             } catch (Throwable $ignored) {}
         }
     } catch (Exception $e) {

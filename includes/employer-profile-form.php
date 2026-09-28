@@ -9,40 +9,32 @@
 $isRevision = $isRevision ?? false;
 $formData = $formData ?? [];
 
-// Helper values
-$vOwnerName = e($formData['owner_name'] ?? '');
-$vNik = e($formData['nik'] ?? '');
-$vPhone = e($formData['phone'] ?? '');
+// Helper values (Demo prefill from SIAPKerja if registering for first time)
+$vOwnerName = e($formData['owner_name'] ?? (!$isRevision ? 'Budi Santoso' : ''));
+$vNik = e($formData['nik'] ?? (!$isRevision ? '3273012345670001' : ''));
+$vPhone = e($formData['phone'] ?? (!$isRevision ? '081234567890' : ''));
 $vWhatsapp = e($formData['whatsapp'] ?? '');
 $vProfession = $formData['profession'] ?? '';
 $vNpwp = e($formData['npwp'] ?? '');
 
-$vSameLoc = !empty($formData['same_location_siapkerja']);
-$vProvince = e($formData['province'] ?? '');
-$vCity = e($formData['city'] ?? '');
-$vDistrict = e($formData['district'] ?? '');
-$vVillage = e($formData['village'] ?? '');
-$vPostalCode = e($formData['postal_code'] ?? '');
-$vAddress = e($formData['address'] ?? '');
-$vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?? ''));
+$vSameLoc = isset($formData['same_location_siapkerja']) 
+    ? !empty($formData['same_location_siapkerja']) 
+    : (!$isRevision);
 
-// If checkbox same_location_siapkerja is unchecked, clear domicile location and address unless a non-default custom location was saved
-if (!$vSameLoc) {
-    $isPrefillDefault = (
-        empty($formData['address']) ||
-        ($formData['address'] ?? '') === 'Jl. Ir. H. Juanda No. 120, RT 03/RW 01' ||
-        (($formData['village'] ?? '') === 'Dago' && ($formData['city'] ?? '') === 'Kota Bandung')
-    );
-    if ($isPrefillDefault) {
-        $vProvince = '';
-        $vCity = '';
-        $vDistrict = '';
-        $vVillage = '';
-        $vPostalCode = '';
-        $vAddress = '';
-        $vAddressDetail = '';
-    }
-}
+$defaultProv = (!$isRevision && $vSameLoc) ? 'Jawa Barat' : '';
+$defaultCity = (!$isRevision && $vSameLoc) ? 'Kota Bandung' : '';
+$defaultDistrict = (!$isRevision && $vSameLoc) ? 'Coblong' : '';
+$defaultVillage = (!$isRevision && $vSameLoc) ? 'Dago' : '';
+$defaultPostalCode = (!$isRevision && $vSameLoc) ? '40135' : '';
+$defaultAddress = (!$isRevision && $vSameLoc) ? 'Jl. Ir. H. Juanda No. 120, RT 03/RW 01' : '';
+
+$vProvince = e($formData['province'] ?? $defaultProv);
+$vCity = e($formData['city'] ?? $defaultCity);
+$vDistrict = e($formData['district'] ?? $defaultDistrict);
+$vVillage = e($formData['village'] ?? $defaultVillage);
+$vPostalCode = e($formData['postal_code'] ?? $defaultPostalCode);
+$vAddress = e($formData['address'] ?? $defaultAddress);
+$vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?? ''));
 
 $vPermitDoc = $formData['permit_document'] ?? ($formData['doc_permission'] ?? '');
 $vPhoto = $formData['workplace_photo'] ?? ($formData['doc_location_photo'] ?? '');
@@ -64,7 +56,7 @@ if (!empty($vVillage) && !empty($vDistrict) && !empty($vCity) && !empty($vProvin
 $googleMapsApiKey = getenv('GOOGLE_MAPS_API_KEY') ?: ($_ENV['GOOGLE_MAPS_API_KEY'] ?? '');
 $infoIconSvg = '<svg class="tooltip-icon" width="13" height="13" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" style="display:inline-block; vertical-align:-1px; cursor:pointer;"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg>';
 ?>
-<link rel="stylesheet" href="assets/pki-form.css?v=20260926_4">
+<link rel="stylesheet" href="assets/pki-form.css?v=20260928_v1">
 <style>
 <?php
 $pkiCssPath = __DIR__ . '/../assets/pki-form.css';
@@ -342,25 +334,29 @@ if (file_exists($pkiCssPath)) {
 
 <!-- 4. MEDIA SOSIAL & DESKRIPSI -->
 <div class="modal-section" style="margin-bottom:20px;">
-    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">4. MEDIA SOSIAL & DESKRIPSI</div>
+    <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+        <span>4. MEDIA SOSIAL & DESKRIPSI</span>
+        <span class="req" style="color:#ef4444 !important; font-weight:700;">*</span>
+    </div>
+    <div style="font-size:12.5px; color:#64748b; margin-bottom:16px;">Wajib mengisi minimal salah satu akun media sosial (LinkedIn, Facebook, atau Instagram).</div>
 
     <div class="pki-grid-2">
         <div class="pki-field">
             <label class="pki-field-label" id="label_linkedin" for="pki_linkedin">LinkedIn</label>
             <input type="text" name="linkedin" id="pki_linkedin" value="<?php echo $vLinkedin; ?>" placeholder="username atau https://linkedin.com/in/...">
-            <div class="pki-field-helper" id="helper_linkedin">Opsional.</div>
+            <div class="pki-field-helper" id="helper_linkedin">Isi minimal salah satu media sosial.</div>
         </div>
         <div class="pki-field">
             <label class="pki-field-label" id="label_facebook" for="pki_facebook">Facebook</label>
             <input type="text" name="facebook" id="pki_facebook" value="<?php echo $vFacebook; ?>" placeholder="@username atau https://facebook.com/...">
-            <div class="pki-field-helper" id="helper_facebook">Opsional.</div>
+            <div class="pki-field-helper" id="helper_facebook">Isi minimal salah satu media sosial.</div>
         </div>
     </div>
 
     <div class="pki-field">
         <label class="pki-field-label" id="label_instagram" for="pki_instagram">Instagram</label>
         <input type="text" name="instagram" id="pki_instagram" value="<?php echo $vInstagram; ?>" placeholder="@username atau https://instagram.com/...">
-        <div class="pki-field-helper" id="helper_instagram">Opsional.</div>
+        <div class="pki-field-helper" id="helper_instagram">Isi minimal salah satu media sosial.</div>
     </div>
 
     <div class="pki-field">

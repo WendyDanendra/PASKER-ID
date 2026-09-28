@@ -34,6 +34,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
         $facebook = trim($_POST['facebook'] ?? '');
         $instagram = trim($_POST['instagram'] ?? '');
         $description = trim($_POST['description'] ?? '');
+
+        if ($linkedin === '' && $facebook === '' && $instagram === '') {
+            flash('error', 'Wajib mengisi minimal salah satu media sosial (LinkedIn, Facebook, atau Instagram).');
+            redirect('register.php');
+            exit;
+        }
+
+        $sameLoc = isset($_POST['same_location_siapkerja']) ? 1 : 0;
         $province = trim($_POST['province'] ?? '');
         $city = trim($_POST['city'] ?? '');
         $district = trim($_POST['district'] ?? '');
@@ -77,13 +85,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             if ($hasSocialMediaColumn) {
                 $stmtEp = $pdo->prepare('INSERT INTO employer_profiles (
                     user_id, owner_name, nik, profession, phone, whatsapp, npwp,
-                    province, city, district, village, postal_code, address, address_detail,
+                    same_location_siapkerja, province, city, district, village, postal_code, address, address_detail,
                     latitude, longitude, description, linkedin, instagram, facebook, social_media,
                     permit_document, doc_permission, workplace_photo, doc_location_photo,
                     entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
@@ -91,7 +99,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
 
                 $stmtEp->execute([
                     $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
-                    $province, $city, $district, $village, $postalCode, $address, $addressNotes,
+                    $sameLoc, $province, $city, $district, $village, $postalCode, $address, $addressNotes,
                     '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook, $socialSummary,
                     $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
                     $domicileCityId, $userConsent
@@ -99,13 +107,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             } else {
                 $stmtEp = $pdo->prepare('INSERT INTO employer_profiles (
                     user_id, owner_name, nik, profession, phone, whatsapp, npwp,
-                    province, city, district, village, postal_code, address, address_detail,
+                    same_location_siapkerja, province, city, district, village, postal_code, address, address_detail,
                     latitude, longitude, description, linkedin, instagram, facebook,
                     permit_document, doc_permission, workplace_photo, doc_location_photo,
                     entity_type, verification_status, verified, domicile_city_id, user_consent, created_at
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     "Individu", "PENDING", 0, ?, ?, CURRENT_TIMESTAMP
@@ -113,7 +121,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
 
                 $stmtEp->execute([
                     $userId, $ownerName, $nik, $profession, $phone, $whatsapp, $npwp,
-                    $province, $city, $district, $village, $postalCode, $address, $addressNotes,
+                    $sameLoc, $province, $city, $district, $village, $postalCode, $address, $addressNotes,
                     '-6.887844', '107.613038', $description, $linkedin, $instagram, $facebook,
                     $permitDoc, $permitDoc, $workplacePhoto, $workplacePhoto,
                     $domicileCityId, $userConsent
@@ -149,7 +157,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/app.css">
-    <link rel="stylesheet" href="assets/pki-form.css?v=20260926_2">
+    <link rel="stylesheet" href="assets/pki-form.css?v=20260928_v1">
 </head>
 <body>
     <div class="auth-shell auth-shell-single">
@@ -214,7 +222,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             <a class="primary-btn" href="dashboard.php#dashboard" style="width: 100%; text-align: center; justify-content: center; height: 42px; font-size: 13.5px; font-weight: 600; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
-    <script src="assets/pki-form.js?v=20260926_v5"></script>
+    <script src="assets/pki-form.js?v=20260928_v1"></script>
     <script>
     (function () {
         var modal = document.getElementById('modalPendaftaranBerhasil');
