@@ -5408,15 +5408,30 @@ document.addEventListener('click', function(e) {
                                     <div style="color:#1e293b; line-height:1.5;">: <?php echo nl2br(e($alasanText)); ?></div>
 
                                     <span style="color:#64748b; font-weight:500;">File Pendukung</span>
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                        :
+                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            :
+                                            <?php if (!empty($filePendukung)): ?>
+                                                <span style="color:#1e293b; font-weight:600;"><?php echo e(basename($filePendukung)); ?></span>
+                                                <a href="<?php echo e($filePendukung); ?>" target="_blank" class="btn-secondary-custom" style="padding:4px 10px; font-size:12px; font-weight:600; text-decoration:none; background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
+                                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat File
+                                                </a>
+                                            <?php else: ?>
+                                                <span style="color:#94a3b8; font-style:italic;">-</span>
+                                            <?php endif; ?>
+                                        </div>
                                         <?php if (!empty($filePendukung)): ?>
-                                            <span style="color:#1e293b;"><?php echo e(basename($filePendukung)); ?></span>
-                                            <a href="<?php echo e($filePendukung); ?>" target="_blank" class="btn-secondary-custom" style="padding:4px 10px; font-size:12px; font-weight:600; text-decoration:none; background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
-                                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat File
-                                            </a>
-                                        <?php else: ?>
-                                            <span style="color:#94a3b8; font-style:italic;">-</span>
+                                            <?php
+                                                $fExt = strtolower(pathinfo($filePendukung, PATHINFO_EXTENSION));
+                                                $isImgFile = in_array($fExt, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'], true);
+                                            ?>
+                                            <?php if ($isImgFile): ?>
+                                                <div style="margin-top:4px; margin-left:10px;">
+                                                    <a href="<?php echo e($filePendukung); ?>" target="_blank">
+                                                        <img src="<?php echo e($filePendukung); ?>" alt="Preview File Pendukung" style="max-width:260px; max-height:180px; border-radius:8px; border:1px solid #cbd5e1; object-fit:cover; box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+                                                    </a>
+                                                </div>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </div>

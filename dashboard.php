@@ -682,7 +682,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
             $filePath = null;
             if (!empty($_FILES['additional_file']['name'])) {
-                $filePath = store_upload('additional_file', 'additional_docs', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
+                $filePath = store_upload('additional_file', 'additional_docs', ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'bmp', 'doc', 'docx']);
             }
 
             // Setelah Dokumen/Keterangan Tambahan dikirim, pengajuan masuk ke status Menunggu Verifikasi
@@ -742,7 +742,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         $filePath = null;
         if (!empty($_FILES['additional_file']['name'])) {
-            $filePath = store_upload('additional_file', 'additional_docs', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
+            $filePath = store_upload('additional_file', 'additional_docs', ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'bmp', 'doc', 'docx']);
         }
 
         if (!$filePath && $notes === '') {

@@ -131,13 +131,15 @@ function store_upload(string $field, string $subdir, array $allowedExt): ?string
 
     $dir = __DIR__ . '/../uploads/' . trim($subdir, '/');
     if (!is_dir($dir)) {
-        mkdir($dir, 0777, true);
+        @mkdir($dir, 0777, true);
     }
 
     $filename = $field . '_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
     $target = $dir . '/' . $filename;
-    if (!move_uploaded_file($_FILES[$field]['tmp_name'], $target)) {
-        return null;
+    if (!@move_uploaded_file($_FILES[$field]['tmp_name'], $target)) {
+        if (!@copy($_FILES[$field]['tmp_name'], $target)) {
+            return null;
+        }
     }
 
     return 'uploads/' . trim($subdir, '/') . '/' . $filename;
