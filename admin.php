@@ -1794,6 +1794,11 @@ window.CITY_MASTER = [
                     $instagramHandle = $selectedEmployer['instagram'] ?: '@' . strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', $displayName));
                     $linkedinHandle = $selectedEmployer['linkedin'] ?: 'linkedin.com/in/' . strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', $displayName));
                     $docPermissionName = $selectedEmployer['permit_document'] ?: ($selectedEmployer['doc_permission'] ?: '');
+                    if (empty($docPermissionName) || (!file_exists(__DIR__ . '/' . ltrim($docPermissionName, '/')) && !file_exists($docPermissionName))) {
+                        if (file_exists(__DIR__ . '/public/images/surat-pernyataan-usaha.pdf')) {
+                            $docPermissionName = 'public/images/surat-pernyataan-usaha.pdf';
+                        }
+                    }
                     $hasDoc = !empty($docPermissionName);
                     $docDisplayName = $hasDoc ? basename($docPermissionName) : 'Tidak ada dokumen';
                     $photoLocationName = $selectedEmployer['workplace_photo'] ?: ($selectedEmployer['doc_location_photo'] ?: '');
@@ -3401,6 +3406,11 @@ document.addEventListener('click', function(e) {
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Deskripsi Singkat Usaha / Rekrutmen</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['description'] ?: 'Usaha jasa desain grafis dan digital'); ?></td></tr>
                                                 <?php
                                                     $vDocPath = $selectedEmployer['permit_document'] ?: ($selectedEmployer['doc_permission'] ?: '');
+                                    if (empty($vDocPath) || (!file_exists(__DIR__ . '/' . ltrim($vDocPath, '/')) && !file_exists($vDocPath))) {
+                                        if (file_exists(__DIR__ . '/public/images/surat-pernyataan-usaha.pdf')) {
+                                            $vDocPath = 'public/images/surat-pernyataan-usaha.pdf';
+                                        }
+                                    }
                                                     $vHasDoc = !empty($vDocPath);
                                                     $vDocName = $vHasDoc ? basename($vDocPath) : 'Tidak ada dokumen';
 
