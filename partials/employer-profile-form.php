@@ -89,7 +89,7 @@ if (file_exists($pkiCssPath)) {
             <label class="pki-field-label" id="label_nik" for="pki_nik">
                 NIK <span class="req">*</span>
             </label>
-            <input type="text" name="nik" id="pki_nik" value="<?php echo $vNik; ?>" maxlength="16" placeholder="Masukkan 16 digit NIK">
+            <input type="text" name="nik" id="pki_nik" value="<?php echo $vNik; ?>" maxlength="16" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" placeholder="Masukkan 16 digit NIK">
             <div class="pki-field-helper" id="helper_nik">Data NIK terisi otomatis (prefill) dari akun SIAPKerja (16 digit angka).</div>
         </div>
     </div>
@@ -99,14 +99,14 @@ if (file_exists($pkiCssPath)) {
             <label class="pki-field-label" id="label_phone" for="pki_phone">
                 Nomor Telepon Aktif <span class="req">*</span>
             </label>
-            <input type="text" name="phone" id="pki_phone" value="<?php echo $vPhone; ?>" maxlength="15" placeholder="08xxxxxxxxxx">
+            <input type="text" name="phone" id="pki_phone" value="<?php echo $vPhone; ?>" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" placeholder="08xxxxxxxxxx">
             <div class="pki-field-helper" id="helper_phone">Data nomor telepon terisi otomatis (prefill) dari akun SIAPKerja (10–15 digit angka).</div>
         </div>
         <div class="pki-field">
             <label class="pki-field-label" id="label_whatsapp" for="pki_whatsapp">
                 Nomor WhatsApp <span class="req">*</span>
             </label>
-            <input type="text" name="whatsapp" id="pki_whatsapp" value="<?php echo $vWhatsapp; ?>" maxlength="15" placeholder="08xxxxxxxxxx">
+            <input type="text" name="whatsapp" id="pki_whatsapp" value="<?php echo $vWhatsapp; ?>" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" placeholder="08xxxxxxxxxx">
             <div class="pki-field-helper" id="helper_whatsapp">Gunakan nomor WhatsApp aktif (10–15 digit angka).</div>
         </div>
     </div>

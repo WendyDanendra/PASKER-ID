@@ -564,31 +564,49 @@
         });
 
         // Add real-time input digit constraints for identity fields
-        const nikInput = document.getElementById('pki_nik');
-        if (nikInput) {
-            nikInput.addEventListener('input', function () {
-                this.value = this.value.replace(/\D/g, '').slice(0, 16);
+        const enforceDigitsOnly = function (el, maxLen) {
+            if (!el) return;
+            el.setAttribute('inputmode', 'numeric');
+            ['input', 'paste', 'keyup', 'change', 'blur'].forEach(ev => {
+                el.addEventListener(ev, function () {
+                    this.value = this.value.replace(/\D/g, '').slice(0, maxLen);
+                });
             });
-        }
+            el.addEventListener('keydown', function (e) {
+                if (
+                    ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+                    (e.ctrlKey === true || e.metaKey === true)
+                ) {
+                    return;
+                }
+                if (e.key < '0' || e.key > '9') {
+                    e.preventDefault();
+                }
+            });
+        };
 
-        const phoneInput = document.getElementById('pki_phone');
-        if (phoneInput) {
-            phoneInput.addEventListener('input', function () {
-                this.value = this.value.replace(/\D/g, '').slice(0, 15);
-            });
-        }
-
-        const waInput = document.getElementById('pki_whatsapp');
-        if (waInput) {
-            waInput.addEventListener('input', function () {
-                this.value = this.value.replace(/\D/g, '').slice(0, 15);
-            });
-        }
+        enforceDigitsOnly(document.getElementById('pki_nik'), 16);
+        enforceDigitsOnly(document.getElementById('pki_phone'), 15);
+        enforceDigitsOnly(document.getElementById('pki_whatsapp'), 15);
 
         const npwpInput = document.getElementById('pki_npwp');
         if (npwpInput) {
-            npwpInput.addEventListener('input', function () {
-                this.value = this.value.replace(/[^0-9.-]/g, '').slice(0, 20);
+            npwpInput.setAttribute('inputmode', 'numeric');
+            ['input', 'paste', 'keyup', 'change', 'blur'].forEach(ev => {
+                npwpInput.addEventListener(ev, function () {
+                    this.value = this.value.replace(/[^0-9.-]/g, '').slice(0, 20);
+                });
+            });
+            npwpInput.addEventListener('keydown', function (e) {
+                if (
+                    ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.', '-'].includes(e.key) ||
+                    (e.ctrlKey === true || e.metaKey === true)
+                ) {
+                    return;
+                }
+                if (e.key < '0' || e.key > '9') {
+                    e.preventDefault();
+                }
             });
         }
     }
