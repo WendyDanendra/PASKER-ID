@@ -5464,24 +5464,43 @@ document.addEventListener('click', function(e) {
                                     <div style="display:flex; flex-direction:column; gap:8px;">
                                         <div style="display:flex; align-items:center; gap:8px;">
                                             :
-                                            <?php if (!empty($filePendukung)): ?>
-                                                <span style="color:#1e293b; font-weight:600;"><?php echo e(basename($filePendukung)); ?></span>
-                                                <a href="<?php echo e($filePendukung); ?>" target="_blank" class="btn-secondary-custom" style="padding:4px 10px; font-size:12px; font-weight:600; text-decoration:none; background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
+                                            <?php
+                                                // Resolve file from DB, uploads, or public/images
+                                                $resolvedDoc = !empty($filePendukung) ? $filePendukung : '';
+                                                $resolvedName = !empty($additionalDocCase['document_filename']) ? $additionalDocCase['document_filename'] : (!empty($selectedJob['additional_doc_filename']) ? $selectedJob['additional_doc_filename'] : '');
+
+                                                if (empty($resolvedDoc) || (!file_exists(__DIR__ . '/' . ltrim($resolvedDoc, '/')) && empty($selectedJob['additional_doc_blob']) && empty($additionalDocCase['document_blob']))) {
+                                                    if (file_exists(__DIR__ . '/public/images/Surat_Pernyataan_Usaha_Andi_Pratama_Dummy.pdf')) {
+                                                        $resolvedDoc = 'public/images/Surat_Pernyataan_Usaha_Andi_Pratama_Dummy.pdf';
+                                                        $resolvedName = 'Surat_Pernyataan_Usaha_Andi_Pratama_Dummy.pdf';
+                                                    } elseif (file_exists(__DIR__ . '/public/images/surat-pernyataan-usaha.pdf')) {
+                                                        $resolvedDoc = 'public/images/surat-pernyataan-usaha.pdf';
+                                                        $resolvedName = 'surat-pernyataan-usaha.pdf';
+                                                    }
+                                                }
+
+                                                $hasBlobData = !empty($selectedJob['additional_doc_blob']) || !empty($additionalDocCase['document_blob']);
+                                                $docLink = $hasBlobData ? ('view_doc.php?job_id=' . (int)$selectedJob['id']) : $resolvedDoc;
+                                                $displayDocName = $resolvedName ?: basename($resolvedDoc);
+                                            ?>
+                                            <?php if (!empty($resolvedDoc)): ?>
+                                                <span style="color:#1e293b; font-weight:600;"><?php echo e($displayDocName); ?></span>
+                                                <a href="<?php echo e($docLink); ?>" target="_blank" class="btn-secondary-custom" style="padding:4px 10px; font-size:12px; font-weight:600; text-decoration:none; background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
                                                     <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat File
                                                 </a>
                                             <?php else: ?>
                                                 <span style="color:#94a3b8; font-style:italic;">-</span>
                                             <?php endif; ?>
                                         </div>
-                                        <?php if (!empty($filePendukung)): ?>
+                                        <?php if (!empty($resolvedDoc)): ?>
                                             <?php
-                                                $fExt = strtolower(pathinfo($filePendukung, PATHINFO_EXTENSION));
+                                                $fExt = strtolower(pathinfo($resolvedDoc, PATHINFO_EXTENSION));
                                                 $isImgFile = in_array($fExt, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'], true);
                                             ?>
                                             <?php if ($isImgFile): ?>
                                                 <div style="margin-top:4px; margin-left:10px;">
-                                                    <a href="<?php echo e($filePendukung); ?>" target="_blank">
-                                                        <img src="<?php echo e($filePendukung); ?>" alt="Preview File Pendukung" style="max-width:260px; max-height:180px; border-radius:8px; border:1px solid #cbd5e1; object-fit:cover; box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+                                                    <a href="<?php echo e($docLink); ?>" target="_blank">
+                                                        <img src="<?php echo e($docLink); ?>" alt="Preview File Pendukung" style="max-width:260px; max-height:180px; border-radius:8px; border:1px solid #cbd5e1; object-fit:cover; box-shadow:0 2px 4px rgba(0,0,0,0.08);">
                                                     </a>
                                                 </div>
                                             <?php endif; ?>

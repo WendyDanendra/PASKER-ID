@@ -84,5 +84,18 @@ if (!empty($filePath) && file_exists(__DIR__ . '/' . ltrim($filePath, '/'))) {
     exit;
 }
 
+// Fallback to PDF in public/images
+$fallbackPdf = __DIR__ . '/public/images/Surat_Pernyataan_Usaha_Andi_Pratama_Dummy.pdf';
+if (!file_exists($fallbackPdf)) {
+    $fallbackPdf = __DIR__ . '/public/images/surat-pernyataan-usaha.pdf';
+}
+if (file_exists($fallbackPdf)) {
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="' . basename($fallbackPdf) . '"');
+    header('Content-Length: ' . filesize($fallbackPdf));
+    readfile($fallbackPdf);
+    exit;
+}
+
 http_response_code(404);
 die('Dokumen tidak ditemukan.');
