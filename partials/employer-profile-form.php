@@ -9,31 +9,21 @@
 $isRevision = $isRevision ?? false;
 $formData = $formData ?? [];
 
-// Helper values (Demo prefill from SIAPKerja if registering for first time)
-$vOwnerName = e($formData['owner_name'] ?? (!$isRevision ? 'Budi Santoso' : ''));
-$vNik = e($formData['nik'] ?? (!$isRevision ? '3273012345670001' : ''));
-$vPhone = e($formData['phone'] ?? (!$isRevision ? '081234567890' : ''));
+// Helper values
+$vOwnerName = e($formData['owner_name'] ?? '');
+$vNik = e($formData['nik'] ?? '');
+$vPhone = e($formData['phone'] ?? '');
 $vWhatsapp = e($formData['whatsapp'] ?? '');
 $vProfession = $formData['profession'] ?? '';
 $vNpwp = e($formData['npwp'] ?? '');
 
-$vSameLoc = isset($formData['same_location_siapkerja']) 
-    ? !empty($formData['same_location_siapkerja']) 
-    : (!$isRevision);
-
-$defaultProv = (!$isRevision && $vSameLoc) ? 'Jawa Barat' : '';
-$defaultCity = (!$isRevision && $vSameLoc) ? 'Kota Bandung' : '';
-$defaultDistrict = (!$isRevision && $vSameLoc) ? 'Coblong' : '';
-$defaultVillage = (!$isRevision && $vSameLoc) ? 'Dago' : '';
-$defaultPostalCode = (!$isRevision && $vSameLoc) ? '40135' : '';
-$defaultAddress = (!$isRevision && $vSameLoc) ? 'Jl. Ir. H. Juanda No. 120, RT 03/RW 01' : '';
-
-$vProvince = e($formData['province'] ?? $defaultProv);
-$vCity = e($formData['city'] ?? $defaultCity);
-$vDistrict = e($formData['district'] ?? $defaultDistrict);
-$vVillage = e($formData['village'] ?? $defaultVillage);
-$vPostalCode = e($formData['postal_code'] ?? $defaultPostalCode);
-$vAddress = e($formData['address'] ?? $defaultAddress);
+$vSameLoc = !empty($formData['same_location_siapkerja']);
+$vProvince = e($formData['province'] ?? '');
+$vCity = e($formData['city'] ?? '');
+$vDistrict = e($formData['district'] ?? '');
+$vVillage = e($formData['village'] ?? '');
+$vPostalCode = e($formData['postal_code'] ?? '');
+$vAddress = e($formData['address'] ?? '');
 $vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?? ''));
 
 $vPermitDoc = $formData['permit_document'] ?? ($formData['doc_permission'] ?? '');
