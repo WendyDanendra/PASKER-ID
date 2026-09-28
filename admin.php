@@ -701,16 +701,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             exit;
         }
 
-        // 1. Check Scope: Admin Kab./Kota sesuai wilayah lokasi kerja lowongan atau domisili
-        $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
-        if ($user['role'] === 'admin_dinas' || ($adminDomicileCity !== '' && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
-            $employerDomicileCity = (string)($targetJob['emp_domicile_city_id'] ?? '');
-            $empCity = (string)($targetJob['emp_city'] ?? '');
-            $jobLocation = (string)($targetJob['location'] ?? '');
+        // 1. Check Scope: Admin Kab./Kota sesuai wilayah lokasi kerja lowongan atau domisili (case-insensitive)
+        $adminDomicileCity = trim((string)($user['domicile_city_id'] ?? ''));
+        $role = $user['role'] ?? 'admin';
+        if ($role === 'admin_dinas' || ($adminDomicileCity !== '' && $role !== 'admin' && $role !== 'admin_pusat')) {
+            $employerDomicileCity = trim((string)($targetJob['emp_domicile_city_id'] ?? ''));
+            $empCity = trim((string)($targetJob['emp_city'] ?? ''));
+            $jobLocation = trim((string)($targetJob['location'] ?? ''));
             $inScope = ($adminDomicileCity !== '') && (
-                $employerDomicileCity === $adminDomicileCity ||
-                stripos($empCity, $adminDomicileCity) !== false ||
-                stripos($jobLocation, $adminDomicileCity) !== false
+                strcasecmp($employerDomicileCity, $adminDomicileCity) === 0 ||
+                ($empCity !== '' && stripos($empCity, $adminDomicileCity) !== false) ||
+                ($jobLocation !== '' && stripos($jobLocation, $adminDomicileCity) !== false)
             );
             if (!$inScope) {
                 flash('error', 'Akses ditolak: Lowongan ini berada di luar wilayah kewenangan Dinas Anda (' . e($adminDomicileCity) . ').');
@@ -756,16 +757,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
             exit;
         }
 
+        $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $nowSql = $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+
         try {
             db()->beginTransaction();
 
             if ($decision === 'reject') {
                 // Tolak → Pengajuan dihentikan, status = Ditolak
-                $stmtLock = db()->prepare('UPDATE job_posts SET status = "Ditolak", additional_doc_status = "REJECTED", admin_notes = ?, verifier_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+                $stmtLock = db()->prepare('UPDATE job_posts SET status = "Ditolak", additional_doc_status = "REJECTED", admin_notes = ?, verifier_notes = ?, updated_at = ' . $nowSql . ' WHERE id = ?');
                 $stmtLock->execute([$notes, $notes, $jobId]);
 
-                db()->prepare('UPDATE job_additional_documents SET status = "REJECTED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = CURRENT_TIMESTAMP WHERE job_id = ?')
-                    ->execute([$docReviewed, $fieldVisit, $notes, $jobId]);
+                $docUp = db()->prepare('UPDATE job_additional_documents SET status = "REJECTED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = ' . $nowSql . ' WHERE job_id = ?');
+                $docUp->execute([$docReviewed, $fieldVisit, $notes, $jobId]);
+                if ($docUp->rowCount() === 0) {
+                    if ($driver === 'sqlite') {
+                        $insertDoc = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, admin_notes, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, "REJECTED", ?, ?, ?, ' . $nowSql . ', ' . $nowSql . ')');
+                    } else {
+                        $insertDoc = db()->prepare('REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, admin_notes, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, "REJECTED", ?, ?, ?, ' . $nowSql . ', ' . $nowSql . ')');
+                    }
+                    $insertDoc->execute([$jobId, (int)$targetJob['user_id'], (string)$targetJob['kbji_code'], $targetJob['additional_doc_file'] ?? null, $targetJob['additional_doc_notes'] ?? '', $docReviewed, $fieldVisit, $notes]);
+                }
 
                 try {
                     db()->prepare('UPDATE job_verifications SET status = "REJECTED", verifier_notes = ? WHERE job_id = ?')
@@ -802,11 +814,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
                     $rejectReason = "Batas maksimal kebutuhan tenaga kerja Pemberi Kerja Individu adalah 10 orang dalam satu bulan kalender. Total kuota pengajuan bulan ini: {$totalMonthlyQuota} orang.";
                     $fullNotes = $notes !== '' ? ($notes . ' | ' . $rejectReason) : $rejectReason;
 
-                    $stmtLock = db()->prepare('UPDATE job_posts SET status = "Ditolak", additional_doc_status = "REJECTED_QUOTA", admin_notes = ?, verifier_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+                    $stmtLock = db()->prepare('UPDATE job_posts SET status = "Ditolak", additional_doc_status = "REJECTED_QUOTA", admin_notes = ?, verifier_notes = ?, updated_at = ' . $nowSql . ' WHERE id = ?');
                     $stmtLock->execute([$fullNotes, $fullNotes, $jobId]);
 
-                    db()->prepare('UPDATE job_additional_documents SET status = "REJECTED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = CURRENT_TIMESTAMP WHERE job_id = ?')
-                        ->execute([$docReviewed, $fieldVisit, $fullNotes, $jobId]);
+                    $docUp = db()->prepare('UPDATE job_additional_documents SET status = "REJECTED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = ' . $nowSql . ' WHERE job_id = ?');
+                    $docUp->execute([$docReviewed, $fieldVisit, $fullNotes, $jobId]);
+                    if ($docUp->rowCount() === 0) {
+                        if ($driver === 'sqlite') {
+                            $insertDoc = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, admin_notes, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, "REJECTED", ?, ?, ?, ' . $nowSql . ', ' . $nowSql . ')');
+                        } else {
+                            $insertDoc = db()->prepare('REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, admin_notes, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, "REJECTED", ?, ?, ?, ' . $nowSql . ', ' . $nowSql . ')');
+                        }
+                        $insertDoc->execute([$jobId, (int)$targetJob['user_id'], (string)$targetJob['kbji_code'], $targetJob['additional_doc_file'] ?? null, $targetJob['additional_doc_notes'] ?? '', $docReviewed, $fieldVisit, $fullNotes]);
+                    }
 
                     try {
                         db()->prepare('UPDATE job_verifications SET status = "REJECTED", verifier_notes = ? WHERE job_id = ?')
@@ -821,11 +841,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['admin_acti
 
                 } else {
                     // Lapisan 3 lolos: lowongan dilanjutkan ke proses Verifikasi Lowongan normal oleh Admin
-                    $stmtLock = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_status = "APPROVED", verifier_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+                    $stmtLock = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_status = "APPROVED", verifier_notes = ?, updated_at = ' . $nowSql . ' WHERE id = ?');
                     $stmtLock->execute([$notes, $jobId]);
 
-                    db()->prepare('UPDATE job_additional_documents SET status = "APPROVED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = CURRENT_TIMESTAMP WHERE job_id = ?')
-                        ->execute([$docReviewed, $fieldVisit, $notes, $jobId]);
+                    $docUp = db()->prepare('UPDATE job_additional_documents SET status = "APPROVED", doc_reviewed = ?, field_visit = ?, admin_notes = ?, reviewed_at = ' . $nowSql . ' WHERE job_id = ?');
+                    $docUp->execute([$docReviewed, $fieldVisit, $notes, $jobId]);
+                    if ($docUp->rowCount() === 0) {
+                        if ($driver === 'sqlite') {
+                            $insertDoc = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, admin_notes, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, "APPROVED", ?, ?, ?, ' . $nowSql . ', ' . $nowSql . ')');
+                        } else {
+                            $insertDoc = db()->prepare('REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, admin_notes, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, "APPROVED", ?, ?, ?, ' . $nowSql . ', ' . $nowSql . ')');
+                        }
+                        $insertDoc->execute([$jobId, (int)$targetJob['user_id'], (string)$targetJob['kbji_code'], $targetJob['additional_doc_file'] ?? null, $targetJob['additional_doc_notes'] ?? '', $docReviewed, $fieldVisit, $notes]);
+                    }
 
                     try {
                         db()->prepare('UPDATE job_verifications SET status = "PENDING", additional_doc_required = 1, layer_flags = "LAYER2_APPROVED_LAYER3_PASSED" WHERE job_id = ?')
@@ -5441,6 +5469,7 @@ document.addEventListener('click', function(e) {
                                 <form method="post" action="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=<?php echo e($tab); ?>&detail_id=<?php echo $selectedJob['id']; ?>" id="adminAdditionalDocForm" onsubmit="return validateAdditionalDocReview(event)" style="border-top:1px solid #f1f5f9; padding-top:20px;">
                                     <input type="hidden" name="action" value="verify_additional_doc">
                                     <input type="hidden" name="job_id" value="<?php echo $selectedJob['id']; ?>">
+                                    <input type="hidden" name="decision" id="admin_decision_input" value="">
 
                                     <div style="margin-bottom:16px;">
                                         <label style="display:block; font-size:13px; font-weight:700; color:#0f172a; margin-bottom:8px;">
@@ -5494,10 +5523,10 @@ document.addEventListener('click', function(e) {
                                     </div>
 
                                     <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; flex-wrap:wrap;">
-                                        <button type="submit" name="decision" value="reject" class="btn-secondary-custom" style="padding:9px 20px; font-size:13px; font-weight:700; border:1px solid #fecaca; background:#fff; color:#dc2626; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                        <button type="submit" name="decision" value="reject" onclick="document.getElementById('admin_decision_input').value='reject';" class="btn-secondary-custom" style="padding:9px 20px; font-size:13px; font-weight:700; border:1px solid #fecaca; background:#fff; color:#dc2626; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
                                             <i class="fa-solid fa-xmark"></i> Tolak
                                         </button>
-                                        <button type="submit" name="decision" value="approve" class="btn-primary-custom" style="padding:9px 22px; font-size:13px; font-weight:700; border:none; background:#0284c7; color:#fff; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 3px rgba(2,132,199,0.3);">
+                                        <button type="submit" name="decision" value="approve" onclick="document.getElementById('admin_decision_input').value='approve';" class="btn-primary-custom" style="padding:9px 22px; font-size:13px; font-weight:700; border:none; background:#0284c7; color:#fff; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 3px rgba(2,132,199,0.3);">
                                             <i class="fa-solid fa-check"></i> Setujui & Lanjutkan
                                         </button>
                                     </div>
