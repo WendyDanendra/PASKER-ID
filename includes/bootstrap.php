@@ -252,33 +252,15 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         $pdo->exec("UPDATE employer_profiles SET workplace_photo = COALESCE(NULLIF(workplace_photo, ''), NULLIF(doc_location_photo, ''), 'foto-rumah.jpg'), doc_location_photo = COALESCE(NULLIF(doc_location_photo, ''), NULLIF(workplace_photo, ''), 'foto-rumah.jpg') WHERE workplace_photo IS NULL OR workplace_photo = '' OR doc_location_photo IS NULL OR doc_location_photo = ''");
 
         // Sync existing job_posts locations to remove street address and match "Lokasi Tempat Usaha / Kegiatan"
-        $profiles = $pdo->query('SELECT user_id, address, village, district, city, province FROM employer_profiles')->fetchAll() ?: [];
-        foreach ($profiles as $empProf) {
-            $uId = $empProf['user_id'];
-            $streetAddress = trim((string)($empProf['address'] ?? ''));
-            $vParts = array_filter([
-                $empProf['village'] ?? '',
-                $empProf['district'] ?? '',
-                $empProf['city'] ?? '',
-                $empProf['province'] ?? ''
-            ]);
-            $cleanLocation = !empty($vParts) ? implode(', ', $vParts) : ($empProf['city'] ?? '');
-            if (!$cleanLocation) continue;
-
-            $userJobs = $pdo->prepare('SELECT id, location FROM job_posts WHERE user_id = ?');
-            $userJobs->execute([$uId]);
-            foreach ($userJobs->fetchAll() as $jRow) {
-                $curLoc = trim((string)($jRow['location'] ?? ''));
-                $shouldUpdate = false;
-                if ($streetAddress !== '' && (str_starts_with($curLoc, $streetAddress) || str_contains($curLoc, $streetAddress))) {
-                    $shouldUpdate = true;
-                } elseif ($curLoc === ($empProf['city'] ?? '') && count($vParts) > 1) {
-                    $shouldUpdate = true;
-                }
-                if ($shouldUpdate) {
-                    $upStmt = $pdo->prepare('UPDATE job_posts SET location = ? WHERE id = ?');
-                    $upStmt->execute([$cleanLocation, $jRow['id']]);
-                }
+        $allJobs = $pdo->query('SELECT id, user_id, location FROM job_posts')->fetchAll() ?: [];
+        foreach ($allJobs as $jRow) {
+            $uId = (int)$jRow['user_id'];
+            $empProf = $pdo->query('SELECT address, village, district, city, province FROM employer_profiles WHERE user_id = ' . $uId)->fetch() ?: null;
+            $curLoc = trim((string)($jRow['location'] ?? ''));
+            $cleaned = sanitize_job_location($curLoc, $empProf ?: null);
+            if ($cleaned !== '' && $cleaned !== $curLoc) {
+                $upStmt = $pdo->prepare('UPDATE job_posts SET location = ? WHERE id = ?');
+                $upStmt->execute([$cleaned, $jRow['id']]);
             }
         }
     } catch (Throwable $ignored) {}

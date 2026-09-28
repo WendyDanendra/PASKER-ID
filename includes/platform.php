@@ -311,22 +311,53 @@ function job_employer_display_name(array $job): string
     return $owner !== '' ? $owner : (string) ($job['employer_name'] ?? 'Pemberi kerja individu');
 }
 
-function job_placement_address(array $job): string
+function sanitize_job_location(string $loc, ?array $profile = null): string
 {
-    $parts = array_values(array_filter([
-        trim((string) ($job['address'] ?? '')),
-        trim((string) ($job['location'] ?? '')),
-        trim((string) ($job['city'] ?? '')),
-        trim((string) ($job['province'] ?? '')),
-    ], static fn($value) => $value !== ''));
-    $unique = [];
-    foreach ($parts as $part) {
-        if (!in_array($part, $unique, true)) {
-            $unique[] = $part;
+    $loc = trim($loc);
+    if ($loc === '') return '';
+
+    if ($profile) {
+        $pParts = array_filter([
+            $profile['village'] ?? '',
+            $profile['district'] ?? '',
+            $profile['city'] ?? '',
+            $profile['province'] ?? ''
+        ]);
+        if (!empty($pParts)) {
+            $pLoc = implode(', ', $pParts);
+            $street = trim((string)($profile['address'] ?? ''));
+            if ($street !== '' && (str_contains(mb_strtolower($loc), mb_strtolower($street)) || str_starts_with(mb_strtolower($loc), mb_strtolower($street)))) {
+                return $pLoc;
+            }
         }
     }
 
-    return $unique ? implode(', ', $unique) : '-';
+    $parts = array_map('trim', explode(',', $loc));
+    while (count($parts) > 4) {
+        array_shift($parts);
+    }
+    if (count($parts) > 0 && preg_match('/^(jl|jalan|gg|gang|rt|rw|no|kav|komplek|blok)/i', $parts[0])) {
+        array_shift($parts);
+    }
+
+    return !empty($parts) ? implode(', ', $parts) : $loc;
+}
+
+function job_placement_address(array $job): string
+{
+    $rawLoc = trim((string)($job['location'] ?? ''));
+    if ($rawLoc !== '') {
+        return sanitize_job_location($rawLoc, $job);
+    }
+
+    $parts = array_values(array_filter([
+        trim((string) ($job['village'] ?? '')),
+        trim((string) ($job['district'] ?? '')),
+        trim((string) ($job['city'] ?? '')),
+        trim((string) ($job['province'] ?? '')),
+    ], static fn($value) => $value !== ''));
+
+    return $parts ? implode(', ', $parts) : '-';
 }
 
 function job_employer_contact(array $job): string

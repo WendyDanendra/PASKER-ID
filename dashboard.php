@@ -848,7 +848,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $user['id'], 
                     $oldJob['title'], 
                     $oldJob['description'], 
-                    $oldJob['location'], 
+                    sanitize_job_location($oldJob['location'], $profile), 
                     $oldJob['job_type'], 
                     $oldJob['industry'], 
                     $oldJob['entity_type'] ?? 'Individu',

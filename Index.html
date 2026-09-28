@@ -2570,7 +2570,7 @@
                                         <div><i class="fa-regular fa-calendar" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Kadaluarsa:</strong> <?php echo $expDate; ?></div>
                                     <?php endif; ?>
                                     <div><i class="fa-solid fa-graduation-cap" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Pendidikan Minimal:</strong> <?php echo e($detailJob['min_education'] ?: ($detailData['education_required'] ?: 'Tidak ditentukan')); ?></div>
-                                    <div><i class="fa-solid fa-location-dot" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Lokasi:</strong> <?php echo e($detailJob['location'] ?: 'Kota Bekasi'); ?></div>
+                                    <div><i class="fa-solid fa-location-dot" style="color:#0ea5e9; margin-right:6px;"></i> <strong>Lokasi:</strong> <?php echo e(sanitize_job_location($detailJob['location'] ?: 'Kota Bekasi', $profile ?? null)); ?></div>
                                 </div>
                             </div>
 
@@ -3229,7 +3229,7 @@
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
-                                            <td><?php echo e($j['location'] ?: 'Kota Bekasi'); ?></td>
+                                            <td><?php echo e(sanitize_job_location($j['location'] ?: 'Kota Bekasi', $profile ?? null)); ?></td>
                                             <td>
                                                 <strong><?php echo (int)($j['quota'] ?? 1); ?></strong> Posisi
                                                 <?php if ((int)($j['accepted_count'] ?? 0) > 0): ?>
@@ -3353,7 +3353,7 @@
 
                                                                  <div style="background:#f8fafc; padding:14px; border-radius:12px; margin-bottom:14px; display:grid; gap:8px;">
                                                                      <div><strong>Judul Lowongan:</strong> <?php echo e($j['title']); ?></div>
-                                                                     <div><strong>Penempatan:</strong> <?php echo e($j['location']); ?></div>
+                                                                     <div><strong>Penempatan:</strong> <?php echo e(sanitize_job_location($j['location'], $profile ?? null)); ?></div>
                                                                      <div><strong>Jenis Pekerjaan:</strong> <?php echo e($j['job_type']); ?></div>
                                                                      <div><strong>Bidang Pekerjaan:</strong> <?php echo e($j['industry']); ?></div>
                                                                      <div><strong>Kode KBJI:</strong> <?php echo e($j['kbji_code']); ?></div>
