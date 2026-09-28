@@ -5355,10 +5355,9 @@ document.addEventListener('click', function(e) {
                                 SELECT COUNT(*) FROM job_posts
                                 WHERE user_id = ?
                                   AND kbji_code = ?
-                                  AND parent_job_id IS NULL
-                                  AND status = "Tayang"
                                   AND published_at IS NOT NULL
                                   AND published_at BETWEEN ? AND ?
+                                  AND status NOT IN ("Draft", "Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi", "Pending", "Perlu Direvisi", "Perlu Revisi", "Ditolak", "Dibatalkan", "CANCELED")
                                   AND id != ?
                             ');
                             $cntKbjiStmt->execute([(int)$selectedJob['user_id'], (string)$selectedJob['kbji_code'], $startOfMonth, $endOfMonth, $selectedJob['id']]);
