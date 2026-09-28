@@ -18,6 +18,29 @@ $jobsStatement = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER 
 $jobsStatement->execute([$user['id']]);
 $jobs = $jobsStatement->fetchAll() ?: [];
 
+// Monthly KBJI publication count for current employer (Layer 2 tracking)
+$startOfMonth = date('Y-m-01 00:00:00');
+$endOfMonth   = date('Y-m-t 23:59:59');
+$kbjiPublishedCountsStmt = db()->prepare('
+    SELECT kbji_code, COUNT(*) as cnt
+    FROM job_posts
+    WHERE user_id = ?
+      AND parent_job_id IS NULL
+      AND published_at IS NOT NULL
+      AND published_at BETWEEN ? AND ?
+      AND status NOT IN ("Draft", "Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi", "Pending", "Perlu Direvisi", "Perlu Revisi", "Ditolak", "Dibatalkan", "CANCELED")
+    GROUP BY kbji_code
+');
+$kbjiPublishedCountsStmt->execute([$user['id'], $startOfMonth, $endOfMonth]);
+$kbjiPublishedCounts = $kbjiPublishedCountsStmt->fetchAll(PDO::FETCH_KEY_PAIR) ?: [];
+
+$kbjiReached3 = [];
+foreach ($kbjiPublishedCounts as $kCode => $cnt) {
+    if ((int)$cnt >= 3) {
+        $kbjiReached3[] = (string)$kCode;
+    }
+}
+
 // Helper Indonesian date formatter
 if (!function_exists('format_indo_date')) {
     function format_indo_date($dt, $format = 'long') {
@@ -225,17 +248,17 @@ if (isset($_GET['applicant_json'])) {
     }
     $row['status'] = normalize_application_status($row['status'] ?? '');
     $row['applied_date'] = !empty($row['created_at']) ? date('d M Y', strtotime($row['created_at'])) : date('d M Y');
-    
+
     // Format bundle
     $bundle = seeker_profile_bundle((int) $row['seeker_id']);
-    
+
     // Ensure rich fallback data matching sample if empty
     $row['location'] = $row['domicile_address'] ?: ($row['ktp_address'] ?: 'Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH');
     $row['about'] = 'Saya adalah pribadi yang disiplin, bertanggung jawab, cepat belajar, dan mampu beradaptasi dengan lingkungan kerja baru serta bekerja secara individu maupun dalam tim.';
     $row['birth_info'] = ($row['birth_place'] ?: 'Brebes') . ', ' . ($row['birth_date'] ? date('d F Y', strtotime($row['birth_date'])) : '19 Desember 2006');
     $row['ktp_address'] = $row['ktp_address'] ?: 'Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES';
     $row['domicile_address'] = $row['domicile_address'] ?: 'Karangmaja, Banjarharjo, Brebes, Karangmaja, Banjarharjo, KAB. BREBES, JAWA TENGAH';
-    
+
     if (empty($bundle['trainings'])) {
         $bundle['trainings'] = [
             [
@@ -264,7 +287,7 @@ if (isset($_GET['applicant_json'])) {
             ['skill_name' => 'Operator forklift', 'level' => 'Tingkat Mahir'],
         ];
     }
-    
+
     $row['profile'] = $bundle;
     echo json_encode(['ok' => true, 'data' => $row], JSON_UNESCAPED_UNICODE);
     exit;
@@ -352,7 +375,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $jobQuota = (int)$quotaStmt->fetchColumn() ?: 1;
 
         notify_user((int) $application['seeker_id'], 'Status lamaran diperbarui', 'Status lamaran Anda untuk "' . $application['title'] . '" sekarang: ' . $nextStatus . '.', 'info', $applicationId);
-        
+
         if ($isAjax) {
             header('Content-Type: application/json');
             echo json_encode([
@@ -385,7 +408,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $whatsapp    = trim($_POST['whatsapp'] ?? '');
         $profession  = trim($_POST['profession'] ?? '');
         $npwp        = trim($_POST['npwp'] ?? '');
-        
+
         $linkedin    = trim($_POST['linkedin'] ?? '');
         $facebook    = trim($_POST['facebook'] ?? '');
         $instagram   = trim($_POST['instagram'] ?? '');
@@ -451,7 +474,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $isReactivation = ($isFullDisable || ($profile['verification_status'] ?? '') === 'FULL_DISABLED');
 
         if ($profile) {
-            $stmt = db()->prepare('UPDATE employer_profiles SET 
+            $stmt = db()->prepare('UPDATE employer_profiles SET
                 owner_name = ?, nik = ?, phone = ?, whatsapp = ?, profession = ?, npwp = ?,
                 linkedin = ?, facebook = ?, instagram = ?,
                 same_location_siapkerja = ?, province = ?, city = ?, domicile_city_id = ?, district = ?, village = ?, postal_code = ?,
@@ -602,7 +625,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
 
         $jobId = (int)$_POST['job_id'];
-        
+
         $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
         $jobStmt->execute([$jobId, $user['id']]);
         $targetJob = $jobStmt->fetch();
@@ -651,18 +674,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $additionalDocRequired = !empty($rulesResult['additional_doc_required']) ? 1 : 0;
 
         if ($additionalDocRequired) {
-            // Lowongan ke-4+ KBJI sama: Jangan buat job_verifications case dulu, ubah status ke ADDITIONAL_DOCUMENT_PENDING
-            $update = db()->prepare('UPDATE job_posts SET status = "ADDITIONAL_DOCUMENT_PENDING", additional_doc_required = 1, additional_doc_status = "PENDING_UPLOAD", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
-            $update->execute([$jobId, $user['id']]);
+            // Lowongan ke-4+ KBJI sama: Tahan submit dan tampilkan modal Dokumen/Keterangan Tambahan jika belum diisi
+            $additionalNotes = trim($_POST['additional_notes'] ?? '');
+            if ($additionalNotes === '') {
+                redirect('dashboard.php?open_additional_doc_modal=' . $jobId . '#lowongan');
+                exit;
+            }
+
+            $filePath = null;
+            if (!empty($_FILES['additional_file']['name'])) {
+                $filePath = store_upload('additional_file', 'additional_docs', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
+            }
+
+            // Setelah Dokumen/Keterangan Tambahan dikirim, pengajuan masuk ke status Menunggu Verifikasi
+            $update = db()->prepare('UPDATE job_posts SET status = "Menunggu Verifikasi", additional_doc_required = 1, additional_doc_status = "SUBMITTED", additional_doc_notes = ?, additional_doc_file = COALESCE(?, additional_doc_file), updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+            $update->execute([$additionalNotes, $filePath, $jobId, $user['id']]);
 
             try {
-                $docStmt = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, status, doc_reviewed, field_visit, created_at) VALUES (?, ?, ?, "PENDING_UPLOAD", "Tidak", "Tidak", CURRENT_TIMESTAMP)');
-                $docStmt->execute([$jobId, $user['id'], $targetJob['kbji_code']]);
+                $docStmt = db()->prepare('INSERT OR REPLACE INTO job_additional_documents (job_id, user_id, kbji_code, document_file, description, status, doc_reviewed, field_visit, created_at) VALUES (?, ?, ?, ?, ?, "SUBMITTED", "Tidak", "Tidak", CURRENT_TIMESTAMP)');
+                $docStmt->execute([$jobId, $user['id'], $targetJob['kbji_code'], $filePath, $additionalNotes]);
             } catch (Throwable $ignored) {}
 
-            record_audit_log('job', $jobId, 'ADDITIONAL_DOC_REQUIRED', "Lowongan ke-4+ untuk KBJI {$targetJob['kbji_code']} bulan ini membutuhkan Dokumen/Keterangan Tambahan sebelum verifikasi lowongan.", $user['name']);
+            try {
+                $caseStmt = db()->prepare('INSERT INTO job_verifications (job_id, user_id, kbji_code, status, additional_doc_required, layer_flags) VALUES (?, ?, ?, "PENDING", 1, "LAYER2_ADDITIONAL_DOC")');
+                $caseStmt->execute([$jobId, $user['id'], $targetJob['kbji_code']]);
+            } catch (Throwable $ignored) {}
 
-            flash('warning', 'Pengajuan publikasi ini masuk kuota ke-4+ untuk KBJI ' . $targetJob['kbji_code'] . ' bulan ini (Status: ADDITIONAL_DOCUMENT_PENDING). Harap unggah Dokumen/Keterangan Tambahan untuk ditinjau oleh Admin.');
+            record_audit_log('job', $jobId, 'SUBMITTED_WITH_ADDITIONAL_DOC', "Lowongan ke-4+ untuk KBJI {$targetJob['kbji_code']} diajukan dengan Dokumen/Keterangan Tambahan untuk diverifikasi Admin.", $user['name']);
+
+            flash('success', 'Dokumen/Keterangan Tambahan berhasil dikirim. Pengajuan lowongan masuk ke antrean Menunggu Verifikasi oleh Admin.');
         } else {
             $layerFlag = $isChildRepost ? 'REPOST_CONTINUATION' : null;
             // Normal flow: update to Menunggu Verifikasi and create job_verifications case
@@ -690,7 +730,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
         $jobId = (int)$_POST['job_id'];
         $notes = trim($_POST['additional_notes'] ?? '');
-        
+
         $jobStmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
         $jobStmt->execute([$jobId, $user['id']]);
         $targetJob = $jobStmt->fetch();
@@ -716,7 +756,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $stmt = db()->prepare('UPDATE job_additional_documents SET document_file = COALESCE(?, document_file), description = ?, status = "SUBMITTED" WHERE job_id = ?');
             $stmt->execute([$filePath, $notes, $jobId]);
         } catch (Throwable $ignored) {}
-        
+
         $upJob = db()->prepare('UPDATE job_posts SET additional_doc_file = COALESCE(?, additional_doc_file), additional_doc_notes = ?, additional_doc_status = "SUBMITTED", updated_at = CURRENT_TIMESTAMP WHERE id = ?');
         $upJob->execute([$filePath, $notes, $jobId]);
 
@@ -738,7 +778,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $repost = ($_POST['repost'] ?? '0') === '1';
         $reasons = $_POST['reasons'] ?? [];
         $lainnya = trim($_POST['reason_lainnya'] ?? '');
-        
+
         $pdo = db();
         $pdo->beginTransaction();
 
@@ -801,7 +841,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 redirect('dashboard.php#lowongan');
                 exit;
             }
-            
+
             if (empty($reasons)) {
                 $pdo->rollBack();
                 flash('error', 'Anda wajib memilih minimal 1 alasan mengapa sisa kuota belum terpenuhi.');
@@ -845,20 +885,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     parent_job_id, created_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, "Menunggu Verifikasi", ?, ?, ?, 0, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, CURRENT_TIMESTAMP)');
                 $insert->execute([
-                    $user['id'], 
-                    $oldJob['title'], 
-                    $oldJob['description'], 
-                    sanitize_job_location($oldJob['location'], $profile), 
-                    $oldJob['job_type'], 
-                    $oldJob['industry'], 
+                    $user['id'],
+                    $oldJob['title'],
+                    $oldJob['description'],
+                    sanitize_job_location($oldJob['location'], $profile),
+                    $oldJob['job_type'],
+                    $oldJob['industry'],
                     $oldJob['entity_type'] ?? 'Individu',
                     $oldJob['salary_min'] ?? null,
                     $oldJob['salary_max'] ?? null,
-                    $sisaKuota, 
-                    $oldJob['kbji_code'], 
+                    $sisaKuota,
+                    $oldJob['kbji_code'],
                     $oldJob['details'] ?? null,
-                    $oldJob['min_education'] ?? '', 
-                    $oldJob['min_experience'] ?? '', 
+                    $oldJob['min_education'] ?? '',
+                    $oldJob['min_experience'] ?? '',
                     $jobId
                 ]);
                 $childId = (int)$pdo->lastInsertId();
@@ -2240,7 +2280,7 @@ $modal = <<<HTML
                             <label style="font-size:13px;"><input type="checkbox" name="reasons[]" value="Lainnya" onchange="document.getElementById('reason_lainnya').style.display = this.checked ? 'block' : 'none'"> Lainnya</label>
                             <textarea id="reason_lainnya" name="reason_lainnya" placeholder="Tulis alasan spesifik Anda..." style="display:none; font-size:13px; padding:8px; border:1px solid #dbe7f0; border-radius:8px; min-height:60px; margin-top:4px;"></textarea>
                         </div>
-                        
+
                         <div style="background:#f0f9ff; padding:12px; border-radius:8px; border:1px solid #bae6fd;">
                             <div style="font-weight:700; font-size:13px; color:#0369a1; margin-bottom:4px;">Posting Ulang Sisa Kuota?</div>
                             <div style="font-size:12px; color:#0c4a6e; margin-bottom:10px;">Apakah Anda ingin mempublikasikan ulang lowongan ini secara otomatis untuk memenuhi sisa kuota?</div>
@@ -2327,7 +2367,7 @@ $modal = <<<HTML
                     <h3 style="font-size:13px; font-weight:700; color:#0f172a; margin:0 0 14px 0; display:flex; align-items:center; gap:6px;">
                         <i class="fa-solid fa-id-card" style="color:#0ea5e9; font-size:13px;"></i> Informasi Profil
                     </h3>
-                    
+
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
                         <div>
                             <div style="font-size:11.5px; color:#64748b; margin-bottom:2px;">Tempat, tanggal lahir</div>
@@ -2420,7 +2460,7 @@ $modal = <<<HTML
                 <!-- Left: Status Lamaran & Dropdown -->
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:12.5px; font-weight:600; color:#475569; white-space:nowrap;">Status Lamaran:</span>
-                    
+
                     <!-- Custom Dropdown Container -->
                     <div style="position:relative;" id="customStatusDropdownContainer">
                         <input type="hidden" name="status" id="applicantStatus" value="Lamaran Masuk">
@@ -2429,7 +2469,7 @@ $modal = <<<HTML
                             <span id="customStatusLabel">Lamaran Masuk</span>
                             <i class="fa-solid fa-chevron-down" style="font-size:10px; color:#94a3b8; margin-left:4px;"></i>
                         </button>
-                        
+
                         <!-- Dropdown Menu (POPS UPWARD ABOVE FOOTER) -->
                         <div id="customStatusDropdownMenu" style="display:none; position:absolute; bottom:calc(100% + 6px); left:0; min-width:210px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.12); padding:5px; z-index:99999;">
                             <div class="status-option-item" onclick="selectApplicantStatus('Lamaran Masuk', '#f59e0b')" style="padding:8px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:500; color:#1e293b; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
@@ -2599,10 +2639,10 @@ $employerJobs->execute([$user['id']]);
 $employerJobs = $employerJobs->fetchAll();
 
 $jobCounts = [
-    'Draft' => 0, 
-    'Menunggu Verifikasi' => 0, 
+    'Draft' => 0,
+    'Menunggu Verifikasi' => 0,
     'ADDITIONAL_DOCUMENT_PENDING' => 0,
-    'Perlu Direvisi' => 0, 
+    'Perlu Direvisi' => 0,
     'Tayang' => 0,
     'Ditolak' => 0,
     'Ditutup' => 0
@@ -2631,7 +2671,7 @@ if (!$employerJobs) {
             $hasSubmitted = !empty($row['additional_doc_file']) || !empty($row['additional_doc_notes']);
             $btnText = $hasSubmitted ? 'Ubah Dokumen' : 'Unggah Dokumen';
             $actionBtn = '<button type="button" class="ghost-btn" style="color:#0284c7;border-color:#bae6fd;background:#f0f9ff;" data-open-modal="modal-doc-' . (int)$row['id'] . '"><i class="fa-solid fa-upload"></i> ' . $btnText . '</button>';
-            
+
             $additionalDocModalsHtml .= '
             <div class="modal" data-modal="modal-doc-' . (int)$row['id'] . '">
                 <div class="modal-backdrop" data-close-modal="modal-doc-' . (int)$row['id'] . '"></div>
@@ -2670,7 +2710,7 @@ if (!$employerJobs) {
             $adminNoteHtml = '<div class="tiny" style="color:#b45309">Catatan admin: ' . e($row['admin_notes']) . '</div>';
         } elseif ($row['status'] === 'ADDITIONAL_DOCUMENT_PENDING') {
             $hasSubmitted = !empty($row['additional_doc_file']) || !empty($row['additional_doc_notes']);
-            $adminNoteHtml = $hasSubmitted 
+            $adminNoteHtml = $hasSubmitted
                 ? '<div class="tiny" style="color:#0284c7;">Dokumen tambahan telah dikirim · Menunggu peninjauan Admin</div>'
                 : '<div class="tiny" style="color:#b45309;">Silakan unggah dokumen tambahan agar dapat diproses Admin</div>';
         }

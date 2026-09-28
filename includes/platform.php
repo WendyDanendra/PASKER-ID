@@ -762,11 +762,11 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
     $startOfMonth = date('Y-m-01 00:00:00');
     $endOfMonth = date('Y-m-t 23:59:59');
 
-    // LAYER 2: Monthly publication frequency of same-KBJI (1-3: normal, 4+: ADDITIONAL_DOCUMENT_PENDING)
-    // Only count PUBLISHED jobs this month (Draft, Pending, Perlu Direvisi, Ditolak do not count).
+    // LAYER 2: Monthly publication frequency of same-KBJI (1-3: normal, 4+: Dokumen/Keterangan Tambahan)
+    // Only count PUBLISHED jobs this month (Draft, Pending, Perlu Direvisi, Ditolak, Dibatalkan, CANCELED do not count).
     // STRICTLY use published_at — no created_at fallback.
     // Child reposts (parent_job_id IS NOT NULL) do not count towards same-KBJI frequency.
-    $stmtL2 = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE user_id = ? AND kbji_code = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND id != ?');
+    $stmtL2 = $pdo->prepare('SELECT COUNT(*) FROM job_posts WHERE user_id = ? AND kbji_code = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND status NOT IN ("Draft", "Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi", "Pending", "Perlu Direvisi", "Perlu Revisi", "Ditolak", "Dibatalkan", "CANCELED") AND id != ?');
     $stmtL2->execute([$userId, $kbjiCode, $startOfMonth, $endOfMonth, $jobId ?? 0]);
     $publishedSameKbjiCount = (int)$stmtL2->fetchColumn();
 
@@ -775,22 +775,24 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
     // LAYER 3: Monthly total requested quota limit (max 10)
     // Sum quota of original PUBLISHED jobs in current month + new requested quota.
     // Continuation reposts do not add to monthly quota counter.
-    // STRICTLY use published_at — no created_at fallback.
-    $stmtL3 = $pdo->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND id != ?');
+    // For 1st-3rd submissions, Layer 3 is evaluated immediately upon clicking Kirim Lowongan.
+    // For 4th+ submissions, Layer 3 is evaluated when Admin clicks "Setujui & Lanjutkan".
+    $stmtL3 = $pdo->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND published_at IS NOT NULL AND published_at BETWEEN ? AND ? AND status NOT IN ("Draft", "Menunggu Verifikasi", "Dikirim/Menunggu Verifikasi", "Pending", "Perlu Direvisi", "Perlu Revisi", "Ditolak", "Dibatalkan", "CANCELED") AND id != ?');
     $stmtL3->execute([$userId, $startOfMonth, $endOfMonth, $jobId ?? 0]);
     $currentMonthlyPublishedQuota = (int)$stmtL3->fetchColumn();
 
     $totalQuota = $currentMonthlyPublishedQuota + $requestedQuota;
-    if ($totalQuota > 10) {
+    if (!$additionalDocRequired && $totalQuota > 10) {
         return [
             'allowed' => false,
             'layer' => 3,
             'error_code' => 'MONTHLY_QUOTA_EXCEEDED',
-            'error_message' => 'Total kuota lowongan yang dipublikasikan bulan ini melebihi batas maksimal 10 posisi (saat ini terpakai: ' . $currentMonthlyPublishedQuota . ' posisi, diminta: ' . $requestedQuota . ' posisi, total: ' . $totalQuota . ' posisi). Pengajuan lowongan dibatalkan/ditahan sesuai aturan FSD.',
-            'additional_doc_required' => $additionalDocRequired,
+            'error_message' => 'Batas maksimal kebutuhan tenaga kerja Pemberi Kerja Individu adalah 10 orang dalam satu bulan kalender. Total kuota yang diajukan (' . $totalQuota . ' orang) melebihi batas.',
+            'additional_doc_required' => false,
             'current_monthly_quota' => $currentMonthlyPublishedQuota,
             'requested_quota' => $requestedQuota,
             'total_quota' => $totalQuota,
+            'published_same_kbji_count' => $publishedSameKbjiCount,
         ];
     }
 

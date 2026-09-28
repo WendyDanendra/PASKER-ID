@@ -2400,7 +2400,7 @@
                              <div class="chart-warning-banner" id="chartWarningBanner">
                                  <i class="fa-solid fa-triangle-exclamation" style="color:#d97706; font-size:14px; flex-shrink:0;"></i>
                                  <span>
-                                     <?php 
+                                     <?php
                                      $parts = [];
                                      if ($jobCounts['menunggu'] > 0) $parts[] = '<strong>' . $jobCounts['menunggu'] . ' lowongan</strong> menunggu verifikasi';
                                      if ($jobCounts['revisi'] > 0) $parts[] = '<strong>' . $jobCounts['revisi'] . ' lowongan</strong> perlu direvisi';
@@ -2601,7 +2601,7 @@
                                             <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
                                         </button>
 
-                                        <form method="post" action="dashboard.php#lowongan" style="display:inline;">
+                                        <form method="post" action="dashboard.php#lowongan" style="display:inline;" onsubmit="return handleKirimLowongan(event, <?php echo (int)$detailJob['id']; ?>, '<?php echo e($detailJob['kbji_code'] ?? ''); ?>', <?php echo (int)($kbjiPublishedCounts[$detailJob['kbji_code'] ?? ''] ?? 0); ?>)">
                                             <input type="hidden" name="send_job" value="1">
                                             <input type="hidden" name="job_id" value="<?php echo $detailJob['id']; ?>">
                                             <button type="submit" class="btn-primary-custom" style="background:#0ea5e9; color:#fff; border:none; padding:9px 18px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 3px rgba(14,165,233,0.3);">
@@ -2631,7 +2631,7 @@
                                             <button type="button" onclick="toggleJobLainnyaDropdown(event)" style="border:1px solid #cbd5e1; background:#fff; color:#0f172a; padding:8px 16px; border-radius:10px; font-weight:600; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;">
                                                 <i class="fa-solid fa-ellipsis-vertical" style="color:#475569; font-size:13px;"></i> Lainnya
                                             </button>
-                                            
+
                                             <!-- Dropdown Menu -->
                                             <div id="jobLainnyaDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; min-width:185px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.04); padding:6px; z-index:99999;">
                                                 <button type="button" onclick="openJobPublicView(<?php echo (int)$detailJob['id']; ?>)" style="width:100%; text-align:left; padding:9px 12px; border:none; background:none; border-radius:8px; font-size:13px; font-weight:500; color:#1e293b; cursor:pointer; display:flex; align-items:center; gap:10px; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
@@ -2666,7 +2666,7 @@
                                         $vNotes = $detailJob['verifier_notes'] ?: ($detailJob['admin_notes'] ?: ($isRejected ? 'Lowongan tidak memenuhi standar ketentuan yang berlaku.' : 'Perbaiki lowongan Anda sesuai catatan verifikator di bawah, lalu ajukan ulang untuk diverifikasi.'));
                                         $vChecklistRaw = json_decode($detailJob['compliance_checklist'] ?? '{}', true) ?: [];
                                         $vDate = !empty($detailJob['updated_at']) ? date('d M Y', strtotime($detailJob['updated_at'])) : date('d M Y');
-                                        
+
                                         $stdCategories = [
                                             'Tidak sesuai dengan aturan anti diskriminasi' => 'Kesesuaian dengan aturan anti diskriminasi',
                                             'Data tidak lengkap' => 'Kelengkapan data',
@@ -2723,7 +2723,7 @@
                                         <!-- Inner Box: Hasil Pemeriksaan Checklist -->
                                         <div style="background:#fff; border:1px solid #f1f5f9; border-radius:12px; padding:18px 20px; margin-top:12px;">
                                             <div style="font-size:13.5px; font-weight:800; color:#0f172a; margin-bottom:16px;">Hasil Pemeriksaan Checklist</div>
-                                            
+
                                             <div style="display:flex; flex-direction:column; gap:14px;">
                                                 <?php foreach ($stdCategories as $catKey => $catLabel): ?>
                                                     <?php
@@ -2844,7 +2844,7 @@
                                                 <button type="button" style="border:1px solid #cbd5e1; background:#fff; color:#475569; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
                                                     <i class="fa-solid fa-filter"></i> Filter
                                                 </button>
-                                                
+
                                                 <div style="display:flex; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; background:#fff;">
                                                     <button type="button" id="btnAppKanban" onclick="switchAppDisplayView('kanban')" title="Tampilan Kanban" style="padding:7px 12px; border:none; background:#f1f5f9; color:#0f172a; cursor:pointer; font-size:13px;">
                                                         <i class="fa-solid fa-table-columns"></i>
@@ -2904,7 +2904,7 @@
                                                                             </div>
                                                                             <i class="fa-solid fa-paperclip" style="color:#cbd5e1; font-size:12px; margin-top:2px;"></i>
                                                                         </div>
-                                                                        
+
                                                                         <div style="font-size:11px; color:#64748b; display:flex; flex-direction:column; gap:4px; border-top:1px dashed #f1f5f9; padding-top:8px;">
                                                                             <div style="display:flex; align-items:center; gap:6px;">
                                                                                 <i class="fa-regular fa-building" style="color:#94a3b8; font-size:10px;"></i> Fresh Graduate
@@ -3167,6 +3167,16 @@
                         <div class="desc neutral">Sedang tayang</div>
                     </div>
                 </div>
+
+                <?php if (!empty($kbjiReached3)): ?>
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:flex-start; gap:12px; color:#1e40af; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+                        <i class="fa-solid fa-circle-info" style="font-size:18px; color:#3b82f6; margin-top:2px; flex-shrink:0;"></i>
+                        <div style="font-size:13px; line-height:1.5;">
+                            <strong>Informasi Publikasi Jabatan (KBJI: <?php echo implode(', ', array_map('e', $kbjiReached3)); ?>)</strong><br>
+                            Anda telah mempublikasikan 3 lowongan dengan jabatan/KBJI yang sama pada bulan ini. Pengajuan berikutnya dengan jabatan yang sama akan memerlukan Dokumen/Keterangan Tambahan untuk ditinjau oleh Admin.
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <div class="section-card">
                     <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px;">
@@ -3483,7 +3493,8 @@
                                                                          <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
                                                                      </button>
                                                                  </div>
-                                                                 <form method="post" action="dashboard.php#lowongan" style="display:inline;">
+
+<form method="post" action="dashboard.php#lowongan" style="display:inline;" onsubmit="return handleKirimLowongan(event, <?php echo (int)$j['id']; ?>, '<?php echo e($j['kbji_code'] ?? ''); ?>', <?php echo (int)($kbjiPublishedCounts[$j['kbji_code'] ?? ''] ?? 0); ?>)">
                                                                      <input type="hidden" name="send_job" value="1">
                                                                      <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
                                                                      <button type="submit" class="primary-btn" style="background:#0284c7;">
@@ -3495,7 +3506,8 @@
                                                                      <button type="button" class="secondary-btn" style="border:1px solid #cbd5e1;" data-revise-job="<?php echo $j['id']; ?>" data-close-modal="detail-draft-<?php echo $j['id']; ?>">
                                                                          <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
                                                                      </button>
-                                                                     <form method="post" action="dashboard.php#lowongan" style="display:inline;">
+
+<form method="post" action="dashboard.php#lowongan" style="display:inline;" onsubmit="return handleKirimLowongan(event, <?php echo (int)$j['id']; ?>, '<?php echo e($j['kbji_code'] ?? ''); ?>', <?php echo (int)($kbjiPublishedCounts[$j['kbji_code'] ?? ''] ?? 0); ?>)">
                                                                          <input type="hidden" name="send_job" value="1">
                                                                          <input type="hidden" name="job_id" value="<?php echo $j['id']; ?>">
                                                                          <button type="submit" class="primary-btn" style="background:#0284c7;">
@@ -4296,7 +4308,7 @@
                     <i class="fa-solid fa-circle-check"></i>
                 </div>
                 <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 16px; text-align: center;">Pengajuan Profil Berhasil</h3>
-                
+
                 <!-- Information Bar: Menunggu Verifikasi (Warna biru dengan ikon jam, tanpa button x) -->
                 <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #1d4ed8; font-size: 13px; font-weight: 700; margin-bottom: 18px;">
                     <i class="fa-regular fa-clock" style="font-size: 15px; color: #2563eb;"></i>
@@ -4354,6 +4366,141 @@
             </div>
         </div>
     <?php endif; ?>
+
+    <!-- ─── MODAL DOKUMEN/KETERANGAN TAMBAHAN (LAPISAN 2) ────────────────────── -->
+    <div class="modal-backdrop <?php echo (isset($_GET['open_additional_doc_modal']) && (int)$_GET['open_additional_doc_modal'] > 0) ? 'open' : ''; ?>" data-modal="modal-additional-doc" id="modalAdditionalDoc">
+        <div class="modal-panel" style="width: min(520px, 94vw); max-height: 90vh; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);" role="dialog" aria-labelledby="additionalDocTitle">
+            <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; background: #fff;">
+                <div>
+                    <h3 id="additionalDocTitle" style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">Dokumen/Keterangan Tambahan</h3>
+                    <p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.5;">
+                        Anda telah mempublikasikan 3 lowongan dengan jabatan/KBJI yang sama pada bulan ini. Jelaskan alasan kebutuhan membuka kembali jabatan tersebut.
+                    </p>
+                </div>
+                <button type="button" class="modal-close" data-close-modal="modal-additional-doc" onclick="closeAdditionalDocModal()" aria-label="Tutup" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px; line-height: 1; border-radius: 6px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form method="post" action="dashboard.php" enctype="multipart/form-data" id="formAdditionalDoc" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; margin: 0;">
+                <input type="hidden" name="send_job" value="1">
+                <input type="hidden" name="job_id" id="additionalDocJobId" value="<?php echo isset($_GET['open_additional_doc_modal']) ? (int)$_GET['open_additional_doc_modal'] : ''; ?>">
+
+                <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="additional_notes_input" style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+                            Alasan / Keterangan <span style="color: #ef4444;">*</span>
+                        </label>
+                        <textarea
+                            name="additional_notes"
+                            id="additional_notes_input"
+                            rows="4"
+                            required
+                            placeholder="Tuliskan alasan kebutuhan membuka kembali jabatan ini..."
+                            style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; color: #0f172a; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; resize: vertical; min-height: 90px; outline: none; transition: border-color 0.2s;"
+                            onfocus="this.style.borderColor='#0284c7'"
+                            onblur="this.style.borderColor='#cbd5e1'"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+                            File Pendukung
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <input type="file" name="additional_file" id="additional_file_input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;" onchange="updateAdditionalFileLabel(this)">
+                            <button type="button" onclick="document.getElementById('additional_file_input').click()" class="btn-secondary-custom" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-file-arrow-up"></i> Pilih file untuk diunggah
+                            </button>
+                            <span id="additionalFileChosenLabel" style="font-size: 12px; color: #64748b; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;">Belum ada file dipilih</span>
+                        </div>
+                        <small style="display: block; font-size: 11px; color: #94a3b8; margin-top: 5px;">Format didukung: PDF, JPG, PNG, DOC, DOCX (Maks. 5MB)</small>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; align-items: center; gap: 10px; background: #fafafa;">
+                    <button type="button" class="btn-secondary-custom" data-close-modal="modal-additional-doc" onclick="closeAdditionalDocModal()" style="padding: 9px 18px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; background: #fff; color: #475569; border-radius: 8px; cursor: pointer;">
+                        Batalkan
+                    </button>
+                    <button type="submit" class="btn-primary-custom" style="padding: 9px 20px; font-size: 13px; font-weight: 700; border: none; background: #0284c7; color: #fff; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);">
+                        <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function updateAdditionalFileLabel(input) {
+        const label = document.getElementById('additionalFileChosenLabel');
+        if (label && input.files && input.files[0]) {
+            label.textContent = input.files[0].name;
+            label.style.fontStyle = 'normal';
+            label.style.color = '#0284c7';
+            label.style.fontWeight = '600';
+        } else if (label) {
+            label.textContent = 'Belum ada file dipilih';
+            label.style.fontStyle = 'italic';
+            label.style.color = '#64748b';
+            label.style.fontWeight = 'normal';
+        }
+    }
+
+    function handleKirimLowongan(event, jobId, kbjiCode, publishedCount) {
+        if (publishedCount >= 3) {
+            event.preventDefault();
+            openAdditionalDocModal(jobId, kbjiCode);
+            return false;
+        }
+        return true;
+    }
+
+    function openAdditionalDocModal(jobId, kbjiCode) {
+        const modal = document.getElementById('modalAdditionalDoc');
+        if (!modal) return;
+        const idInput = document.getElementById('additionalDocJobId');
+        if (idInput) idInput.value = jobId;
+
+        document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+            if (m.id !== 'modalAdditionalDoc') m.classList.remove('open');
+        });
+
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAdditionalDocModal() {
+        const modal = document.getElementById('modalAdditionalDoc');
+        if (modal) {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+            const form = document.getElementById('formAdditionalDoc');
+            if (form) form.reset();
+            const fileLabel = document.getElementById('additionalFileChosenLabel');
+            if (fileLabel) {
+                fileLabel.textContent = 'Belum ada file dipilih';
+                fileLabel.style.fontStyle = 'italic';
+                fileLabel.style.color = '#64748b';
+                fileLabel.style.fontWeight = 'normal';
+            }
+            if (window.history && window.history.replaceState) {
+                const url = new URL(window.location.href);
+                if (url.searchParams.has('open_additional_doc_modal')) {
+                    url.searchParams.delete('open_additional_doc_modal');
+                    window.history.replaceState({}, document.title, url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash);
+                }
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openDocJobId = urlParams.get('open_additional_doc_modal');
+        if (openDocJobId) {
+            openAdditionalDocModal(openDocJobId, '');
+        }
+    });
+    </script>
 
     <!-- ─── MODAL NOTIFIKASI LONCENG (SECTION B) ──────────────────────────────── -->
     <div class="modal-backdrop" data-modal="modal-notifications">
@@ -4504,12 +4651,12 @@
                 <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Konfirmasi</h3>
                 <button type="button" onclick="closeConfirmCloseJobModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            
+
             <!-- Body -->
             <div style="font-size:13.5px; color:#334155; line-height:1.6; margin-bottom:24px;">
                 Lowongan yang ditutup tidak akan menerima lamaran baru lagi, namun data pelamarnya tetap dapat dilihat. Anda dapat membuka kembali lowongan ini kapan saja. Tutup lowongan ini?
             </div>
-            
+
             <!-- Action Form -->
             <form method="post" action="dashboard.php#lowongan" id="formConfirmCloseJob" onsubmit="event.preventDefault(); handleConfirmCloseJobContinue();">
                 <input type="hidden" name="close_job" value="1">
@@ -4538,7 +4685,7 @@
                 </div>
                 <button type="button" onclick="closeUnfulfilledQuotaModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer; padding:4px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            
+
             <!-- Description -->
             <div style="font-size:13px; color:#475569; line-height:1.6; margin-bottom:18px;">
                 Anda menetapkan <span id="unfulfilledAcceptedCount" style="font-weight:700; color:#0f172a;">1</span> dari <span id="unfulfilledTotalQuota" style="font-weight:700; color:#0f172a;">2</span> kuota yang tersedia. Mohon isi alasan mengapa sisa kuota belum terpenuhi. Pengguna wajib memilih minimal 1 alasan. Sistem menyediakan 5 pilihan alasan yang dapat dipilih menggunakan checkbox. Apabila alasan yang sesuai tidak tersedia, pengguna dapat memilih opsi ke-6 “Lainnya” dan wajib mengisi alasan secara manual.
