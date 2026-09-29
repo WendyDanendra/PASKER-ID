@@ -1802,6 +1802,13 @@ window.CITY_MASTER = [
                     $hasDoc = !empty($docPermissionName);
                     $docDisplayName = $hasDoc ? basename($docPermissionName) : 'Tidak ada dokumen';
                     $photoLocationName = $selectedEmployer['workplace_photo'] ?: ($selectedEmployer['doc_location_photo'] ?: '');
+                    if (empty($photoLocationName) || (!file_exists(__DIR__ . '/' . ltrim($photoLocationName, '/')) && !file_exists($photoLocationName))) {
+                        if (file_exists(__DIR__ . '/public/images/foto-lokasi.png')) {
+                            $photoLocationName = 'public/images/foto-lokasi.png';
+                        } elseif (file_exists(__DIR__ . '/public/images/jobi-mascot.png')) {
+                            $photoLocationName = 'public/images/jobi-mascot.png';
+                        }
+                    }
                     $hasPhoto = !empty($photoLocationName);
                     $photoDisplayName = $hasPhoto ? basename($photoLocationName) : 'Tidak ada foto';
                     $photoCountLabel = $hasPhoto ? '1 Foto Terlampir' : 'Tidak ada foto';
@@ -3415,6 +3422,13 @@ document.addEventListener('click', function(e) {
                                                     $vDocName = $vHasDoc ? basename($vDocPath) : 'Tidak ada dokumen';
 
                                                     $vPhotoPath = $selectedEmployer['workplace_photo'] ?: ($selectedEmployer['doc_location_photo'] ?: '');
+                    if (empty($vPhotoPath) || (!file_exists(__DIR__ . '/' . ltrim($vPhotoPath, '/')) && !file_exists($vPhotoPath))) {
+                        if (file_exists(__DIR__ . '/public/images/foto-lokasi.png')) {
+                            $vPhotoPath = 'public/images/foto-lokasi.png';
+                        } elseif (file_exists(__DIR__ . '/public/images/jobi-mascot.png')) {
+                            $vPhotoPath = 'public/images/jobi-mascot.png';
+                        }
+                    }
                                                     $vHasPhoto = !empty($vPhotoPath);
                                                     $vPhotoName = $vHasPhoto ? basename($vPhotoPath) : 'Tidak ada foto';
                                                 ?>
@@ -3835,6 +3849,13 @@ document.addEventListener('click', function(e) {
                                                     </label>
                                                     <?php
                                                         $adminPhoto = $selectedEmployer['workplace_photo'] ?: ($selectedEmployer['doc_location_photo'] ?: '');
+                    if (empty($adminPhoto) || (!file_exists(__DIR__ . '/' . ltrim($adminPhoto, '/')) && !file_exists($adminPhoto))) {
+                        if (file_exists(__DIR__ . '/public/images/foto-lokasi.png')) {
+                            $adminPhoto = 'public/images/foto-lokasi.png';
+                        } elseif (file_exists(__DIR__ . '/public/images/jobi-mascot.png')) {
+                            $adminPhoto = 'public/images/jobi-mascot.png';
+                        }
+                    }
                                                         $adminHasPhoto = !empty($adminPhoto);
                                                         $adminPhotoName = $adminHasPhoto ? basename($adminPhoto) : '';
                                                     ?>
