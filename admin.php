@@ -1173,7 +1173,7 @@ if ($view === 'verifikasi_job') {
         FROM job_posts j
         JOIN users u ON u.id = j.user_id
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
-        WHERE j.status NOT IN ("Draft", "draft")
+        WHERE j.status NOT IN ("Draft", "draft", "Ditutup", "ditutup", "Closed", "closed")
     SQL;
     $paramsCommon = [];
 
@@ -1300,7 +1300,8 @@ if ($view === 'verifikasi_job') {
         $stmtSel->execute([$detailId]);
         $selectedJob = $stmtSel->fetch();
         if ($selectedJob) {
-            if (strcasecmp((string)($selectedJob['status'] ?? ''), 'Draft') === 0) {
+            $stCheck = strtolower((string)($selectedJob['status'] ?? ''));
+            if ($stCheck === 'draft' || $stCheck === 'ditutup' || $stCheck === 'closed') {
                 $selectedJob = null;
             }
         }
