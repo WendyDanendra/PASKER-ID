@@ -273,8 +273,11 @@
         }
 
         .main {
-            flex: 1;
+            flex: 1 1 0;
             min-width: 0;
+            min-height: 0;
+            height: 100%;
+            max-height: 100%;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -416,10 +419,13 @@
         }
 
         .content {
-            flex: 1;
+            flex: 1 1 0;
             min-height: 0;
+            height: 100%;
             overflow-y: auto;
-            padding: 16px 18px 28px;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px 18px 60px;
         }
 
         .page {
@@ -1786,7 +1792,7 @@
             </div>
         </div>
 
-        <div class="main" style="flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; height:100%; overflow:hidden;">
+        <div class="main" style="flex:1 1 0; display:flex; flex-direction:column; min-width:0; min-height:0; height:100%; overflow:hidden;">
             <!-- TOPBAR (SCREENSHOT 1) -->
             <header class="new-topbar">
                 <div class="topbar-nav-arrows">
@@ -1819,7 +1825,7 @@
                 </div>
             </header>
 
-            <div class="content" style="flex:1; min-height:0; overflow-y:auto; background:#f8fafc;">
+            <div class="content" style="flex:1 1 0; min-height:0; height:100%; overflow-y:auto; overflow-x:hidden; background:#f8fafc; padding:20px 24px 60px;">
                 <!-- FLASH TOAST NOTIFICATION -->
                 <?php 
                 $isAnyModalOpenOnLoad = !empty($_GET['open_draft']) || !empty($_GET['kbji_conflict']) || !empty($kbjiDuplicateError) || !empty($pendingPopupMessage) || !empty($_SESSION['kbji_duplicate_error']) || !empty($_GET['layer3_error']);
