@@ -114,22 +114,26 @@ if (file_exists($pkiCssPath)) {
     <div class="pki-grid-2">
         <div class="pki-field">
             <label class="pki-field-label" id="label_profession" for="pki_profession">
-                Industri / Sektor <span class="req">*</span>
+                Jenis Usaha Individu <span class="req">*</span>
                 <span class="pki-tooltip" tabindex="0" role="tooltip">
                     <?php echo $infoIconSvg; ?>
-                    <span class="tooltip-popover">Pilih industri atau sektor yang paling sesuai dengan kegiatan utama usaha Anda.</span>
+                    <span class="tooltip-popover">Pilih jenis usaha individu yang paling sesuai dengan kegiatan utama Anda.</span>
                 </span>
             </label>
             <select name="profession" id="pki_profession" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
-                <option value="">Pilih industri / sektor</option>
+                <option value="">Pilih jenis usaha individu</option>
                 <?php
                 $professions = [
-                    'Kuliner & Katering',
-                    'Perdagangan & Eceran',
-                    'Jasa Perorangan / Rumah Tangga',
-                    'Pertanian & Peternakan',
-                    'Teknologi & Kreatif',
-                    'Lainnya'
+                    'Praktik Dokter Umum',
+                    'Praktik Dokter Gigi',
+                    'Praktik Bidan',
+                    'Notaris',
+                    'Konsultan Hukum',
+                    'Psikolog',
+                    'Arsitek',
+                    'Konsultan Pajak',
+                    'Guru Privat',
+                    'Bimbingan Belajar (Bimbel)',
                 ];
                 foreach ($professions as $prof) {
                     $selected = ($vProfession === $prof) ? 'selected' : '';
@@ -140,7 +144,7 @@ if (file_exists($pkiCssPath)) {
                 }
                 ?>
             </select>
-            <div class="pki-field-helper" id="helper_profession">Pilih industri atau sektor yang paling sesuai dengan kegiatan utama usaha.</div>
+            <div class="pki-field-helper" id="helper_profession">Pilih jenis usaha individu yang paling sesuai dengan kegiatan utama Anda.</div>
         </div>
         <div class="pki-field">
             <label class="pki-field-label" id="label_npwp" for="pki_npwp">

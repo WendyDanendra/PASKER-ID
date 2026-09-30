@@ -776,7 +776,7 @@
         nik: 'NIK terdiri dari 16 digit.',
         phone: 'Gunakan nomor telepon aktif.',
         whatsapp: 'Gunakan nomor WhatsApp aktif.',
-        profession: 'Pilih industri atau sektor yang paling sesuai dengan kegiatan utama usaha.',
+        profession: 'Pilih jenis usaha individu yang paling sesuai dengan kegiatan utama Anda.',
         npwp: 'NPWP 15 atau 16 digit.',
         location: 'Pilih lokasi secara berjenjang sampai Kelurahan/Desa.',
         address: 'Tuliskan alamat lengkap tempat usaha/kegiatan.',
@@ -912,10 +912,10 @@
                 clearFieldError('whatsapp');
             }
 
-            // 5. Industri / Sektor
+            // 5. Jenis Usaha Individu
             const profession = document.getElementById('pki_profession')?.value?.trim();
             if (!profession) {
-                flagError('profession', 'Pilih industri atau sektor yang sesuai.', document.getElementById('pki_profession'));
+                flagError('profession', 'Pilih jenis usaha individu yang sesuai.', document.getElementById('pki_profession'));
             } else {
                 clearFieldError('profession');
             }
