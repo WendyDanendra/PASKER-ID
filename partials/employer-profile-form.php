@@ -300,10 +300,10 @@ if (file_exists($pkiCssPath)) {
     <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">3. FILE & BUKTI TEMPAT USAHA</div>
 
     <div class="pki-grid-2">
-        <!-- File Pendukung -->
+        <!-- Dokumen Perizinan Usaha -->
         <div class="pki-field">
             <label class="pki-field-label" id="label_permit_document">
-                File Pendukung <span class="req">*</span>
+                Dokumen Perizinan Usaha <span class="req">*</span>
                 <span class="pki-tooltip" tabindex="0" role="tooltip">
                     <?php echo $infoIconSvg; ?>
                     <span class="tooltip-popover">Unggah file yang mendukung validitas identitas atau kegiatan usaha Pemberi Kerja Individu.</span>

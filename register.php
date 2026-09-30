@@ -63,7 +63,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
                 $permitSize = (int) ($_FILES['permit_document']['size'] ?? 0);
                 $permitErr = (int) ($_FILES['permit_document']['error'] ?? UPLOAD_ERR_NO_FILE);
                 if ($permitErr !== UPLOAD_ERR_OK || !in_array($permitExt, ['pdf', 'docx'], true) || $permitSize > 2 * 1024 * 1024) {
-                    flash('error', 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.');
+                    flash('error', 'Dokumen Perizinan Usaha harus berformat PDF atau Docx dengan ukuran maksimal 2MB.');
                     redirect('register.php');
                     exit;
                 }

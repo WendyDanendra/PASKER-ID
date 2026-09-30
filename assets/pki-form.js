@@ -1000,13 +1000,13 @@
                 clearFieldError('postal_code');
             }
 
-            // 10. File Pendukung
+            // 10. Dokumen Perizinan Usaha
             const permitFileInput = document.getElementById('pki_input_permit_document');
             const existingPermit = document.getElementById('pki_existing_permit_document')?.value?.trim();
             const permitFile = permitFileInput?.files?.[0];
             const hasPermit = Boolean(permitFile) || Boolean(existingPermit);
             if (!hasPermit) {
-                flagError('permit_document', 'File Pendukung wajib diunggah minimal 1 dokumen.', document.getElementById('pki_box_permit_document'));
+                flagError('permit_document', 'Dokumen Perizinan Usaha wajib diunggah minimal 1 dokumen.', document.getElementById('pki_box_permit_document'));
             } else if (permitFile) {
                 const permitExt = (permitFile.name.split('.').pop() || '').toLowerCase();
                 if (!['pdf', 'docx'].includes(permitExt) || permitFile.size > 2 * 1024 * 1024) {

@@ -2123,7 +2123,7 @@ window.CITY_MASTER = [
                                 <!-- File Pendukung & Foto Bukti -->
                                 <div style="border-top:1px solid #f1f5f9; padding-top:16px; margin-top:14px;">
                                     <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-                                        <i class="fa-regular fa-folder-closed" style="color:#0284c7;"></i> File Pendukung & Foto Bukti
+                                        <i class="fa-regular fa-folder-closed" style="color:#0284c7;"></i> Dokumen Perizinan Usaha & Foto Bukti
                                     </div>
                                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
                                         <!-- File Pendukung Card -->
@@ -2133,7 +2133,7 @@ window.CITY_MASTER = [
                                                     <i class="fa-solid fa-file-pdf" style="font-size:16px;"></i>
                                                 </div>
                                                 <div style="min-width:0;">
-                                                    <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">File Pendukung</div>
+                                                    <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase;">Dokumen Perizinan Usaha</div>
                                                     <div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?php echo e($docDisplayName); ?>"><?php echo e($docDisplayName); ?></div>
                                                 </div>
                                             </div>
@@ -3536,7 +3536,7 @@ document.addEventListener('click', function(e) {
                                                     $vPhotoName = $vHasPhoto ? basename($vPhotoPath) : 'Tidak ada foto';
                                                 ?>
                                                 <tr style="border-bottom:1px solid #f1f5f9;">
-                                                    <td style="padding:10px 14px; font-weight:600; color:#334155;">File Pendukung</td>
+                                                    <td style="padding:10px 14px; font-weight:600; color:#334155;">Dokumen Perizinan Usaha</td>
                                                     <td style="padding:10px 14px; color:#0f172a;">
                                                         <?php if ($vHasDoc): ?>
                                                             <div style="display:flex; align-items:center; gap:10px;">
@@ -3900,7 +3900,7 @@ document.addEventListener('click', function(e) {
                                                 <!-- FILE PENDUKUNG -->
                                                 <div>
                                                     <label style="font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
-                                                        File Pendukung <span style="color:#ef4444;">*</span>
+                                                        Dokumen Perizinan Usaha <span style="color:#ef4444;">*</span>
                                                     </label>
                                                     <?php
                                                         $adminDoc = $selectedEmployer['permit_document'] ?: ($selectedEmployer['doc_permission'] ?: '');
@@ -3935,10 +3935,10 @@ document.addEventListener('click', function(e) {
                                                             </div>
                                                         </div>
                                                         <input type="hidden" name="existing_permit_document" value="<?php echo e($adminDoc); ?>">
-                                                        <div style="font-size:11.5px; font-weight:600; color:#64748b; margin-bottom:4px;">Ganti File Pendukung (Opsional):</div>
+                                                        <div style="font-size:11.5px; font-weight:600; color:#64748b; margin-bottom:4px;">Ganti Dokumen Perizinan Usaha (Opsional):</div>
                                                     <?php else: ?>
                                                         <div style="background:#fef2f2; border:1px dashed #fca5a5; border-radius:8px; padding:10px 12px; font-size:12px; color:#991b1b; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                                                            <i class="fa-solid fa-circle-exclamation"></i> Belum ada file pendukung terunggah. Silakan unggah berkas.
+                                                            <i class="fa-solid fa-circle-exclamation"></i> Belum ada dokumen perizinan usaha terunggah. Silakan unggah berkas.
                                                         </div>
                                                     <?php endif; ?>
                                                     <input type="file" name="permit_document" accept=".pdf,.docx" style="width:100%; padding:8px 10px; border:1.5px dashed #cbd5e1; border-radius:8px; font-size:12px; background:#ffffff; box-sizing:border-box;">
@@ -4206,12 +4206,12 @@ document.addEventListener('click', function(e) {
                     </div>
                 </div>
 
-                <!-- MODAL LIHAT FILE PENDUKUNG -->
+                <!-- MODAL LIHAT DOKUMEN PERIZINAN USAHA -->
                 <div class="modal-backdrop" data-modal="modal-view-doc">
                     <div class="modal-panel" style="width:min(800px, 94vw); max-height:90vh; display:flex; flex-direction:column;">
                         <div class="modal-header">
                             <div>
-                                <div class="modal-title">File Pendukung</div>
+                                <div class="modal-title">Dokumen Perizinan Usaha</div>
                                 <div class="modal-subtitle"><?php echo e($vDocName); ?> &bull; <?php echo e($selectedEmployer['owner_name'] ?: $selectedEmployer['name']); ?></div>
                             </div>
                                 <button type="button" data-close-modal="modal-view-doc" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
@@ -5584,7 +5584,7 @@ document.addEventListener('click', function(e) {
                                     <span style="color:#64748b; font-weight:500;">Alasan</span>
                                     <div style="color:#1e293b; line-height:1.5;">: <?php echo nl2br(e($alasanText)); ?></div>
 
-                                    <span style="color:#64748b; font-weight:500;">File Pendukung</span>
+                                    <span style="color:#64748b; font-weight:500;">Dokumen Perizinan Usaha</span>
                                     <div style="display:flex; flex-direction:column; gap:8px;">
                                         <div style="display:flex; align-items:center; gap:8px;">
                                             :
@@ -5624,7 +5624,7 @@ document.addEventListener('click', function(e) {
                                             <?php if ($isImgFile): ?>
                                                 <div style="margin-top:4px; margin-left:10px;">
                                                     <a href="<?php echo e($docLink); ?>" target="_blank">
-                                                        <img src="<?php echo e($docLink); ?>" alt="Preview File Pendukung" style="max-width:260px; max-height:180px; border-radius:8px; border:1px solid #cbd5e1; object-fit:cover; box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+                                                        <img src="<?php echo e($docLink); ?>" alt="Preview Dokumen Perizinan Usaha" style="max-width:260px; max-height:180px; border-radius:8px; border:1px solid #cbd5e1; object-fit:cover; box-shadow:0 2px 4px rgba(0,0,0,0.08);">
                                                     </a>
                                                 </div>
                                             <?php endif; ?>

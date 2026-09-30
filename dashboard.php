@@ -471,8 +471,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $permitSize = (int) ($_FILES['permit_document']['size'] ?? 0);
             $permitErr = (int) ($_FILES['permit_document']['error'] ?? UPLOAD_ERR_NO_FILE);
             if ($permitErr !== UPLOAD_ERR_OK || !in_array($permitExt, ['pdf', 'docx'], true) || $permitSize > 2 * 1024 * 1024) {
-                $_SESSION['profile_modal_error'] = 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.';
-                flash('error', 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.');
+                $_SESSION['profile_modal_error'] = 'Dokumen Perizinan Usaha harus berformat PDF atau Docx dengan ukuran maksimal 2MB.';
+                flash('error', 'Dokumen Perizinan Usaha harus berformat PDF atau Docx dengan ukuran maksimal 2MB.');
                 redirect('dashboard.php?open_profile=1');
                 exit;
             }
@@ -504,8 +504,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
 
         if (empty($permitDoc)) {
-            $_SESSION['profile_modal_error'] = 'File Pendukung wajib diunggah minimal 1 dokumen.';
-            flash('error', 'File Pendukung wajib diunggah minimal 1 dokumen.');
+            $_SESSION['profile_modal_error'] = 'Dokumen Perizinan Usaha wajib diunggah minimal 1 dokumen.';
+            flash('error', 'Dokumen Perizinan Usaha wajib diunggah minimal 1 dokumen.');
             redirect('dashboard.php?open_profile=1');
             exit;
         }
