@@ -18,26 +18,6 @@ $jobsStatement = db()->prepare('SELECT * FROM job_posts WHERE user_id = ? ORDER 
 $jobsStatement->execute([$user['id']]);
 $jobs = $jobsStatement->fetchAll() ?: [];
 
-// Dynamically compute accepted_count for each job post
-foreach ($jobs as &$jItem) {
-    $accAppsStmt = db()->prepare("
-        SELECT COUNT(*) FROM job_applications 
-        WHERE (job_id = ? OR job_id IN (SELECT id FROM job_posts WHERE parent_job_id = ?)) 
-          AND status IN ('Diterima', 'ACCEPTED', 'accepted', 'Lolos Verifikasi', 'Diterima Bekerja')
-    ");
-    $accAppsStmt->execute([(int)$jItem['id'], (int)$jItem['id']]);
-    $dbAccCount = (int)$accAppsStmt->fetchColumn();
-
-    $jItem['accepted_count'] = max($dbAccCount, (int)($jItem['accepted_count'] ?? 0));
-    if (!empty($jItem['parent_job_id'])) {
-        $parentStmt = db()->prepare("SELECT accepted_count FROM job_posts WHERE id = ?");
-        $parentStmt->execute([(int)$jItem['parent_job_id']]);
-        $parentAcc = (int)$parentStmt->fetchColumn();
-        $jItem['accepted_count'] = max((int)$jItem['accepted_count'], $parentAcc);
-    }
-}
-unset($jItem);
-
 // Monthly KBJI publication count for current employer (Layer 2 tracking)
 $startOfMonth = date('Y-m-01 00:00:00');
 $endOfMonth   = date('Y-m-t 23:59:59');
