@@ -175,6 +175,7 @@ function bindModalsAndDrawers() {
             const modal = document.querySelector(`[data-modal="${modalId}"]`);
             if (modal) {
                 modal.classList.add('open');
+                document.querySelectorAll('.alert-box').forEach(el => el.remove());
                 modal.dispatchEvent(new CustomEvent('modal:open'));
                 if (modalId === 'modal-employer-profile' && typeof invalidatePkiMap === 'function') {
                     invalidatePkiMap();
