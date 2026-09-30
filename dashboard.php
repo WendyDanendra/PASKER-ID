@@ -2869,11 +2869,11 @@ $html = preg_replace('/<h3>Draft<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>D
 $html = preg_replace('/<h3>Dikirim<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Dikirim</h3><div class="value">' . $jobCounts['Menunggu Verifikasi'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Perlu Direvisi<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Perlu Direvisi</h3><div class="value">' . $jobCounts['Perlu Direvisi'] . '</div>', $html, 1);
 $html = preg_replace('/<h3>Lowongan Aktif<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Lowongan Aktif</h3><div class="value">' . $jobCounts['Tayang'] . '</div>', $html, 1);
-$html = str_replace('<!--JOB_TABLE_ROWS-->', $jobRowsHtml, $html);
-$html = str_replace('<!--JOB_APPLICANTS-->', $applicantHtml, $html);
-$html = str_replace('<!--READY_APPLICANTS-->', $readyHtml, $html);
-$html = str_replace('<!--FUNNEL_METRICS-->', $funnelHtml, $html);
-$html = str_replace('<!--APPLICATION_ACTIVITY-->', $activityHtml, $html);
+$html = str_replace('<!--JOB_TABLE_ROWS-->', $jobRowsHtml ?? '', $html);
+$html = str_replace('<!--JOB_APPLICANTS-->', $applicantHtml ?? '', $html);
+$html = str_replace('<!--READY_APPLICANTS-->', $readyHtml ?? '', $html);
+$html = str_replace('<!--FUNNEL_METRICS-->', $funnelHtml ?? '', $html);
+$html = str_replace('<!--APPLICATION_ACTIVITY-->', $activityHtml ?? '', $html);
 $html = preg_replace('/<h3>Lowongan<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Lowongan</h3><div class="value">' . count($employerJobs) . '</div>', $html, 1);
 $html = preg_replace('/<h3>Pelamar<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Pelamar</h3><div class="value">' . $totalApplicants . '</div>', $html, 1);
 $html = preg_replace('/<h3>Wawancara<\/h3>\s*<div class="value">\d+<\/div>/', '<h3>Wawancara</h3><div class="value">' . $stageCounts['Wawancara'] . '</div>', $html, 1);
