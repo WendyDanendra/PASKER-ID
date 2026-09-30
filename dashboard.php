@@ -673,9 +673,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 redirect('dashboard.php?kbji_conflict=1&draft_id=' . $jobId . '#lowongan');
                 exit;
             } else {
-                // Layer 3: Monthly quota exceeded (>10)
-                flash('error', $rulesResult['error_message']);
-                redirect('dashboard.php?open_draft=' . $jobId . '#lowongan');
+                // Layer 3: Monthly quota exceeded (>10) - Open modal directly without top toast notification
+                redirect('dashboard.php?open_draft=' . $jobId . '&layer3_error=1#lowongan');
                 exit;
             }
         }
@@ -1145,9 +1144,11 @@ if ($flashData && $flashData['type'] === 'pending_popup') {
     }
 }
 
-$selectedJobId = isset($_GET['job_detail']) ? (int)$_GET['job_detail'] : 0;
+$selectedJobId = isset($_GET['job_detail']) ? (int)$_GET['job_detail'] : (isset($_GET['open_draft']) ? (int)$_GET['open_draft'] : 0);
 $detailJob = null;
 $detailData = null;
+$monthlyQuotaTotal = 0;
+$exceededAmount = 0;
 if ($selectedJobId > 0) {
     $stmt = db()->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?');
     $stmt->execute([$selectedJobId, $user['id']]);
@@ -1158,6 +1159,14 @@ if ($selectedJobId > 0) {
         $realAcc = (int)$realAccStmt->fetchColumn();
         $detailJob['accepted_count'] = $realAcc;
         $detailData = job_to_form_data($detailJob);
+
+        $startOfMonth = date('Y-m-01 00:00:00');
+        $endOfMonth = date('Y-m-t 23:59:59');
+        $mStmt = db()->prepare('SELECT SUM(quota) FROM job_posts WHERE user_id = ? AND status IN ("Tayang", "Menunggu Verifikasi", "ADDITIONAL_DOCUMENT_PENDING") AND created_at BETWEEN ? AND ?');
+        $mStmt->execute([$user['id'], $startOfMonth, $endOfMonth]);
+        $existingMonthly = (int)$mStmt->fetchColumn();
+        $monthlyQuotaTotal = $existingMonthly + (int)($detailJob['quota'] ?? 1);
+        $exceededAmount = max(0, $monthlyQuotaTotal - 10);
     }
 }
 
