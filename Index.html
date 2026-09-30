@@ -1821,7 +1821,7 @@
             <div class="content" style="flex:1; overflow-y:auto; background:#f8fafc;">
                 <!-- FLASH TOAST NOTIFICATION -->
                 <?php 
-                $isAnyModalOpenOnLoad = !empty($_GET['open_draft']) || !empty($_GET['kbji_conflict']) || !empty($kbjiDuplicateError) || !empty($pendingPopupMessage) || !empty($_SESSION['kbji_duplicate_error']) || !empty($_GET['layer3_error']);
+                $isAnyModalOpenOnLoad = !empty($_GET['open_draft']) || !empty($_GET['kbji_conflict']) || !empty($pendingPopupMessage) || !empty($_SESSION['kbji_duplicate_error']) || !empty($_GET['layer3_error']);
                 ?>
                 <?php if ($flashData && $flashData['type'] !== 'pending_popup' && !$isAnyModalOpenOnLoad): ?>
                     <div class="alert-box <?php echo $flashData['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin:16px 24px 0; display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid <?php echo $flashData['type'] === 'success' ? '#a7f3d0' : '#fecaca'; ?>; border-radius:12px; padding:12px 16px;">
@@ -4254,43 +4254,6 @@
                 </div>
 
                 <button type="button" class="primary-btn" data-close-modal="modal-pending-status" style="width: 100%; text-align: center; justify-content: center; height: 42px; font-size: 13.5px; font-weight: 600; border-radius: 8px;">Oke</button>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <!-- ─── POP-UP DUPLICATE KBJI ERROR (SECTION H) ────────────────────────────── -->
-    <?php if ($kbjiDuplicateError): ?>
-        <div class="modal-backdrop open" data-modal="kbji-duplicate-modal">
-            <div class="popup-dialog-card">
-                <div class="popup-dialog-icon danger"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:8px;">Anda masih memiliki lowongan aktif untuk jabatan ini.</h3>
-                <p style="font-size:13px; color:#64748b; margin-bottom:20px;">Kode KBJI <code><?php echo e($kbjiDuplicateError['kbji_code']); ?></code> sudah digunakan oleh lowongan <strong><?php echo e($kbjiDuplicateError['active_job_title']); ?></strong> (<?php echo e($kbjiDuplicateError['active_job_status']); ?>).</p>
-                <div style="display:grid; gap:10px;">
-                    <!-- CTA 1: LIHAT LOWONGAN AKTIF (SLIDE-OVER DRAWER) -->
-                    <button type="button" class="primary-btn" data-open-drawer="active-job-drawer" style="background:#0284c7;">1. Lihat Lowongan Aktif</button>
-                    <!-- CTA 2: UBAH KODE KBJI (SMOOTH SCROLL & FOCUS) -->
-                    <button type="button" class="ghost-btn" onclick="scrollAndFocusKbji()">2. Ubah Kode KBJI</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- DRAWER LOWONGAN AKTIF SLIDE-OVER (SECTION H) -->
-        <div class="drawer-backdrop" data-drawer="active-job-drawer">
-            <div class="drawer-panel">
-                <div class="drawer-header">
-                    <div class="drawer-title">Detail Lowongan Aktif (KBJI: <?php echo e($kbjiDuplicateError['kbji_code']); ?>)</div>
-                    <button type="button" class="ghost-btn" data-close-drawer="active-job-drawer">×</button>
-                </div>
-                <div class="drawer-body">
-                    <div style="background:#f0f9ff; padding:16px; border-radius:14px; border:1px solid #bae6fd;">
-                        <h4 style="font-size:16px; color:#0369a1; font-weight:800;"><?php echo e($kbjiDuplicateError['active_job_title']); ?></h4>
-                        <span class="status-pill approved" style="margin-top:8px;">Status: <?php echo e($kbjiDuplicateError['active_job_status']); ?></span>
-                        <p style="font-size:12px; color:#0c4a6e; margin-top:12px;">Sesuai FSD Final Pemberi Kerja Individu, Anda dapat membuat beberapa lowongan aktif hanya jika jabatan (KBJI) berbeda.</p>
-                    </div>
-                </div>
-                <div class="drawer-footer">
-                    <button type="button" class="ghost-btn" data-close-drawer="active-job-drawer">Tutup</button>
-                </div>
             </div>
         </div>
     <?php endif; ?>
