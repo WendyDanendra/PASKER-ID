@@ -1882,6 +1882,55 @@
                                     Hak Akses akan mulai berlaku setelah pengajuan disetujui.
                                 </div>
                             </div>
+                        <?php elseif ($verificationStatus === 'NEEDS_REVISION'): ?>
+                            <!-- BANNER: NEEDS_REVISION -->
+                            <?php
+                            $revCount = max(1, (int)($profile['revision_count'] ?? ($profile['rejection_count'] ?? 1)));
+                            $isMaxRevision = ($revCount >= 3);
+                            ?>
+                            <div class="lifecycle-banner banner-danger">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+                                    <div style="flex:1; min-width:280px;">
+                                        <div class="banner-title">
+                                            <i class="fa-solid fa-triangle-exclamation"></i>
+                                            PROFIL PERLU DIPERBAIKI (REVISI KE-<?php echo min($revCount, 3); ?>)
+                                        </div>
+                                        <div class="banner-desc">
+                                            <?php if ($isMaxRevision): ?>
+                                                Pengajuan profil telah mencapai batas maksimal perbaikan mandiri (Revisi ke-3). Proses selanjutnya harus dilakukan bersama Petugas Dinas sesuai domisili (<?php echo e($profile['city'] ?: 'Dinas Tenaga Kerja Setempat'); ?>).
+                                            <?php else: ?>
+                                                Terdapat informasi pada Profil Pemberi Kerja Individu yang perlu diperbaiki sebelum proses verifikasi dapat dilanjutkan.
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="banner-subbox">
+                                            <strong>Catatan Verifikator:</strong><br>
+                                            <?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi data profil.'); ?>
+                                        </div>
+                                        <?php if ($isMaxRevision && ($profile['manual_review_status'] ?? '') === 'CONSENT_GIVEN'): ?>
+                                            <div style="margin-top:10px; font-size:12.5px; font-weight:600; color:#15803d; background:#dcfce7; border:1px solid #bbf7d0; padding:10px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:8px;">
+                                                <i class="fa-solid fa-circle-check"></i> Sudah Disetujui pada <?php echo !empty($profile['consent_given_at']) ? date('d M Y, H:i', strtotime($profile['consent_given_at'])) : '-'; ?> WIB. Menunggu konfirmasi verifikasi manual Petugas Dinas.
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div>
+                                        <?php if ($isMaxRevision): ?>
+                                            <?php if (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING'): ?>
+                                                <button type="button" class="primary-btn" style="background:#0284c7; height:38px; padding:0 18px; display:inline-flex; align-items:center; gap:8px;" data-open-modal="modal-user-consent">
+                                                    <i class="fa-solid fa-signature"></i> Tinjau &amp; Berikan Persetujuan
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="ghost-btn" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; height:38px; padding:0 16px; display:inline-flex; align-items:center; gap:6px;" data-open-modal="modal-verification-result">
+                                                    <i class="fa-solid fa-circle-info"></i> Lihat Hasil Verifikasi
+                                                </button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <button type="button" class="primary-btn" style="background:#dc2626; height:38px; padding:0 18px; display:inline-flex; align-items:center; gap:8px;" data-open-modal="modal-employer-profile">
+                                                <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
                         <?php elseif ($isTransitionPeriod): ?>
                             <!-- BANNER: TRANSITION_LIMITED -->
                             <div class="lifecycle-banner banner-warning">
