@@ -58,8 +58,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             $userId = (int)$newUser['id'];
             
             // Store uploaded documents
-            $permitDoc = store_upload('permit_document', 'employer/' . $userId, ['pdf', 'jpg', 'jpeg', 'png'])
-                ?: store_upload('supporting_doc', 'employer/' . $userId, ['pdf', 'jpg', 'jpeg', 'png']);
+            if (!empty($_FILES['permit_document']['name'])) {
+                $permitExt = strtolower(pathinfo((string) $_FILES['permit_document']['name'], PATHINFO_EXTENSION));
+                $permitSize = (int) ($_FILES['permit_document']['size'] ?? 0);
+                $permitErr = (int) ($_FILES['permit_document']['error'] ?? UPLOAD_ERR_NO_FILE);
+                if ($permitErr !== UPLOAD_ERR_OK || !in_array($permitExt, ['pdf', 'docx'], true) || $permitSize > 2 * 1024 * 1024) {
+                    flash('error', 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.');
+                    redirect('register.php');
+                    exit;
+                }
+            }
+            $permitDoc = store_upload('permit_document', 'employer/' . $userId, ['pdf', 'docx'])
+                ?: store_upload('supporting_doc', 'employer/' . $userId, ['pdf', 'docx']);
             $workplacePhoto = store_upload('workplace_photo', 'employer/' . $userId, ['jpg', 'jpeg', 'png', 'webp']);
 
             // Update user profile complete and domicile
@@ -222,7 +232,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['register_action
             <a class="primary-btn" href="dashboard.php#dashboard" style="width: 100%; text-align: center; justify-content: center; height: 42px; font-size: 13.5px; font-weight: 600; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center;">Menuju Dashboard Pemberi Kerja</a>
         </div>
     </div>
-    <script src="assets/pki-form.js?v=20260930_v1"></script>
+    <script src="assets/pki-form.js?v=20260930_v2"></script>
     <script>
     (function () {
         var modal = document.getElementById('modalPendaftaranBerhasil');

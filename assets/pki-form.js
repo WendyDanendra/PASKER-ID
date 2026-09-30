@@ -715,9 +715,24 @@
         const btn = document.getElementById(`pki_btn_${fieldId}`);
         const box = document.getElementById(`pki_box_${fieldId}`);
 
+        if (fieldId === 'permit_document') {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            if (!['pdf', 'docx'].includes(ext) || file.size > 2 * 1024 * 1024) {
+                input.value = '';
+                setFieldError('permit_document', 'Format PDF, Docx. Ukuran Maksimal 2MB.');
+                return;
+            }
+            clearFieldError('permit_document');
+        }
+
         if (textBox) {
-            const iconClass = fieldId === 'permit_document' ? 'fa-file-pdf' : 'fa-image';
-            const iconColor = fieldId === 'permit_document' ? '#ef4444' : '#0284c7';
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const iconClass = fieldId !== 'permit_document'
+                ? 'fa-image'
+                : (ext === 'docx' ? 'fa-file-word' : 'fa-file-pdf');
+            const iconColor = fieldId !== 'permit_document'
+                ? '#0284c7'
+                : (ext === 'docx' ? '#2563eb' : '#ef4444');
             textBox.innerHTML = `<i class="fa-solid ${iconClass}" style="color:${iconColor}; flex-shrink:0;"></i> <span class="pki-upload-filename">${file.name}</span>`;
             textBox.classList.add('has-file');
         }
@@ -782,7 +797,7 @@
         address: 'Tuliskan alamat lengkap tempat usaha/kegiatan.',
         postal_code: 'Pilihan kode pos mengikuti lokasi yang dipilih.',
         address_detail: 'Opsional. Tambahkan informasi yang membantu mengenali lokasi.',
-        permit_document: 'Format pdf • ukuran maks 15MB',
+        permit_document: 'Format PDF, Docx. Ukuran Maksimal 2MB',
         workplace_photo: 'Unggah minimal 1 foto tempat usaha/kegiatan sesuai alamat pada profil.',
         linkedin: 'Isi minimal salah satu media sosial.',
         facebook: 'Isi minimal salah satu media sosial.',
@@ -956,9 +971,17 @@
             // 10. File Pendukung
             const permitFileInput = document.getElementById('pki_input_permit_document');
             const existingPermit = document.getElementById('pki_existing_permit_document')?.value?.trim();
-            const hasPermit = (permitFileInput && permitFileInput.files && permitFileInput.files.length > 0) || Boolean(existingPermit);
+            const permitFile = permitFileInput?.files?.[0];
+            const hasPermit = Boolean(permitFile) || Boolean(existingPermit);
             if (!hasPermit) {
                 flagError('permit_document', 'File Pendukung wajib diunggah minimal 1 dokumen.', document.getElementById('pki_box_permit_document'));
+            } else if (permitFile) {
+                const permitExt = (permitFile.name.split('.').pop() || '').toLowerCase();
+                if (!['pdf', 'docx'].includes(permitExt) || permitFile.size > 2 * 1024 * 1024) {
+                    flagError('permit_document', 'Format PDF, Docx. Ukuran Maksimal 2MB.', document.getElementById('pki_box_permit_document'));
+                } else {
+                    clearFieldError('permit_document');
+                }
             } else {
                 clearFieldError('permit_document');
             }

@@ -298,9 +298,9 @@ if (file_exists($pkiCssPath)) {
                     <button type="button" class="pki-upload-btn" id="pki_btn_permit_document"><?php echo !empty($vPermitDoc) ? 'Ganti' : 'Upload'; ?></button>
                 </div>
             </div>
-            <input type="file" name="permit_document" id="pki_input_permit_document" accept=".pdf" style="display:none;" onchange="pkiHandleFileChange(this, 'permit_document')">
+            <input type="file" name="permit_document" id="pki_input_permit_document" accept=".pdf,.docx" style="display:none;" onchange="pkiHandleFileChange(this, 'permit_document')">
             <input type="hidden" name="existing_permit_document" id="pki_existing_permit_document" value="<?php echo e($vPermitDoc); ?>">
-            <div class="pki-field-helper" id="helper_permit_document">Format pdf • ukuran maks 15MB</div>
+            <div class="pki-field-helper" id="helper_permit_document">Format PDF, Docx. Ukuran Maksimal 2MB</div>
         </div>
 
         <!-- Foto Bukti Tempat Usaha / Lokasi -->

@@ -451,7 +451,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
+        if (!empty($_FILES['permit_document']['name'])) {
+            $permitExt = strtolower(pathinfo((string) $_FILES['permit_document']['name'], PATHINFO_EXTENSION));
+            $permitSize = (int) ($_FILES['permit_document']['size'] ?? 0);
+            $permitErr = (int) ($_FILES['permit_document']['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($permitErr !== UPLOAD_ERR_OK || !in_array($permitExt, ['pdf', 'docx'], true) || $permitSize > 2 * 1024 * 1024) {
+                $_SESSION['profile_modal_error'] = 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.';
+                flash('error', 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.');
+                redirect('dashboard.php?open_profile=1');
+                exit;
+            }
+        }
+
+        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'docx']);
         $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
         $existingPermit = !empty($_POST['existing_permit_document']) ? trim($_POST['existing_permit_document']) : null;
         $existingWorkplace = !empty($_POST['existing_workplace_photo']) ? trim($_POST['existing_workplace_photo']) : null;
