@@ -1300,7 +1300,7 @@ function get_employer_access_status(array $profile, ?string $refTime = null): ar
  * - State check: Must be FULL_DISABLED (Tidak Aktif). Not allowed if ACTIVE, TRANSITION_LIMITED, SUSPENDED, or PENDING.
  * - Concurrency protection: If status is already ACTIVE, rejects second request.
  * - Collision protection: If online reactivation is PENDING, rejects with clear error message.
- * - Directly transitions to ACTIVE / APPROVED with new 3-month cycle (no secondary verification case or approval).
+ * - Directly transitions to ACTIVE / APPROVED with new 6-month cycle (no secondary verification case or approval).
  * - Sets last_activated_at = now, active_until = now + 6 months.
  * - Strict audit logging: action = 'REACTIVATE_EMPLOYER_ACCESS', source = 'ADMIN_DINAS'.
  */
@@ -1397,7 +1397,7 @@ function reactivate_employer_access_by_admin_dinas(PDO $pdo, int $targetUserId, 
             ];
         }
 
-        // Apply mutation: directly active with new 3-month cycle
+        // Apply mutation: directly active with new 6-month cycle
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
         if ($driver === 'sqlite') {
             $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+6 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');

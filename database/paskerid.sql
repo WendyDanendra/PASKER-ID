@@ -183,7 +183,7 @@ INSERT INTO employer_profiles (
     2, 'Perorangan Demo', '3275012304890001', 'Kuliner & Katering', '08123456789', '08123456789', '12.345.678.9-012.000',
     'https://linkedin.com/in/perorangan-demo', 'https://facebook.com/perorangan.demo', 'https://instagram.com/perorangandemo',
     'Jawa Barat', 'Kota Bekasi', 'Bekasi Selatan', 'Pekayon Jaya', '17148', 'Jl. Ahmad Yani No. 12', 'Samping Indomaret Pekayon',
-    '-6.241586', '106.992416', 'Usaha katering rumahan dan jasa konsultasi menu kuliner keluarga.', 1, 1, 'APPROVED', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 3 MONTH)
+    '-6.241586', '106.992416', 'Usaha katering rumahan dan jasa konsultasi menu kuliner keluarga.', 1, 1, 'APPROVED', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 6 MONTH)
 );
 
 INSERT INTO job_posts (user_id, title, description, location, job_type, industry, entity_type, status, quota, accepted_count, kbji_code) VALUES

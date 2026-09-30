@@ -196,7 +196,7 @@ $isEligibleForReactivation = false;
 if ($isFullDisable && !empty($profile['active_until'])) {
     $cycleStart = !empty($profile['last_activated_at'])
         ? $profile['last_activated_at']
-        : date('Y-m-d H:i:s', strtotime($profile['active_until'] . ' -3 months'));
+        : date('Y-m-d H:i:s', strtotime($profile['active_until'] . ' -6 months'));
     $cycleEnd = date('Y-m-d H:i:s', strtotime($profile['active_until'] . ' +7 days'));
 
     $accCandidateStmt = db()->prepare('
