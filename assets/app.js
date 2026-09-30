@@ -126,6 +126,10 @@ function setActivePage(pageName) {
     if (window.location.hash !== `#${targetPage}`) {
         window.location.hash = targetPage;
     }
+
+    if (targetPage === 'jadwal' && typeof renderScheduleCalendar === 'function') {
+        renderScheduleCalendar();
+    }
 }
 window.setActivePage = setActivePage;
 window.showPage = setActivePage;
@@ -2537,8 +2541,44 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Schedule View Switcher (Bulanan, Mingguan, Harian)
+let currentScheduleDate = new Date();
 let currentScheduleView = 'bulanan';
-let currentSchedulePeriodOffset = 0;
+
+const ID_MONTHS = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+const ID_SHORT_MONTHS = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+];
+
+const ID_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const ID_SHORT_DAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+function formatIndonesianDate(d) {
+    const dayName = ID_DAYS[d.getDay()];
+    const dayNum = d.getDate();
+    const monthName = ID_MONTHS[d.getMonth()];
+    const year = d.getFullYear();
+    return `${dayName}, ${dayNum} ${monthName} ${year}`;
+}
+
+function getMondayOfWeek(d) {
+    const date = new Date(d);
+    const day = (date.getDay() + 6) % 7; // Monday is 0
+    date.setDate(date.getDate() - day);
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
+
+function isSameDay(d1, d2) {
+    if (!d1 || !d2) return false;
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+}
 
 function updateHarianTimeMarker() {
     const marker = document.getElementById('dayCurrentTimeMarker');
@@ -2547,22 +2587,130 @@ function updateHarianTimeMarker() {
     if (!marker || !container) return;
 
     const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+    const isTodaySelected = isSameDay(currentScheduleDate, now);
 
-    const hh = String(hours).padStart(2, '0');
-    const mm = String(minutes).padStart(2, '0');
-    if (timePill) timePill.textContent = `${hh}:${mm}`;
+    if (isTodaySelected) {
+        marker.style.display = 'flex';
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
 
-    const hourRows = container.querySelectorAll('.day-hour-row');
-    if (hourRows.length > 0) {
-        const rowHeight = hourRows[0].offsetHeight || 40;
-        const totalMinutes = (hours * 60) + minutes;
-        const topPx = (totalMinutes / 60) * rowHeight;
-        marker.style.top = `${topPx}px`;
+        const hh = String(hours).padStart(2, '0');
+        const mm = String(minutes).padStart(2, '0');
+        if (timePill) timePill.textContent = `${hh}:${mm}`;
+
+        const hourRows = container.querySelectorAll('.day-hour-row');
+        if (hourRows.length > 0) {
+            const rowHeight = hourRows[0].offsetHeight || 40;
+            const totalMinutes = (hours * 60) + minutes;
+            const topPx = (totalMinutes / 60) * rowHeight;
+            marker.style.top = `${topPx}px`;
+        }
+    } else {
+        marker.style.display = 'none';
     }
 }
 window.updateHarianTimeMarker = updateHarianTimeMarker;
+
+function renderScheduleCalendar() {
+    const today = new Date();
+    const curYear = currentScheduleDate.getFullYear();
+    const curMonth = currentScheduleDate.getMonth();
+
+    // 1. Update Title Header (schedPeriodTitle)
+    const titleEl = document.getElementById('schedPeriodTitle');
+    if (titleEl) {
+        if (currentScheduleView === 'bulanan') {
+            titleEl.textContent = `${ID_MONTHS[curMonth]} ${curYear}`;
+        } else if (currentScheduleView === 'mingguan') {
+            const monday = getMondayOfWeek(currentScheduleDate);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+
+            let str = '';
+            if (monday.getMonth() === sunday.getMonth()) {
+                str = `${monday.getDate()} – ${sunday.getDate()} ${ID_SHORT_MONTHS[sunday.getMonth()]} ${sunday.getFullYear()}`;
+            } else if (monday.getFullYear() === sunday.getFullYear()) {
+                str = `${monday.getDate()} ${ID_SHORT_MONTHS[monday.getMonth()]} – ${sunday.getDate()} ${ID_SHORT_MONTHS[sunday.getMonth()]} ${sunday.getFullYear()}`;
+            } else {
+                str = `${monday.getDate()} ${ID_SHORT_MONTHS[monday.getMonth()]} ${monday.getFullYear()} – ${sunday.getDate()} ${ID_SHORT_MONTHS[sunday.getMonth()]} ${sunday.getFullYear()}`;
+            }
+            titleEl.textContent = str;
+        } else if (currentScheduleView === 'harian') {
+            titleEl.textContent = formatIndonesianDate(currentScheduleDate);
+        }
+    }
+
+    // 2. Render Bulanan View
+    const monthGrid = document.querySelector('.month-body-grid');
+    if (monthGrid) {
+        let html = '';
+        const firstDay = new Date(curYear, curMonth, 1);
+        const startDayOfWeek = (firstDay.getDay() + 6) % 7; // 0 for Sen
+        const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+        const daysInPrevMonth = new Date(curYear, curMonth, 0).getDate();
+
+        // Previous month leading days
+        for (let i = startDayOfWeek - 1; i >= 0; i--) {
+            const num = daysInPrevMonth - i;
+            const cellDate = new Date(curYear, curMonth - 1, num);
+            const isTodayCell = isSameDay(cellDate, today);
+            html += `<div class="month-day-cell other-month" onclick="selectScheduleDate(${cellDate.getFullYear()}, ${cellDate.getMonth()}, ${num})"><span class="day-num ${isTodayCell ? 'today-badge' : ''}">${num}</span></div>`;
+        }
+
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+            const cellDate = new Date(curYear, curMonth, d);
+            const isTodayCell = isSameDay(cellDate, today);
+            const isSelectedCell = isSameDay(cellDate, currentScheduleDate);
+            let badgeClass = isTodayCell ? 'today-badge' : (isSelectedCell ? 'selected-badge' : '');
+            html += `<div class="month-day-cell" onclick="selectScheduleDate(${curYear}, ${curMonth}, ${d})"><span class="day-num ${badgeClass}">${d}</span></div>`;
+        }
+
+        // Next month trailing days
+        const totalCellsSoFar = startDayOfWeek + daysInMonth;
+        const totalGridCells = Math.ceil(totalCellsSoFar / 7) * 7;
+        const trailingDays = totalGridCells - totalCellsSoFar;
+        for (let d = 1; d <= trailingDays; d++) {
+            const cellDate = new Date(curYear, curMonth + 1, d);
+            const isTodayCell = isSameDay(cellDate, today);
+            html += `<div class="month-day-cell other-month" onclick="selectScheduleDate(${cellDate.getFullYear()}, ${cellDate.getMonth()}, ${d})"><span class="day-num ${isTodayCell ? 'today-badge' : ''}">${d}</span></div>`;
+        }
+
+        monthGrid.innerHTML = html;
+    }
+
+    // 3. Render Mingguan View
+    const weekHeadRow = document.querySelector('.week-head-row');
+    if (weekHeadRow) {
+        const monday = getMondayOfWeek(currentScheduleDate);
+        let headHtml = '';
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            const isTodayCell = isSameDay(d, today);
+            const isSelectedCell = isSameDay(d, currentScheduleDate);
+            const dayName = ID_SHORT_DAYS[(d.getDay() + 6) % 7];
+            let badgeClass = isTodayCell ? 'today-badge' : (isSelectedCell ? 'selected-badge' : '');
+            headHtml += `
+                <div class="week-head-cell" style="cursor:pointer;" onclick="selectScheduleDate(${d.getFullYear()}, ${d.getMonth()}, ${d.getDate()})">
+                    <div class="week-head-name">${dayName}</div>
+                    <div class="week-head-num ${badgeClass}">${d.getDate()}</div>
+                </div>
+            `;
+        }
+        weekHeadRow.innerHTML = headHtml;
+    }
+
+    // 4. Update Harian Time Marker
+    updateHarianTimeMarker();
+}
+window.renderScheduleCalendar = renderScheduleCalendar;
+
+function selectScheduleDate(year, month, day) {
+    currentScheduleDate = new Date(year, month, day);
+    renderScheduleCalendar();
+}
+window.selectScheduleDate = selectScheduleDate;
 
 function setScheduleView(mode) {
     currentScheduleView = mode;
@@ -2579,50 +2727,29 @@ function setScheduleView(mode) {
 
     if (paneBulanan) paneBulanan.style.display = (mode === 'bulanan') ? 'block' : 'none';
     if (paneMingguan) paneMingguan.style.display = (mode === 'mingguan') ? 'block' : 'none';
-    if (paneHarian) {
-        paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
-        if (mode === 'harian') {
-            setTimeout(updateHarianTimeMarker, 50);
-        }
-    }
+    if (paneHarian) paneHarian.style.display = (mode === 'harian') ? 'block' : 'none';
 
-    updateSchedulePeriodTitle();
+    renderScheduleCalendar();
 }
-
-function updateSchedulePeriodTitle() {
-    const titleEl = document.getElementById('schedPeriodTitle');
-    if (!titleEl) return;
-
-    if (currentScheduleView === 'bulanan') {
-        titleEl.textContent = 'September 2026';
-    } else if (currentScheduleView === 'mingguan') {
-        titleEl.textContent = '14 Sep – 20 Sep 2026';
-    } else if (currentScheduleView === 'harian') {
-        titleEl.textContent = 'Senin, 14 September 2026';
-    }
-}
+window.setScheduleView = setScheduleView;
 
 function navigateSchedule(delta) {
-    currentSchedulePeriodOffset += delta;
-    const titleEl = document.getElementById('schedPeriodTitle');
-    if (!titleEl) return;
-    
     if (currentScheduleView === 'bulanan') {
-        const months = ['Agustus 2026', 'September 2026', 'Oktober 2026', 'November 2026'];
-        const baseIdx = 1;
-        const targetIdx = Math.max(0, Math.min(months.length - 1, baseIdx + currentSchedulePeriodOffset));
-        titleEl.textContent = months[targetIdx];
+        currentScheduleDate.setMonth(currentScheduleDate.getMonth() + delta);
     } else if (currentScheduleView === 'mingguan') {
-        titleEl.textContent = currentSchedulePeriodOffset === 0 ? '14 Sep – 20 Sep 2026' : (currentSchedulePeriodOffset > 0 ? '21 Sep – 27 Sep 2026' : '7 Sep – 13 Sep 2026');
+        currentScheduleDate.setDate(currentScheduleDate.getDate() + (delta * 7));
     } else if (currentScheduleView === 'harian') {
-        titleEl.textContent = currentSchedulePeriodOffset === 0 ? 'Senin, 14 September 2026' : (currentSchedulePeriodOffset > 0 ? 'Selasa, 15 September 2026' : 'Minggu, 13 September 2026');
+        currentScheduleDate.setDate(currentScheduleDate.getDate() + delta);
     }
+    renderScheduleCalendar();
 }
+window.navigateSchedule = navigateSchedule;
 
 function resetScheduleToday() {
-    currentSchedulePeriodOffset = 0;
-    updateSchedulePeriodTitle();
+    currentScheduleDate = new Date();
+    renderScheduleCalendar();
 }
+window.resetScheduleToday = resetScheduleToday;
 
 function toggleScheduleFilter(event) {
     if (event) event.stopPropagation();
@@ -3801,5 +3928,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('hide_notif_aktivasi_pki') === '1') {
         const banner = document.getElementById('notifAktivasiBanner');
         if (banner) banner.style.display = 'none';
+    }
+    if (typeof renderScheduleCalendar === 'function') {
+        renderScheduleCalendar();
     }
 });
