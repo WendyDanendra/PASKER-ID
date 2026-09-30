@@ -294,8 +294,8 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
         }
 
         // Ensure employer_profiles active_until is updated to 6-month cycle if set to old 3-month seed
-        $pdo->exec("UPDATE employer_profiles SET last_activated_at = COALESCE(last_activated_at, created_at, datetime('now')) WHERE (verified = 1 OR verification_status = 'APPROVED') AND last_activated_at IS NULL");
-        $pdo->exec("UPDATE employer_profiles SET active_until = datetime(COALESCE(last_activated_at, created_at, datetime('now')), '+6 months') WHERE active_until IS NOT NULL AND (verified = 1 OR verification_status = 'APPROVED') AND (julianday(active_until) - julianday(COALESCE(last_activated_at, created_at, datetime('now'))) < 150)");
+        $pdo->exec("UPDATE employer_profiles SET last_activated_at = COALESCE(last_activated_at, created_at, datetime('now')) WHERE (verified = 1 OR verification_status IN ('APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED')) AND last_activated_at IS NULL");
+        $pdo->exec("UPDATE employer_profiles SET active_until = datetime(COALESCE(last_activated_at, created_at, datetime('now')), '+6 months') WHERE active_until IS NOT NULL AND (verified = 1 OR verification_status IN ('APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED')) AND (julianday(active_until) - julianday(COALESCE(last_activated_at, created_at, datetime('now'))) < 150)");
     } catch (Throwable $ignored) {}
 }
 

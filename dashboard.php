@@ -145,6 +145,19 @@ $isLastDay = false;
 if ($hasValidDates) {
     $totalDays = max(1, (int)$startDate->diff($activeUntil)->days);
 
+    // Auto-fix: If active_until was set using old 3-month duration (< 150 days total), update to 6 months
+    if ($totalDays < 150) {
+        $activeUntil = (clone $startDate)->modify('+6 months');
+        $profile['active_until'] = $activeUntil->format('Y-m-d H:i:s');
+        $totalDays = max(1, (int)$startDate->diff($activeUntil)->days);
+        if (!empty($profile['id'])) {
+            try {
+                db()->prepare('UPDATE employer_profiles SET active_until = ? WHERE id = ?')
+                    ->execute([$profile['active_until'], $profile['id']]);
+            } catch (Throwable $e) {}
+        }
+    }
+
     if ($now <= $activeUntil) {
         $elapsedSec = max(0, $now->getTimestamp() - $startDate->getTimestamp());
         $elapsedDays = max(1, min($totalDays, (int)floor($elapsedSec / 86400) + 1));
