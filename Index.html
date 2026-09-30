@@ -2487,6 +2487,27 @@
                                         <input type="hidden" name="send_job" value="1">
                                         <input type="hidden" name="job_id" value="<?php echo (int)$detailJob['id']; ?>">
                                     </form>
+                                <?php elseif ($dStatus === 'Tayang'): ?>
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                                        <button type="button" onclick="openConfirmCloseJobModal(<?php echo (int)$detailJob['id']; ?>, <?php echo (int)$dQuota; ?>, <?php echo (int)$dAcceptedCount; ?>)" style="background:#ef4444; color:#ffffff; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(239, 68, 68, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                                            <i class="fa-regular fa-circle-xmark"></i> Tutup Lowongan
+                                        </button>
+
+                                        <div id="jobLainnyaDropdownContainer" style="position:relative; display:inline-block;">
+                                            <button type="button" onclick="toggleJobLainnyaDropdown(event)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05); transition:all 0.15s;" onmouseover="this.style.background='#f8fafc';this.style.borderColor='#94a3b8'" onmouseout="this.style.background='#ffffff';this.style.borderColor='#cbd5e1'">
+                                                <i class="fa-solid fa-ellipsis-vertical"></i> Lainnya
+                                            </button>
+
+                                            <div id="jobLainnyaDropdownMenu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1); width:200px; z-index:50; padding:6px 0; overflow:hidden;">
+                                                <a href="javascript:void(0)" onclick="openJobPublicView(<?php echo (int)$detailJob['id']; ?>)" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:#334155; font-size:13px; font-weight:600; text-decoration:none; transition:background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                                    <i class="fa-solid fa-arrow-up-right-from-square" style="color:#64748b; width:16px;"></i> Lihat Tampilan Publik
+                                                </a>
+                                                <a href="javascript:void(0)" onclick="copyJobLink(<?php echo (int)$detailJob['id']; ?>)" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:#334155; font-size:13px; font-weight:600; text-decoration:none; transition:background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                                    <i class="fa-solid fa-link" style="color:#64748b; width:16px;"></i> Salin Link Lowongan
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 <?php elseif ($dStatus === 'Ditutup'): ?>
                                     <button type="button" onclick="openReopenJobModal()" style="background:#00a2e9; color:#ffffff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; box-shadow:0 4px 12px rgba(0, 162, 233, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#00a2e9'">
                                         <i class="fa-solid fa-arrows-rotate"></i> Buka Kembali Lowongan
