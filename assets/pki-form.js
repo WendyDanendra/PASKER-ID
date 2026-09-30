@@ -702,6 +702,26 @@
         }
     }
 
+    function formatUploadSize(bytes) {
+        const b = Number(bytes) || 0;
+        if (b >= 1024 * 1024) {
+            return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+        }
+        return `${(b / 1024).toFixed(2)} KB`;
+    }
+
+    function setUploadSizeInfo(fieldId, bytes) {
+        const infoEl = document.getElementById(`helper_${fieldId}_size`);
+        if (!infoEl) return;
+        if (!bytes || bytes <= 0) {
+            infoEl.textContent = '';
+            infoEl.style.display = 'none';
+            return;
+        }
+        infoEl.textContent = `Ukuran file yang di upload: ${formatUploadSize(bytes)}`;
+        infoEl.style.display = 'block';
+    }
+
     // ─── 5. Custom Upload Box Handlers ───
     window.pkiTriggerUpload = function (fieldId) {
         const fileInput = document.getElementById(`pki_input_${fieldId}`);
@@ -720,6 +740,7 @@
             if (!['pdf', 'docx'].includes(ext) || file.size > 2 * 1024 * 1024) {
                 input.value = '';
                 setFieldError('permit_document', 'Format PDF, Docx. Ukuran Maksimal 2MB.');
+                setUploadSizeInfo(fieldId, 0);
                 return;
             }
             clearFieldError('permit_document');
@@ -757,6 +778,7 @@
         }
 
         clearFieldError(fieldId);
+        setUploadSizeInfo(fieldId, file.size);
     };
 
     window.pkiClearUpload = function (event, fieldId) {
@@ -783,6 +805,7 @@
             const clearBtn = box.querySelector('.pki-upload-clear-btn');
             if (clearBtn) clearBtn.remove();
         }
+        setUploadSizeInfo(fieldId, 0);
     };
 
     // ─── 6. Strict Per-Field Validation on Submit ───

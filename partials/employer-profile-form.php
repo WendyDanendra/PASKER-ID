@@ -28,6 +28,20 @@ $vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?
 
 $vPermitDoc = $formData['permit_document'] ?? ($formData['doc_permission'] ?? '');
 $vPhoto = $formData['workplace_photo'] ?? ($formData['doc_location_photo'] ?? '');
+$vPermitDocSizeText = '';
+if (!empty($vPermitDoc)) {
+    $baseDir = realpath(__DIR__ . '/..');
+    $docRelative = ltrim(str_replace('\\', '/', (string) $vPermitDoc), '/');
+    $docAbsolute = realpath(__DIR__ . '/../' . $docRelative);
+    if ($baseDir && $docAbsolute && str_starts_with($docAbsolute, $baseDir) && is_file($docAbsolute)) {
+        $bytes = (int) filesize($docAbsolute);
+        if ($bytes > 0) {
+            $vPermitDocSizeText = $bytes >= 1024 * 1024
+                ? number_format($bytes / (1024 * 1024), 2) . ' MB'
+                : number_format($bytes / 1024, 2) . ' KB';
+        }
+    }
+}
 
 $vLinkedin = e($formData['linkedin'] ?? '');
 $vFacebook = e($formData['facebook'] ?? '');
@@ -301,6 +315,11 @@ if (file_exists($pkiCssPath)) {
             <input type="file" name="permit_document" id="pki_input_permit_document" accept=".pdf,.docx" style="display:none;" onchange="pkiHandleFileChange(this, 'permit_document')">
             <input type="hidden" name="existing_permit_document" id="pki_existing_permit_document" value="<?php echo e($vPermitDoc); ?>">
             <div class="pki-field-helper" id="helper_permit_document">Format PDF, Docx. Ukuran Maksimal 2MB</div>
+            <div class="pki-field-helper" id="helper_permit_document_size" style="<?php echo $vPermitDocSizeText !== '' ? '' : 'display:none;'; ?>">
+                <?php if ($vPermitDocSizeText !== ''): ?>
+                    Ukuran file yang di upload: <?php echo e($vPermitDocSizeText); ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Foto Bukti Tempat Usaha / Lokasi -->
