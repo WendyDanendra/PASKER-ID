@@ -1125,10 +1125,12 @@ $showProfileModal = $isOpenProfile;
 $flashData = get_flash();
 $flashHtml = '';
 $pendingPopupMessage = null;
+$isAnyModalActive = (!empty($_GET['open_draft']) || !empty($_GET['job_detail']) || !empty($_GET['layer3_error']) || !empty($_GET['kbji_conflict']) || !empty($_GET['open_profile']) || !empty($_SESSION['kbji_duplicate_error']));
+
 if ($flashData && $flashData['type'] === 'pending_popup') {
     $pendingPopupMessage = $flashData['message'];
     $flashData = null;
-} elseif ($flashData) {
+} elseif ($flashData && !$isAnyModalActive) {
     if ($isOpenProfile && $flashData['type'] === 'error') {
         $profileModalError = $profileModalError ?: $flashData['message'];
     } else {
