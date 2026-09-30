@@ -962,6 +962,77 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
     }
 
+    // 5b. BUKA KEMBALI LOWONGAN YANG DITUTUP
+    if (isset($_POST['reopen_job'])) {
+        $jobId = (int)($_POST['job_id'] ?? 0);
+        $publishDate = trim((string)($_POST['publish_date'] ?? ''));
+        $expiryDays = (int)($_POST['expiry_days'] ?? 30);
+        if ($expiryDays <= 0) $expiryDays = 30;
+        $quota = (int)($_POST['quota'] ?? 1);
+        if ($quota <= 0) $quota = 1;
+
+        if ($jobId <= 0) {
+            flash('error', 'Lowongan tidak valid.');
+            redirect('dashboard.php#lowongan');
+            exit;
+        }
+
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        try {
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $forUpdate = $driver === 'sqlite' ? '' : ' FOR UPDATE';
+            $jobStmt = $pdo->prepare('SELECT * FROM job_posts WHERE id = ? AND user_id = ?' . $forUpdate);
+            $jobStmt->execute([$jobId, $user['id']]);
+            $targetJob = $jobStmt->fetch();
+
+            if (!$targetJob) {
+                $pdo->rollBack();
+                flash('error', 'Lowongan tidak ditemukan.');
+                redirect('dashboard.php#lowongan');
+                exit;
+            }
+
+            $todayStr = date('Y-m-d');
+            if (empty($publishDate) || $publishDate < $todayStr) {
+                $publishDate = $todayStr;
+            }
+
+            $isFuture = (strtotime($publishDate) > strtotime($todayStr));
+            $newStatus = $isFuture ? 'Terjadwal Tayang' : 'Tayang';
+
+            $details = parse_job_details($targetJob['details'] ?? null);
+            $details['publish_date'] = $publishDate;
+            $details['expiry_days'] = $expiryDays;
+            $newDetailsJson = json_encode($details, JSON_UNESCAPED_UNICODE);
+
+            $updateStmt = $pdo->prepare('UPDATE job_posts SET 
+                status = ?, 
+                quota = ?, 
+                details = ?, 
+                unfulfilled_reason = NULL,
+                created_at = ?,
+                updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ? AND user_id = ?');
+            
+            $createdAtVal = $publishDate . ' ' . date('H:i:s');
+            $updateStmt->execute([$newStatus, $quota, $newDetailsJson, $createdAtVal, $jobId, $user['id']]);
+
+            $pdo->commit();
+            flash('success', 'Lowongan berhasil dibuka kembali dan berstatus ' . $newStatus . '.');
+            redirect('dashboard.php?job_detail=' . $jobId . '#lowongan');
+            exit;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash('error', 'Gagal membuka kembali lowongan: ' . $e->getMessage());
+            redirect('dashboard.php?job_detail=' . $jobId . '#lowongan');
+            exit;
+        }
+    }
+
     // 6. AJUKAN PERPANJANGAN HAK AKSES PEMBERI KERJA INDIVIDU (1x, 1-3 HARI)
     if (isset($_POST['request_extension'])) {
         if ($verificationStatus === 'SUSPENDED') {

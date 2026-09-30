@@ -2305,58 +2305,95 @@
                             $dFormattedReq = nl2br(htmlspecialchars($dCleanReq, ENT_QUOTES, 'UTF-8'));
                         }
                     ?>
+                    <?php
+                        $dCreatedTime = !empty($detailJob['created_at']) ? strtotime($detailJob['created_at']) : time();
+                        $dExpiryDays = (int)($detailData['expiry_days'] ?? 30);
+                        if ($dExpiryDays <= 0) $dExpiryDays = 30;
+                        $dPublishDateFormatted = date('d M Y', $dCreatedTime);
+                        $dExpiryDateFormatted = date('d M Y', strtotime('+' . $dExpiryDays . ' days', $dCreatedTime));
+                        $dAcceptedCount = (int)($detailJob['accepted_count'] ?? 0);
+                        $dQuota = (int)($detailJob['quota'] ?? 1);
+                        $dQuotaPercent = $dQuota > 0 ? min(100, round(($dAcceptedCount / $dQuota) * 100)) : 0;
+                    ?>
                     <!-- DEDICATED FULL-PAGE DETAIL LOWONGAN -->
                     <div class="job-detail-container" style="width:100%; padding:0 0 30px 0;">
-                        <!-- Top Header Row: Back Link & Actions -->
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
-                            <a href="dashboard.php#lowongan" class="ghost-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:13.5px; color:#475569; padding:8px 16px; border:1px solid #cbd5e1; border-radius:8px; background:#fff;">
-                                <i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Lowongan
+                        <!-- Back Link -->
+                        <div style="margin-bottom:16px;">
+                            <a href="dashboard.php#lowongan" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:14px; color:#0f172a; transition:color 0.15s;" onmouseover="this.style.color='#0284c7'" onmouseout="this.style.color='#0f172a'">
+                                <i class="fa-solid fa-arrow-left"></i> Kembali
                             </a>
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <?php if ($dStatus === 'Draft'): ?>
-                                    <button type="button" class="btn-primary-custom" data-edit-draft="<?php echo $detailJob['id']; ?>" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border:none; padding:9px 20px; border-radius:8px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(2, 132, 199, 0.3);">
+                        </div>
+
+                        <!-- Top Title & Kuota Header Section (Image 1 Layout) -->
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px; margin-bottom:24px;">
+                            <!-- Left: Title, Badges & Subtitle Meta -->
+                            <div style="flex:1; min-width:280px;">
+                                <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap;">
+                                    <h1 style="font-size:26px; font-weight:800; color:#0f172a; margin:0; line-height:1.2;"><?php echo e($detailJob['title']); ?></h1>
+                                    <?php if ($dStatus === 'Ditutup'): ?>
+                                        <span class="status-pill closed" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1; padding:3px 12px; border-radius:9999px; font-size:11.5px; font-weight:700;">Ditutup</span>
+                                    <?php elseif ($dStatus === 'Tayang'): ?>
+                                        <span class="status-pill approved" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; padding:3px 12px; border-radius:9999px; font-size:11.5px; font-weight:700;">Tayang</span>
+                                    <?php elseif ($dStatus === 'Draft'): ?>
+                                        <span class="status-pill draft" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:3px 12px; border-radius:9999px; font-size:11.5px; font-weight:700;">Draft</span>
+                                    <?php elseif (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true)): ?>
+                                        <span class="status-pill revision" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; padding:3px 12px; border-radius:9999px; font-size:11.5px; font-weight:700;">Perlu Revisi</span>
+                                    <?php elseif ($dStatus === 'Ditolak'): ?>
+                                        <span class="status-pill rejected" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:3px 12px; border-radius:9999px; font-size:11.5px; font-weight:700;">Ditolak</span>
+                                    <?php elseif ($dStatus === 'Menunggu Verifikasi'): ?>
+                                        <span class="status-pill pending" style="background:#fff7ed; color:#d97706; border:1px solid #fed7aa; padding:3px 12px; border-radius:9999px; font-size:11.5px; font-weight:700;">Menunggu Verifikasi</span>
+                                    <?php else: ?>
+                                        <span class="status-pill" style="background:#f8fafc; color:#334155; border:1px solid #cbd5e1; padding:3px 12px; border-radius:9999px; font-size:11.5px; font-weight:700;"><?php echo e($dStatus); ?></span>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div style="display:flex; flex-direction:column; gap:6px; font-size:13.5px; color:#64748b;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <i class="fa-regular fa-calendar-days" style="color:#94a3b8; font-size:13.5px; width:16px;"></i>
+                                        <span>Ditayangkan: <strong><?php echo $dPublishDateFormatted; ?></strong> — Kadaluarsa: <strong><?php echo $dExpiryDateFormatted; ?></strong></span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <i class="fa-solid fa-graduation-cap" style="color:#94a3b8; font-size:13.5px; width:16px;"></i>
+                                        <span>Pendidikan Minimal: <strong><?php echo e($detailJob['min_education'] ?: ($detailData['education_required'] ?: 'Sarjana')); ?></strong></span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <i class="fa-solid fa-location-dot" style="color:#94a3b8; font-size:13.5px; width:16px;"></i>
+                                        <span>Lokasi: <strong><?php echo e($dLoc); ?></strong></span>
+                                    </div>
+                                    <?php if (!empty($detailJob['parent_job_id'])): ?>
+                                        <div style="display:flex; align-items:center; gap:8px; color:#0284c7;">
+                                            <i class="fa-solid fa-arrows-rotate" style="font-size:13px; width:16px;"></i>
+                                            <span>Posting Ulang dari #<?php echo (int)$detailJob['parent_job_id']; ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Right: Kuota Card & Action Button -->
+                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:12px; min-width:240px;">
+                                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 20px; width:100%; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+                                    <div style="font-size:13px; font-weight:700; color:#1e293b; margin-bottom:8px;">Kuota</div>
+                                    <div style="background:#e2e8f0; border-radius:999px; height:7px; overflow:hidden; margin-bottom:8px;">
+                                        <div style="background:#0284c7; height:100%; width:<?php echo $dQuotaPercent; ?>%; border-radius:999px; transition:width 0.3s ease;"></div>
+                                    </div>
+                                    <div style="font-size:12px; color:#64748b; font-weight:500;">
+                                        <?php echo $dAcceptedCount; ?> / <?php echo $dQuota; ?> kuota telah terisi
+                                    </div>
+                                </div>
+
+                                <?php if ($dStatus === 'Ditutup'): ?>
+                                    <button type="button" onclick="openReopenJobModal()" style="background:#00a2e9; color:#ffffff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; box-shadow:0 4px 12px rgba(0, 162, 233, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#00a2e9'">
+                                        <i class="fa-solid fa-arrows-rotate"></i> Buka Kembali Lowongan
+                                    </button>
+                                <?php elseif ($dStatus === 'Draft'): ?>
+                                    <button type="button" class="btn-primary-custom" data-edit-draft="<?php echo $detailJob['id']; ?>" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; box-shadow:0 4px 12px rgba(2, 132, 199, 0.3);">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
                                     </button>
                                 <?php elseif (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true)): ?>
-                                    <button type="button" class="btn-primary-custom" data-revise-job="<?php echo $detailJob['id']; ?>" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#ffffff; border:none; padding:9px 20px; border-radius:8px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(217, 119, 6, 0.3);">
+                                    <button type="button" class="btn-primary-custom" data-revise-job="<?php echo $detailJob['id']; ?>" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#ffffff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; box-shadow:0 4px 12px rgba(217, 119, 6, 0.3);">
                                         <i class="fa-solid fa-pen-to-square"></i> Perbaiki Lowongan
                                     </button>
                                 <?php endif; ?>
-                            </div>
-                        </div>
-
-                        <!-- Top Title & Status Banner Card -->
-                        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:20px 24px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
-                                <div>
-                                    <h1 style="font-size:22px; font-weight:800; color:#0f172a; margin:0 0 8px 0;"><?php echo e($detailJob['title']); ?></h1>
-                                    <div style="font-size:13px; color:#64748b; font-weight:500; display:flex; align-items:center; flex-wrap:wrap; gap:12px;">
-                                        <span><i class="fa-solid fa-tag" style="color:#94a3b8; font-size:11px;"></i> Kode KBJI: <strong><?php echo e($detailJob['kbji_code']); ?></strong></span>
-                                        <span>&bull;</span>
-                                        <span><i class="fa-solid fa-location-dot" style="color:#94a3b8; font-size:11px;"></i> <?php echo e($dLoc); ?></span>
-                                        <span>&bull;</span>
-                                        <span><i class="fa-regular fa-clock" style="color:#94a3b8; font-size:11px;"></i> Dibuat: <strong><?php echo !empty($detailJob['created_at']) ? date('d M Y', strtotime($detailJob['created_at'])) : '-'; ?></strong></span>
-                                        <?php if (!empty($detailJob['parent_job_id'])): ?>
-                                            <span>&bull;</span>
-                                            <span style="color:#0284c7;"><i class="fa-solid fa-arrows-rotate"></i> Posting Ulang dari #<?php echo (int)$detailJob['parent_job_id']; ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <div>
-                                    <?php if ($dStatus === 'Tayang'): ?>
-                                        <span class="status-pill approved" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; padding:5px 14px; border-radius:9999px; font-size:12px; font-weight:700;">Tayang</span>
-                                    <?php elseif ($dStatus === 'Draft'): ?>
-                                        <span class="status-pill draft" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:5px 14px; border-radius:9999px; font-size:12px; font-weight:700;">Draft</span>
-                                    <?php elseif (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true)): ?>
-                                        <span class="status-pill revision" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; padding:5px 14px; border-radius:9999px; font-size:12px; font-weight:700;">Perlu Revisi</span>
-                                    <?php elseif ($dStatus === 'Ditolak'): ?>
-                                        <span class="status-pill rejected" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:5px 14px; border-radius:9999px; font-size:12px; font-weight:700;">Ditolak</span>
-                                    <?php elseif ($dStatus === 'Menunggu Verifikasi'): ?>
-                                        <span class="status-pill pending" style="background:#fff7ed; color:#d97706; border:1px solid #fed7aa; padding:5px 14px; border-radius:9999px; font-size:12px; font-weight:700;">Menunggu Verifikasi</span>
-                                    <?php else: ?>
-                                        <span class="status-pill" style="background:#f8fafc; color:#334155; border:1px solid #cbd5e1; padding:5px 14px; border-radius:9999px; font-size:12px; font-weight:700;"><?php echo e($dStatus); ?></span>
-                                    <?php endif; ?>
-                                </div>
                             </div>
                         </div>
 
@@ -2406,7 +2443,7 @@
                                     <i class="fa-solid fa-users"></i> Lamaran
                                 </button>
                                 <button type="button" id="tabBtnRincian" onclick="switchPageDetailTab('rincian')" style="padding:16px 28px; border:none; background:none; border-bottom:3px solid transparent; color:#64748b; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
-                                    <i class="fa-solid fa-file-text"></i> Rincian Lowongan
+                                    <i class="fa-solid fa-circle-info"></i> Rincian Lowongan
                                 </button>
                             </div>
 
@@ -2865,6 +2902,79 @@
                                             <?php endif; ?>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL POPUP: BUKA KEMBALI LOWONGAN (Image 2 Design) -->
+                    <div class="modal-backdrop" id="modalReopenJob" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(3px); z-index:100001; align-items:center; justify-content:center;" onclick="if(event.target===this) closeReopenJobModal()">
+                        <div style="background:#fff; border-radius:16px; width:min(520px, 94vw); max-height:90vh; overflow-y:auto; box-shadow:0 25px 35px -5px rgba(0,0,0,0.18); padding:26px 28px; position:relative;" onclick="event.stopPropagation()">
+                            <!-- Header -->
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                                <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin:0;">Buka Kembali Lowongan</h3>
+                                <button type="button" onclick="closeReopenJobModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer; padding:4px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <p style="font-size:13px; color:#64748b; line-height:1.5; margin:0 0 20px 0;">
+                                Tentukan tanggal tayang dan batas waktu tayang yang baru. Lowongan akan berstatus Terjadwal Tayang sampai tanggal tayang tiba.
+                            </p>
+
+                            <form method="post" action="dashboard.php#lowongan">
+                                <input type="hidden" name="reopen_job" value="1">
+                                <input type="hidden" name="job_id" value="<?php echo (int)($detailJob['id'] ?? 0); ?>">
+
+                                <!-- Field 1: Tanggal tayang loker -->
+                                <div style="margin-bottom:18px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                        <label style="font-size:13px; font-weight:700; color:#0f172a;">
+                                            Tanggal tayang loker <span style="color:#ef4444;">*</span>
+                                        </label>
+                                        <label style="font-size:12.5px; color:#0284c7; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:500;" onclick="setReopenDateToday()">
+                                            <input type="radio" name="tayang_hari_ini" id="radioTayangHariIni" onchange="setReopenDateToday()" style="cursor:pointer; accent-color:#0284c7;">
+                                            Tayang hari ini?
+                                        </label>
+                                    </div>
+                                    <div style="position:relative;">
+                                        <input type="date" name="publish_date" id="reopenPublishDate" required min="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:10px; font-size:13.5px; color:#334155; outline:none; background:#fff;">
+                                    </div>
+                                </div>
+
+                                <!-- Field 2: Lama expired loker -->
+                                <div style="margin-bottom:18px;">
+                                    <label style="font-size:13px; font-weight:700; color:#0f172a; display:block; margin-bottom:6px;">
+                                        Lama expired loker <span style="color:#ef4444;">*</span>
+                                    </label>
+                                    <select name="expiry_days" id="reopenExpiryDays" required style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:10px; font-size:13.5px; color:#334155; outline:none; background:#fff; cursor:pointer;">
+                                        <option value="" disabled>Pilih lama expired loker</option>
+                                        <option value="7">7 Hari</option>
+                                        <option value="14">14 Hari</option>
+                                        <option value="30" selected>30 Hari</option>
+                                        <option value="60">60 Hari</option>
+                                        <option value="90">90 Hari</option>
+                                    </select>
+                                    <div style="font-size:12px; color:#94a3b8; margin-top:5px;">Pilih tanggal tayang terlebih dahulu.</div>
+                                </div>
+
+                                <!-- Field 3: Jumlah lowongan -->
+                                <div style="margin-bottom:24px;">
+                                    <label style="font-size:13px; font-weight:700; color:#0f172a; display:block; margin-bottom:6px;">
+                                        Jumlah lowongan <span style="color:#ef4444;">*</span>
+                                    </label>
+                                    <div style="display:flex; border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; background:#fff;">
+                                        <input type="number" name="quota" id="reopenQuota" required min="1" value="<?php echo (int)($detailJob['quota'] ?? 1); ?>" style="flex:1; border:none; padding:10px 14px; font-size:13.5px; outline:none; color:#0f172a;">
+                                        <div style="background:#f8fafc; border-left:1px solid #e2e8f0; padding:10px 16px; font-size:13px; font-weight:600; color:#64748b; display:flex; align-items:center;">
+                                            Orang
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div style="display:flex; justify-content:flex-end;">
+                                    <button type="submit" style="background:#00a2e9; color:#fff; border:none; padding:10px 24px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; box-shadow:0 4px 10px rgba(0, 162, 233, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#00a2e9'">
+                                        Buka Lowongan
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
@@ -2887,6 +2997,32 @@
                             btnRincian.style.borderBottomColor = tab === 'rincian' ? '#0ea5e9' : 'transparent';
                             btnRincian.style.color = tab === 'rincian' ? '#0ea5e9' : '#64748b';
                             btnRincian.style.fontWeight = tab === 'rincian' ? '700' : '600';
+                        }
+                    }
+
+                    function openReopenJobModal() {
+                        const modal = document.getElementById('modalReopenJob');
+                        if (modal) {
+                            modal.style.display = 'flex';
+                        }
+                    }
+
+                    function closeReopenJobModal() {
+                        const modal = document.getElementById('modalReopenJob');
+                        if (modal) {
+                            modal.style.display = 'none';
+                        }
+                    }
+
+                    function setReopenDateToday() {
+                        const input = document.getElementById('reopenPublishDate');
+                        const radio = document.getElementById('radioTayangHariIni');
+                        if (input) {
+                            const today = new Date().toISOString().split('T')[0];
+                            input.value = today;
+                        }
+                        if (radio) {
+                            radio.checked = true;
                         }
                     }
                     </script>
