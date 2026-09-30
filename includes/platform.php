@@ -612,7 +612,14 @@ function render_notif_dropdown(array $notifications, int $unread, string $verSta
             $isConsentTitle = (stripos($row['title'], 'Persetujuan') !== false || stripos($row['title'], 'Consent') !== false);
             // Hanya izinkan modal-user-consent jika manualStatus === 'CONSENT_PENDING' dan belum terverifikasi
             $canOpenConsent = ($isConsentTitle && $manualStatus === 'CONSENT_PENDING' && !$isVerified);
-            $modalAttr = $canOpenConsent ? ' data-open-modal="modal-user-consent" style="cursor:pointer;"' : '';
+            $isProfileTitle = (stripos($row['title'], 'Verifikasi Ulang') !== false || stripos($row['title'], 'Perbaikan Profil') !== false || stripos($row['title'], 'Profil Ditolak') !== false || stripos($row['title'], 'Hak Akses Tidak Aktif') !== false);
+            if ($canOpenConsent) {
+                $modalAttr = ' data-open-modal="modal-user-consent" style="cursor:pointer;"';
+            } elseif ($isProfileTitle || in_array($verStatus, ['INACTIVE_REVERIFICATION_REQUIRED', 'NEEDS_REVISION', 'REJECTED'], true)) {
+                $modalAttr = ' data-open-modal="modal-employer-profile" style="cursor:pointer;"';
+            } else {
+                $modalAttr = '';
+            }
             $items .= '<div class="notif-item' . $unreadClass . '"' . $modalAttr . '>';
             $items .= '<strong>' . e($row['title']) . '</strong>';
             $items .= '<p>' . e($row['message']) . '</p>';
@@ -1294,7 +1301,7 @@ function get_employer_access_status(array $profile, ?string $refTime = null): ar
  * - Concurrency protection: If status is already ACTIVE, rejects second request.
  * - Collision protection: If online reactivation is PENDING, rejects with clear error message.
  * - Directly transitions to ACTIVE / APPROVED with new 3-month cycle (no secondary verification case or approval).
- * - Sets last_activated_at = now, active_until = now + 3 months.
+ * - Sets last_activated_at = now, active_until = now + 6 months.
  * - Strict audit logging: action = 'REACTIVATE_EMPLOYER_ACCESS', source = 'ADMIN_DINAS'.
  */
 function reactivate_employer_access_by_admin_dinas(PDO $pdo, int $targetUserId, array $actorUser, ?string $refTime = null): array
@@ -1393,21 +1400,21 @@ function reactivate_employer_access_by_admin_dinas(PDO $pdo, int $targetUserId, 
         // Apply mutation: directly active with new 3-month cycle
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
         if ($driver === 'sqlite') {
-            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+6 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
         } else {
-            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
+            $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 6 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, suspension_reason = NULL, assigned_to = NULL, assigned_at = NULL WHERE user_id = ?');
         }
         $stmt->execute([$targetUserId]);
         $pdo->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
 
         $nowFormatted = format_indo_date(date('Y-m-d'));
-        $newActiveUntilFormatted = format_indo_date(date('Y-m-d', strtotime('+3 months')));
+        $newActiveUntilFormatted = format_indo_date(date('Y-m-d', strtotime('+6 months')));
         $prevActiveUntil = $targetEmp['active_until'] ? date('d M Y', strtotime($targetEmp['active_until'])) : '-';
 
-        $auditDetails = "Hak Akses Pemberi Kerja Individu direaktivasi langsung oleh Admin Dinas. Previous Status: {$currentStatus}, New Status: ACTIVE, Previous Active Until: {$prevActiveUntil}, New Activated At: " . date('Y-m-d H:i:s') . ", New Active Until: " . date('Y-m-d H:i:s', strtotime('+3 months')) . " | Source: ADMIN_DINAS";
+        $auditDetails = "Hak Akses Pemberi Kerja Individu direaktivasi langsung oleh Admin Dinas. Previous Status: {$currentStatus}, New Status: ACTIVE, Previous Active Until: {$prevActiveUntil}, New Activated At: " . date('Y-m-d H:i:s') . ", New Active Until: " . date('Y-m-d H:i:s', strtotime('+6 months')) . " | Source: ADMIN_DINAS";
         record_audit_log('employer', $targetUserId, 'REACTIVATE_EMPLOYER_ACCESS', $auditDetails, $actorUser['name'] ?? 'Admin Dinas', $actorUser['role'] ?? 'admin_dinas', true);
 
-        notify_user($targetUserId, 'Hak Akses Diaktifkan Kembali', 'Hak Akses Pemberi Kerja Individu Anda telah diaktifkan kembali oleh Dinas Tenaga Kerja selama 3 bulan.', 'success');
+        notify_user($targetUserId, 'Hak Akses Diaktifkan Kembali', 'Hak Akses Pemberi Kerja Individu Anda telah diaktifkan kembali oleh Dinas Tenaga Kerja selama 6 bulan.', 'success');
 
         if (!$inTx && $pdo->inTransaction()) {
             $pdo->commit();

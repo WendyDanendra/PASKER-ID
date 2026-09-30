@@ -390,7 +390,7 @@ if (file_exists($pkiCssPath)) {
     <?php endif; ?>
     <button type="submit" class="primary-btn" id="btnSubmitProfile">
         <i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>
-        Ajukan Profil
+        <?php echo (!empty($isReverification) || !empty($isFullDisable) || in_array($verificationStatus ?? "", ["FULL_DISABLED", "INACTIVE_REVERIFICATION_REQUIRED"], true) || (($verificationStatus ?? "") === "PENDING" && !empty($profile["last_activated_at"]))) ? "Ajukan Verifikasi Ulang" : "Ajukan Profil"; ?>
     </button>
 </div>
 

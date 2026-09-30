@@ -1857,7 +1857,7 @@
                                                 <i class="fa-regular fa-calendar" style="<?php echo $isH7 ? 'color:#d97706;' : 'color:#0284c7;'; ?>"></i>
                                                 Sisa <?php echo $daysRemaining; ?> hari
                                             </div>
-                                            <div class="summary-sub-val">Siklus 3 Bulan</div>
+                                            <div class="summary-sub-val">Siklus 6 Bulan</div>
                                         </div>
                                     </div>
                                 <?php else: ?>
@@ -1871,253 +1871,18 @@
                                     </div>
                                 <?php endif; ?>
                             <?php elseif ($isTransitionPeriod): ?>
-                                <div class="lifecycle-header-summary">
-                                    <div class="lifecycle-summary-item">
-                                        <div class="summary-top-tag warning">
-                                            <i class="fa-solid fa-triangle-exclamation"></i>
-                                            HARI KE-<?php echo $transElapsed; ?> DARI 7
-                                        </div>
-                                    </div>
-                                    <div class="lifecycle-summary-sep"></div>
-                                    <div class="lifecycle-summary-item">
-                                        <div class="summary-main-val" style="color:#d97706;">
-                                            <i class="fa-regular fa-calendar" style="color:#d97706;"></i>
-                                            Sisa <?php echo $transRemain; ?> hari
-                                        </div>
-                                        <div class="summary-sub-val">Masa Transisi</div>
-                                    </div>
-                                </div>
-                            <?php elseif (in_array($verificationStatus, ['PENDING', 'NOT_SUBMITTED'], true)): ?>
-                                <?php if (!empty($profile['last_activated_at'])): ?>
-                                    <div class="lifecycle-header-summary">
-                                        <div class="lifecycle-summary-item">
-                                            <div class="summary-top-tag warning">
-                                                <i class="fa-solid fa-hourglass-half"></i>
-                                                REAKTIVASI SEDANG DIVERIFIKASI
-                                            </div>
-                                        </div>
-                                        <div class="lifecycle-summary-sep"></div>
-                                        <div class="lifecycle-summary-item">
-                                            <div class="summary-main-val" style="color:#d97706; font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                                <i class="fa-solid fa-hourglass-half"></i> Menunggu Verifikasi
-                                            </div>
-                                            <div class="summary-sub-val">Reaktivasi Hak Akses</div>
-                                        </div>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="lifecycle-header-summary">
-                                        <div class="lifecycle-summary-item">
-                                            <div class="summary-main-val" style="color:#d97706; font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                                <i class="fa-solid fa-hourglass-half"></i> Menunggu Verifikasi
-                                            </div>
-                                            <div class="summary-sub-val">Pengajuan Profil Baru</div>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            <?php elseif ($verificationStatus === 'NEEDS_REVISION'): ?>
-                                <div class="lifecycle-header-summary">
-                                    <div class="lifecycle-summary-item">
-                                        <div class="summary-main-val" style="color:#dc2626; font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                            <i class="fa-solid fa-triangle-exclamation"></i> Perlu Diperbaiki
-                                        </div>
-                                        <div class="summary-sub-val">Menunggu Perbaikan Profil</div>
-                                    </div>
-                                </div>
-                            <?php elseif ($isFullDisable): ?>
-                                <div class="lifecycle-header-summary">
-                                    <div class="lifecycle-summary-item">
-                                        <div class="summary-main-val" style="color:#64748b; font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                            <i class="fa-regular fa-circle-xmark"></i> Tidak Aktif
-                                        </div>
-                                        <div class="summary-sub-val">Masa Aktif Berakhir</div>
-                                    </div>
-                                </div>
-                            <?php elseif ($verificationStatus === 'SUSPENDED'): ?>
-                                <div class="lifecycle-header-summary">
-                                    <div class="lifecycle-summary-item">
-                                        <div class="summary-main-val" style="color:#dc2626; font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                            <i class="fa-solid fa-ban"></i> Ditangguhkan
-                                        </div>
-                                        <div class="summary-sub-val">Aktivitas Dibekukan</div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- BANNER PEMBERITAHUAN -->
-                        <?php if ($verificationStatus === 'SUSPENDED'): ?>
-                            <!-- BANNER: SUSPENDED -->
-                            <div class="lifecycle-banner banner-danger">
-                                <div class="banner-title"><i class="fa-solid fa-ban"></i> HAK AKSES PEMBERI KERJA INDIVIDU DITANGGUHKAN</div>
-                                <div class="banner-desc">
-                                    Hak Akses Pemberi Kerja Individu Anda sedang ditangguhkan.<br>
-                                    Anda tetap dapat masuk ke akun SIAPKerja dan melihat informasi, tetapi aktivitas operasional Pemberi Kerja Individu sementara tidak dapat dilakukan.
-                                </div>
-                                <?php if (!empty($profile['suspension_reason'])): ?>
-                                    <div class="banner-subbox">
-                                        <strong>Alasan Penangguhan:</strong><br>
-                                        <?php echo e($profile['suspension_reason']); ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php elseif (in_array($verificationStatus, ['PENDING', 'NOT_SUBMITTED'], true) && empty($profile['verified']) && empty($profile['last_activated_at'])): ?>
-                            <!-- BANNER: PENDING REGISTRASI AWAL -->
-                            <div class="lifecycle-banner banner-warning">
-                                <div class="banner-title"><i class="fa-solid fa-hourglass-half"></i> MENUNGGU VERIFIKASI</div>
-                                <div class="banner-desc">
-                                    Pengajuan Profil Pemberi Kerja Individu sedang dalam proses verifikasi.<br>
-                                    Hak Akses akan mulai berlaku setelah pengajuan disetujui Admin.
-                                </div>
-                            </div>
-                        <?php elseif ($verificationStatus === 'PENDING' && !empty($profile['last_activated_at'])): ?>
-                            <!-- BANNER: PENDING REAKTIVASI -->
-                            <div class="lifecycle-banner banner-warning">
-                                <div class="banner-title"><i class="fa-solid fa-hourglass-half"></i> PERMOHONAN REAKTIVASI SEDANG DIVERIFIKASI</div>
-                                <div class="banner-desc">
-                                    Permohonan reaktivasi Hak Akses Pemberi Kerja Individu telah diterima dan sedang dalam proses verifikasi oleh Admin.<br><br>
-                                    Hak Akses belum aktif sampai pengajuan reaktivasi disetujui.
-                                </div>
-                                <div class="banner-subbox" style="margin-top:10px; font-weight:600; color:#92400e; background:rgba(254, 243, 199, 0.8);">
-                                    Status: Menunggu Verifikasi
-                                </div>
-                            </div>
-                        <?php elseif ($verificationStatus === 'NEEDS_REVISION'): ?>
-                            <!-- BANNER: NEEDS_REVISION -->
-                            <?php
-                            $revCount = (int)($profile['revision_count'] ?? ($profile['rejection_count'] ?? 1));
-                            $isMaxRevision = ($revCount >= 3);
-                            ?>
-                            <div class="lifecycle-banner banner-danger">
-                                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
-                                    <div style="flex:1; min-width:280px;">
-                                        <div class="banner-title">
-                                            <i class="fa-solid fa-triangle-exclamation"></i>
-                                            <?php echo $isMaxRevision ? 'PROFIL PERLU DIPERBAIKI (REVISI KE-3)' : 'PROFIL PERLU DIPERBAIKI (REVISI KE-' . $revCount . ')'; ?>
-                                        </div>
-                                        <div class="banner-desc">
-                                            <?php if ($isMaxRevision): ?>
-                                                Pengajuan profil telah mencapai batas maksimal perbaikan mandiri (Revisi ke-3). Proses selanjutnya harus dilakukan bersama Petugas Dinas sesuai domisili (<?php echo e($profile['city'] ?: 'Dinas Tenaga Kerja Setempat'); ?>).
-                                            <?php else: ?>
-                                                Terdapat informasi pada Profil Pemberi Kerja Individu yang perlu diperbaiki sebelum proses verifikasi dapat dilanjutkan.
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="banner-subbox">
-                                            <strong>Catatan Verifikator:</strong><br>
-                                            <?php echo e($profile['verifier_notes'] ?: 'Mohon perbaiki dan lengkapi data profil.'); ?>
-                                        </div>
-                                        <?php if ($isMaxRevision && ($profile['manual_review_status'] ?? '') === 'CONSENT_GIVEN'): ?>
-                                            <div style="margin-top:10px; font-size:12.5px; font-weight:600; color:#15803d; background:#dcfce7; border:1px solid #bbf7d0; padding:10px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:8px;">
-                                                <i class="fa-solid fa-circle-check"></i> Sudah Disetujui pada <?php echo !empty($profile['consent_given_at']) ? date('d M Y, H:i', strtotime($profile['consent_given_at'])) : '-'; ?> WIB. Menunggu konfirmasi verifikasi manual Petugas Dinas.
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div>
-                                        <?php if ($isMaxRevision): ?>
-                                            <?php if (($profile['manual_review_status'] ?? '') === 'CONSENT_PENDING'): ?>
-                                                <button type="button" class="primary-btn" style="background:#0284c7; height:38px; padding:0 18px; display:inline-flex; align-items:center; gap:8px;" data-open-modal="modal-user-consent">
-                                                    <i class="fa-solid fa-signature"></i> Tinjau & Berikan Persetujuan
-                                                </button>
-                                            <?php else: ?>
-                                                <button type="button" class="ghost-btn" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; height:38px; padding:0 16px; display:inline-flex; align-items:center; gap:6px;" data-open-modal="modal-verification-result">
-                                                    <i class="fa-solid fa-circle-info"></i> Lihat Hasil Verifikasi
-                                                </button>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <button type="button" class="primary-btn" style="background:#dc2626; height:38px; padding:0 18px; display:inline-flex; align-items:center; gap:8px;" data-open-modal="modal-employer-profile">
-                                                <i class="fa-solid fa-pen-to-square"></i> Perbaiki Profil
-                                            </button>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php elseif ($isFullDisable): ?>
-                            <!-- BANNER: FULL_DISABLED -->
-                            <?php if ($isEligibleForReactivation): ?>
-                                <div class="lifecycle-banner banner-success">
-                                    <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
-                                        <div>
-                                            <div class="banner-title"><i class="fa-solid fa-arrows-rotate"></i> HAK AKSES PEMBERI KERJA INDIVIDU TELAH BERAKHIR</div>
-                                            <div class="banner-desc">
-                                                Masa aktif dan Masa Transisi Hak Akses Pemberi Kerja Individu telah selesai.<br>
-                                                Berdasarkan hasil rekrutmen pada siklus sebelumnya, Anda dapat mengajukan reaktivasi Hak Akses secara online.
-                                            </div>
-                                        </div>
-                                        <a href="dashboard.php?open_profile=1" class="primary-btn" style="background:#16a34a; height:38px; padding:0 18px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-                                            <i class="fa-solid fa-rotate"></i> Ajukan Reaktivasi
-                                        </a>
-                                    </div>
-                                </div>
-                            <?php else: ?>
-                                <div class="lifecycle-banner banner-danger">
-                                    <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
-                                        <div>
-                                            <div class="banner-title"><i class="fa-solid fa-lock"></i> HAK AKSES PEMBERI KERJA INDIVIDU TELAH BERAKHIR</div>
-                                            <div class="banner-desc">
-                                                Masa aktif dan Masa Transisi Hak Akses Pemberi Kerja Individu telah selesai.<br>
-                                                Reaktivasi online tidak tersedia untuk siklus ini. Silakan mengikuti proses reaktivasi melalui Dinas Tenaga Kerja (<?php echo e($profile['city'] ?: 'sesuai domisili'); ?>).
-                                            </div>
-                                        </div>
-                                        <button type="button" class="ghost-btn" data-open-modal="modal-disnaker-instructions" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; height:38px; padding:0 16px;">
-                                            <i class="fa-solid fa-building-flag"></i> Info Dinas Domisili
-                                        </button>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                        <?php elseif ($isTransitionPeriod): ?>
                             <!-- BANNER: TRANSITION_LIMITED -->
-                            <?php if ($extStat === 'REQUESTED'): ?>
-                                <div class="lifecycle-banner banner-warning">
-                                    <div class="banner-title"><i class="fa-solid fa-hourglass-half"></i> PERMOHONAN PERPANJANGAN SEDANG DITINJAU</div>
-                                    <div class="banner-desc">
-                                        Permohonan perpanjangan Hak Akses Pemberi Kerja Individu telah diajukan dan sedang menunggu verifikasi Admin.
-                                    </div>
-                                    <div class="banner-countdown-row" style="margin-top:10px;">
-                                        <div class="countdown-stat">Hari ke-<?php echo $transElapsed; ?> dari 7</div>
-                                        <div class="countdown-remain">Sisa <?php echo $transRemain; ?> hari</div>
-                                    </div>
+                            <div class="lifecycle-banner banner-warning">
+                                <div class="banner-title"><i class="fa-solid fa-triangle-exclamation"></i> MASA TRANSISI — HAK AKSES TERBATAS</div>
+                                <div class="banner-desc">
+                                    Masa aktif Pemberi Kerja Individu telah berakhir.<br>
+                                    Anda berada dalam masa transisi selama <?php echo $transRemain; ?> hari dan tidak dapat membuat lowongan baru.
                                 </div>
-                            <?php elseif ($extStat === 'APPROVED'): ?>
-                                <div class="lifecycle-banner banner-success">
-                                    <div class="banner-title"><i class="fa-solid fa-circle-check"></i> PERPANJANGAN HAK AKSES DISETUJUI</div>
-                                    <div class="banner-desc">
-                                        Permohonan perpanjangan Hak Akses Pemberi Kerja Individu telah disetujui.<br>
-                                        Gunakan waktu tambahan untuk menyelesaikan proses rekrutmen yang masih berjalan.<br>
-                                        <strong>Berlaku sampai: <?php echo $activeUntilFormatted; ?></strong>
-                                    </div>
+                                <div class="banner-countdown-row" style="margin-top:10px;">
+                                    <div class="countdown-stat">Hari ke-<?php echo $transElapsed; ?> dari 7</div>
+                                    <div class="countdown-remain">Sisa <?php echo $transRemain; ?> hari</div>
                                 </div>
-                            <?php elseif ($extStat === 'REJECTED'): ?>
-                                <div class="lifecycle-banner banner-danger">
-                                    <div class="banner-title"><i class="fa-solid fa-triangle-exclamation"></i> PERPANJANGAN HAK AKSES TIDAK DISETUJUI</div>
-                                    <div class="banner-desc">
-                                        Permohonan perpanjangan Hak Akses Pemberi Kerja Individu tidak disetujui.<br>
-                                        Anda masih dapat menyelesaikan proses rekrutmen sesuai sisa Masa Transisi yang tersedia.<br>
-                                        <strong>Sisa Masa Transisi: <?php echo $transRemain; ?> hari</strong>
-                                    </div>
-                                </div>
-                            <?php else: ?>
-                                <div class="lifecycle-banner banner-warning">
-                                    <div class="banner-title"><i class="fa-solid fa-triangle-exclamation"></i> MASA TRANSISI — HAK AKSES TERBATAS</div>
-                                    <div class="banner-desc">
-                                        Masa aktif 3 bulan Hak Akses Pemberi Kerja Individu telah berakhir. Saat ini Anda berada dalam Masa Transisi. Anda masih dapat menyelesaikan proses rekrutmen yang sedang berjalan, namun tidak dapat membuat lowongan baru.
-                                    </div>
-                                    <div class="banner-countdown-row" style="margin-top:10px; margin-bottom:12px;">
-                                        <div class="countdown-stat">Hari ke-<?php echo $transElapsed; ?> dari 7</div>
-                                        <div class="countdown-remain">Sisa <?php echo $transRemain; ?> hari</div>
-                                    </div>
-                                    <form method="post" action="dashboard.php" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">
-                                        <input type="hidden" name="request_extension" value="1">
-                                        <span style="font-size:13px; font-weight:600; color:#78350f;">Ajukan Perpanjangan:</span>
-                                        <select name="extension_days" style="height:36px; padding:0 10px; border-radius:8px; border:1px solid #fcd34d; font-size:13px; background:#fff;">
-                                            <option value="1">1 Hari</option>
-                                            <option value="2">2 Hari</option>
-                                            <option value="3" selected>3 Hari</option>
-                                        </select>
-                                        <button type="submit" class="primary-btn" style="background:#d97706; height:36px; padding:0 16px; font-size:13px;">
-                                            <i class="fa-solid fa-paper-plane"></i> Kirim Permohonan
-                                        </button>
-                                    </form>
-                                </div>
-                            <?php endif; ?>
+                            </div>
                         <?php elseif (in_array($verificationStatus, ['ACTIVE_VERIFIED', 'APPROVED'], true) && $isH7 && $hasValidDates): ?>
                             <!-- BANNER: ACTIVE H-7 -->
                             <div class="lifecycle-banner banner-warning">
@@ -2132,14 +1897,14 @@
                                 <div class="lifecycle-banner banner-info" style="border-color:#a7f3d0; background:#f0fdf4;">
                                     <div class="banner-title" style="color:#065f46;"><i class="fa-solid fa-circle-check" style="color:#059669;"></i> HAK AKSES PEMBERI KERJA INDIVIDU TELAH DIAKTIFKAN KEMBALI</div>
                                     <div class="banner-desc" style="color:#047857;">
-                                        Hak Akses Pemberi Kerja Individu Anda telah direaktivasi dan kembali aktif selama 3 bulan sejak tanggal aktivasi terbaru.
+                                        Hak Akses Pemberi Kerja Individu Anda telah direaktivasi dan kembali aktif selama 6 bulan sejak tanggal aktivasi terbaru.
                                     </div>
                                 </div>
                             <?php else: ?>
                                 <div class="lifecycle-banner banner-info">
                                     <div class="banner-title"><i class="fa-solid fa-circle-info"></i> HAK AKSES PEMBERI KERJA INDIVIDU TELAH AKTIF</div>
                                     <div class="banner-desc">
-                                        Hak Akses Pemberi Kerja Individu Anda telah aktif dan berlaku selama 3 bulan sejak tanggal aktivasi. Anda kini dapat mempublikasikan lowongan kerja.
+                                        Hak Akses Pemberi Kerja Individu Anda telah aktif dan berlaku selama 6 bulan sejak tanggal aktivasi. Anda kini dapat mempublikasikan lowongan kerja.
                                         <br><br>
                                         <strong>Catatan penting:</strong> Anda dapat memiliki lebih dari satu lowongan aktif untuk jabatan yang berbeda. Kesamaan jabatan ditentukan berdasarkan Kode KBJI. Selama masih terdapat lowongan aktif dengan Kode KBJI yang sama, Anda tidak dapat membuat lowongan baru menggunakan Kode KBJI tersebut.
                                     </div>

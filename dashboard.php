@@ -92,7 +92,7 @@ $isExpired = false;
 $isTransitionPeriod = false;
 $isFullDisable = false;
 
-if (!empty($profile['verified']) && (int)$profile['verified'] === 1 && in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED', 'FULL_DISABLED'], true)) {
+if (!empty($profile['verified']) && (int)$profile['verified'] === 1 && in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED', 'FULL_DISABLED', 'INACTIVE_REVERIFICATION_REQUIRED'], true)) {
     if ($activeUntil) {
         if ($now <= $activeUntil) {
             $diff = $now->diff($activeUntil);
@@ -112,13 +112,15 @@ if (!empty($profile['verified']) && (int)$profile['verified'] === 1 && in_array(
                 $verificationStatus = 'TRANSITION_LIMITED';
                 $isTransitionPeriod = true;
             } else {
-                $verificationStatus = 'FULL_DISABLED';
+                $verificationStatus = 'INACTIVE_REVERIFICATION_REQUIRED';
                 $isFullDisable = true;
             }
         }
     } else {
         $verificationStatus = 'ACTIVE_VERIFIED';
     }
+} elseif ($verificationStatus === 'INACTIVE_REVERIFICATION_REQUIRED' || $verificationStatus === 'FULL_DISABLED') {
+    $isFullDisable = true;
 }
 
 // Lifecycle date calculation & formatting
@@ -470,7 +472,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        $isReactivation = ($isFullDisable || ($profile['verification_status'] ?? '') === 'FULL_DISABLED');
+        $isReactivation = ($isFullDisable || ($profile['verification_status'] ?? '') === 'FULL_DISABLED' || ($profile['verification_status'] ?? '') === 'INACTIVE_REVERIFICATION_REQUIRED' || !empty($profile['last_activated_at']));
+        $newVerStatus = $isReactivation ? 'REVERIFICATION_PENDING' : 'PENDING';
 
         if ($profile) {
             $stmt = db()->prepare('UPDATE employer_profiles SET
@@ -481,10 +484,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 latitude = ?, longitude = ?, permit_document = ?, doc_permission = ?,
                 workplace_photo = ?, doc_location_photo = ?,
                 description = ?, user_consent = ?, consent_accepted = ?,
-                entity_type = "Individu", verification_status = "PENDING", verified = 0, active_until = NULL,
+                entity_type = "Individu", verification_status = ?, verified = 0, active_until = NULL,
                 extension_requested = 0, extension_status = "NONE",
                 assigned_to = NULL, assigned_at = NULL, verifier_notes = NULL, verification_checklist = NULL,
-                manual_review_status = NULL, consent_data_hash = NULL, consent_agreed = 0,
+                manual_review_status = NULL, consent_data_hash = NULL, consent_agreed = 1,
                 updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?');
             $stmt->execute([
@@ -495,8 +498,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $latitude, $longitude, $permitDoc, $permitDoc,
                 $workplacePhoto, $workplacePhoto,
                 $description, $consent, $consent,
+                $newVerStatus,
                 $user['id']
             ]);
+
+            if ($isReactivation) {
+                record_audit_log('employer', $user['id'], 'REVERIFICATION_SUBMITTED', "Pengajuan Verifikasi Ulang Profil dikirim oleh pengguna.", $user['name'] ?? $ownerName, 'employer', true);
+            } else {
+                record_audit_log('employer', $user['id'], 'INITIAL_VERIFICATION_SUBMITTED', "Pengajuan Verifikasi Profil Pertama dikirim oleh pengguna.", $user['name'] ?? $ownerName, 'employer', true);
+            }
 
             // Sync location of existing jobs (Draft, Menunggu Verifikasi, Tayang, etc.) to match new "Lokasi Tempat Usaha / Kegiatan"
             $domPartsNew = array_filter([$village, $district, $city, $province]);
@@ -1152,7 +1162,7 @@ if ($selectedJobId > 0) {
 }
 
 // Prepare dynamic metrics & verification flags for Index.html template
-$isProfileVerified = (!empty($profile['verified']) && (int)$profile['verified'] === 1) && in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED'], true);
+$isProfileVerified = (!empty($profile['verified']) && (int)$profile['verified'] === 1) && in_array($verificationStatus, ['APPROVED', 'ACTIVE_VERIFIED', 'TRANSITION_LIMITED'], true);
 
 $jobCounts = [
     'draft' => 0, 'menunggu' => 0, 'revisi' => 0, 'ditolak' => 0,
@@ -2811,6 +2821,33 @@ if (!$applicants) {
         $activityHtml .= '<div class="activity-item"><div class="activity-title">' . e($applicant['seeker_name']) . ' · ' . e($meta['label']) . '</div><div class="activity-subtitle">' . e($applicant['job_title']) . '</div><div class="activity-meta">' . e(date('d M Y H:i', strtotime((string) $when))) . '</div></div>';
     }
     $activityHtml .= '</div>';
+}
+
+// Automatic notification reminders for H-7, Transition, Inactive, and Pending Reverification
+if ($isH7 && $hasValidDates && $daysRemaining > 0) {
+    $existing = db()->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND type = 'h7_reminder' AND created_at >= ?");
+    $existing->execute([$user['id'], date('Y-m-d 00:00:00')]);
+    if ((int)$existing->fetchColumn() === 0) {
+        notify_user((int)$user['id'], 'Pengingat Masa Aktif Hak Akses', "Masa aktif Pemberi Kerja Individu Anda akan berakhir dalam {$daysRemaining} hari. Pastikan profil tetap sesuai dan terbaru.", 'h7_reminder');
+    }
+} elseif ($isTransitionPeriod) {
+    $existing = db()->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND type = 'transition_reminder' AND created_at >= ?");
+    $existing->execute([$user['id'], date('Y-m-d 00:00:00')]);
+    if ((int)$existing->fetchColumn() === 0) {
+        notify_user((int)$user['id'], 'Masa Transisi Hak Akses', "Masa aktif Pemberi Kerja Individu telah berakhir. Anda berada dalam masa transisi selama {$transRemain} hari dan tidak dapat membuat lowongan baru.", 'transition_reminder');
+    }
+} elseif ($isFullDisable || $verificationStatus === 'INACTIVE_REVERIFICATION_REQUIRED') {
+    $existing = db()->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND type = 'inactive_reminder' AND created_at >= ?");
+    $existing->execute([$user['id'], date('Y-m-d 00:00:00')]);
+    if ((int)$existing->fetchColumn() === 0) {
+        notify_user((int)$user['id'], 'Hak Akses Tidak Aktif', 'Hak akses Pemberi Kerja Individu Anda tidak aktif. Lakukan verifikasi ulang profil untuk menggunakan kembali layanan.', 'inactive_reminder');
+    }
+} elseif (in_array($verificationStatus, ['REVERIFICATION_PENDING', 'PENDING'], true) && !empty($profile['last_activated_at'])) {
+    $existing = db()->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND type = 'pending_reverification_info' AND created_at >= ?");
+    $existing->execute([$user['id'], date('Y-m-d 00:00:00')]);
+    if ((int)$existing->fetchColumn() === 0) {
+        notify_user((int)$user['id'], 'Verifikasi Ulang Profil Sedang Diproses', 'Verifikasi ulang profil sedang diproses. Anda akan mendapatkan notifikasi setelah Admin memberikan keputusan.', 'pending_reverification_info');
+    }
 }
 
 $notifications = user_notifications((int) $user['id']);

@@ -148,9 +148,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (isset($_POST['admin_act
             if ($decision === 'approve') {
                 $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
                 if ($driver === 'sqlite') {
-                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+6 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 } else {
-                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
+                    $stmt = $pdo->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 6 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = NULL, verifier_notes = ?, verification_checklist = ? WHERE user_id = ?');
                 }
                 $stmt->execute([$notes, $checklist, $targetUserId]);
                 $pdo->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
@@ -158,13 +158,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (isset($_POST['admin_act
                 $isReactivationApproval = !empty($targetEmp['last_activated_at']);
                 $auditAction = $isReactivationApproval ? 'REACTIVATION_APPROVED' : 'APPROVED';
                 $auditText = $isReactivationApproval
-                    ? "Permohonan reaktivasi Hak Akses online disetujui. Masa aktif baru berlaku 3 bulan. Catatan: {$notes} | Source: ONLINE_REACTIVATION"
-                    : "Profil disetujui. Masa aktif berlaku 3 bulan. Catatan: {$notes} | Source: INITIAL_VERIFICATION";
+                    ? "Permohonan reaktivasi Hak Akses online disetujui. Masa aktif baru berlaku 6 bulan. Catatan: {$notes} | Source: ONLINE_REACTIVATION"
+                    : "Profil disetujui. Masa aktif berlaku 6 bulan. Catatan: {$notes} | Source: INITIAL_VERIFICATION";
 
                 record_audit_log('employer', $targetUserId, $auditAction, $auditText, $user['name'], $user['role'] ?? 'admin', true);
-                notify_user($targetUserId, 'Profil Disetujui', 'Selamat! Hak Akses Pemberi Kerja Individu Anda telah disetujui dan aktif selama 3 bulan.', 'success');
+                notify_user($targetUserId, 'Profil Disetujui', 'Selamat! Hak Akses Pemberi Kerja Individu Anda telah disetujui dan aktif selama 6 bulan.', 'success');
                 $pdo->commit();
-                flash('success', 'Hak Akses Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 3 Bulan).');
+                flash('success', 'Hak Akses Pemberi Kerja Individu berhasil Disetujui (Masa Aktif 6 Bulan).');
             } elseif ($decision === 'revision') {
                 $currentRev = (int)($targetEmp['revision_count'] ?? ($targetEmp['rejection_count'] ?? 0));
                 $newRevisionCount = min(3, $currentRev + 1);
@@ -325,14 +325,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (isset($_POST['admin_act
 
         $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
         if ($driver === 'sqlite') {
-            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+3 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
+            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = datetime("now", "+6 months"), last_activated_at = datetime("now"), extension_requested = 0, extension_status = "NONE", manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
         } else {
-            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 3 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
+            $stmt = db()->prepare('UPDATE employer_profiles SET verified = 1, verification_status = "APPROVED", active_until = DATE_ADD(NOW(), INTERVAL 6 MONTH), last_activated_at = NOW(), extension_requested = 0, extension_status = "NONE", manual_review_status = "APPROVED_DINAS", officer_name = ?, officer_statement = ? WHERE user_id = ?');
         }
         $stmt->execute([$officerName, $officerStatement, $targetUserId]);
         db()->prepare('UPDATE users SET profile_complete = 1 WHERE id = ?')->execute([$targetUserId]);
         record_audit_log('employer', $targetUserId, 'APPROVED_MANUAL_DINAS', "Profil disetujui & diaktifkan melalui Jalur Manual Dinas oleh petugas: {$officerName}. Pernyataan: {$officerStatement}", $user['name'], $user['role'] ?? 'admin', true);
-        notify_user($targetUserId, 'Profil Aktif (Jalur Dinas)', 'Selamat! Akun Pemberi Kerja Individu Anda telah disetujui dan diaktifkan oleh Dinas Tenaga Kerja selama 3 bulan.', 'success');
+        notify_user($targetUserId, 'Profil Aktif (Jalur Dinas)', 'Selamat! Akun Pemberi Kerja Individu Anda telah disetujui dan diaktifkan oleh Dinas Tenaga Kerja selama 6 bulan.', 'success');
         flash('success', 'Akun Pemberi Kerja Individu berhasil Disetujui & Diaktifkan melalui Jalur Manual Dinas.');
         redirect($redirectUrl);
         exit;
@@ -2349,7 +2349,7 @@ window.CITY_MASTER = [
 
                                         <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; font-size:12.5px; color:#1e40af; line-height:1.5;">
                                             <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
-                                            Hak Akses akan langsung aktif kembali selama <strong>3 bulan</strong> sejak tanggal reaktivasi ini.<br>
+                                            Hak Akses akan langsung aktif kembali selama <strong>6 bulan</strong> sejak tanggal reaktivasi ini.<br>
                                             Reaktivasi melalui Admin Dinas tidak memerlukan proses verifikasi lanjutan.
                                         </div>
                                     </div>
@@ -2879,8 +2879,11 @@ document.addEventListener('click', function(e) {
                                         $locationStr = !empty($locArr) ? implode(', ', $locArr) : ($emp['domicile_city_id'] ?: ($emp['city'] ?: '-'));
 
                                         $vStatus = $emp['verification_status'] ?? '';
-                                        if ($vStatus === 'APPROVED' || !empty($emp['verified'])) {
+                                        $isReverifCase = ($vStatus === 'REVERIFICATION_PENDING') || (!empty($emp['last_activated_at']) && in_array($vStatus, ['PENDING', 'REVERIFICATION_PENDING'], true));
+                                        if ($vStatus === 'APPROVED' || (!empty($emp['verified']) && (int)$emp['verified'] === 1 && !$isReverifCase && !in_array($vStatus, ['NEEDS_REVISION', 'REJECTED'], true))) {
                                             $badgeHtml = '<span class="pill-badge verified" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Terverifikasi</span>';
+                                        } elseif ($isReverifCase) {
+                                            $badgeHtml = '<span class="pill-badge reverification" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Verifikasi Ulang</span>';
                                         } elseif ($vStatus === 'NEEDS_REVISION') {
                                             $revNum = (int)($emp['revision_count'] ?? ($emp['rejection_count'] ?? 1));
                                             $revNum = max(1, min(3, $revNum));
@@ -2888,7 +2891,7 @@ document.addEventListener('click', function(e) {
                                         } elseif ($vStatus === 'REJECTED' || $vStatus === 'FULL_DISABLED') {
                                             $badgeHtml = '<span class="pill-badge rejected" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Ditolak</span>';
                                         } else {
-                                            $badgeHtml = '<span class="pill-badge pending" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Dikirim</span>';
+                                            $badgeHtml = '<span class="pill-badge pending" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Pendaftaran Baru</span>';
                                         }
 
                                         $dateStr = date('d M Y, H:i', strtotime($emp['created_at']));
@@ -2988,7 +2991,7 @@ document.addEventListener('click', function(e) {
 
                                         <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; font-size:12.5px; color:#1e40af; line-height:1.5;">
                                             <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
-                                            Hak Akses akan langsung aktif kembali selama <strong>3 bulan</strong> sejak tanggal reaktivasi ini.<br>
+                                            Hak Akses akan langsung aktif kembali selama <strong>6 bulan</strong> sejak tanggal reaktivasi ini.<br>
                                             Reaktivasi melalui Admin Dinas tidak memerlukan proses verifikasi lanjutan.
                                         </div>
                                     </div>
@@ -4313,7 +4316,7 @@ document.addEventListener('click', function(e) {
                                 </button>
                             </div>
                             <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:24px;">
-                                Apakah Anda yakin ingin menyetujui verifikasi profil pemberi kerja ini? Profil akan aktif terverifikasi selama 3 bulan.
+                                Apakah Anda yakin ingin menyetujui verifikasi profil pemberi kerja ini? Profil akan aktif terverifikasi selama 6 bulan.
                             </p>
                             <form method="post" action="admin.php?view=verifikasi_employer&detail_id=<?php echo $selectedEmployer['user_id']; ?>">
                                 <input type="hidden" name="admin_action" value="verify_employer">
