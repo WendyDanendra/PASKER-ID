@@ -1189,6 +1189,7 @@ $city = $profile['city'] ?? 'Kota Bekasi';
 // Ambil flash message SEBELUM ob_start (karena session harus dibaca dulu)
 $profileModalError = $_SESSION['profile_modal_error'] ?? null;
 unset($_SESSION['profile_modal_error']);
+$kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
 
 $isOpenProfile = isset($_GET['open_profile']) && $_GET['open_profile'] == '1';
 $showProfileModal = $isOpenProfile;

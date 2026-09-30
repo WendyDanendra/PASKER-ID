@@ -1630,6 +1630,20 @@ function initHashRouting(defaultPage = 'dashboard') {
     });
 }
 
+function normalizeDashboardPageContainer() {
+    const content = document.querySelector('.app-layout-wrapper .main > .content');
+    if (!content) {
+        return;
+    }
+
+    // Invalid table/modal nesting can make the browser foster-parent later
+    // sections outside .content. Put every routed page back in the one
+    // scroll container before hash routing runs.
+    document.querySelectorAll('.app-layout-wrapper .main > .page[data-page]').forEach((page) => {
+        content.appendChild(page);
+    });
+}
+
 function initSidebarToggle() {
     const sidebar = document.querySelector('.sidebar');
     const toggle = document.getElementById('sidebarToggle');
@@ -2030,6 +2044,7 @@ function initPengajuanVerifikasiChart() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    normalizeDashboardPageContainer();
     bindPageSwitchers();
     bindModalsAndDrawers();
     if (typeof bindCascadingLocation === 'function') {
