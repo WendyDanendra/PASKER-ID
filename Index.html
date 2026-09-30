@@ -3932,9 +3932,9 @@
                 </div>
                 <button type="button" class="ghost-btn" data-close-modal="modal-employer-profile" style="font-size:18px; padding:4px 10px;">×</button>
             </div>
-            <form method="post" action="dashboard.php" enctype="multipart/form-data" id="formEmployerProfile">
+            <form method="post" action="dashboard.php" enctype="multipart/form-data" id="formEmployerProfile" style="display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; margin:0;">
                 <input type="hidden" name="submit_profile" value="1">
-                <div class="modal-body" style="padding:24px;">
+                <div class="modal-body" style="padding:24px; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;">
                     <?php
                     $isRevision = true;
                     $formData = $profile ?? [];
