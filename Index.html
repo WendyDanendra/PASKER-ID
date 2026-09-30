@@ -2476,7 +2476,7 @@
                                         <button type="button" data-edit-draft="<?php echo $detailJob['id']; ?>" style="border:1px solid #cbd5e1; background:#ffffff; color:#334155; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05); transition:all 0.15s;" onmouseover="this.style.background='#f8fafc';this.style.borderColor='#94a3b8'" onmouseout="this.style.background='#ffffff';this.style.borderColor='#cbd5e1'">
                                             <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
                                         </button>
-                                        <button type="button" onclick="<?php echo ($monthlyQuotaTotal > 10) ? 'openLayer3WarningModal()' : 'document.getElementById(\'formSendJobDetail\').submit()'; ?>" style="background:#00a2e9; color:#ffffff; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(0, 162, 233, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#00a2e9'">
+                                        <button type="button" onclick="<?php echo ($monthlyQuotaTotal > 10) ? 'openLayer3WarningModal(' . (int)($detailJob['id'] ?? 0) . ')' : 'document.getElementById(\'formSendJobDetail\').submit()'; ?>" style="background:#00a2e9; color:#ffffff; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(0, 162, 233, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#00a2e9'">
                                             <i class="fa-solid fa-paper-plane"></i> Kirim Lowongan
                                         </button>
                                         <button type="button" onclick="openDeleteDraftModal(<?php echo (int)$detailJob['id']; ?>)" style="background:#ef4444; color:#ffffff; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(239, 68, 68, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
@@ -3113,7 +3113,8 @@
                                 <button type="button" onclick="closeLayer3WarningModal()" style="padding:9px 20px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;">
                                     Tutup
                                 </button>
-                                <button type="button" data-edit-draft="<?php echo !empty($detailJob['id']) ? $detailJob['id'] : e($_GET['job_detail'] ?? $_GET['draft_id'] ?? ''); ?>" onclick="closeLayer3WarningModal()" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25);">
+                                <?php $layer3JobId = (int)($detailJob['id'] ?? $_GET['job_detail'] ?? $_GET['open_draft'] ?? 0); ?>
+                                <button type="button" data-edit-draft="<?php echo $layer3JobId; ?>" onclick="closeLayer3WarningModal()" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25);">
                                     <i class="fa-solid fa-pen-to-square"></i> Sesuaikan Kuota
                                 </button>
                             </div>
@@ -3202,9 +3203,13 @@
                         }
                     }
 
-                    function openLayer3WarningModal() {
+                    function openLayer3WarningModal(jobId) {
                         const modal = document.getElementById('modalLayer3Warning');
                         if (modal) {
+                            if (jobId) {
+                                const editBtn = modal.querySelector('[data-edit-draft]');
+                                if (editBtn) editBtn.setAttribute('data-edit-draft', String(jobId));
+                            }
                             modal.style.display = 'flex';
                             modal.classList.add('open');
                         }
