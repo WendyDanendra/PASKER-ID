@@ -1870,7 +1870,10 @@
                                         </div>
                                     </div>
                                 <?php endif; ?>
-                            <?php elseif ($isTransitionPeriod): ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if ($isTransitionPeriod): ?>
                             <!-- BANNER: TRANSITION_LIMITED -->
                             <div class="lifecycle-banner banner-warning">
                                 <div class="banner-title"><i class="fa-solid fa-triangle-exclamation"></i> MASA TRANSISI — HAK AKSES TERBATAS</div>
@@ -3122,7 +3125,10 @@
                                           </tr>
                                      <?php endforeach; ?>
                                  <?php endif; ?>
-                             </div><div class="table-footer" style="padding:12px 16px; font-size:12px; color:#64748b; background:#f8fafc; border-top:1px solid #e2e8f0;">Daftar lowongan Anda (Total: <?php echo count($jobs); ?>)</div>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-footer" style="padding:12px 16px; font-size:12px; color:#64748b; background:#f8fafc; border-top:1px solid #e2e8f0;">Daftar lowongan Anda (Total: <?php echo count($jobs); ?>)</div>
                     </div>
                 </div>
                 <?php endif; ?>
