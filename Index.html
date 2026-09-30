@@ -3312,18 +3312,16 @@
                                                                       <div style="font-size:13px; color:#78350f; margin-bottom:12px; line-height:1.4;">
                                                                           Pemberi Kerja Individu dapat mengajukan maksimal 10 orang dalam satu bulan kalender.
                                                                       </div>
-                                                                      <div style="background:#ffffff; border:1px solid #fef3c7; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:13px; color:#78350f; display:inline-block; min-width:280px;">
-                                                                          <div style="display:flex; justify-content:space-between; gap:24px; margin-bottom:4px;">
-                                                                              <span>Total kuota bulan ini</span>
-                                                                              <span>: <strong><?php echo $totalMonthlyQuota; ?> orang</strong></span>
-                                                                          </div>
-                                                                          <div style="display:flex; justify-content:space-between; gap:24px; margin-bottom:4px;">
-                                                                              <span>Batas maksimal</span>
-                                                                              <span>: <strong>10 orang</strong></span>
-                                                                          </div>
-                                                                          <div style="display:flex; justify-content:space-between; gap:24px; color:#dc2626;">
-                                                                              <span>Melebihi batas</span>
-                                                                              <span>: <strong><?php echo $exceededMonthlyQuota; ?> orang</strong></span>
+                                                                      <div style="background:#ffffff; border:1px solid #fef3c7; border-radius:8px; padding:12px 16px; margin-bottom:12px; font-size:13px; color:#78350f; width:100%; box-sizing:border-box;">
+                                                                          <div style="display:grid; grid-template-columns:160px 1fr; row-gap:6px; align-items:center;">
+                                                                              <div>Total kuota bulan ini</div>
+                                                                              <div>: <strong><?php echo $totalMonthlyQuota; ?> orang</strong></div>
+
+                                                                              <div>Batas maksimal</div>
+                                                                              <div>: <strong>10 orang</strong></div>
+
+                                                                              <div style="color:#dc2626;">Melebihi batas</div>
+                                                                              <div style="color:#dc2626;">: <strong><?php echo $exceededMonthlyQuota; ?> orang</strong></div>
                                                                           </div>
                                                                       </div>
                                                                       <div style="font-size:12.5px; color:#92400e;">
@@ -3403,9 +3401,9 @@
                                                               </div>
 
                                                               <!-- DESKRIPSI PEKERJAAN -->
-                                                              <div>
-                                                                  <div style="font-weight:700; font-size:13px; color:#1e293b; margin-bottom:6px;">Deskripsi Pekerjaan</div>
-                                                                  <div style="font-size:13px; line-height:1.6; color:#334155; white-space:pre-wrap; background:#ffffff; padding:12px 14px; border:1px solid #cbd5e1; border-radius:10px; font-family:inherit;">
+                                                              <div style="text-align:left;">
+                                                                  <div style="font-weight:700; font-size:13px; color:#1e293b; margin-bottom:6px; text-align:left;">Deskripsi Pekerjaan</div>
+                                                                  <div style="font-size:13px; line-height:1.6; color:#334155; white-space:pre-wrap; background:#ffffff; padding:12px 14px; border:1px solid #cbd5e1; border-radius:10px; font-family:inherit; text-align:left;">
                                                                       <?php echo e($j['description']); ?>
                                                                   </div>
                                                               </div>
