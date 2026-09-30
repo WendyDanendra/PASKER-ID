@@ -464,7 +464,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         }
 
         $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'docx']);
-        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
+        if (!empty($_FILES['workplace_photo']['name'])) {
+            $photoExt = strtolower(pathinfo((string) $_FILES['workplace_photo']['name'], PATHINFO_EXTENSION));
+            $photoSize = (int) ($_FILES['workplace_photo']['size'] ?? 0);
+            $photoErr = (int) ($_FILES['workplace_photo']['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($photoErr !== UPLOAD_ERR_OK || !in_array($photoExt, ['png', 'jpg', 'jpeg'], true) || $photoSize > 2 * 1024 * 1024) {
+                $_SESSION['profile_modal_error'] = 'Foto bukti tempat usaha harus berformat PNG atau JPG dengan ukuran maksimal 2MB.';
+                flash('error', 'Foto bukti tempat usaha harus berformat PNG atau JPG dengan ukuran maksimal 2MB.');
+                redirect('dashboard.php?open_profile=1');
+                exit;
+            }
+        }
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['png', 'jpg', 'jpeg']);
         $existingPermit = !empty($_POST['existing_permit_document']) ? trim($_POST['existing_permit_document']) : null;
         $existingWorkplace = !empty($_POST['existing_workplace_photo']) ? trim($_POST['existing_workplace_photo']) : null;
         $permitDoc = $permitDoc ?: ($existingPermit ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null));

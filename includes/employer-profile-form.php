@@ -42,6 +42,20 @@ if (!empty($vPermitDoc)) {
         }
     }
 }
+$vPhotoSizeText = '';
+if (!empty($vPhoto)) {
+    $baseDir = realpath(__DIR__ . '/..');
+    $photoRelative = ltrim(str_replace('\\', '/', (string) $vPhoto), '/');
+    $photoAbsolute = realpath(__DIR__ . '/../' . $photoRelative);
+    if ($baseDir && $photoAbsolute && str_starts_with($photoAbsolute, $baseDir) && is_file($photoAbsolute)) {
+        $bytes = (int) filesize($photoAbsolute);
+        if ($bytes > 0) {
+            $vPhotoSizeText = $bytes >= 1024 * 1024
+                ? number_format($bytes / (1024 * 1024), 2) . ' MB'
+                : number_format($bytes / 1024, 2) . ' KB';
+        }
+    }
+}
 
 $vLinkedin = e($formData['linkedin'] ?? '');
 $vFacebook = e($formData['facebook'] ?? '');
@@ -348,9 +362,14 @@ if (file_exists($pkiCssPath)) {
                     <button type="button" class="pki-upload-btn" id="pki_btn_workplace_photo"><?php echo !empty($vPhoto) ? 'Ganti' : 'Upload'; ?></button>
                 </div>
             </div>
-            <input type="file" name="workplace_photo" id="pki_input_workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="display:none;" onchange="pkiHandleFileChange(this, 'workplace_photo')">
+            <input type="file" name="workplace_photo" id="pki_input_workplace_photo" accept=".png,.jpg,.jpeg" style="display:none;" onchange="pkiHandleFileChange(this, 'workplace_photo')">
             <input type="hidden" name="existing_workplace_photo" id="pki_existing_workplace_photo" value="<?php echo e($vPhoto); ?>">
-            <div class="pki-field-helper" id="helper_workplace_photo">Unggah minimal 1 foto tempat usaha/kegiatan sesuai alamat pada profil.</div>
+            <div class="pki-field-helper" id="helper_workplace_photo">Format PNG, JPG. Ukuran Maksimal 2MB</div>
+            <div class="pki-field-helper" id="helper_workplace_photo_size" style="<?php echo $vPhotoSizeText !== '' ? '' : 'display:none;'; ?>">
+                <?php if ($vPhotoSizeText !== ''): ?>
+                    Ukuran file yang di upload: <?php echo e($vPhotoSizeText); ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>

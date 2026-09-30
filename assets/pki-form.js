@@ -744,6 +744,15 @@
                 return;
             }
             clearFieldError('permit_document');
+        } else if (fieldId === 'workplace_photo') {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            if (!['png', 'jpg', 'jpeg'].includes(ext) || file.size > 2 * 1024 * 1024) {
+                input.value = '';
+                setFieldError('workplace_photo', 'Format PNG, JPG. Ukuran Maksimal 2MB.');
+                setUploadSizeInfo(fieldId, 0);
+                return;
+            }
+            clearFieldError('workplace_photo');
         }
 
         if (textBox) {
@@ -821,7 +830,7 @@
         postal_code: 'Pilihan kode pos mengikuti lokasi yang dipilih.',
         address_detail: 'Opsional. Tambahkan informasi yang membantu mengenali lokasi.',
         permit_document: 'Format PDF, Docx. Ukuran Maksimal 2MB',
-        workplace_photo: 'Unggah minimal 1 foto tempat usaha/kegiatan sesuai alamat pada profil.',
+        workplace_photo: 'Format PNG, JPG. Ukuran Maksimal 2MB',
         linkedin: 'Isi minimal salah satu media sosial.',
         facebook: 'Isi minimal salah satu media sosial.',
         instagram: 'Isi minimal salah satu media sosial.',
@@ -1012,9 +1021,17 @@
             // 11. Foto Bukti Tempat Usaha / Lokasi
             const photoFileInput = document.getElementById('pki_input_workplace_photo');
             const existingPhoto = document.getElementById('pki_existing_workplace_photo')?.value?.trim();
-            const hasPhoto = (photoFileInput && photoFileInput.files && photoFileInput.files.length > 0) || Boolean(existingPhoto);
+            const photoFile = photoFileInput?.files?.[0];
+            const hasPhoto = Boolean(photoFile) || Boolean(existingPhoto);
             if (!hasPhoto) {
                 flagError('workplace_photo', 'Unggah minimal 1 foto tempat usaha/kegiatan.', document.getElementById('pki_box_workplace_photo'));
+            } else if (photoFile) {
+                const photoExt = (photoFile.name.split('.').pop() || '').toLowerCase();
+                if (!['png', 'jpg', 'jpeg'].includes(photoExt) || photoFile.size > 2 * 1024 * 1024) {
+                    flagError('workplace_photo', 'Format PNG, JPG. Ukuran Maksimal 2MB.', document.getElementById('pki_box_workplace_photo'));
+                } else {
+                    clearFieldError('workplace_photo');
+                }
             } else {
                 clearFieldError('workplace_photo');
             }
