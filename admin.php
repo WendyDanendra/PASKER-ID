@@ -2983,7 +2983,7 @@ document.addEventListener('click', function(e) {
                                         } elseif ($vStatus === 'REJECTED' || $vStatus === 'FULL_DISABLED') {
                                             $badgeHtml = '<span class="pill-badge rejected" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Ditolak</span>';
                                         } else {
-                                            $badgeHtml = '<span class="pill-badge pending" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Pendaftaran Baru</span>';
+                                            $badgeHtml = '<span class="pill-badge pending" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:600; padding:4px 10px; border-radius:999px; font-size:12px; display:inline-flex; align-items:center; gap:5px;"><span style="font-size:8px;">●</span> Dikirim</span>';
                                         }
 
                                         $dateStr = date('d M Y, H:i', strtotime($emp['created_at']));
