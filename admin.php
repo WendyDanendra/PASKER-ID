@@ -3409,7 +3409,15 @@ document.addEventListener('click', function(e) {
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Jenis Profesi / Usaha Individu</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['profession'] ?: ($selectedEmployer['description'] ?: 'Jasa Desain Grafis')); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">NPWP</td><td style="padding:10px 14px; color:#0f172a;"><code><?php echo e($selectedEmployer['npwp'] ?: '12.345.678.9-123.000'); ?></code></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Sosial Media</td><td style="padding:10px 14px; color:#0f172a;">Instagram: @<?php echo e(strtolower(preg_replace('/[^a-zA-Z0-9]+/', '', $selectedEmployer['owner_name'] ?: $selectedEmployer['name']))); ?></td></tr>
-                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Lokasi Domisili</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['city'] ?: 'Dago, Coblong, Kota Bandung, Jawa Barat'); ?></td></tr>
+                                                <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Lokasi Domisili</td><td style="padding:10px 14px; color:#0f172a;"><?php 
+                                                     $empLocParts = array_filter([
+                                                         $selectedEmployer['village'] ?? '',
+                                                         $selectedEmployer['district'] ?? '',
+                                                         $selectedEmployer['city'] ?? '',
+                                                         $selectedEmployer['province'] ?? ''
+                                                     ]);
+                                                     echo e(!empty($empLocParts) ? implode(', ', $empLocParts) : ($selectedEmployer['city'] ?: 'Dago, Coblong, Kota Bandung, Jawa Barat'));
+                                                 ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Alamat Lengkap</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address'] ?: 'Jl. Ir. H. Juanda No. 25'); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Detail Alamat / Patokan</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['address_detail'] ?: 'Dekat persimpangan utama'); ?></td></tr>
                                                 <tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 14px; font-weight:600; color:#334155;">Kode Pos</td><td style="padding:10px 14px; color:#0f172a;"><?php echo e($selectedEmployer['postal_code'] ?: '40135'); ?></td></tr>
