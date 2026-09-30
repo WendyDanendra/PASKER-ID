@@ -1168,76 +1168,121 @@ if ($view === 'verifikasi_employer') {
 if ($view === 'verifikasi_job') {
     $query = <<<SQL
         SELECT j.*, ep.owner_name, ep.profession, ep.city as emp_city, ep.province as emp_province, u.name as user_name, u.email as user_email
+    SQL;
+    $baseFilter = <<<SQL
         FROM job_posts j
         JOIN users u ON u.id = j.user_id
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
+        WHERE j.status NOT IN ("Draft", "draft")
     SQL;
-    $params = [];
+    $paramsCommon = [];
 
-    if ($entity === 'Perusahaan') {
-        $query .= ' WHERE j.entity_type = "Perusahaan"';
-    } else {
-        $query .= ' WHERE (j.entity_type = "Individu" OR j.entity_type = "Individual" OR j.entity_type IS NULL)';
+    $entityFilter = '';
+    $entityParams = [];
+    if ($entity === 'Individu' || $entity === 'Individual') {
+        $entityFilter = ' AND (j.entity_type = "Individu" OR j.entity_type = "Individual" OR j.entity_type IS NULL)';
+    } elseif ($entity === 'Perusahaan') {
+        $entityFilter = ' AND j.entity_type = "Perusahaan"';
     }
 
-    // Filter out jobs with status Draft as they have not been submitted for verification yet
-    $query .= ' AND j.status NOT IN ("Draft", "draft")';
-
     if ($search !== '') {
-        $query .= ' AND (j.title LIKE ? OR j.location LIKE ? OR j.kbji_code LIKE ? OR u.name LIKE ? OR ep.owner_name LIKE ?)';
+        $baseFilter .= ' AND (j.title LIKE ? OR j.location LIKE ? OR j.kbji_code LIKE ? OR u.name LIKE ? OR ep.owner_name LIKE ?)';
         $like = '%' . $search . '%';
-        $params = array_merge($params, [$like, $like, $like, $like, $like]);
+        $paramsCommon = array_merge($paramsCommon, [$like, $like, $like, $like, $like]);
     }
 
     if ($startDate !== '') {
-        $query .= ' AND DATE(j.created_at) >= ?';
-        $params[] = $startDate;
+        $baseFilter .= ' AND DATE(j.created_at) >= ?';
+        $paramsCommon[] = $startDate;
     }
     if ($endDate !== '') {
-        $query .= ' AND DATE(j.created_at) <= ?';
-        $params[] = $endDate;
+        $baseFilter .= ' AND DATE(j.created_at) <= ?';
+        $paramsCommon[] = $endDate;
     }
     if ($cityFilter !== '') {
-        $query .= ' AND (j.location LIKE ? OR ep.city LIKE ? OR ep.domicile_city_id LIKE ? OR ep.province LIKE ?)';
+        $baseFilter .= ' AND (j.location LIKE ? OR ep.city LIKE ? OR ep.domicile_city_id LIKE ? OR ep.province LIKE ?)';
         $cityLike = '%' . $cityFilter . '%';
-        $params = array_merge($params, [$cityLike, $cityLike, $cityLike, $cityLike]);
+        $paramsCommon = array_merge($paramsCommon, [$cityLike, $cityLike, $cityLike, $cityLike]);
     }
 
+    $tabFilter = '';
+    $tabParams = [];
     if ($tab === 'process') {
-        $query .= ' AND j.status = "Menunggu Verifikasi"';
+        $tabFilter = ' AND j.status = "Menunggu Verifikasi"';
     } elseif ($tab === 'revision') {
-        $query .= ' AND j.status = "Perlu Direvisi"';
+        $tabFilter = ' AND j.status = "Perlu Direvisi"';
     } elseif ($tab === 'approved') {
-        $query .= ' AND j.status = "Tayang"';
+        $tabFilter = ' AND j.status = "Tayang"';
     } elseif ($tab === 'rejected') {
-        $query .= ' AND (j.status = "Ditolak" OR j.status = "CANCELED")';
+        $tabFilter = ' AND (j.status = "Ditolak" OR j.status = "CANCELED")';
     } elseif ($tab === 'additional_doc') {
-        $query .= ' AND j.status = "ADDITIONAL_DOCUMENT_PENDING"';
+        $tabFilter = ' AND j.status = "ADDITIONAL_DOCUMENT_PENDING"';
     }
 
     // Admin Dinas Scope Filter (exact domicile_city_id match)
     if ($user['role'] === 'admin_dinas' || (!empty($user['domicile_city_id']) && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
         $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
         if ($adminDomicileCity !== '') {
-            $query .= ' AND ep.domicile_city_id = ?';
-            $params[] = $adminDomicileCity;
+            $baseFilter .= ' AND ep.domicile_city_id = ?';
+            $paramsCommon[] = $adminDomicileCity;
         }
     }
 
     $sort = $_GET['sort'] ?? 'date_desc';
+    $orderBy = ' ORDER BY j.created_at DESC';
     if ($sort === 'name_asc') {
-        $query .= ' ORDER BY j.title ASC';
+        $orderBy = ' ORDER BY j.title ASC';
     } elseif ($sort === 'name_desc') {
-        $query .= ' ORDER BY j.title DESC';
+        $orderBy = ' ORDER BY j.title DESC';
     } elseif ($sort === 'date_asc') {
-        $query .= ' ORDER BY j.created_at ASC';
-    } else {
-        $query .= ' ORDER BY j.created_at DESC';
+        $orderBy = ' ORDER BY j.created_at ASC';
     }
 
+    $query .= $baseFilter . $entityFilter . $tabFilter . $orderBy;
+    $params = array_merge($paramsCommon, $entityParams, $tabParams);
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $verificationJobs = $stmt->fetchAll() ?: [];
+
+    // Counts for status tabs, preserving entity and active filter/search scope.
+    $statusCountSql = <<<SQL
+        SELECT
+            COUNT(*) AS all_count,
+            SUM(CASE WHEN j.status = "Menunggu Verifikasi" THEN 1 ELSE 0 END) AS process_count,
+            SUM(CASE WHEN j.status = "Perlu Direvisi" THEN 1 ELSE 0 END) AS revision_count,
+            SUM(CASE WHEN j.status = "Tayang" THEN 1 ELSE 0 END) AS approved_count,
+            SUM(CASE WHEN (j.status = "Ditolak" OR j.status = "CANCELED") THEN 1 ELSE 0 END) AS rejected_count
+        {$baseFilter}
+        {$entityFilter}
+    SQL;
+    $stmtStatusCounts = db()->prepare($statusCountSql);
+    $stmtStatusCounts->execute(array_merge($paramsCommon, $entityParams));
+    $statusCountsRow = $stmtStatusCounts->fetch() ?: [];
+    $jobStatusCounts = [
+        'all' => (int)($statusCountsRow['all_count'] ?? 0),
+        'process' => (int)($statusCountsRow['process_count'] ?? 0),
+        'revision' => (int)($statusCountsRow['revision_count'] ?? 0),
+        'approved' => (int)($statusCountsRow['approved_count'] ?? 0),
+        'rejected' => (int)($statusCountsRow['rejected_count'] ?? 0),
+    ];
+
+    // Counts for entity pills, preserving active tab and active filter/search scope.
+    $entityCountSql = <<<SQL
+        SELECT
+            COUNT(*) AS all_entities_count,
+            SUM(CASE WHEN j.entity_type = "Perusahaan" THEN 1 ELSE 0 END) AS perusahaan_count,
+            SUM(CASE WHEN (j.entity_type = "Individu" OR j.entity_type = "Individual" OR j.entity_type IS NULL) THEN 1 ELSE 0 END) AS individual_count
+        {$baseFilter}
+        {$tabFilter}
+    SQL;
+    $stmtEntityCounts = db()->prepare($entityCountSql);
+    $stmtEntityCounts->execute(array_merge($paramsCommon, $tabParams));
+    $entityCountsRow = $stmtEntityCounts->fetch() ?: [];
+    $jobEntityCounts = [
+        'Semua' => (int)($entityCountsRow['all_entities_count'] ?? 0),
+        'Perusahaan' => (int)($entityCountsRow['perusahaan_count'] ?? 0),
+        'Individu' => (int)($entityCountsRow['individual_count'] ?? 0),
+    ];
 
     $perPage = 20;
     $totalData = count($verificationJobs);
@@ -6691,11 +6736,11 @@ function openDecisionModal() {
                         <!-- STATUS TAB LIST -->
                         <div style="border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
                             <div class="status-tab-list" style="gap:24px;">
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=revision&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=approved&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Disetujui</a>
-                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Semua<?php if ((int)($jobStatusCounts['all'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($jobStatusCounts['all'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Menunggu Verifikasi<?php if ((int)($jobStatusCounts['process'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($jobStatusCounts['process'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=revision&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Revisi<?php if ((int)($jobStatusCounts['revision'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($jobStatusCounts['revision'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=approved&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Disetujui<?php if ((int)($jobStatusCounts['approved'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($jobStatusCounts['approved'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_job&entity=<?php echo e($entity); ?>&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsJob; ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Ditolak<?php if ((int)($jobStatusCounts['rejected'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($jobStatusCounts['rejected'] ?? 0); ?></span><?php endif; ?></a>
                             </div>
                         </div>
 
@@ -6719,9 +6764,9 @@ function openDecisionModal() {
 
                                 <!-- SEGMENTED PILL FILTER: Semua | Perusahaan | Individual -->
                                 <div style="display:inline-flex; background:#f1f5f9; border-radius:999px; padding:3px; gap:2px;">
-                                    <a href="admin.php?view=verifikasi_job&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua</a>
-                                    <a href="admin.php?view=verifikasi_job&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan</a>
-                                    <a href="admin.php?view=verifikasi_job&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual</a>
+                                    <a href="admin.php?view=verifikasi_job&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:7px; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua<?php if ((int)($jobEntityCounts['Semua'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 7px; border-radius:999px; background:#e2e8f0; color:#334155; font-size:11px; font-weight:700;"><?php echo (int)($jobEntityCounts['Semua'] ?? 0); ?></span><?php endif; ?></a>
+                                    <a href="admin.php?view=verifikasi_job&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:7px; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan<?php if ((int)($jobEntityCounts['Perusahaan'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 7px; border-radius:999px; background:#e2e8f0; color:#334155; font-size:11px; font-weight:700;"><?php echo (int)($jobEntityCounts['Perusahaan'] ?? 0); ?></span><?php endif; ?></a>
+                                    <a href="admin.php?view=verifikasi_job&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsJob; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:7px; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual<?php if ((int)($jobEntityCounts['Individu'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 7px; border-radius:999px; background:#e2e8f0; color:#334155; font-size:11px; font-weight:700;"><?php echo (int)($jobEntityCounts['Individu'] ?? 0); ?></span><?php endif; ?></a>
                                 </div>
                             </div>
 
