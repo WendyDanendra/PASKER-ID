@@ -675,7 +675,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             } else {
                 // Layer 3: Monthly quota exceeded (>10) - Open modal directly without top toast notification
                 unset($_SESSION['flash']);
-                redirect('dashboard.php?open_draft=' . $jobId . '&layer3_error=1#lowongan');
+                redirect('dashboard.php?job_detail=' . $jobId . '&layer3_error=1#lowongan');
                 exit;
             }
         }

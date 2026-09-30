@@ -2350,11 +2350,15 @@
                                 <div style="display:flex; flex-direction:column; gap:6px; font-size:13.5px; color:#64748b;">
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <i class="fa-regular fa-calendar-days" style="color:#94a3b8; font-size:13.5px; width:16px;"></i>
-                                        <span>Ditayangkan: <strong><?php echo $dPublishDateFormatted; ?></strong> — Kadaluarsa: <strong><?php echo $dExpiryDateFormatted; ?></strong></span>
+                                        <?php if ($dStatus === 'Draft'): ?>
+                                            <span>Kadaluarsa: <strong><?php echo $dExpiryDateFormatted; ?></strong></span>
+                                        <?php else: ?>
+                                            <span>Ditayangkan: <strong><?php echo $dPublishDateFormatted; ?></strong> — Kadaluarsa: <strong><?php echo $dExpiryDateFormatted; ?></strong></span>
+                                        <?php endif; ?>
                                     </div>
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <i class="fa-solid fa-graduation-cap" style="color:#94a3b8; font-size:13.5px; width:16px;"></i>
-                                        <span>Pendidikan Minimal: <strong><?php echo e($detailJob['min_education'] ?: ($detailData['education_required'] ?: 'Sarjana')); ?></strong></span>
+                                        <span>Pendidikan Minimal: <strong><?php echo e($detailJob['min_education'] ?: ($detailData['education_required'] ?: 'SMA atau Sederajat')); ?></strong></span>
                                     </div>
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <i class="fa-solid fa-location-dot" style="color:#94a3b8; font-size:13.5px; width:16px;"></i>
@@ -2369,7 +2373,7 @@
                                 </div>
                             </div>
 
-                            <!-- Right: Kuota Card & Action Button -->
+                            <!-- Right: Kuota Card & Action Buttons -->
                             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:12px; min-width:240px;">
                                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 20px; width:100%; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
                                     <div style="font-size:13px; font-weight:700; color:#1e293b; margin-bottom:8px;">Kuota</div>
@@ -2381,13 +2385,25 @@
                                     </div>
                                 </div>
 
-                                <?php if ($dStatus === 'Ditutup'): ?>
+                                <?php if ($dStatus === 'Draft'): ?>
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                                        <button type="button" data-edit-draft="<?php echo $detailJob['id']; ?>" style="border:1px solid #cbd5e1; background:#ffffff; color:#334155; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05); transition:all 0.15s;" onmouseover="this.style.background='#f8fafc';this.style.borderColor='#94a3b8'" onmouseout="this.style.background='#ffffff';this.style.borderColor='#cbd5e1'">
+                                            <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
+                                        </button>
+                                        <button type="button" onclick="<?php echo ($monthlyQuotaTotal > 10) ? 'openLayer3WarningModal()' : 'document.getElementById(\'formSendJobDetail\').submit()'; ?>" style="background:#00a2e9; color:#ffffff; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(0, 162, 233, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#00a2e9'">
+                                            <i class="fa-solid fa-paper-plane"></i> Kirim Lowongan
+                                        </button>
+                                        <button type="button" onclick="openDeleteDraftModal(<?php echo (int)$detailJob['id']; ?>)" style="background:#ef4444; color:#ffffff; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(239, 68, 68, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                                            <i class="fa-regular fa-circle-xmark"></i> Hapus Lowongan
+                                        </button>
+                                    </div>
+                                    <form method="post" action="dashboard.php#lowongan" id="formSendJobDetail" style="display:none;">
+                                        <input type="hidden" name="send_job" value="1">
+                                        <input type="hidden" name="job_id" value="<?php echo (int)$detailJob['id']; ?>">
+                                    </form>
+                                <?php elseif ($dStatus === 'Ditutup'): ?>
                                     <button type="button" onclick="openReopenJobModal()" style="background:#00a2e9; color:#ffffff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; box-shadow:0 4px 12px rgba(0, 162, 233, 0.25); transition:background 0.15s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#00a2e9'">
                                         <i class="fa-solid fa-arrows-rotate"></i> Buka Kembali Lowongan
-                                    </button>
-                                <?php elseif ($dStatus === 'Draft'): ?>
-                                    <button type="button" class="btn-primary-custom" data-edit-draft="<?php echo $detailJob['id']; ?>" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; box-shadow:0 4px 12px rgba(2, 132, 199, 0.3);">
-                                        <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
                                     </button>
                                 <?php elseif (in_array($dStatus, ['Perlu Direvisi', 'Perlu Revisi'], true)): ?>
                                     <button type="button" class="btn-primary-custom" data-revise-job="<?php echo $detailJob['id']; ?>" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#ffffff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; box-shadow:0 4px 12px rgba(217, 119, 6, 0.3);">
@@ -2396,34 +2412,6 @@
                                 <?php endif; ?>
                             </div>
                         </div>
-
-                        <!-- LAYER 3 POPUP WARNING BOX (JIKA KUOTA MELEBIHI BATAS 10 ORANG) -->
-                        <?php if (!empty($_GET['layer3_error']) || ($monthlyQuotaTotal > 10 && $dStatus === 'Draft')): ?>
-                            <div style="background:#fffbe6; border:1px solid #ffe58f; border-radius:12px; padding:18px 20px; margin-bottom:20px;">
-                                <div style="display:flex; align-items:center; gap:8px; font-weight:800; color:#b45309; font-size:15px; margin-bottom:8px;">
-                                    <i class="fa-solid fa-triangle-exclamation" style="font-size:16px;"></i> KUOTA TENAGA KERJA MELEBIHI BATAS BULANAN
-                                </div>
-                                <p style="margin:0 0 14px 0; font-size:13.5px; color:#78350f; line-height:1.5;">
-                                    Pemberi Kerja Individu dapat mengajukan maksimal 10 orang dalam satu bulan kalender.
-                                </p>
-                                <div style="background:#ffffff; border:1px solid #fde68a; border-radius:8px; padding:14px 18px; margin-bottom:12px; display:grid; grid-template-columns:190px 15px 1fr; row-gap:8px; font-size:13px; font-weight:600;">
-                                    <span style="color:#78350f;">Total kuota bulan ini</span>
-                                    <span style="color:#78350f;">:</span>
-                                    <strong style="color:#78350f;"><?php echo $monthlyQuotaTotal > 0 ? $monthlyQuotaTotal : 15; ?> orang</strong>
-
-                                    <span style="color:#78350f;">Batas maksimal</span>
-                                    <span style="color:#78350f;">:</span>
-                                    <strong style="color:#78350f;">10 orang</strong>
-
-                                    <span style="color:#dc2626;">Melebihi batas</span>
-                                    <span style="color:#dc2626;">:</span>
-                                    <strong style="color:#dc2626;"><?php echo $exceededAmount > 0 ? $exceededAmount : 5; ?> orang</strong>
-                                </div>
-                                <p style="margin:0; font-size:13px; color:#b45309; font-style:italic;">
-                                    Silakan kurangi kuota lowongan sebelum diajukan.
-                                </p>
-                            </div>
-                        <?php endif; ?>
 
                         <!-- NOTICE MENUNGGU VERIFIKASI -->
                         <?php if ($dStatus === 'Menunggu Verifikasi'): ?>
@@ -2978,6 +2966,87 @@
                         </div>
                     </div>
 
+                    <!-- MODAL POPUP: LAYER 3 AUTOMATED RULES ENGINE ERROR -->
+                    <div class="modal-backdrop <?php echo !empty($_GET['layer3_error']) ? 'open' : ''; ?>" id="modalLayer3Warning" style="<?php echo !empty($_GET['layer3_error']) ? 'display:flex;' : 'display:none;'; ?> position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(3px); z-index:100002; align-items:center; justify-content:center;" onclick="if(event.target===this) closeLayer3WarningModal()">
+                        <div style="background:#fff; border-radius:16px; width:min(560px, 94vw); max-height:90vh; overflow-y:auto; box-shadow:0 25px 35px -5px rgba(0,0,0,0.18); padding:26px 28px; position:relative;" onclick="event.stopPropagation()">
+                            <!-- Header -->
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <div style="width:36px; height:36px; border-radius:10px; background:#fffbe6; border:1px solid #fde68a; color:#b45309; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                    <h3 style="font-size:17px; font-weight:800; color:#b45309; margin:0;">KUOTA TENAGA KERJA MELEBIHI BATAS BULANAN</h3>
+                                </div>
+                                <button type="button" onclick="closeLayer3WarningModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer; padding:4px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+
+                            <p style="margin:0 0 16px 0; font-size:13.5px; color:#78350f; line-height:1.5;">
+                                Pemberi Kerja Individu dapat mengajukan maksimal 10 orang dalam satu bulan kalender.
+                            </p>
+
+                            <div style="background:#fffdf0; border:1px solid #fde68a; border-radius:10px; padding:14px 18px; margin-bottom:14px; display:grid; grid-template-columns:180px 15px 1fr; row-gap:10px; font-size:13.5px; align-items:center;">
+                                <span style="color:#78350f; font-weight:600;">Total kuota bulan ini</span>
+                                <span style="color:#78350f; font-weight:600;">:</span>
+                                <strong style="color:#78350f; font-weight:700;"><?php echo $monthlyQuotaTotal > 0 ? $monthlyQuotaTotal : 15; ?> orang</strong>
+
+                                <span style="color:#78350f; font-weight:600;">Batas maksimal</span>
+                                <span style="color:#78350f; font-weight:600;">:</span>
+                                <strong style="color:#78350f; font-weight:700;">10 orang</strong>
+
+                                <span style="color:#dc2626; font-weight:700;">Melebihi batas</span>
+                                <span style="color:#dc2626; font-weight:700;">:</span>
+                                <strong style="color:#dc2626; font-weight:800; font-size:14px;"><?php echo $exceededAmount > 0 ? $exceededAmount : max(0, $monthlyQuotaTotal - 10); ?> orang</strong>
+                            </div>
+
+                            <p style="margin:0 0 20px 0; font-size:13px; color:#b45309; font-style:italic;">
+                                Silakan kurangi kuota lowongan sebelum diajukan.
+                            </p>
+
+                            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                                <button type="button" onclick="closeLayer3WarningModal()" style="padding:9px 20px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;">
+                                    Tutup
+                                </button>
+                                <button type="button" data-edit-draft="<?php echo $detailJob['id']; ?>" onclick="closeLayer3WarningModal()" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25);">
+                                    <i class="fa-solid fa-pen-to-square"></i> Sesuaikan Kuota
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL POPUP: KONFIRMASI HAPUS DRAFT -->
+                    <div class="modal-backdrop" id="modalDeleteDraft" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(3px); z-index:100001; align-items:center; justify-content:center;" onclick="if(event.target===this) closeDeleteDraftModal()">
+                        <div style="background:#fff; border-radius:16px; width:min(480px, 94vw); max-height:90vh; overflow-y:auto; box-shadow:0 25px 35px -5px rgba(0,0,0,0.18); padding:26px 28px; position:relative;" onclick="event.stopPropagation()">
+                            <!-- Header -->
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <div style="width:36px; height:36px; border-radius:10px; background:#fef2f2; border:1px solid #fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </div>
+                                    <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Hapus Draft Lowongan?</h3>
+                                </div>
+                                <button type="button" onclick="closeDeleteDraftModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer; padding:4px; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+
+                            <p style="font-size:13.5px; color:#64748b; line-height:1.6; margin:0 0 24px 0;">
+                                Apakah Anda yakin ingin menghapus draft lowongan <strong>"<?php echo e($detailJob['title']); ?>"</strong>? Data yang dihapus tidak dapat dikembalikan.
+                            </p>
+
+                            <form method="post" action="dashboard.php#lowongan">
+                                <input type="hidden" name="delete_job" value="1">
+                                <input type="hidden" name="job_id" id="deleteDraftJobId" value="<?php echo (int)($detailJob['id'] ?? 0); ?>">
+
+                                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                                    <button type="button" onclick="closeDeleteDraftModal()" style="padding:9px 20px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;">
+                                        Batal
+                                    </button>
+                                    <button type="submit" style="padding:9px 22px; border:none; background:#ef4444; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(239,68,68,0.25);">
+                                        Ya, Hapus
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
                     <script>
                     function switchPageDetailTab(tab) {
                         const lamaran = document.getElementById('tabPanePageLamaran');
@@ -3023,6 +3092,42 @@
                         }
                         if (radio) {
                             radio.checked = true;
+                        }
+                    }
+
+                    function openLayer3WarningModal() {
+                        const modal = document.getElementById('modalLayer3Warning');
+                        if (modal) {
+                            modal.style.display = 'flex';
+                            modal.classList.add('open');
+                        }
+                    }
+
+                    function closeLayer3WarningModal() {
+                        const modal = document.getElementById('modalLayer3Warning');
+                        if (modal) {
+                            modal.style.display = 'none';
+                            modal.classList.remove('open');
+                        }
+                    }
+
+                    function openDeleteDraftModal(jobId) {
+                        const modal = document.getElementById('modalDeleteDraft');
+                        const input = document.getElementById('deleteDraftJobId');
+                        if (input && jobId) {
+                            input.value = String(jobId);
+                        }
+                        if (modal) {
+                            modal.style.display = 'flex';
+                            modal.classList.add('open');
+                        }
+                    }
+
+                    function closeDeleteDraftModal() {
+                        const modal = document.getElementById('modalDeleteDraft');
+                        if (modal) {
+                            modal.style.display = 'none';
+                            modal.classList.remove('open');
                         }
                     }
                     </script>
