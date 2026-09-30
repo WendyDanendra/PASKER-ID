@@ -493,7 +493,7 @@ function render_job_review_details(array $job): string
     $html .= $row('Judul jabatan', $text($data['title']));
     $html .= $row('Jenis pekerjaan', $text($data['job_type']));
     $html .= $row('Bidang pekerjaan', $text($data['job_field']));
-    $html .= $row('Industri / sektor', $text($data['industry']));
+    $html .= $row('Jenis Usaha Individu', $text($data['industry']));
     $html .= $row('Kode KBJI', $text($kbjiText));
     $html .= $row('Lokasi', $text($data['location']));
     $html .= $row('Remote working', e(job_yes_no(!empty($data['is_remote']))));
