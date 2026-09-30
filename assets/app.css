@@ -72,7 +72,8 @@ body {
 
 body:has(.app-shell),
 body:has(.app-layout-wrapper) {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 body {
