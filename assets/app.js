@@ -3665,11 +3665,11 @@ function openUnfulfilledQuotaModal() {
         }
         const checkboxes = modal.querySelectorAll('input[name="reasons[]"]');
         checkboxes.forEach(cb => cb.checked = false);
-        const lainnyaText = document.getElementById('reasonLainnyaInput');
-        if (lainnyaText) {
-            lainnyaText.value = '';
-            lainnyaText.style.display = 'none';
-        }
+        const noteInputs = modal.querySelectorAll('.reason-note-input');
+        noteInputs.forEach(input => {
+            input.value = '';
+            input.style.display = 'none';
+        });
         modal.style.display = 'flex';
         modal.classList.add('open');
     }
@@ -3685,8 +3685,11 @@ function closeUnfulfilledQuotaModal() {
 }
 window.closeUnfulfilledQuotaModal = closeUnfulfilledQuotaModal;
 
-function toggleReasonLainnya(cb) {
-    const textarea = document.getElementById('reasonLainnyaInput');
+function toggleReasonNote(cb) {
+    if (!cb) return;
+    const parent = cb.closest('.reason-option-group');
+    if (!parent) return;
+    const textarea = parent.querySelector('.reason-note-input');
     if (!textarea) return;
     if (cb.checked) {
         textarea.style.display = 'block';
@@ -3695,6 +3698,11 @@ function toggleReasonLainnya(cb) {
         textarea.style.display = 'none';
         textarea.value = '';
     }
+}
+window.toggleReasonNote = toggleReasonNote;
+
+function toggleReasonLainnya(cb) {
+    toggleReasonNote(cb);
 }
 window.toggleReasonLainnya = toggleReasonLainnya;
 

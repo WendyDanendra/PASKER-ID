@@ -831,7 +831,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $jobId = (int)$_POST['job_id'];
         $repost = ($_POST['repost'] ?? '0') === '1';
         $reasons = $_POST['reasons'] ?? [];
-        $lainnya = trim($_POST['reason_lainnya'] ?? '');
+        $reasonNotes = $_POST['reason_notes'] ?? [];
+        $lainnya = trim($_POST['reason_lainnya'] ?? ($reasonNotes['Lainnya'] ?? ''));
 
         $pdo = db();
         $pdo->beginTransaction();
@@ -920,10 +921,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 exit;
             }
 
-            $reasonStr = implode(', ', $reasons);
-            if (in_array('Lainnya', $reasons, true)) {
-                $reasonStr .= ' - ' . $lainnya;
+            $reasonItems = [];
+            foreach ($reasons as $r) {
+                $note = trim($reasonNotes[$r] ?? '');
+                if ($r === 'Lainnya') {
+                    if ($note !== '') {
+                        $reasonItems[] = 'Lainnya - ' . $note;
+                    } elseif ($lainnya !== '') {
+                        $reasonItems[] = 'Lainnya - ' . $lainnya;
+                    } else {
+                        $reasonItems[] = 'Lainnya';
+                    }
+                } else {
+                    if ($note !== '') {
+                        $reasonItems[] = $r . ' (' . $note . ')';
+                    } else {
+                        $reasonItems[] = $r;
+                    }
+                }
             }
+            $reasonStr = implode(', ', $reasonItems);
 
             // Close original job with reason (Source job remains Ditutup)
             $stmt = $pdo->prepare('UPDATE job_posts SET status = "Ditutup", unfulfilled_reason = ? WHERE id = ? AND user_id = ?');

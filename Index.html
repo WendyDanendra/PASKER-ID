@@ -4629,7 +4629,7 @@
 
             <!-- Description -->
             <div style="font-size:13px; color:#475569; line-height:1.6; margin-bottom:18px;">
-                Anda menetapkan <span id="unfulfilledAcceptedCount" style="font-weight:700; color:#0f172a;">1</span> dari <span id="unfulfilledTotalQuota" style="font-weight:700; color:#0f172a;">2</span> kuota yang tersedia. Mohon isi alasan mengapa sisa kuota belum terpenuhi. Pengguna wajib memilih minimal 1 alasan. Sistem menyediakan 5 pilihan alasan yang dapat dipilih menggunakan checkbox. Apabila alasan yang sesuai tidak tersedia, pengguna dapat memilih opsi ke-6 “Lainnya” dan wajib mengisi alasan secara manual.
+                Anda menetapkan <span id="unfulfilledAcceptedCount" style="font-weight:700; color:#0f172a;">1</span> dari <span id="unfulfilledTotalQuota" style="font-weight:700; color:#0f172a;">2</span> kuota yang tersedia. Mohon isi alasan mengapa sisa kuota belum terpenuhi. Pengguna wajib memilih minimal 1 alasan.
             </div>
 
             <form method="post" action="dashboard.php#lowongan" id="formUnfulfilledQuota">
@@ -4639,57 +4639,69 @@
                 <input type="hidden" name="repost" id="modalUnfulfilledRepost" value="0">
 
                 <!-- Checkbox List -->
-                <div style="font-weight:700; font-size:12.5px; color:#1e293b; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.3px;">
+                <div style="font-weight:700; font-size:12.5px; color:#1e293b; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.3px;">
                     Pilih Alasan:
                 </div>
-                <div style="display:flex; flex-direction:column; gap:9px; margin-bottom:20px;">
-                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
-                        <input type="checkbox" name="reasons[]" value="Belum menemukan kandidat yang sesuai dengan kebutuhan" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
-                        <span>Belum menemukan kandidat yang sesuai dengan kebutuhan</span>
-                    </label>
-                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
-                        <input type="checkbox" name="reasons[]" value="Jumlah pelamar yang memenuhi kualifikasi masih terbatas" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
-                        <span>Jumlah pelamar yang memenuhi kualifikasi masih terbatas</span>
-                    </label>
-                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
-                        <input type="checkbox" name="reasons[]" value="Kandidat yang sesuai mengundurkan diri atau membatalkan proses" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
-                        <span>Kandidat yang sesuai mengundurkan diri atau membatalkan proses</span>
-                    </label>
-                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
-                        <input type="checkbox" name="reasons[]" value="Kebutuhan tenaga kerja berubah atau berkurang" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
-                        <span>Kebutuhan tenaga kerja berubah atau berkurang</span>
-                    </label>
-                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
-                        <input type="checkbox" name="reasons[]" value="Proses seleksi dan rekrutmen masih berlangsung" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
-                        <span>Proses seleksi dan rekrutmen masih berlangsung</span>
-                    </label>
-                    <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
-                        <input type="checkbox" name="reasons[]" value="Lainnya" onchange="toggleReasonLainnya(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
-                        <span>Lainnya</span>
-                    </label>
-                    <textarea id="reasonLainnyaInput" name="reason_lainnya" placeholder="Tuliskan alasan lainnya secara manual..." rows="2" style="display:none; width:100%; margin-top:2px; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+                    <div class="reason-option-group" style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                            <input type="checkbox" name="reasons[]" value="Belum menemukan kandidat yang sesuai dengan kebutuhan" onchange="toggleReasonNote(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                            <span>Belum menemukan kandidat yang sesuai dengan kebutuhan</span>
+                        </label>
+                        <textarea name="reason_notes[Belum menemukan kandidat yang sesuai dengan kebutuhan]" class="reason-note-input" placeholder="Masukkan catatan..." rows="2" style="display:none; width:calc(100% - 25px); margin-left:25px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="reason-option-group" style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                            <input type="checkbox" name="reasons[]" value="Jumlah pelamar yang memenuhi kualifikasi masih terbatas" onchange="toggleReasonNote(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                            <span>Jumlah pelamar yang memenuhi kualifikasi masih terbatas</span>
+                        </label>
+                        <textarea name="reason_notes[Jumlah pelamar yang memenuhi kualifikasi masih terbatas]" class="reason-note-input" placeholder="Masukkan catatan..." rows="2" style="display:none; width:calc(100% - 25px); margin-left:25px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="reason-option-group" style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                            <input type="checkbox" name="reasons[]" value="Kandidat yang sesuai mengundurkan diri atau membatalkan proses" onchange="toggleReasonNote(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                            <span>Kandidat yang sesuai mengundurkan diri atau membatalkan proses</span>
+                        </label>
+                        <textarea name="reason_notes[Kandidat yang sesuai mengundurkan diri atau membatalkan proses]" class="reason-note-input" placeholder="Masukkan catatan..." rows="2" style="display:none; width:calc(100% - 25px); margin-left:25px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="reason-option-group" style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                            <input type="checkbox" name="reasons[]" value="Kebutuhan tenaga kerja berubah atau berkurang" onchange="toggleReasonNote(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                            <span>Kebutuhan tenaga kerja berubah atau berkurang</span>
+                        </label>
+                        <textarea name="reason_notes[Kebutuhan tenaga kerja berubah atau berkurang]" class="reason-note-input" placeholder="Masukkan catatan..." rows="2" style="display:none; width:calc(100% - 25px); margin-left:25px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="reason-option-group" style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                            <input type="checkbox" name="reasons[]" value="Proses seleksi dan rekrutmen masih berlangsung" onchange="toggleReasonNote(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                            <span>Proses seleksi dan rekrutmen masih berlangsung</span>
+                        </label>
+                        <textarea name="reason_notes[Proses seleksi dan rekrutmen masih berlangsung]" class="reason-note-input" placeholder="Masukkan catatan..." rows="2" style="display:none; width:calc(100% - 25px); margin-left:25px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="reason-option-group" style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#334155; cursor:pointer; line-height:1.4;">
+                            <input type="checkbox" name="reasons[]" value="Lainnya" onchange="toggleReasonNote(this)" style="margin-top:2.5px; accent-color:#0284c7; width:15px; height:15px; cursor:pointer;">
+                            <span>Lainnya</span>
+                        </label>
+                        <textarea name="reason_notes[Lainnya]" id="reasonLainnyaInput" class="reason-note-input" placeholder="Masukkan catatan..." rows="2" style="display:none; width:calc(100% - 25px); margin-left:25px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:12.5px; font-family:inherit; outline:none; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
                 </div>
 
                 <!-- Error Validation Message -->
                 <div id="unfulfilledValidationError" style="display:none; color:#dc2626; font-size:12.5px; font-weight:600; margin-bottom:16px; background:#fef2f2; border:1px solid #fecaca; padding:9px 14px; border-radius:8px; line-height:1.4;"></div>
 
-                <!-- Section Opsi Posting Ulang Sisa Kuota -->
-                <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; margin-bottom:22px;">
-                    <div style="font-size:13px; font-weight:700; color:#0369a1; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                        <i class="fa-solid fa-arrows-rotate"></i> Opsi Posting Ulang Sisa Kuota
-                    </div>
-                    <div style="font-size:12.5px; color:#0c4a6e; line-height:1.5;">
-                        Apakah Anda ingin mempublikasikan ulang lowongan untuk memenuhi sisa kuota (<span id="unfulfilledRemainingQuota" style="font-weight:700; color:#0284c7;">1</span> orang) yang kurang?
-                    </div>
-                </div>
-
                 <!-- Action Buttons -->
                 <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <button type="button" onclick="submitUnfulfilledCloseJob(0)" style="padding:9px 18px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
-                        Tidak, Tutup Saja
+                    <button type="button" onclick="closeUnfulfilledQuotaModal()" style="padding:9px 18px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                        Batalkan
                     </button>
-                    <button type="button" onclick="submitUnfulfilledCloseJob(1)" style="padding:9px 20px; border:none; background:#0284c7; color:#fff; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25); display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
-                        <i class="fa-solid fa-arrows-rotate" style="font-size:12px;"></i> Ya, Posting Ulang Sisa Kuota
+                    <button type="button" onclick="submitUnfulfilledCloseJob(0)" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25); display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
+                        Tutup Lowongan
                     </button>
                 </div>
             </form>
