@@ -585,7 +585,7 @@ function ensure_database_schema(PDO $pdo): void
                 'user_consent' => "TINYINT(1) DEFAULT 0 AFTER description",
                 'consent_accepted' => "TINYINT(1) NOT NULL DEFAULT 0 AFTER user_consent",
                 'consent_agreed' => "TINYINT(1) DEFAULT 0 AFTER consent_accepted",
-                'verification_status' => "ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED' AFTER verified",
+                'verification_status' => "ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'REJECTED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED' AFTER verified",
                 'rejection_count' => "INT DEFAULT 0 AFTER verification_status",
                 'verifier_notes' => "TEXT NULL AFTER rejection_count",
                 'verification_checklist' => "TEXT NULL AFTER verifier_notes",
@@ -669,6 +669,7 @@ function ensure_database_schema(PDO $pdo): void
                 $pdo->exec("UPDATE job_posts SET status = 'Menunggu Verifikasi' WHERE status IN ('Dikirim/Menunggu Verifikasi', 'Dikirim')");
                 $pdo->exec("UPDATE job_posts SET status = 'Perlu Direvisi' WHERE status = 'Perlu Revisi'");
                 $pdo->exec("ALTER TABLE `job_posts` CHANGE `status` `status` VARCHAR(60) NOT NULL DEFAULT 'Draft'");
+                $pdo->exec("ALTER TABLE `employer_profiles` MODIFY COLUMN `verification_status` ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'REJECTED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED'");
                 $pdo->exec("UPDATE employer_profiles SET permit_document = COALESCE(NULLIF(permit_document, ''), NULLIF(doc_permission, ''), 'dokumen-legalitas.pdf'), doc_permission = COALESCE(NULLIF(doc_permission, ''), NULLIF(permit_document, ''), 'dokumen-legalitas.pdf') WHERE permit_document IS NULL OR permit_document = '' OR doc_permission IS NULL OR doc_permission = ''");
                 $pdo->exec("UPDATE employer_profiles SET workplace_photo = COALESCE(NULLIF(workplace_photo, ''), NULLIF(doc_location_photo, ''), 'foto-rumah.jpg'), doc_location_photo = COALESCE(NULLIF(doc_location_photo, ''), NULLIF(workplace_photo, ''), 'foto-rumah.jpg') WHERE workplace_photo IS NULL OR workplace_photo = '' OR doc_location_photo IS NULL OR doc_location_photo = ''");
                 

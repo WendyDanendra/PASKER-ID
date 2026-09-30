@@ -60,7 +60,7 @@ CREATE TABLE employer_profiles (
     description TEXT NULL,
     user_consent TINYINT(1) DEFAULT 0,
     verified TINYINT(1) NOT NULL DEFAULT 0,
-    verification_status ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED',
+    verification_status ENUM('NOT_SUBMITTED', 'PENDING', 'NEEDS_REVISION', 'APPROVED', 'REJECTED', 'SUSPENDED', 'TRANSITION_LIMITED', 'FULL_DISABLED') DEFAULT 'NOT_SUBMITTED',
     rejection_count INT DEFAULT 0,
     verifier_notes TEXT NULL,
     verification_checklist TEXT NULL,
