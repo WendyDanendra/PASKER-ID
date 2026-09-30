@@ -226,8 +226,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (isset($_POST['admin_act
         $stmtOld->execute([$targetUserId]);
         $oldProfile = $stmtOld->fetch() ?: [];
 
-        $permitDoc = store_upload('permit_document', 'employer/' . $targetUserId, ['pdf', 'jpg', 'jpeg', 'png']);
-        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $targetUserId, ['jpg', 'jpeg', 'png', 'webp']);
+        $permitDoc = store_upload('permit_document', 'employer/' . $targetUserId, ['pdf', 'docx']);
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $targetUserId, ['png', 'jpg', 'jpeg']);
         $permitDoc = $permitDoc ?: (!empty($_POST['existing_permit_document']) ? trim($_POST['existing_permit_document']) : ($oldProfile['permit_document'] ?? $oldProfile['doc_permission'] ?? null));
         $workplacePhoto = $workplacePhoto ?: (!empty($_POST['existing_workplace_photo']) ? trim($_POST['existing_workplace_photo']) : ($oldProfile['workplace_photo'] ?? $oldProfile['doc_location_photo'] ?? null));
 
@@ -3941,8 +3941,8 @@ document.addEventListener('click', function(e) {
                                                             <i class="fa-solid fa-circle-exclamation"></i> Belum ada file pendukung terunggah. Silakan unggah berkas.
                                                         </div>
                                                     <?php endif; ?>
-                                                    <input type="file" name="permit_document" accept=".pdf" style="width:100%; padding:8px 10px; border:1.5px dashed #cbd5e1; border-radius:8px; font-size:12px; background:#ffffff; box-sizing:border-box;">
-                                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Format PDF • Ukuran maks 15MB</div>
+                                                    <input type="file" name="permit_document" accept=".pdf,.docx" style="width:100%; padding:8px 10px; border:1.5px dashed #cbd5e1; border-radius:8px; font-size:12px; background:#ffffff; box-sizing:border-box;">
+                                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Format PDF, Docx. Ukuran Maksimal 2MB</div>
                                                 </div>
 
                                                 <!-- FOTO BUKTI TEMPAT USAHA / LOKASI -->
@@ -3996,8 +3996,8 @@ document.addEventListener('click', function(e) {
                                                             <i class="fa-solid fa-circle-exclamation"></i> Belum ada foto lokasi terunggah. Silakan unggah foto.
                                                         </div>
                                                     <?php endif; ?>
-                                                    <input type="file" name="workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="width:100%; padding:8px 10px; border:1.5px dashed #cbd5e1; border-radius:8px; font-size:12px; background:#ffffff; box-sizing:border-box;">
-                                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Format JPG, PNG, WEBP • Ukuran maks 10MB</div>
+                                                    <input type="file" name="workplace_photo" accept=".png,.jpg,.jpeg" style="width:100%; padding:8px 10px; border:1.5px dashed #cbd5e1; border-radius:8px; font-size:12px; background:#ffffff; box-sizing:border-box;">
+                                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Format PNG, JPG. Ukuran Maksimal 2MB</div>
                                                 </div>
                                             </div>
 
