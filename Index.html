@@ -1873,7 +1873,16 @@
                             <?php endif; ?>
                         </div>
 
-                        <?php if ($isTransitionPeriod): ?>
+                        <?php if ($verificationStatus === 'PENDING'): ?>
+                            <!-- BANNER: INITIAL VERIFICATION PENDING -->
+                            <div class="lifecycle-banner banner-info">
+                                <div class="banner-title"><i class="fa-regular fa-clock"></i> MENUNGGU VERIFIKASI PROFIL</div>
+                                <div class="banner-desc">
+                                    Pengajuan Profil Pemberi Kerja Individu Anda sedang dalam proses verifikasi oleh Admin.
+                                    Hak Akses akan mulai berlaku setelah pengajuan disetujui.
+                                </div>
+                            </div>
+                        <?php elseif ($isTransitionPeriod): ?>
                             <!-- BANNER: TRANSITION_LIMITED -->
                             <div class="lifecycle-banner banner-warning">
                                 <div class="banner-title"><i class="fa-solid fa-triangle-exclamation"></i> MASA TRANSISI — HAK AKSES TERBATAS</div>
