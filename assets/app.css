@@ -1588,7 +1588,9 @@ body {
 
 .content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 16px 18px 28px;
 }
 
@@ -3054,6 +3056,11 @@ html, body {
     max-height: 100%;
     overflow: hidden;
     background: #f8fafc;
+}
+
+/* Keep inner dashboard pages scrollable inside flex layout containers. */
+.app-layout-wrapper .main {
+    min-height: 0;
 }
 
 .sidebar-rail {
@@ -5829,7 +5836,9 @@ html.dark-theme .profile-field-block .pfl-value {
 
 .content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 16px 18px 28px;
 }
 
