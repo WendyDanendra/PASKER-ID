@@ -158,19 +158,6 @@ if (file_exists($pkiCssPath)) {
 <div class="modal-section" style="margin-bottom:20px;">
     <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">2. TEMPAT USAHA / KEGIATAN PEMBERI KERJA</div>
 
-    <!-- Deskripsi Pekerjaan -->
-    <div class="pki-field">
-        <label class="pki-field-label" id="label_description" for="pki_description">
-            Deskripsi Pekerjaan
-            <span class="pki-tooltip" tabindex="0" role="tooltip">
-                <?php echo $infoIconSvg; ?>
-                <span class="tooltip-popover">Jelaskan secara singkat usaha atau kegiatan yang dijalankan serta gambaran kebutuhan rekrutmen yang dilakukan.</span>
-            </span>
-        </label>
-        <textarea name="description" id="pki_description" placeholder="Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen..." style="min-height:90px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5; resize:vertical;"><?php echo $vDescription; ?></textarea>
-        <div class="pki-field-helper" id="helper_description">Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen.</div>
-    </div>
-
     <div style="margin-bottom:16px;">
         <label style="font-size:13px; font-weight:600; color:#334155; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
             <input type="checkbox" name="same_location_siapkerja" id="pki_cbSameLocation" value="1" <?php echo $vSameLoc ? 'checked' : ''; ?>>
@@ -335,10 +322,10 @@ if (file_exists($pkiCssPath)) {
 
 <hr class="modal-section-hr">
 
-<!-- 4. MEDIA SOSIAL -->
+<!-- 4. MEDIA SOSIAL & DESKRIPSI -->
 <div class="modal-section" style="margin-bottom:20px;">
     <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-        <span>4. MEDIA SOSIAL</span>
+        <span>4. MEDIA SOSIAL & DESKRIPSI</span>
         <span class="req" style="color:#ef4444 !important; font-weight:700;">*</span>
     </div>
     <div style="font-size:12.5px; color:#64748b; margin-bottom:16px;">Wajib mengisi minimal salah satu akun media sosial (LinkedIn, Facebook, atau Instagram).</div>
@@ -360,6 +347,18 @@ if (file_exists($pkiCssPath)) {
         <label class="pki-field-label" id="label_instagram" for="pki_instagram">Instagram</label>
         <input type="text" name="instagram" id="pki_instagram" value="<?php echo $vInstagram; ?>" placeholder="@username atau https://instagram.com/...">
         <div class="pki-field-helper" id="helper_instagram">Isi minimal salah satu media sosial.</div>
+    </div>
+
+    <div class="pki-field">
+        <label class="pki-field-label" id="label_description" for="pki_description">
+            Deskripsi Singkat Usaha / Rekrutmen
+            <span class="pki-tooltip" tabindex="0" role="tooltip">
+                <?php echo $infoIconSvg; ?>
+                <span class="tooltip-popover">Jelaskan secara singkat usaha atau kegiatan yang dijalankan serta gambaran kebutuhan rekrutmen yang dilakukan.</span>
+            </span>
+        </label>
+        <textarea name="description" id="pki_description" placeholder="Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen..." style="min-height:90px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5; resize:vertical;"><?php echo $vDescription; ?></textarea>
+        <div class="pki-field-helper" id="helper_description">Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen.</div>
     </div>
 </div>
 

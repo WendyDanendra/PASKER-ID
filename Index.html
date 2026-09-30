@@ -2834,7 +2834,6 @@
                                 </div>
                             </div>
                         </div>
-                        <?php endif; ?>
                     </div>
 
                     <script>
@@ -2852,404 +2851,394 @@
                     }
                     </script>
                 <?php else: ?>
-                    <!-- PAGE HEADER -->
-                    <div class="page-title-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
-                        <div>
-                            <h2 style="font-size:24px; font-weight:800; color:#0f172a; margin:0 0 4px 0;">Lowongan</h2>
-                            <div class="section-note" style="font-size:13px; color:#64748b;">Kelola status lowongan, kandidat pelamar, dan publikasi lowongan kerja.</div>
-                        </div>
-                        <button type="button" class="primary-btn" data-open-modal="job-create" style="padding:10px 22px; font-size:13.5px; font-weight:700; border-radius:10px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 14px rgba(33, 163, 207, 0.25); cursor:pointer;">
-                            <i class="fa-solid fa-plus"></i> Tambah Lowongan
-                        </button>
+                    <div class="page-title-row">
+                    <div>
+                        <h2>Lowongan</h2>
+                        <div class="section-note">Kelola status lowongan, kandidat, dan publikasi.</div>
                     </div>
+                    <button class="primary-btn" data-open-modal="job-create"><i class="fa-solid fa-plus"></i> Tambah</button>
+                </div>
 
-                    <!-- 4 METRIC CARDS -->
-                    <div class="cards4" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
-                        <div class="card" style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.03); position:relative;">
-                            <div class="mini-icon" style="position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:10px; background:#eefafc; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-pencil"></i></div>
-                            <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Draft</div>
-                            <div class="value" style="font-size:26px; font-weight:800; color:#0f172a; line-height:1.2; margin-bottom:4px;"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Draft')); ?></div>
-                            <div class="desc neutral" style="font-size:12px; color:#94a3b8;">Belum diajukan</div>
-                        </div>
-                        <div class="card" style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.03); position:relative;">
-                            <div class="mini-icon" style="position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:10px; background:#fff7ed; color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-regular fa-clock"></i></div>
-                            <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Menunggu Verifikasi</div>
-                            <div class="value" style="font-size:26px; font-weight:800; color:#0f172a; line-height:1.2; margin-bottom:4px;"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Menunggu Verifikasi')); ?></div>
-                            <div class="desc neutral" style="font-size:12px; color:#94a3b8;">Dalam proses tinjauan</div>
-                        </div>
-                        <div class="card" style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.03); position:relative;">
-                            <div class="mini-icon" style="position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:10px; background:#fef2f2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Perlu Direvisi</div>
-                            <div class="value" style="font-size:26px; font-weight:800; color:#0f172a; line-height:1.2; margin-bottom:4px;"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Perlu Direvisi')); ?></div>
-                            <div class="desc neutral" style="font-size:12px; color:#94a3b8;">Perlu perbaikan data</div>
-                        </div>
-                        <div class="card" style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.03); position:relative;">
-                            <div class="mini-icon" style="position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:10px; background:#ecfdf5; color:#10b981; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-regular fa-circle-check"></i></div>
-                            <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Lowongan Aktif</div>
-                            <div class="value" style="font-size:26px; font-weight:800; color:#0f172a; line-height:1.2; margin-bottom:4px;"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Tayang')); ?></div>
-                            <div class="desc neutral" style="font-size:12px; color:#94a3b8;">Sedang tayang</div>
-                        </div>
+                <div class="cards4">
+                    <div class="card">
+                        <div class="mini-icon" style="background:#eefafc;color:#2aa9d7"><i class="fa-solid fa-pencil"></i></div>
+                        <h3>Draft</h3>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Draft')); ?></div>
+                        <div class="desc neutral">Belum diajukan</div>
                     </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#fff7ed;color:#f59e0b"><i class="fa-regular fa-clock"></i></div>
+                        <h3>Menunggu Verifikasi</h3>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Menunggu Verifikasi')); ?></div>
+                        <div class="desc neutral">Dalam proses tinjauan</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#fef2f2;color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <h3>Perlu Direvisi</h3>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Perlu Direvisi')); ?></div>
+                        <div class="desc neutral">Perlu perbaikan data</div>
+                    </div>
+                    <div class="card">
+                        <div class="mini-icon" style="background:#ecfdf5;color:#21b36b"><i class="fa-regular fa-circle-check"></i></div>
+                        <h3>Lowongan Aktif</h3>
+                        <div class="value"><?php echo count(array_filter($jobs, fn($j) => normalize_job_status($j['status'] ?? '') === 'Tayang')); ?></div>
+                        <div class="desc neutral">Sedang tayang</div>
+                    </div>
+                </div>
 
-                    <?php if (!empty($kbjiReached3)): ?>
-                        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:flex-start; gap:12px; color:#1e40af; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
-                            <i class="fa-solid fa-circle-info" style="font-size:18px; color:#3b82f6; margin-top:2px; flex-shrink:0;"></i>
-                            <div style="font-size:13px; line-height:1.5;">
-                                <strong>Informasi Publikasi Jabatan (KBJI: <?php echo implode(', ', array_map('e', $kbjiReached3)); ?>)</strong><br>
-                                Anda telah mempublikasikan 3 lowongan dengan jabatan/KBJI yang sama pada bulan ini. Pengajuan berikutnya dengan jabatan yang sama akan memerlukan Dokumen/Keterangan Tambahan untuk ditinjau oleh Admin.
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- MAIN SECTION CARD: TABLE -->
-                    <div class="section-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-bottom:24px;">
-                        <!-- TOOLBAR -->
-                        <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding:16px 20px; border-bottom:1px solid #f1f5f9; background:#ffffff;">
-                            <div class="search-small" style="display:flex; align-items:center; gap:10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:8px 14px; flex:1; min-width:240px; max-width:420px;">
-                                <i class="fa-solid fa-magnifying-glass" style="color:#64748b; font-size:13px;"></i>
-                                <input type="text" id="jobSearchInput" onkeyup="filterJobsTable()" placeholder="Cari berdasarkan judul lowongan atau KBJI..." style="border:none; background:transparent; font-size:13px; outline:none; width:100%; color:#0f172a;">
-                            </div>
-                            <div class="controls" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                                <div style="display:flex; align-items:center; gap:6px;">
-                                    <span style="font-size:12px; color:#64748b; font-weight:600;">Status:</span>
-                                    <select id="jobStatusFilter" onchange="filterJobsTable()" style="padding:8px 14px; border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; background:#fff; font-weight:600; color:#334155; cursor:pointer;">
-                                        <option value="all">Semua Status</option>
-                                        <option value="Draft">Draft</option>
-                                        <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
-                                        <option value="Perlu Direvisi">Perlu Direvisi</option>
-                                        <option value="Tayang">Tayang</option>
-                                        <option value="Ditolak">Ditolak</option>
-                                        <option value="Ditutup">Ditutup</option>
-                                        <option value="Ditangguhkan">Ditangguhkan</option>
-                                        <option value="Kedaluwarsa">Kedaluwarsa</option>
-                                        <option value="Diblokir">Diblokir</option>
-                                    </select>
-                                </div>
-                                <div style="display:flex; align-items:center; gap:6px;">
-                                    <span style="font-size:12px; color:#64748b; font-weight:600;">Urutan:</span>
-                                    <select id="jobSortSelect" onchange="sortJobsTable()" style="padding:8px 14px; border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; background:#fff; font-weight:600; color:#334155; cursor:pointer;">
-                                        <option value="newest">Terbaru</option>
-                                        <option value="oldest">Terlama</option>
-                                        <option value="title">Judul (A-Z)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TABLE CONTAINER -->
-                        <div class="table-shell" style="overflow-x:auto;">
-                            <table style="width:100%; border-collapse:collapse; text-align:left;">
-                                <thead>
-                                    <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
-                                        <th style="padding:14px 18px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">Lowongan</th>
-                                        <th style="padding:14px 18px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">Penempatan</th>
-                                        <th style="padding:14px 18px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">Kuota</th>
-                                        <th style="padding:14px 18px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">Pelamar</th>
-                                        <th style="padding:14px 18px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.04em;">Status</th>
-                                        <th style="padding:14px 18px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.04em; text-align:center;">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="jobsTableBody">
-                                    <?php if (!$jobs): ?>
-                                        <tr>
-                                            <td colspan="6" style="text-align:center; padding:48px 20px; color:#64748b;">
-                                                <div style="font-size:36px; color:#cbd5e1; margin-bottom:12px;"><i class="fa-solid fa-folder-open"></i></div>
-                                                <div style="font-size:15px; font-weight:700; color:#1e293b; margin-bottom:4px;">Belum ada lowongan</div>
-                                                <div style="font-size:13px; color:#64748b; margin-bottom:16px;">Buat lowongan baru untuk mulai merekrut tenaga kerja.</div>
-                                                <button type="button" class="primary-btn" data-open-modal="job-create" style="padding:8px 20px; font-size:13px; border-radius:8px;"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>
-                                            </td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($jobs as $j):
-                                            $cStatus = normalize_job_status($j['status'] ?? 'Draft');
-                                            $meta = job_status_meta($cStatus);
-                                        ?>
-                                            <tr data-job-row data-title="<?php echo e($j['title']); ?>" data-status="<?php echo e($cStatus); ?>" data-created="<?php echo e($j['created_at']); ?>" style="border-bottom:1px solid #f1f5f9;">
-                                                <td style="padding:16px 18px; vertical-align:middle;">
-                                                    <div style="font-weight:700; color:#0f172a; font-size:14px; margin-bottom:4px;"><?php echo e($j['title']); ?></div>
-                                                    <div style="color:#64748b; font-size:11.5px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                                        <span>KBJI: <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#0369a1; font-weight:600;"><?php echo e($j['kbji_code']); ?></code></span>
-                                                        <span>•</span>
-                                                        <span><?php echo e($j['job_type']); ?></span>
-                                                        <?php if (!empty($j['parent_job_id'])): ?>
-                                                            <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10.5px; padding:2px 7px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-arrows-rotate"></i> Repost (#<?php echo (int)$j['parent_job_id']; ?>)</span>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </td>
-                                                <td style="padding:16px 18px; vertical-align:middle; font-size:13px; color:#334155;">
-                                                    <div style="display:flex; align-items:center; gap:6px;">
-                                                        <i class="fa-solid fa-location-dot" style="color:#94a3b8; font-size:12px;"></i>
-                                                        <span><?php echo e(sanitize_job_location($j['location'] ?: 'Kota Bekasi', $profile ?? null)); ?></span>
-                                                    </div>
-                                                </td>
-                                                <td style="padding:16px 18px; vertical-align:middle; font-size:13px; color:#334155;">
-                                                    <strong style="color:#0f172a;"><?php echo (int)($j['quota'] ?? 1); ?></strong> Posisi
-                                                    <?php if ((int)($j['accepted_count'] ?? 0) > 0): ?>
-                                                        <div style="font-size:11px; color:#16a34a; font-weight:600;">(Terisi: <?php echo (int)$j['accepted_count']; ?>)</div>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td style="padding:16px 18px; vertical-align:middle; font-size:13px; color:#334155;">
-                                                    <?php
-                                                        $applicantCount = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
-                                                        $applicantCount->execute([$j['id']]);
-                                                        $aCount = (int)$applicantCount->fetchColumn();
-                                                    ?>
-                                                    <span style="font-weight:600; color:<?php echo $aCount > 0 ? '#0284c7' : '#64748b'; ?>;"><?php echo $aCount; ?> Pelamar</span>
-                                                </td>
-                                                <td style="padding:16px 18px; vertical-align:middle;">
-                                                    <?php if ($cStatus === 'Tayang'): ?>
-                                                        <span class="status-pill approved" style="background:#ecfdf5; color:#16a34a; border:1px solid #bbf7d0; padding:4px 12px; border-radius:9999px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><i class="fa-regular fa-circle-check" style="font-size:11px;"></i> Tayang</span>
-                                                    <?php elseif ($cStatus === 'Draft'): ?>
-                                                        <span class="status-pill draft" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 12px; border-radius:9999px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-pencil" style="font-size:10px;"></i> Draft</span>
-                                                    <?php elseif ($cStatus === 'Perlu Direvisi'): ?>
-                                                        <span class="status-pill revision" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:4px 12px; border-radius:9999px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-triangle-exclamation" style="font-size:11px;"></i> Perlu Direvisi</span>
-                                                    <?php elseif ($cStatus === 'Ditolak'): ?>
-                                                        <span class="status-pill rejected" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca; padding:4px 12px; border-radius:9999px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><i class="fa-regular fa-circle-xmark" style="font-size:11px;"></i> Ditolak</span>
-                                                    <?php elseif ($cStatus === 'Ditutup'): ?>
-                                                        <span class="status-pill closed" style="background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; padding:4px 12px; border-radius:9999px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-lock" style="font-size:10px;"></i> Ditutup</span>
-                                                    <?php else: ?>
-                                                        <span class="status-pill pending" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; padding:4px 12px; border-radius:9999px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><i class="fa-regular fa-clock" style="font-size:11px;"></i> <?php echo e($meta['label']); ?></span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td style="padding:16px 18px; vertical-align:middle; text-align:center;">
-                                                    <a href="dashboard.php?job_detail=<?php echo $j['id']; ?>#lowongan" class="ghost-btn" style="padding:6px 14px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:700; color:#0284c7; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; transition:all 0.15s;">
-                                                        <i class="fa-solid fa-eye"></i> Lihat Detail
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="table-footer" style="padding:14px 20px; font-size:12.5px; color:#64748b; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
-                            <span>Daftar lowongan Anda (Total: <strong><?php echo count($jobs); ?></strong>)</span>
+                <?php if (!empty($kbjiReached3)): ?>
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:flex-start; gap:12px; color:#1e40af; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+                        <i class="fa-solid fa-circle-info" style="font-size:18px; color:#3b82f6; margin-top:2px; flex-shrink:0;"></i>
+                        <div style="font-size:13px; line-height:1.5;">
+                            <strong>Informasi Publikasi Jabatan (KBJI: <?php echo implode(', ', array_map('e', $kbjiReached3)); ?>)</strong><br>
+                            Anda telah mempublikasikan 3 lowongan dengan jabatan/KBJI yang sama pada bulan ini. Pengajuan berikutnya dengan jabatan yang sama akan memerlukan Dokumen/Keterangan Tambahan untuk ditinjau oleh Admin.
                         </div>
                     </div>
-
-                    <!-- MODAL DETAIL DRAFT / LOWONGAN LOOP (OUTSIDE TABLE FOR CLEAN DOM) -->
-                    <?php if ($jobs): ?>
-                        <?php foreach ($jobs as $j): ?>
-                            <div class="modal-backdrop <?php echo ((isset($_GET['open_draft']) && (int)$_GET['open_draft'] === (int)$j['id']) || (isset($_GET['job_detail']) && (int)$_GET['job_detail'] === (int)$j['id'])) ? 'open' : ''; ?>" data-modal="detail-draft-<?php echo $j['id']; ?>">
-                                <div class="modal-panel" style="width:min(680px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
-                                    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #e2e8f0; background:#ffffff;">
-                                        <div>
-                                            <div class="modal-title" style="font-size:18px; font-weight:700; color:#0f172a;"><?php echo e($j['title']); ?></div>
-                                            <div class="modal-subtitle" style="font-size:13px; color:#64748b; margin-top:2px;">
-                                                Kode KBJI: <?php echo e($j['kbji_code']); ?> | Status: <?php echo e($j['status']); ?>
-                                                <?php if (!empty($j['parent_job_id'])): ?>
-                                                    | <span style="color:#0284c7;">Posting Ulang dari #<?php echo (int)$j['parent_job_id']; ?></span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="ghost-btn" data-close-modal="detail-draft-<?php echo $j['id']; ?>" style="font-size:20px; color:#64748b; background:none; border:none; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">×</button>
-                                    </div>
-
-                                    <div class="modal-body" style="font-size:13px; color:#334155; max-height:68vh; overflow-y:auto; padding:20px;">
-                                        <?php
-                                        $startOfMonth = date('Y-m-01 00:00:00');
-                                        $endOfMonth   = date('Y-m-t 23:59:59');
-                                        $mQuotaStmt = db()->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND created_at BETWEEN ? AND ? AND status NOT IN ("Ditolak", "CANCELED")');
-                                        $mQuotaStmt->execute([$user['id'], $startOfMonth, $endOfMonth]);
-                                        $totalMonthlyQuota = (int)$mQuotaStmt->fetchColumn();
-                                        if ($totalMonthlyQuota <= 0) {
-                                            $totalMonthlyQuota = array_reduce($jobs, fn($acc, $item) => $acc + (int)($item['quota'] ?? 0), 0);
-                                        }
-                                        $maxMonthlyLimit = 10;
-                                        $exceededMonthlyQuota = max(0, $totalMonthlyQuota - $maxMonthlyLimit);
-                                        $isCurrentDraftLayer3Error = (!empty($_GET['layer3_error']) && (isset($_GET['open_draft']) && (int)$_GET['open_draft'] === (int)$j['id'])) || ($totalMonthlyQuota > 10 && $j['status'] === 'Draft');
-                                        ?>
-
-                                        <?php if ($isCurrentDraftLayer3Error): ?>
-                                            <!-- LAYER 3 POPUP WARNING BOX (JIKA KUOTA MELEBIHI BATAS 10 ORANG) -->
-                                            <div style="background:#fffbe6; border:1px solid #ffe58f; border-radius:12px; padding:18px 20px; margin-bottom:20px;">
-                                                <div style="display:flex; align-items:center; gap:8px; font-weight:800; color:#b45309; font-size:15px; margin-bottom:8px;">
-                                                    <i class="fa-solid fa-triangle-exclamation" style="font-size:16px;"></i> KUOTA TENAGA KERJA MELEBIHI BATAS BULANAN
-                                                </div>
-                                                <p style="margin:0 0 14px 0; font-size:13.5px; color:#78350f; line-height:1.5;">
-                                                    Pemberi Kerja Individu dapat mengajukan maksimal 10 orang dalam satu bulan kalender.
-                                                </p>
-                                                <div style="background:#ffffff; border:1px solid #fde68a; border-radius:10px; padding:14px 18px; margin-bottom:12px; display:grid; grid-template-columns:180px 15px 1fr; row-gap:10px; font-size:13.5px; align-items:center;">
-                                                    <span style="color:#78350f; font-weight:600;">Total kuota bulan ini</span>
-                                                    <span style="color:#78350f; font-weight:600;">:</span>
-                                                    <strong style="color:#78350f; font-weight:700;"><?php echo $totalMonthlyQuota > 0 ? $totalMonthlyQuota : 15; ?> orang</strong>
-
-                                                    <span style="color:#78350f; font-weight:600;">Batas maksimal</span>
-                                                    <span style="color:#78350f; font-weight:600;">:</span>
-                                                    <strong style="color:#78350f; font-weight:700;">10 orang</strong>
-
-                                                    <span style="color:#dc2626; font-weight:700;">Melebihi batas</span>
-                                                    <span style="color:#dc2626; font-weight:700;">:</span>
-                                                    <strong style="color:#dc2626; font-weight:800; font-size:14px;"><?php echo $exceededMonthlyQuota > 0 ? $exceededMonthlyQuota : 5; ?> orang</strong>
-                                                </div>
-                                                <p style="margin:0; font-size:13px; color:#b45309; font-style:italic;">
-                                                    Silakan kurangi kuota lowongan sebelum diajukan.
-                                                </p>
-                                            </div>
-                                        <?php endif; ?>
-
-                                        <?php if ($j['status'] === 'Menunggu Verifikasi'): ?>
-                                            <div style="background:#fff7ed; border:1px solid #fed7aa; color:#c2410c; padding:12px 16px; border-radius:10px; margin-bottom:14px; display:flex; align-items:center; gap:10px;">
-                                                <i class="fa-solid fa-lock" style="font-size:18px;"></i>
-                                                <div>
-                                                    <strong>Menunggu Verifikasi (Locked)</strong>
-                                                    <div style="font-size:12px; margin-top:2px;">Lowongan sedang ditinjau oleh Admin Disnaker. Pengubahan data terkunci.</div>
-                                                </div>
-                                            </div>
-                                        <?php elseif ($j['status'] === 'Perlu Direvisi'): ?>
-                                            <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:14px; border-radius:10px; margin-bottom:14px;">
-                                                <div style="font-weight:700; font-size:14px; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
-                                                    <i class="fa-solid fa-clipboard-check" style="color:#dc2626;"></i> Hasil Verifikasi Admin Disnaker
-                                                </div>
-                                                <div style="font-size:12px; background:#ffffff; padding:10px; border-radius:8px; border:1px solid #fee2e2; margin-bottom:8px;">
-                                                    <strong>Checklist Poin Pemeriksaan:</strong>
-                                                    <ul style="margin:4px 0 0 16px; padding:0;">
-                                                        <li>Kelengkapan Informasi Lowongan: <span style="color:#16a34a; font-weight:600;">✓ Sesuai</span></li>
-                                                        <li>Kesesuaian Kode KBJI: <span style="color:#dc2626; font-weight:600;">⚠️ Perlu Penyesuaian</span></li>
-                                                        <li>Kejelasan Deskripsi Pekerjaan: <span style="color:#16a34a; font-weight:600;">✓ Sesuai</span></li>
-                                                    </ul>
-                                                </div>
-                                                <div style="font-size:12px;">
-                                                    <strong>Catatan Verifikator:</strong> <?php echo e($j['admin_notes'] ?? 'Harap perbarui uraian tugas dan syarat pengalaman kerja.'); ?>
-                                                </div>
-                                            </div>
-                                        <?php elseif ($j['status'] === 'Ditolak'): ?>
-                                            <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px; border-radius:10px; margin-bottom:14px;">
-                                                <strong>Lowongan Ditolak (Read-Only)</strong>
-                                                <div style="font-size:12px; margin-top:4px;"><?php echo e($j['admin_notes'] ?? 'Lowongan tidak memenuhi kualifikasi kriteria yang ditetapkan.'); ?></div>
-                                                <div style="font-size:11px; color:#7f1d1d; margin-top:6px; font-style:italic;">Lowongan yang telah ditolak tidak dapat diajukan ulang.</div>
-                                            </div>
-                                        <?php elseif ($j['status'] === 'Diblokir'): ?>
-                                            <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px; border-radius:10px; margin-bottom:14px;">
-                                                <strong>Lowongan Diblokir</strong>
-                                                <div style="font-size:12px; margin-top:4px;">Lowongan ditangguhkan/diblokir oleh Admin Disnaker.</div>
-                                            </div>
-                                        <?php endif; ?>
-
-                                        <!-- JOB DETAILS GRID (TITIK DUA RAPI / COLONS ALIGNED) -->
-                                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:18px 20px; margin-bottom:20px; display:grid; grid-template-columns:180px 15px 1fr; row-gap:10px; font-size:13.5px; align-items:center;">
-                                            <span style="color:#475569; font-weight:600;">Judul Lowongan</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['title']); ?></strong>
-                                            <span style="color:#475569; font-weight:600;">Penempatan</span><span>:</span><strong style="color:#0f172a;"><?php echo e(sanitize_job_location($j['location'], $profile ?? null)); ?></strong>
-                                            <span style="color:#475569; font-weight:600;">Jenis Pekerjaan</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['job_type']); ?></strong>
-                                            <span style="color:#475569; font-weight:600;">Bidang Pekerjaan</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['industry']); ?></strong>
-                                            <span style="color:#475569; font-weight:600;">Kode KBJI</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['kbji_code']); ?></strong>
-                                            <span style="color:#475569; font-weight:600;">Pendidikan Minimal</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['min_education'] ?? 'SMA/SMK'); ?></strong>
-                                            <span style="color:#475569; font-weight:600;">Minimum Pengalaman</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['min_experience'] ?? '1 - 3 tahun'); ?></strong>
-                                            <span style="color:#475569; font-weight:600;">Kuota Posisi</span><span>:</span><strong style="color:#0f172a;"><?php echo (int)$j['quota']; ?> Orang</strong>
-                                            <span style="color:#475569; font-weight:600;">Status Saat Ini</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['status']); ?></strong>
-                                        </div>
-
-                                        <!-- DESKRIPSI PEKERJAAN (LEFT ALIGNED) -->
-                                        <div style="margin-bottom:20px; text-align:left;">
-                                            <div style="font-weight:700; font-size:14px; color:#0f172a; margin-bottom:8px; text-align:left;">Deskripsi Pekerjaan</div>
-                                            <div style="font-size:13.5px; line-height:1.6; color:#334155; white-space:pre-wrap; background:#ffffff; padding:14px 16px; border:1px solid #e2e8f0; border-radius:10px; font-family:inherit; text-align:left;">
-                                                <?php echo e($j['description']); ?>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="modal-footer" style="display:flex; justify-content:flex-end; align-items:center; padding:16px 20px; background:#f8fafc; border-top:1px solid #e2e8f0;">
-                                        <button type="button" class="btn-primary-custom" <?php echo ($j['status'] === 'Perlu Direvisi') ? 'data-revise-job="' . $j['id'] . '"' : 'data-edit-draft="' . $j['id'] . '"'; ?> data-close-modal="detail-draft-<?php echo $j['id']; ?>" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border:none; padding:10px 24px; border-radius:8px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(2, 132, 199, 0.3);">
-                                            <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-
-                    <!-- MODAL POP-UP KONFLIK KBJI -->
-                    <?php
-                    $kbjiErr = $_SESSION['kbji_duplicate_error'] ?? null;
-                    unset($_SESSION['kbji_duplicate_error']);
-                    $conflictDraftId = $_GET['draft_id'] ?? ($kbjiErr['job_id'] ?? null);
-                    ?>
-                    <div class="modal-backdrop <?php echo ($kbjiErr || isset($_GET['kbji_conflict'])) ? 'open' : ''; ?>" data-modal="kbji-conflict">
-                        <div class="modal-panel" style="width:min(520px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
-                            <div class="modal-header" style="background:#fef2f2; border-bottom:1px solid #fecaca; padding:18px 20px; display:flex; align-items:center; justify-content:space-between;">
-                                <div style="display:flex; align-items:center; gap:12px;">
-                                    <div style="width:40px; height:40px; border-radius:10px; background:#fee2e2; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                        <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:20px;"></i>
-                                    </div>
-                                    <div>
-                                        <div class="modal-title" style="color:#991b1b; font-size:16px; font-weight:700; line-height:1.3;">Jabatan KBJI Sudah Aktif</div>
-                                        <div class="modal-subtitle" style="color:#b91c1c; font-size:13px; font-weight:500; margin-top:2px;">Konflik Aturan Pengajuan Lowongan</div>
-                                    </div>
-                                </div>
-                                <button type="button" class="ghost-btn" data-close-modal="kbji-conflict" style="width:32px; height:32px; border-radius:8px; border:none; background:transparent; font-size:20px; color:#991b1b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
-                            </div>
-                            <div class="modal-body" style="padding:24px 20px; font-size:14px; color:#334155; text-align:center;">
-                                <p style="font-size:15px; font-weight:600; color:#1e293b; margin-bottom:16px;">
-                                    Anda masih memiliki lowongan aktif untuk jabatan ini.
-                                </p>
-                                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; text-align:left; font-size:13px; line-height:1.6;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #e2e8f0;">
-                                        <span style="color:#64748b; font-weight:500;">Kode KBJI:</span>
-                                        <strong style="color:#0f172a; font-weight:600;"><?php echo e($kbjiErr['kbji_code'] ?? 'Sama'); ?></strong>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                                        <span style="color:#64748b; font-weight:500;">Lowongan Aktif Saat Ini:</span>
-                                        <strong style="color:#0f172a; font-weight:600; text-align:right; max-width:60%;"><?php echo e($kbjiErr['active_job_title'] ?? 'Koki Masakan Tradisional'); ?></strong>
-                                    </div>
-                                    <div style="margin-top:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; color:#1e40af; font-size:12px; display:flex; align-items:flex-start; gap:8px;">
-                                        <i class="fa-solid fa-circle-info" style="margin-top:2px; flex-shrink:0;"></i>
-                                        <span>Catatan: Draft lowongan Anda tidak dihapus dan tetap aman tersimpan sebagai Draft.</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer" style="display:flex; justify-content:center; align-items:center; gap:12px; padding:16px 20px !important; margin-top:0 !important; background:#f8fafc; border-top:1px solid #e2e8f0; border-radius:0 0 16px 16px;">
-                                <button type="button" class="secondary-btn" style="height:40px !important; padding:0 18px !important; border:1px solid #0284c7 !important; color:#0284c7 !important; background:#ffffff !important; border-radius:8px !important; font-weight:600 !important; font-size:13px !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="filterActiveJobsAndCloseConflict()">
-                                    <i class="fa-solid fa-briefcase"></i> Lihat Lowongan Aktif
-                                </button>
-                                <?php if ($conflictDraftId): ?>
-                                    <button type="button" class="primary-btn" style="height:40px !important; padding:0 18px !important; background:#0284c7 !important; color:#ffffff !important; border:none !important; border-radius:8px !important; font-weight:600 !important; font-size:13px !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(2, 132, 199, 0.2);" onclick="openEditJobFromConflict(<?php echo (int)$conflictDraftId; ?>)">
-                                        <i class="fa-solid fa-pen-to-square"></i> Ubah Kode KBJI
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <script>
-                    function switchDetailTab(btn, tabId) {
-                        const modal = btn.closest('.modal-panel');
-                        if (!modal) return;
-                        modal.querySelectorAll('.tab-btn').forEach(b => {
-                            b.classList.remove('active');
-                            b.style.borderBottomColor = 'transparent';
-                            b.style.color = '#64748b';
-                        });
-                        btn.classList.add('active');
-                        btn.style.borderBottomColor = '#0284c7';
-                        btn.style.color = '#0284c7';
-
-                        modal.querySelectorAll('.detail-tab-pane').forEach(p => p.style.display = 'none');
-                        const target = modal.querySelector('#' + tabId);
-                        if (target) target.style.display = 'block';
-                    }
-
-                    function filterActiveJobsAndCloseConflict() {
-                        const modal = document.querySelector('[data-modal="kbji-conflict"]');
-                        if (modal) modal.classList.remove('open');
-                        const filter = document.getElementById('jobStatusFilter');
-                        if (filter) {
-                            filter.value = 'Tayang';
-                            filterJobsTable();
-                        }
-                    }
-                    function openEditJobFromConflict(draftId) {
-                        const conflictModal = document.querySelector('[data-modal="kbji-conflict"]');
-                        if (conflictModal) conflictModal.classList.remove('open');
-                        if (!draftId) return;
-
-                        const dummyBtn = document.createElement('button');
-                        dummyBtn.dataset.editDraft = String(draftId);
-                        document.body.appendChild(dummyBtn);
-                        dummyBtn.click();
-                        dummyBtn.remove();
-                    }
-                    </script>
                 <?php endif; ?>
+
+                <div class="section-card">
+                    <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px;">
+                        <div class="search-small" style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; flex:1; min-width:220px;">
+                            <i class="fa-solid fa-magnifying-glass" style="color:#64748b;"></i>
+                            <input type="text" id="jobSearchInput" onkeyup="filterJobsTable()" placeholder="Cari berdasarkan judul lowongan..." style="border:none; background:transparent; font-size:12px; outline:none; width:100%;">
+                        </div>
+                        <div class="controls" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <select id="jobStatusFilter" onchange="filterJobsTable()" style="padding:6px 12px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; background:#fff; font-weight:600; color:#334155;">
+                                <option value="all">Semua Status</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                                <option value="Perlu Direvisi">Perlu Direvisi</option>
+                                <option value="Tayang">Tayang</option>
+                                <option value="Ditolak">Ditolak</option>
+                                <option value="Ditutup">Ditutup</option>
+                                <option value="Ditangguhkan">Ditangguhkan</option>
+                                <option value="Kedaluwarsa">Kedaluwarsa</option>
+                                <option value="Diblokir">Diblokir</option>
+                            </select>
+                            <select id="jobSortSelect" onchange="sortJobsTable()" style="padding:6px 12px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; background:#fff; font-weight:600; color:#334155;">
+                                <option value="newest">Terbaru</option>
+                                <option value="oldest">Terlama</option>
+                                <option value="title">Judul (A-Z)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-shell">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Lowongan</th>
+                                    <th>Penempatan</th>
+                                    <th>Kuota Tersedia</th>
+                                    <th>Pelamar</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jobsTableBody">
+                                <?php if (!$jobs): ?>
+                                    <tr>
+                                        <td colspan="6" style="text-align:center; padding:30px; color:#64748b;">
+                                            Belum ada lowongan. Klik <strong>Tambah Lowongan</strong> di atas untuk membuat lowongan baru.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($jobs as $j):
+                                        $cStatus = normalize_job_status($j['status'] ?? 'Draft');
+                                        $meta = job_status_meta($cStatus);
+                                    ?>
+                                        <tr data-job-row data-title="<?php echo e($j['title']); ?>" data-status="<?php echo e($cStatus); ?>" data-created="<?php echo e($j['created_at']); ?>">
+                                            <td>
+                                                <strong><?php echo e($j['title']); ?></strong>
+                                                <div class="tiny" style="color:#64748b; font-size:11px;">
+                                                    KBJI: <code><?php echo e($j['kbji_code']); ?></code> | Tipe: <?php echo e($j['job_type']); ?>
+
+                                                    <?php if (!empty($j['parent_job_id'])): ?>
+                                                        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10px; padding:1px 6px; margin-left:4px; border-radius:4px;"><i class="fa-solid fa-arrows-rotate"></i> Repost (Parent #<?php echo (int)$j['parent_job_id']; ?>)</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                            <td><?php echo e(sanitize_job_location($j['location'] ?: 'Kota Bekasi', $profile ?? null)); ?></td>
+                                            <td>
+                                                <strong><?php echo (int)($j['quota'] ?? 1); ?></strong> Posisi
+                                                <?php if ((int)($j['accepted_count'] ?? 0) > 0): ?>
+                                                    <div style="font-size:11px; color:#16a34a;">(Terisi: <?php echo (int)$j['accepted_count']; ?>)</div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                    $applicantCount = db()->prepare('SELECT COUNT(*) FROM job_applications WHERE job_id = ?');
+                                                    $applicantCount->execute([$j['id']]);
+                                                    echo (int)$applicantCount->fetchColumn();
+                                                ?> Pelamar
+                                            </td>
+                                            <td>
+                                                <?php if ($cStatus === 'Tayang'): ?>
+                                                    <span class="status-pill approved">Tayang</span>
+                                                <?php elseif ($cStatus === 'Draft'): ?>
+                                                    <span class="status-pill draft" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">Draft</span>
+                                                <?php elseif ($cStatus === 'Perlu Direvisi'): ?>
+                                                    <span class="status-pill revision" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">Perlu Direvisi</span>
+                                                <?php elseif ($cStatus === 'Ditolak'): ?>
+                                                    <span class="status-pill rejected" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca;">Ditolak</span>
+                                                <?php elseif ($cStatus === 'Ditutup'): ?>
+                                                    <span class="status-pill closed" style="background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">Ditutup</span>
+                                                <?php else: ?>
+                                                    <span class="status-pill pending" style="background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;"><?php echo e($meta['label']); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <a href="dashboard.php?job_detail=<?php echo $j['id']; ?>#lowongan" class="ghost-btn" style="padding:4px 10px; font-size:11px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                                    <i class="fa-solid fa-eye"></i> Lihat Detail
+                                                </a>
+
+                                                 <!-- MODAL DETAIL DRAFT / LOWONGAN -->
+                                                  <div class="modal-backdrop <?php echo ((isset($_GET['open_draft']) && (int)$_GET['open_draft'] === (int)$j['id']) || (isset($_GET['job_detail']) && (int)$_GET['job_detail'] === (int)$j['id'])) ? 'open' : ''; ?>" data-modal="detail-draft-<?php echo $j['id']; ?>">
+                                                      <div class="modal-panel" style="width:min(680px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
+                                                          <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #e2e8f0; background:#ffffff;">
+                                                              <div>
+                                                                  <div class="modal-title" style="font-size:18px; font-weight:700; color:#0f172a;"><?php echo e($j['title']); ?></div>
+                                                                  <div class="modal-subtitle" style="font-size:13px; color:#64748b; margin-top:2px;">
+                                                                      Kode KBJI: <?php echo e($j['kbji_code']); ?> | Status: <?php echo e($j['status']); ?>
+                                                                      <?php if (!empty($j['parent_job_id'])): ?>
+                                                                          | <span style="color:#0284c7;">Posting Ulang dari #<?php echo (int)$j['parent_job_id']; ?></span>
+                                                                      <?php endif; ?>
+                                                                  </div>
+                                                              </div>
+                                                              <button type="button" class="ghost-btn" data-close-modal="detail-draft-<?php echo $j['id']; ?>" style="font-size:20px; color:#64748b; background:none; border:none; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">×</button>
+                                                          </div>
+
+                                                          <div class="modal-body" style="font-size:13px; color:#334155; max-height:68vh; overflow-y:auto; padding:20px;">
+                                                               <?php
+                                                               $startOfMonth = date('Y-m-01 00:00:00');
+                                                               $endOfMonth   = date('Y-m-t 23:59:59');
+                                                               $mQuotaStmt = db()->prepare('SELECT COALESCE(SUM(quota), 0) FROM job_posts WHERE user_id = ? AND parent_job_id IS NULL AND created_at BETWEEN ? AND ? AND status NOT IN ("Ditolak", "CANCELED")');
+                                                               $mQuotaStmt->execute([$user['id'], $startOfMonth, $endOfMonth]);
+                                                               $totalMonthlyQuota = (int)$mQuotaStmt->fetchColumn();
+                                                               if ($totalMonthlyQuota <= 0) {
+                                                                   $totalMonthlyQuota = array_reduce($jobs, fn($acc, $item) => $acc + (int)($item['quota'] ?? 0), 0);
+                                                               }
+                                                               $maxMonthlyLimit = 10;
+                                                               $exceededMonthlyQuota = max(0, $totalMonthlyQuota - $maxMonthlyLimit);
+                                                               $isCurrentDraftLayer3Error = (!empty($_GET['layer3_error']) && (isset($_GET['open_draft']) && (int)$_GET['open_draft'] === (int)$j['id'])) || ($totalMonthlyQuota > 10 && $j['status'] === 'Draft');
+                                                               ?>
+
+                                                               <?php if ($isCurrentDraftLayer3Error): ?>
+                                                                   <!-- LAYER 3 POPUP WARNING BOX (JIKA KUOTA MELEBIHI BATAS 10 ORANG) -->
+                                                                   <div style="background:#fffbe6; border:1px solid #ffe58f; border-radius:12px; padding:18px 20px; margin-bottom:20px;">
+                                                                       <div style="display:flex; align-items:center; gap:8px; font-weight:800; color:#b45309; font-size:15px; margin-bottom:8px;">
+                                                                           <i class="fa-solid fa-triangle-exclamation" style="font-size:16px;"></i> KUOTA TENAGA KERJA MELEBIHI BATAS BULANAN
+                                                                       </div>
+                                                                       <p style="margin:0 0 14px 0; font-size:13.5px; color:#78350f; line-height:1.5;">
+                                                                           Pemberi Kerja Individu dapat mengajukan maksimal 10 orang dalam satu bulan kalender.
+                                                                       </p>
+                                                                       <div style="background:#ffffff; border:1px solid #fde68a; border-radius:10px; padding:14px 18px; margin-bottom:12px; display:grid; grid-template-columns:180px 15px 1fr; row-gap:10px; font-size:13.5px; align-items:center;">
+                                                                           <span style="color:#78350f; font-weight:600;">Total kuota bulan ini</span>
+                                                                           <span style="color:#78350f; font-weight:600;">:</span>
+                                                                           <strong style="color:#78350f; font-weight:700;"><?php echo $totalMonthlyQuota > 0 ? $totalMonthlyQuota : 15; ?> orang</strong>
+
+                                                                           <span style="color:#78350f; font-weight:600;">Batas maksimal</span>
+                                                                           <span style="color:#78350f; font-weight:600;">:</span>
+                                                                           <strong style="color:#78350f; font-weight:700;">10 orang</strong>
+
+                                                                           <span style="color:#dc2626; font-weight:700;">Melebihi batas</span>
+                                                                           <span style="color:#dc2626; font-weight:700;">:</span>
+                                                                           <strong style="color:#dc2626; font-weight:800; font-size:14px;"><?php echo $exceededMonthlyQuota > 0 ? $exceededMonthlyQuota : 5; ?> orang</strong>
+                                                                       </div>
+                                                                       <p style="margin:0; font-size:13px; color:#b45309; font-style:italic;">
+                                                                           Silakan kurangi kuota lowongan sebelum diajukan.
+                                                                       </p>
+                                                                   </div>
+                                                               <?php endif; ?>
+
+                                                               <?php if ($j['status'] === 'Menunggu Verifikasi'): ?>
+                                                                   <div style="background:#fff7ed; border:1px solid #fed7aa; color:#c2410c; padding:12px 16px; border-radius:10px; margin-bottom:14px; display:flex; align-items:center; gap:10px;">
+                                                                       <i class="fa-solid fa-lock" style="font-size:18px;"></i>
+                                                                       <div>
+                                                                           <strong>Menunggu Verifikasi (Locked)</strong>
+                                                                           <div style="font-size:12px; margin-top:2px;">Lowongan sedang ditinjau oleh Admin Disnaker. Pengubahan data terkunci.</div>
+                                                                       </div>
+                                                                   </div>
+                                                               <?php elseif ($j['status'] === 'Perlu Direvisi'): ?>
+                                                                   <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:14px; border-radius:10px; margin-bottom:14px;">
+                                                                       <div style="font-weight:700; font-size:14px; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                                                                           <i class="fa-solid fa-clipboard-check" style="color:#dc2626;"></i> Hasil Verifikasi Admin Disnaker
+                                                                       </div>
+                                                                       <div style="font-size:12px; background:#ffffff; padding:10px; border-radius:8px; border:1px solid #fee2e2; margin-bottom:8px;">
+                                                                           <strong>Checklist Poin Pemeriksaan:</strong>
+                                                                           <ul style="margin:4px 0 0 16px; padding:0;">
+                                                                               <li>Kelengkapan Informasi Lowongan: <span style="color:#16a34a; font-weight:600;">✓ Sesuai</span></li>
+                                                                               <li>Kesesuaian Kode KBJI: <span style="color:#dc2626; font-weight:600;">⚠️ Perlu Penyesuaian</span></li>
+                                                                               <li>Kejelasan Deskripsi Pekerjaan: <span style="color:#16a34a; font-weight:600;">✓ Sesuai</span></li>
+                                                                           </ul>
+                                                                       </div>
+                                                                       <div style="font-size:12px;">
+                                                                           <strong>Catatan Verifikator:</strong> <?php echo e($j['admin_notes'] ?? 'Harap perbarui uraian tugas dan syarat pengalaman kerja.'); ?>
+                                                                       </div>
+                                                                   </div>
+                                                               <?php elseif ($j['status'] === 'Ditolak'): ?>
+                                                                   <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px; border-radius:10px; margin-bottom:14px;">
+                                                                       <strong>Lowongan Ditolak (Read-Only)</strong>
+                                                                       <div style="font-size:12px; margin-top:4px;"><?php echo e($j['admin_notes'] ?? 'Lowongan tidak memenuhi kualifikasi kriteria yang ditetapkan.'); ?></div>
+                                                                       <div style="font-size:11px; color:#7f1d1d; margin-top:6px; font-style:italic;">Lowongan yang telah ditolak tidak dapat diajukan ulang.</div>
+                                                                   </div>
+                                                               <?php elseif ($j['status'] === 'Diblokir'): ?>
+                                                                   <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px; border-radius:10px; margin-bottom:14px;">
+                                                                       <strong>Lowongan Diblokir</strong>
+                                                                       <div style="font-size:12px; margin-top:4px;">Lowongan ditangguhkan/diblokir oleh Admin Disnaker.</div>
+                                                                   </div>
+                                                               <?php endif; ?>
+
+                                                               <!-- JOB DETAILS GRID (TITIK DUA RAPI / COLONS ALIGNED) -->
+                                                               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:18px 20px; margin-bottom:20px; display:grid; grid-template-columns:180px 15px 1fr; row-gap:10px; font-size:13.5px; align-items:center;">
+                                                                   <span style="color:#475569; font-weight:600;">Judul Lowongan</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['title']); ?></strong>
+                                                                   <span style="color:#475569; font-weight:600;">Penempatan</span><span>:</span><strong style="color:#0f172a;"><?php echo e(sanitize_job_location($j['location'], $profile ?? null)); ?></strong>
+                                                                   <span style="color:#475569; font-weight:600;">Jenis Pekerjaan</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['job_type']); ?></strong>
+                                                                   <span style="color:#475569; font-weight:600;">Bidang Pekerjaan</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['industry']); ?></strong>
+                                                                   <span style="color:#475569; font-weight:600;">Kode KBJI</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['kbji_code']); ?></strong>
+                                                                   <span style="color:#475569; font-weight:600;">Pendidikan Minimal</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['min_education'] ?? 'SMA/SMK'); ?></strong>
+                                                                   <span style="color:#475569; font-weight:600;">Minimum Pengalaman</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['min_experience'] ?? '1 - 3 tahun'); ?></strong>
+                                                                   <span style="color:#475569; font-weight:600;">Kuota Posisi</span><span>:</span><strong style="color:#0f172a;"><?php echo (int)$j['quota']; ?> Orang</strong>
+                                                                   <span style="color:#475569; font-weight:600;">Status Saat Ini</span><span>:</span><strong style="color:#0f172a;"><?php echo e($j['status']); ?></strong>
+                                                               </div>
+
+                                                               <!-- DESKRIPSI PEKERJAAN (LEFT ALIGNED) -->
+                                                               <div style="margin-bottom:20px; text-align:left;">
+                                                                   <div style="font-weight:700; font-size:14px; color:#0f172a; margin-bottom:8px; text-align:left;">Deskripsi Pekerjaan</div>
+                                                                   <div style="font-size:13.5px; line-height:1.6; color:#334155; white-space:pre-wrap; background:#ffffff; padding:14px 16px; border:1px solid #e2e8f0; border-radius:10px; font-family:inherit; text-align:left;">
+                                                                       <?php echo e($j['description']); ?>
+                                                                   </div>
+                                                               </div>
+                                                           </div>
+
+                                                           <div class="modal-footer" style="display:flex; justify-content:flex-end; align-items:center; padding:16px 20px; background:#f8fafc; border-top:1px solid #e2e8f0;">
+                                                               <button type="button" class="btn-primary-custom" <?php echo ($j['status'] === 'Perlu Direvisi') ? 'data-revise-job="' . $j['id'] . '"' : 'data-edit-draft="' . $j['id'] . '"'; ?> data-close-modal="detail-draft-<?php echo $j['id']; ?>" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border:none; padding:10px 24px; border-radius:8px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(2, 132, 199, 0.3);">
+                                                                   <i class="fa-solid fa-pen-to-square"></i> Edit Lowongan
+                                                               </button>
+                                                           </div>
+                                                       </div>
+                                                   </div>
+                                                   <!-- DRAFT DETAIL / ACTION ACTIONS -->
+                                              </td>
+                                          </tr>
+                                     <?php endforeach; ?>
+                                 <?php endif; ?>
+                             </div><div class="table-footer" style="padding:12px 16px; font-size:12px; color:#64748b; background:#f8fafc; border-top:1px solid #e2e8f0;">Daftar lowongan Anda (Total: <?php echo count($jobs); ?>)</div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+
+
+                <!-- MODAL POP-UP KONFLIK KBJI -->
+                <?php
+                $kbjiErr = $_SESSION['kbji_duplicate_error'] ?? null;
+                unset($_SESSION['kbji_duplicate_error']);
+                $conflictDraftId = $_GET['draft_id'] ?? ($kbjiErr['job_id'] ?? null);
+                ?>
+                <div class="modal-backdrop <?php echo ($kbjiErr || isset($_GET['kbji_conflict'])) ? 'open' : ''; ?>" data-modal="kbji-conflict">
+                    <div class="modal-panel" style="width:min(520px, 95vw); border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); background:#ffffff;">
+                        <div class="modal-header" style="background:#fef2f2; border-bottom:1px solid #fecaca; padding:18px 20px; display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="width:40px; height:40px; border-radius:10px; background:#fee2e2; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:20px;"></i>
+                                </div>
+                                <div>
+                                    <div class="modal-title" style="color:#991b1b; font-size:16px; font-weight:700; line-height:1.3;">Jabatan KBJI Sudah Aktif</div>
+                                    <div class="modal-subtitle" style="color:#b91c1c; font-size:13px; font-weight:500; margin-top:2px;">Konflik Aturan Pengajuan Lowongan</div>
+                                </div>
+                            </div>
+                            <button type="button" class="ghost-btn" data-close-modal="kbji-conflict" style="width:32px; height:32px; border-radius:8px; border:none; background:transparent; font-size:20px; color:#991b1b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
+                        </div>
+                        <div class="modal-body" style="padding:24px 20px; font-size:14px; color:#334155; text-align:center;">
+                            <p style="font-size:15px; font-weight:600; color:#1e293b; margin-bottom:16px;">
+                                Anda masih memiliki lowongan aktif untuk jabatan ini.
+                            </p>
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; text-align:left; font-size:13px; line-height:1.6;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #e2e8f0;">
+                                    <span style="color:#64748b; font-weight:500;">Kode KBJI:</span>
+                                    <strong style="color:#0f172a; font-weight:600;"><?php echo e($kbjiErr['kbji_code'] ?? 'Sama'); ?></strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <span style="color:#64748b; font-weight:500;">Lowongan Aktif Saat Ini:</span>
+                                    <strong style="color:#0f172a; font-weight:600; text-align:right; max-width:60%;"><?php echo e($kbjiErr['active_job_title'] ?? 'Koki Masakan Tradisional'); ?></strong>
+                                </div>
+                                <div style="margin-top:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; color:#1e40af; font-size:12px; display:flex; align-items:flex-start; gap:8px;">
+                                    <i class="fa-solid fa-circle-info" style="margin-top:2px; flex-shrink:0;"></i>
+                                    <span>Catatan: Draft lowongan Anda tidak dihapus dan tetap aman tersimpan sebagai Draft.</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="display:flex; justify-content:center; align-items:center; gap:12px; padding:16px 20px !important; margin-top:0 !important; background:#f8fafc; border-top:1px solid #e2e8f0; border-radius:0 0 16px 16px;">
+                            <button type="button" class="secondary-btn" style="height:40px !important; padding:0 18px !important; border:1px solid #0284c7 !important; color:#0284c7 !important; background:#ffffff !important; border-radius:8px !important; font-weight:600 !important; font-size:13px !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="filterActiveJobsAndCloseConflict()">
+                                <i class="fa-solid fa-briefcase"></i> Lihat Lowongan Aktif
+                            </button>
+                            <?php if ($conflictDraftId): ?>
+                                <button type="button" class="primary-btn" style="height:40px !important; padding:0 18px !important; background:#0284c7 !important; color:#ffffff !important; border:none !important; border-radius:8px !important; font-weight:600 !important; font-size:13px !important; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(2, 132, 199, 0.2);" onclick="openEditJobFromConflict(<?php echo (int)$conflictDraftId; ?>)">
+                                    <i class="fa-solid fa-pen-to-square"></i> Ubah Kode KBJI
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function switchDetailTab(btn, tabId) {
+                    const modal = btn.closest('.modal-panel');
+                    if (!modal) return;
+                    modal.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.style.borderBottomColor = 'transparent';
+                        b.style.color = '#64748b';
+                    });
+                    btn.classList.add('active');
+                    btn.style.borderBottomColor = '#0284c7';
+                    btn.style.color = '#0284c7';
+
+                    modal.querySelectorAll('.detail-tab-pane').forEach(p => p.style.display = 'none');
+                    const target = modal.querySelector('#' + tabId);
+                    if (target) target.style.display = 'block';
+                }
+
+                function switchJobApplicantsView(mode, jobId) {
+                    ['kanban', 'grid', 'list'].forEach(m => {
+                        const btn = document.getElementById('btn-' + m + '-' + jobId);
+                        if (btn) btn.classList.toggle('active', m === mode);
+                        const pane = document.getElementById(m + '-view-' + jobId);
+                        if (pane) pane.style.display = (m === mode) ? 'block' : 'none';
+                    });
+                }
+
+                function filterActiveJobsAndCloseConflict() {
+                    const modal = document.querySelector('[data-modal="kbji-conflict"]');
+                    if (modal) modal.classList.remove('open');
+                    const filter = document.getElementById('jobStatusFilter');
+                    if (filter) {
+                        filter.value = 'Tayang';
+                        filterJobsTable();
+                    }
+                }
+                function openEditJobFromConflict(draftId) {
+                    const conflictModal = document.querySelector('[data-modal="kbji-conflict"]');
+                    if (conflictModal) conflictModal.classList.remove('open');
+                    if (!draftId) return;
+
+                    // Trigger standard multi-step Posting Lowongan modal in edit/prefilled mode
+                    const dummyBtn = document.createElement('button');
+                    dummyBtn.dataset.editDraft = String(draftId);
+                    document.body.appendChild(dummyBtn);
+                    dummyBtn.click();
+                    dummyBtn.remove();
+                }
+                </script>
+                <div class="section-card" style="margin-top:16px">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-user-check"></i> Pelamar Tersinkron</h3>
+                    </div>
+                    <div style="padding:16px">
+                        <!--JOB_APPLICANTS-->
+                    </div>
+                </div>
+            <?php endif; ?>
             </section>
 
             <!-- SECTION: JADWAL WAWANCARA (EXACT KARIRHUB SCREENSHOTS 1, 2, 3) -->
@@ -3929,7 +3918,7 @@
     <?php endif; ?>
 
     <!-- ─── POP-UP DUPLICATE KBJI ERROR (SECTION H) ────────────────────────────── -->
-    <?php if (!empty($kbjiDuplicateError)): ?>
+    <?php if ($kbjiDuplicateError): ?>
         <div class="modal-backdrop open" data-modal="kbji-duplicate-modal">
             <div class="popup-dialog-card">
                 <div class="popup-dialog-icon danger"><i class="fa-solid fa-triangle-exclamation"></i></div>
