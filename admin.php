@@ -25,7 +25,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (isset($_POST['admin_act
     // 1. AMBIL CASE / ASSIGN PEMERIKSA (EMPLOYER)
     if ($action === 'assign_employer_case') {
         $targetUserId = (int)$_POST['user_id'];
-        $verifierName = trim($_POST['verifier_name'] ?? 'Admin Pusat');
+        $verifierName = trim($_POST['verifier_name'] ?? 'Pandu Isdiyanto, S.T., M.M');
         $reason = trim($_POST['assignment_reason'] ?? '');
         $isSelfAssign = !empty($_POST['self_assign']);
 
@@ -508,7 +508,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (isset($_POST['admin_act
     // 8. AMBIL CASE / ASSIGN PEMERIKSA LOWONGAN
     if ($action === 'assign_job_case') {
         $jobId = (int)$_POST['job_id'];
-        $verifierName = trim($_POST['verifier_name'] ?? 'Admin Pusat');
+        $verifierName = trim($_POST['verifier_name'] ?? 'Pandu Isdiyanto, S.T., M.M');
         $reason = trim($_POST['assignment_reason'] ?? '');
         $isSelfAssign = !empty($_POST['self_assign']);
 
@@ -4308,7 +4308,7 @@ document.addEventListener('click', function(e) {
                                 <input type="hidden" name="admin_action" value="assign_employer_case">
                                 <input type="hidden" name="user_id" value="<?php echo $selectedEmployer['user_id']; ?>">
                                 <input type="hidden" name="self_assign" value="1">
-                                <input type="hidden" name="verifier_name" value="<?php echo e($user['name'] ?: 'Admin Pusat'); ?>">
+                                <input type="hidden" name="verifier_name" value="<?php echo e($user['name'] ?: 'Pandu Isdiyanto, S.T., M.M'); ?>">
                                 <div style="display:flex; justify-content:flex-end; gap:12px;">
                                     <button type="button" class="ghost-btn" data-close-modal="modal-confirm-ambil-pengajuan" style="border:1px solid #cbd5e1; border-radius:999px; padding:8px 20px; font-size:13px; font-weight:700; color:#475569; background:#ffffff; cursor:pointer;">
                                         Batalkan
@@ -5771,7 +5771,7 @@ document.addEventListener('click', function(e) {
                                         <div style="font-size:11px; color:#64748b; margin-bottom:2px;"><?php echo date('d M Y, H:i', strtotime($selectedJob['created_at'] . ' + 1 minute')); ?></div>
                                         <div style="font-size:12px; font-weight:700; color:#0f172a;">Ditugaskan ke verifikator.</div>
                                         <div style="font-size:11px; color:#64748b;">Auto-booked to verifier</div>
-                                        <div style="font-size:11px; color:#475569; font-weight:600; margin-top:2px;">Aktor: Admin Pusat</div>
+                                        <div style="font-size:11px; color:#475569; font-weight:600; margin-top:2px;">Aktor: <?php echo e($user['name'] ?: 'Pandu Isdiyanto, S.T., M.M'); ?></div>
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:12px;">
@@ -5811,7 +5811,7 @@ document.addEventListener('click', function(e) {
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-user" style="color:#0284c7; width:14px;"></i> Nama Petugas yang Ditugaskan
                                 </div>
-                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: 'Admin Pusat'); ?></div>
+                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: 'Pandu Isdiyanto, S.T., M.M'); ?></div>
                             </div>
                             <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
@@ -5848,7 +5848,7 @@ document.addEventListener('click', function(e) {
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                                     <i class="fa-solid fa-id-badge" style="color:#0284c7; width:14px;"></i> Nama Verifikator
                                 </div>
-                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: $user['name'] ?? 'Admin Pusat'); ?></div>
+                                <div style="font-size:13px; font-weight:600; color:#1e293b;"><?php echo e($verifierName ?: ($user['name'] ?? 'Pandu Isdiyanto, S.T., M.M')); ?></div>
                             </div>
                             <div style="margin-bottom:16px;">
                                 <div style="font-size:12px; color:#64748b; display:flex; align-items:center; gap:6px; margin-bottom:4px;">

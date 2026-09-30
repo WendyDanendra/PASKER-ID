@@ -427,7 +427,7 @@ function init_sqlite_schema(PDO $pdo): void
             nama_jabatan TEXT NOT NULL
         )",
         "INSERT INTO users (name, email, password_hash, role, profile_complete) VALUES
-        ('Admin Pusat', 'admin@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin', 1),
+        ('Pandu Isdiyanto, S.T., M.M', 'admin@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'admin', 1),
         ('Perorangan Demo', 'perorangan@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'employer', 1),
         ('Pencari Kerja Demo', 'seeker@paskerid.test', '\$2y\$10\$4Ub96pSJd1xdfdkRHCaWw.WbK19BOoTxiBqxEy7by6Gwub1dJBydm', 'seeker', 1)",
         "INSERT INTO employer_profiles (
@@ -526,6 +526,7 @@ function ensure_database_schema(PDO $pdo): void
                 $pdo->exec("UPDATE users SET email = 'perorangan@paskerid.test' WHERE email = 'perorangan@pasker-id.test'");
                 $pdo->exec("UPDATE users SET email = 'seeker@paskerid.test' WHERE email = 'seeker@pasker-id.test'");
                 $pdo->exec("UPDATE users SET email = 'admin.bandung@paskerid.test' WHERE email = 'admin.bandung@pasker-id.test'");
+                $pdo->exec("UPDATE users SET name = 'Pandu Isdiyanto, S.T., M.M' WHERE email = 'admin@paskerid.test' OR name = 'Admin Pusat'");
 
                 // Ensure all demo users in MySQL have the Pusatpasarkerj4 password hash
                 $pdo->prepare("UPDATE users SET password_hash = ? WHERE email IN ('admin@paskerid.test', 'admin.bandung@paskerid.test', 'perorangan@paskerid.test', 'seeker@paskerid.test')")

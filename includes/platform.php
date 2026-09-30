@@ -806,7 +806,7 @@ function check_pki_job_rules_engine(PDO $pdo, int $userId, string $kbjiCode, int
     ];
 }
 
-function record_audit_log(string $entityType, int $entityId, string $action, ?string $details = null, string $actorName = 'Admin Pusat', string $actorRole = 'admin', bool $strict = false): void
+function record_audit_log(string $entityType, int $entityId, string $action, ?string $details = null, string $actorName = 'Pandu Isdiyanto, S.T., M.M', string $actorRole = 'admin', bool $strict = false): void
 {
     try {
         $pdo = db();
