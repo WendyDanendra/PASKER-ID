@@ -292,6 +292,10 @@ function ensure_sqlite_extra_tables(PDO $pdo): void
             $defaultIg = '@' . $nameSlug;
             $pdo->prepare('UPDATE employer_profiles SET instagram = ?, social_media = ? WHERE id = ?')->execute([$defaultIg, 'Instagram: ' . $defaultIg, $empRow['id']]);
         }
+
+        // Ensure employer_profiles active_until is updated to 6-month cycle if set to old 3-month seed
+        $pdo->exec("UPDATE employer_profiles SET last_activated_at = COALESCE(last_activated_at, created_at, datetime('now')) WHERE (verified = 1 OR verification_status = 'APPROVED') AND last_activated_at IS NULL");
+        $pdo->exec("UPDATE employer_profiles SET active_until = datetime(COALESCE(last_activated_at, created_at, datetime('now')), '+6 months') WHERE active_until IS NOT NULL AND (verified = 1 OR verification_status = 'APPROVED') AND (julianday(active_until) - julianday(COALESCE(last_activated_at, created_at, datetime('now'))) < 150)");
     } catch (Throwable $ignored) {}
 }
 
@@ -667,11 +671,6 @@ function ensure_database_schema(PDO $pdo): void
                 $pdo->exec("ALTER TABLE `job_posts` CHANGE `status` `status` VARCHAR(60) NOT NULL DEFAULT 'Draft'");
                 $pdo->exec("UPDATE employer_profiles SET permit_document = COALESCE(NULLIF(permit_document, ''), NULLIF(doc_permission, ''), 'dokumen-legalitas.pdf'), doc_permission = COALESCE(NULLIF(doc_permission, ''), NULLIF(permit_document, ''), 'dokumen-legalitas.pdf') WHERE permit_document IS NULL OR permit_document = '' OR doc_permission IS NULL OR doc_permission = ''");
                 $pdo->exec("UPDATE employer_profiles SET workplace_photo = COALESCE(NULLIF(workplace_photo, ''), NULLIF(doc_location_photo, ''), 'foto-rumah.jpg'), doc_location_photo = COALESCE(NULLIF(doc_location_photo, ''), NULLIF(workplace_photo, ''), 'foto-rumah.jpg') WHERE workplace_photo IS NULL OR workplace_photo = '' OR doc_location_photo IS NULL OR doc_location_photo = ''");
-                if ($driver === 'sqlite') {
-                    $pdo->exec("UPDATE employer_profiles SET active_until = datetime(last_activated_at, '+6 months') WHERE last_activated_at IS NOT NULL AND last_activated_at != ''");
-                } else {
-                    $pdo->exec("UPDATE employer_profiles SET active_until = DATE_ADD(last_activated_at, INTERVAL 6 MONTH) WHERE last_activated_at IS NOT NULL AND last_activated_at != ''");
-                }
                 
                 // Backfill social media for existing employers if all 3 are empty
                 $emptySocialEmps = $pdo->query("SELECT id, owner_name FROM employer_profiles WHERE (linkedin IS NULL OR linkedin = '') AND (facebook IS NULL OR facebook = '') AND (instagram IS NULL OR instagram = '')")->fetchAll() ?: [];

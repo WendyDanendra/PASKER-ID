@@ -131,6 +131,8 @@ if (!empty($profile['last_activated_at'])) {
     } catch (Exception $e) {
         $startDate = null;
     }
+} elseif ($activeUntil !== null) {
+    $startDate = (clone $activeUntil)->modify('-6 months');
 }
 
 $hasValidDates = ($startDate !== null && $activeUntil !== null);
