@@ -3829,98 +3829,98 @@
                         </div>
                     </div>
 
-                    <!-- ROW 1: TENTANG PEMBERI KERJA & PIC PEMBERI KERJA -->
-                    <div class="profile-row-grid">
-                        <!-- Card: Tentang Pemberi Kerja -->
-                        <div class="profile-card-box">
-                            <div class="profile-card-header">
-                                <div class="profile-icon-square">
-                                    <i class="fa-regular fa-building"></i>
+                    <!-- 2-COLUMN BOTTOM GRID -->
+                    <div class="profile-grid-layout">
+                        <!-- LEFT COLUMN: TENTANG & LOKASI -->
+                        <div class="profile-col-stack">
+                            <!-- Card: Tentang Pemberi Kerja -->
+                            <div class="profile-card-box">
+                                <div class="profile-card-header">
+                                    <div class="profile-icon-square">
+                                        <i class="fa-regular fa-building"></i>
+                                    </div>
+                                    <h3>Tentang Pemberi Kerja</h3>
                                 </div>
-                                <h3>Tentang Pemberi Kerja</h3>
+
+                                <p class="profile-desc-muted">
+                                    <?php echo !empty($profile['description']) ? nl2br(e($profile['description'])) : 'Belum ada deskripsi. Deskripsi pemberi kerja membantu calon pekerja mengenal organisasi Anda.'; ?>
+                                </p>
+
+                                <div class="profile-card-sep"></div>
+
+                                <div>
+                                    <div class="profile-meta-label">Terdaftar Sebagai Pemberi Kerja Sejak</div>
+                                    <div class="profile-meta-val">
+                                        <i class="fa-regular fa-calendar"></i> <?php echo format_indo_date($profile['created_at'] ?? ($user['created_at'] ?? 'now')); ?>
+                                    </div>
+                                </div>
                             </div>
 
-                            <p class="profile-desc-muted">
-                                <?php echo !empty($profile['description']) ? nl2br(e($profile['description'])) : 'Belum ada deskripsi. Deskripsi pemberi kerja membantu calon pekerja mengenal organisasi Anda.'; ?>
-                            </p>
+                            <!-- Card: Lokasi Pemberi Kerja -->
+                            <div class="profile-card-box">
+                                <div class="profile-card-header">
+                                    <div class="profile-icon-square">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                    </div>
+                                    <h3>Lokasi Pemberi Kerja</h3>
+                                </div>
 
-                            <div class="profile-card-sep"></div>
-
-                            <div>
-                                <div class="profile-meta-label">Terdaftar Sebagai Pemberi Kerja Sejak</div>
-                                <div class="profile-meta-val">
-                                    <i class="fa-regular fa-calendar"></i> <?php echo format_indo_date($profile['created_at'] ?? ($user['created_at'] ?? 'now')); ?>
+                                <div class="profile-fields-2col">
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Provinsi</span>
+                                        <span class="pfl-value"><?php echo e(($profile['province'] ?? '') ?: (($seekerProfile['province'] ?? '') ?: '-')); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Kota/Kabupaten</span>
+                                        <span class="pfl-value"><?php echo e(($profile['city'] ?? '') ?: (($seekerProfile['city'] ?? '') ?: (($user['city'] ?? '') ?: '-'))); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Kecamatan</span>
+                                        <span class="pfl-value"><?php echo e(($profile['district'] ?? '') ?: (($seekerProfile['district'] ?? '') ?: '-')); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Kelurahan</span>
+                                        <span class="pfl-value"><?php echo e(($profile['village'] ?? '') ?: (($seekerProfile['village'] ?? '') ?: '-')); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Kode Pos</span>
+                                        <span class="pfl-value"><?php echo e(($profile['postal_code'] ?? '') ?: (($seekerProfile['postal_code'] ?? '') ?: '-')); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Detail Alamat / Patokan</span>
+                                        <span class="pfl-value"><?php echo e(($profile['address_detail'] ?? '') ?: (($profile['address_notes'] ?? '') ?: (($seekerProfile['address_detail'] ?? '') ?: '-'))); ?></span>
+                                    </div>
+                                    <div class="profile-field-block" style="grid-column: 1 / -1;">
+                                        <span class="pfl-label">Alamat Lengkap</span>
+                                        <span class="pfl-value"><?php echo e(($profile['address'] ?? '') ?: (($seekerProfile['address'] ?? '') ?: '-')); ?></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Card: PIC Pemberi Kerja -->
-                        <div class="profile-card-box">
-                            <div class="profile-card-header">
-                                <div class="profile-icon-square">
-                                    <i class="fa-regular fa-user"></i>
-                                </div>
-                                <h3>PIC Pemberi Kerja</h3>
-                            </div>
+                        <!-- RIGHT COLUMN: PIC PEMBERI KERJA -->
+                        <div class="profile-col-stack">
+                            <div class="profile-card-box">
+                                <h3 class="profile-pic-title">PIC Pemberi Kerja</h3>
 
-                            <div class="profile-pic-grid">
-                                <div class="profile-field-block">
-                                    <span class="pfl-label">Nama</span>
-                                    <span class="pfl-value"><?php echo e($profile['owner_name'] ?: ($user['name'] ?? '-')); ?></span>
+                                <div class="profile-pic-stack">
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Nama</span>
+                                        <span class="pfl-value"><?php echo e($profile['owner_name'] ?: ($user['name'] ?? '-')); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">NIK</span>
+                                        <span class="pfl-value"><?php echo e($profile['nik'] ?: '-'); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">Email</span>
+                                        <span class="pfl-value"><?php echo e($user['email'] ?? '-'); ?></span>
+                                    </div>
+                                    <div class="profile-field-block">
+                                        <span class="pfl-label">No. Telp</span>
+                                        <span class="pfl-value"><?php echo e($profile['phone'] ?: ($profile['whatsapp'] ?: '-')); ?></span>
+                                    </div>
                                 </div>
-                                <div class="profile-field-block">
-                                    <span class="pfl-label">NIK</span>
-                                    <span class="pfl-value"><?php echo e($profile['nik'] ?: '-'); ?></span>
-                                </div>
-                                <div class="profile-field-block">
-                                    <span class="pfl-label">Email</span>
-                                    <span class="pfl-value"><?php echo e($user['email'] ?? '-'); ?></span>
-                                </div>
-                                <div class="profile-field-block">
-                                    <span class="pfl-label">No. Telp</span>
-                                    <span class="pfl-value"><?php echo e($profile['phone'] ?: ($profile['whatsapp'] ?: '-')); ?></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ROW 2: LOKASI TEMPAT USAHA / KEGIATAN -->
-                    <div class="profile-card-box profile-location-card">
-                        <div class="profile-card-header">
-                            <div class="profile-icon-square">
-                                <i class="fa-solid fa-location-dot"></i>
-                            </div>
-                            <h3>Lokasi Tempat Usaha / Kegiatan</h3>
-                        </div>
-
-                        <div class="profile-fields-grid">
-                            <div class="profile-field-block">
-                                <span class="pfl-label">Provinsi</span>
-                                <span class="pfl-value"><?php echo e(($profile['province'] ?? '') ?: (($seekerProfile['province'] ?? '') ?: '-')); ?></span>
-                            </div>
-                            <div class="profile-field-block">
-                                <span class="pfl-label">Kota/Kabupaten</span>
-                                <span class="pfl-value"><?php echo e(($profile['city'] ?? '') ?: (($seekerProfile['city'] ?? '') ?: (($user['city'] ?? '') ?: '-'))); ?></span>
-                            </div>
-                            <div class="profile-field-block">
-                                <span class="pfl-label">Kecamatan</span>
-                                <span class="pfl-value"><?php echo e(($profile['district'] ?? '') ?: (($seekerProfile['district'] ?? '') ?: '-')); ?></span>
-                            </div>
-                            <div class="profile-field-block">
-                                <span class="pfl-label">Kelurahan / Desa</span>
-                                <span class="pfl-value"><?php echo e(($profile['village'] ?? '') ?: (($seekerProfile['village'] ?? '') ?: '-')); ?></span>
-                            </div>
-                            <div class="profile-field-block">
-                                <span class="pfl-label">Kode Pos</span>
-                                <span class="pfl-value"><?php echo e(($profile['postal_code'] ?? '') ?: (($seekerProfile['postal_code'] ?? '') ?: '-')); ?></span>
-                            </div>
-                            <div class="profile-field-block field-span-3">
-                                <span class="pfl-label">Detail Alamat / Patokan</span>
-                                <span class="pfl-value"><?php echo e(($profile['address_detail'] ?? '') ?: (($profile['address_notes'] ?? '') ?: (($seekerProfile['address_detail'] ?? '') ?: '-'))); ?></span>
-                            </div>
-                            <div class="profile-field-block field-full">
-                                <span class="pfl-label">Alamat Lengkap</span>
-                                <span class="pfl-value"><?php echo e(($profile['address'] ?? '') ?: (($seekerProfile['address'] ?? '') ?: '-')); ?></span>
                             </div>
                         </div>
                     </div>
