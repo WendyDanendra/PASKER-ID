@@ -1518,7 +1518,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
     </div>
 
     <!-- MAIN APP CONTENT -->
-    <div class="main" style="flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden;">
+    <div class="main" style="flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; height:100%; overflow:hidden;">
         <!-- TOPBAR (MATCHING INDIVIDUAL EMPLOYER) -->
         <header class="new-topbar">
             <div class="topbar-nav-arrows">
@@ -1575,7 +1575,7 @@ $statTotalSeekers = (int) db()->query('SELECT COUNT(*) FROM users WHERE role = "
         </header>
 
         <!-- CONTENT AREA -->
-        <div class="content" style="flex:1; overflow-y:auto; background:#f8fafc;">
+        <div class="content" style="flex:1; min-height:0; overflow-y:auto; background:#f8fafc;">
             <div class="page active">
                 <?php if (!empty($_SESSION['reactivation_success_banner'])):
                     $rBanner = $_SESSION['reactivation_success_banner'];

@@ -282,7 +282,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
     </div>
 
     <!-- MAIN APP CONTENT -->
-    <div class="main" style="flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden;">
+    <div class="main" style="flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; height:100%; overflow:hidden;">
         <!-- TOPBAR (MATCHING INDIVIDUAL EMPLOYER) -->
         <header class="new-topbar">
             <div class="topbar-nav-arrows">
@@ -319,7 +319,7 @@ $initials = strtoupper(mb_substr($user['name'], 0, 1));
         </header>
 
         <!-- CONTENT AREA -->
-        <div class="content" style="flex:1; overflow-y:auto; background:#f8fafc;">
+        <div class="content" style="flex:1; min-height:0; overflow-y:auto; background:#f8fafc;">
             <div class="page active">
                 <?php if ($flash = get_flash()): ?>
                     <div class="alert-box <?php echo $flash['type'] === 'success' ? 'alert-success' : 'alert-error'; ?>" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-radius:10px; padding:12px 16px;">
