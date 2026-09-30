@@ -2837,20 +2837,29 @@
                                 </div>
                             </div>
                         </div>
+                        <?php endif; ?>
                     </div>
 
                     <script>
                     function switchPageDetailTab(tab) {
-                        document.getElementById('tabPanePageLamaran').style.display = tab === 'lamaran' ? 'block' : 'none';
-                        document.getElementById('tabPanePageRincian').style.display = tab === 'rincian' ? 'block' : 'none';
+                        const lamaran = document.getElementById('tabPanePageLamaran');
+                        const rincian = document.getElementById('tabPanePageRincian');
+                        const btnLamaran = document.getElementById('tabBtnLamaran');
+                        const btnRincian = document.getElementById('tabBtnRincian');
 
-                        document.getElementById('tabBtnLamaran').style.borderBottomColor = tab === 'lamaran' ? '#0ea5e9' : 'transparent';
-                        document.getElementById('tabBtnLamaran').style.color = tab === 'lamaran' ? '#0ea5e9' : '#64748b';
-                        document.getElementById('tabBtnLamaran').style.fontWeight = tab === 'lamaran' ? '700' : '600';
+                        if (lamaran) lamaran.style.display = tab === 'lamaran' ? 'block' : 'none';
+                        if (rincian) rincian.style.display = tab === 'rincian' ? 'block' : 'none';
 
-                        document.getElementById('tabBtnRincian').style.borderBottomColor = tab === 'rincian' ? '#0ea5e9' : 'transparent';
-                        document.getElementById('tabBtnRincian').style.color = tab === 'rincian' ? '#0ea5e9' : '#64748b';
-                        document.getElementById('tabBtnRincian').style.fontWeight = tab === 'rincian' ? '700' : '600';
+                        if (btnLamaran) {
+                            btnLamaran.style.borderBottomColor = tab === 'lamaran' ? '#0ea5e9' : 'transparent';
+                            btnLamaran.style.color = tab === 'lamaran' ? '#0ea5e9' : '#64748b';
+                            btnLamaran.style.fontWeight = tab === 'lamaran' ? '700' : '600';
+                        }
+                        if (btnRincian) {
+                            btnRincian.style.borderBottomColor = tab === 'rincian' ? '#0ea5e9' : 'transparent';
+                            btnRincian.style.color = tab === 'rincian' ? '#0ea5e9' : '#64748b';
+                            btnRincian.style.fontWeight = tab === 'rincian' ? '700' : '600';
+                        }
                     }
                     </script>
                 <?php else: ?>
@@ -3244,7 +3253,6 @@
                         <!--JOB_APPLICANTS-->
                     </div>
                 </div>
-            <?php endif; ?>
             </section>
 
             <!-- SECTION: JADWAL WAWANCARA (EXACT KARIRHUB SCREENSHOTS 1, 2, 3) -->
