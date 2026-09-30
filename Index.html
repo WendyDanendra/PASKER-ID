@@ -3114,7 +3114,7 @@
                                     Tutup
                                 </button>
                                 <?php $layer3JobId = (int)($detailJob['id'] ?? $_GET['job_detail'] ?? $_GET['open_draft'] ?? 0); ?>
-                                <button type="button" data-edit-draft="<?php echo $layer3JobId; ?>" onclick="closeLayer3WarningModal()" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25);">
+                                <button type="button" id="btnSesuaikanKuotaLayer3" data-edit-draft="<?php echo $layer3JobId; ?>" onclick="handleAdjustQuotaClick(this)" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25);">
                                     <i class="fa-solid fa-pen-to-square"></i> Sesuaikan Kuota
                                 </button>
                             </div>
@@ -3207,7 +3207,8 @@
                         const modal = document.getElementById('modalLayer3Warning');
                         if (modal) {
                             if (jobId) {
-                                const editBtn = modal.querySelector('[data-edit-draft]');
+                                modal.dataset.jobId = String(jobId);
+                                const editBtn = modal.querySelector('#btnSesuaikanKuotaLayer3, [data-edit-draft]');
                                 if (editBtn) editBtn.setAttribute('data-edit-draft', String(jobId));
                             }
                             modal.style.display = 'flex';
@@ -3220,6 +3221,38 @@
                         if (modal) {
                             modal.style.display = 'none';
                             modal.classList.remove('open');
+                        }
+                    }
+
+                    function handleAdjustQuotaClick(btn) {
+                        const modal = document.getElementById('modalLayer3Warning');
+                        let jobId = btn ? (btn.getAttribute('data-edit-draft') || btn.dataset.editDraft) : null;
+                        if ((!jobId || String(jobId) === '0') && modal && modal.dataset.jobId) {
+                            jobId = modal.dataset.jobId;
+                        }
+                        if (!jobId || String(jobId) === '0') {
+                            jobId = "<?php echo (int)($detailJob['id'] ?? $_GET['job_detail'] ?? $_GET['open_draft'] ?? 0); ?>";
+                        }
+
+                        closeLayer3WarningModal();
+
+                        document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+                            if (m.id !== 'modalLayer3Warning' && m.getAttribute('data-modal') !== 'job-create') {
+                                m.style.display = 'none';
+                                m.classList.remove('open');
+                            }
+                        });
+
+                        if (jobId && String(jobId) !== '0') {
+                            if (typeof window.openEditJobModal === 'function') {
+                                window.openEditJobModal(jobId, 'edit');
+                            } else {
+                                const createModal = document.querySelector('[data-modal="job-create"]');
+                                if (createModal) {
+                                    createModal.style.display = 'flex';
+                                    createModal.classList.add('open');
+                                }
+                            }
                         }
                     }
 

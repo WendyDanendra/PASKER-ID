@@ -1569,13 +1569,8 @@ function initJobCreateWizard() {
         setStep(1);
     });
 
-    document.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-revise-job], [data-edit-draft], [data-edit-job]');
-        if (!button) {
-            return;
-        }
-        const jobId = button.dataset.reviseJob || button.dataset.editDraft || button.dataset.editJob;
-        if (!jobId) {
+    window.openEditJobModal = (jobId, mode = 'edit') => {
+        if (!jobId || String(jobId) === '0') {
             return;
         }
         const hidden = document.getElementById('reviseJobId');
@@ -1598,7 +1593,7 @@ function initJobCreateWizard() {
                 if (!payload?.ok || !payload.data) {
                     throw new Error('invalid');
                 }
-                const isDraftMode = Boolean(button.dataset.editDraft) || payload.data.status === 'Draft';
+                const isDraftMode = mode === 'edit' || payload.data.status === 'Draft';
                 const formMode = isDraftMode ? 'edit' : 'revise';
                 modal.dataset.jobFormMode = formMode;
                 modal.dataset.skipReset = 'true';
@@ -1611,9 +1606,23 @@ function initJobCreateWizard() {
                 modal.classList.add('open');
                 modal.dispatchEvent(new CustomEvent('modal:open'));
             })
-            .catch(() => {
+            .catch((err) => {
+                console.error('Failed to load job data:', err);
                 window.alert('Data lowongan tidak dapat dimuat. Silakan coba lagi.');
             });
+    };
+
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-revise-job], [data-edit-draft], [data-edit-job]');
+        if (!button) {
+            return;
+        }
+        const jobId = button.dataset.reviseJob || button.dataset.editDraft || button.dataset.editJob;
+        if (!jobId || String(jobId) === '0') {
+            return;
+        }
+        const mode = button.dataset.reviseJob ? 'revise' : 'edit';
+        window.openEditJobModal(jobId, mode);
     });
 
     setStep(1);
