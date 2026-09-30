@@ -451,8 +451,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
 
-        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'jpg', 'jpeg', 'png']);
-        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['jpg', 'jpeg', 'png', 'webp']);
+        if (!empty($_FILES['permit_document']['name'])) {
+            $permitExt = strtolower(pathinfo((string) $_FILES['permit_document']['name'], PATHINFO_EXTENSION));
+            $permitSize = (int) ($_FILES['permit_document']['size'] ?? 0);
+            $permitErr = (int) ($_FILES['permit_document']['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($permitErr !== UPLOAD_ERR_OK || !in_array($permitExt, ['pdf', 'docx'], true) || $permitSize > 2 * 1024 * 1024) {
+                $_SESSION['profile_modal_error'] = 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.';
+                flash('error', 'File pendukung harus berformat PDF atau Docx dengan ukuran maksimal 2MB.');
+                redirect('dashboard.php?open_profile=1');
+                exit;
+            }
+        }
+
+        $permitDoc = store_upload('permit_document', 'employer/' . $user['id'], ['pdf', 'docx']);
+        if (!empty($_FILES['workplace_photo']['name'])) {
+            $photoExt = strtolower(pathinfo((string) $_FILES['workplace_photo']['name'], PATHINFO_EXTENSION));
+            $photoSize = (int) ($_FILES['workplace_photo']['size'] ?? 0);
+            $photoErr = (int) ($_FILES['workplace_photo']['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($photoErr !== UPLOAD_ERR_OK || !in_array($photoExt, ['png', 'jpg', 'jpeg'], true) || $photoSize > 2 * 1024 * 1024) {
+                $_SESSION['profile_modal_error'] = 'Foto bukti tempat usaha harus berformat PNG atau JPG dengan ukuran maksimal 2MB.';
+                flash('error', 'Foto bukti tempat usaha harus berformat PNG atau JPG dengan ukuran maksimal 2MB.');
+                redirect('dashboard.php?open_profile=1');
+                exit;
+            }
+        }
+        $workplacePhoto = store_upload('workplace_photo', 'employer/' . $user['id'], ['png', 'jpg', 'jpeg']);
         $existingPermit = !empty($_POST['existing_permit_document']) ? trim($_POST['existing_permit_document']) : null;
         $existingWorkplace = !empty($_POST['existing_workplace_photo']) ? trim($_POST['existing_workplace_photo']) : null;
         $permitDoc = $permitDoc ?: ($existingPermit ?: ($profile['permit_document'] ?? $profile['doc_permission'] ?? null));
@@ -1189,6 +1212,7 @@ $city = $profile['city'] ?? 'Kota Bekasi';
 // Ambil flash message SEBELUM ob_start (karena session harus dibaca dulu)
 $profileModalError = $_SESSION['profile_modal_error'] ?? null;
 unset($_SESSION['profile_modal_error']);
+$kbjiDuplicateError = $_SESSION['kbji_duplicate_error'] ?? null;
 
 $isOpenProfile = isset($_GET['open_profile']) && $_GET['open_profile'] == '1';
 $showProfileModal = $isOpenProfile;
@@ -2052,17 +2076,19 @@ $modal = <<<HTML
                             </div>
 
                             <div class="form-group">
-                                <label>Industri / sektor <span class="req">*</span></label>
+                                <label>Jenis Usaha Individu <span class="req">*</span></label>
                                 <select name="industry" class="form-control-custom" required>
-                                    <option value="">Pilih Industri / Sektor Pekerjaan</option>
-                                    <option value="Rumah Tangga & Jasa Perorangan">Rumah Tangga & Jasa Perorangan</option>
-                                    <option value="Kuliner & Katering / Restoran">Kuliner & Katering / Restoran</option>
-                                    <option value="Retail & Perdagangan">Retail & Perdagangan</option>
-                                    <option value="Transportasi & Logistik">Transportasi & Logistik</option>
-                                    <option value="Keamanan & Kebersihan">Keamanan & Kebersihan</option>
-                                    <option value="Jasa Profesional & Administrasi">Jasa Profesional & Administrasi</option>
-                                    <option value="Konstruksi & Properti">Konstruksi & Properti</option>
-                                    <option value="Lainnya">Lainnya</option>
+                                    <option value="">Pilih jenis usaha individu</option>
+                                    <option value="Praktik Dokter Umum">Praktik Dokter Umum</option>
+                                    <option value="Praktik Dokter Gigi">Praktik Dokter Gigi</option>
+                                    <option value="Praktik Bidan">Praktik Bidan</option>
+                                    <option value="Notaris">Notaris</option>
+                                    <option value="Konsultan Hukum">Konsultan Hukum</option>
+                                    <option value="Psikolog">Psikolog</option>
+                                    <option value="Arsitek">Arsitek</option>
+                                    <option value="Konsultan Pajak">Konsultan Pajak</option>
+                                    <option value="Guru Privat">Guru Privat</option>
+                                    <option value="Bimbingan Belajar (Bimbel)">Bimbingan Belajar (Bimbel)</option>
                                 </select>
                             </div>
 

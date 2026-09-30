@@ -702,6 +702,26 @@
         }
     }
 
+    function formatUploadSize(bytes) {
+        const b = Number(bytes) || 0;
+        if (b >= 1024 * 1024) {
+            return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+        }
+        return `${(b / 1024).toFixed(2)} KB`;
+    }
+
+    function setUploadSizeInfo(fieldId, bytes) {
+        const infoEl = document.getElementById(`helper_${fieldId}_size`);
+        if (!infoEl) return;
+        if (!bytes || bytes <= 0) {
+            infoEl.textContent = '';
+            infoEl.style.display = 'none';
+            return;
+        }
+        infoEl.textContent = `Ukuran file yang di upload: ${formatUploadSize(bytes)}`;
+        infoEl.style.display = 'block';
+    }
+
     // ─── 5. Custom Upload Box Handlers ───
     window.pkiTriggerUpload = function (fieldId) {
         const fileInput = document.getElementById(`pki_input_${fieldId}`);
@@ -715,9 +735,34 @@
         const btn = document.getElementById(`pki_btn_${fieldId}`);
         const box = document.getElementById(`pki_box_${fieldId}`);
 
+        if (fieldId === 'permit_document') {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            if (!['pdf', 'docx'].includes(ext) || file.size > 2 * 1024 * 1024) {
+                input.value = '';
+                setFieldError('permit_document', 'Format PDF, Docx. Ukuran Maksimal 2MB.');
+                setUploadSizeInfo(fieldId, 0);
+                return;
+            }
+            clearFieldError('permit_document');
+        } else if (fieldId === 'workplace_photo') {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            if (!['png', 'jpg', 'jpeg'].includes(ext) || file.size > 2 * 1024 * 1024) {
+                input.value = '';
+                setFieldError('workplace_photo', 'Format PNG, JPG. Ukuran Maksimal 2MB.');
+                setUploadSizeInfo(fieldId, 0);
+                return;
+            }
+            clearFieldError('workplace_photo');
+        }
+
         if (textBox) {
-            const iconClass = fieldId === 'permit_document' ? 'fa-file-pdf' : 'fa-image';
-            const iconColor = fieldId === 'permit_document' ? '#ef4444' : '#0284c7';
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const iconClass = fieldId !== 'permit_document'
+                ? 'fa-image'
+                : (ext === 'docx' ? 'fa-file-word' : 'fa-file-pdf');
+            const iconColor = fieldId !== 'permit_document'
+                ? '#0284c7'
+                : (ext === 'docx' ? '#2563eb' : '#ef4444');
             textBox.innerHTML = `<i class="fa-solid ${iconClass}" style="color:${iconColor}; flex-shrink:0;"></i> <span class="pki-upload-filename">${file.name}</span>`;
             textBox.classList.add('has-file');
         }
@@ -742,6 +787,7 @@
         }
 
         clearFieldError(fieldId);
+        setUploadSizeInfo(fieldId, file.size);
     };
 
     window.pkiClearUpload = function (event, fieldId) {
@@ -768,6 +814,7 @@
             const clearBtn = box.querySelector('.pki-upload-clear-btn');
             if (clearBtn) clearBtn.remove();
         }
+        setUploadSizeInfo(fieldId, 0);
     };
 
     // ─── 6. Strict Per-Field Validation on Submit ───
@@ -776,14 +823,14 @@
         nik: 'NIK terdiri dari 16 digit.',
         phone: 'Gunakan nomor telepon aktif.',
         whatsapp: 'Gunakan nomor WhatsApp aktif.',
-        profession: 'Pilih industri atau sektor yang paling sesuai dengan kegiatan utama usaha.',
+        profession: 'Pilih jenis usaha individu yang paling sesuai dengan kegiatan utama Anda.',
         npwp: 'NPWP 15 atau 16 digit.',
         location: 'Pilih lokasi secara berjenjang sampai Kelurahan/Desa.',
         address: 'Tuliskan alamat lengkap tempat usaha/kegiatan.',
         postal_code: 'Pilihan kode pos mengikuti lokasi yang dipilih.',
         address_detail: 'Opsional. Tambahkan informasi yang membantu mengenali lokasi.',
-        permit_document: 'Format pdf • ukuran maks 15MB',
-        workplace_photo: 'Unggah minimal 1 foto tempat usaha/kegiatan sesuai alamat pada profil.',
+        permit_document: 'Format PDF, Docx. Ukuran Maksimal 2MB',
+        workplace_photo: 'Format PNG, JPG. Ukuran Maksimal 2MB',
         linkedin: 'Isi minimal salah satu media sosial.',
         facebook: 'Isi minimal salah satu media sosial.',
         instagram: 'Isi minimal salah satu media sosial.',
@@ -912,10 +959,10 @@
                 clearFieldError('whatsapp');
             }
 
-            // 5. Industri / Sektor
+            // 5. Jenis Usaha Individu
             const profession = document.getElementById('pki_profession')?.value?.trim();
             if (!profession) {
-                flagError('profession', 'Pilih industri atau sektor yang sesuai.', document.getElementById('pki_profession'));
+                flagError('profession', 'Pilih jenis usaha individu yang sesuai.', document.getElementById('pki_profession'));
             } else {
                 clearFieldError('profession');
             }
@@ -956,9 +1003,17 @@
             // 10. File Pendukung
             const permitFileInput = document.getElementById('pki_input_permit_document');
             const existingPermit = document.getElementById('pki_existing_permit_document')?.value?.trim();
-            const hasPermit = (permitFileInput && permitFileInput.files && permitFileInput.files.length > 0) || Boolean(existingPermit);
+            const permitFile = permitFileInput?.files?.[0];
+            const hasPermit = Boolean(permitFile) || Boolean(existingPermit);
             if (!hasPermit) {
                 flagError('permit_document', 'File Pendukung wajib diunggah minimal 1 dokumen.', document.getElementById('pki_box_permit_document'));
+            } else if (permitFile) {
+                const permitExt = (permitFile.name.split('.').pop() || '').toLowerCase();
+                if (!['pdf', 'docx'].includes(permitExt) || permitFile.size > 2 * 1024 * 1024) {
+                    flagError('permit_document', 'Format PDF, Docx. Ukuran Maksimal 2MB.', document.getElementById('pki_box_permit_document'));
+                } else {
+                    clearFieldError('permit_document');
+                }
             } else {
                 clearFieldError('permit_document');
             }
@@ -966,9 +1021,17 @@
             // 11. Foto Bukti Tempat Usaha / Lokasi
             const photoFileInput = document.getElementById('pki_input_workplace_photo');
             const existingPhoto = document.getElementById('pki_existing_workplace_photo')?.value?.trim();
-            const hasPhoto = (photoFileInput && photoFileInput.files && photoFileInput.files.length > 0) || Boolean(existingPhoto);
+            const photoFile = photoFileInput?.files?.[0];
+            const hasPhoto = Boolean(photoFile) || Boolean(existingPhoto);
             if (!hasPhoto) {
                 flagError('workplace_photo', 'Unggah minimal 1 foto tempat usaha/kegiatan.', document.getElementById('pki_box_workplace_photo'));
+            } else if (photoFile) {
+                const photoExt = (photoFile.name.split('.').pop() || '').toLowerCase();
+                if (!['png', 'jpg', 'jpeg'].includes(photoExt) || photoFile.size > 2 * 1024 * 1024) {
+                    flagError('workplace_photo', 'Format PNG, JPG. Ukuran Maksimal 2MB.', document.getElementById('pki_box_workplace_photo'));
+                } else {
+                    clearFieldError('workplace_photo');
+                }
             } else {
                 clearFieldError('workplace_photo');
             }

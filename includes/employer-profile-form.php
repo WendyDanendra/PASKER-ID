@@ -28,6 +28,34 @@ $vAddressDetail = e($formData['address_detail'] ?? ($formData['address_notes'] ?
 
 $vPermitDoc = $formData['permit_document'] ?? ($formData['doc_permission'] ?? '');
 $vPhoto = $formData['workplace_photo'] ?? ($formData['doc_location_photo'] ?? '');
+$vPermitDocSizeText = '';
+if (!empty($vPermitDoc)) {
+    $baseDir = realpath(__DIR__ . '/..');
+    $docRelative = ltrim(str_replace('\\', '/', (string) $vPermitDoc), '/');
+    $docAbsolute = realpath(__DIR__ . '/../' . $docRelative);
+    if ($baseDir && $docAbsolute && str_starts_with($docAbsolute, $baseDir) && is_file($docAbsolute)) {
+        $bytes = (int) filesize($docAbsolute);
+        if ($bytes > 0) {
+            $vPermitDocSizeText = $bytes >= 1024 * 1024
+                ? number_format($bytes / (1024 * 1024), 2) . ' MB'
+                : number_format($bytes / 1024, 2) . ' KB';
+        }
+    }
+}
+$vPhotoSizeText = '';
+if (!empty($vPhoto)) {
+    $baseDir = realpath(__DIR__ . '/..');
+    $photoRelative = ltrim(str_replace('\\', '/', (string) $vPhoto), '/');
+    $photoAbsolute = realpath(__DIR__ . '/../' . $photoRelative);
+    if ($baseDir && $photoAbsolute && str_starts_with($photoAbsolute, $baseDir) && is_file($photoAbsolute)) {
+        $bytes = (int) filesize($photoAbsolute);
+        if ($bytes > 0) {
+            $vPhotoSizeText = $bytes >= 1024 * 1024
+                ? number_format($bytes / (1024 * 1024), 2) . ' MB'
+                : number_format($bytes / 1024, 2) . ' KB';
+        }
+    }
+}
 
 $vLinkedin = e($formData['linkedin'] ?? '');
 $vFacebook = e($formData['facebook'] ?? '');
@@ -114,22 +142,26 @@ if (file_exists($pkiCssPath)) {
     <div class="pki-grid-2">
         <div class="pki-field">
             <label class="pki-field-label" id="label_profession" for="pki_profession">
-                Industri / Sektor <span class="req">*</span>
+                Jenis Usaha Individu <span class="req">*</span>
                 <span class="pki-tooltip" tabindex="0" role="tooltip">
                     <?php echo $infoIconSvg; ?>
-                    <span class="tooltip-popover">Pilih industri atau sektor yang paling sesuai dengan kegiatan utama usaha Anda.</span>
+                    <span class="tooltip-popover">Pilih jenis usaha individu yang paling sesuai dengan kegiatan utama Anda.</span>
                 </span>
             </label>
             <select name="profession" id="pki_profession" style="width:100%; height:42px; padding:0 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13.5px; color:#0f172a; background:#fff;">
-                <option value="">Pilih industri / sektor</option>
+                <option value="">Pilih jenis usaha individu</option>
                 <?php
                 $professions = [
-                    'Kuliner & Katering',
-                    'Perdagangan & Eceran',
-                    'Jasa Perorangan / Rumah Tangga',
-                    'Pertanian & Peternakan',
-                    'Teknologi & Kreatif',
-                    'Lainnya'
+                    'Praktik Dokter Umum',
+                    'Praktik Dokter Gigi',
+                    'Praktik Bidan',
+                    'Notaris',
+                    'Konsultan Hukum',
+                    'Psikolog',
+                    'Arsitek',
+                    'Konsultan Pajak',
+                    'Guru Privat',
+                    'Bimbingan Belajar (Bimbel)',
                 ];
                 foreach ($professions as $prof) {
                     $selected = ($vProfession === $prof) ? 'selected' : '';
@@ -140,7 +172,7 @@ if (file_exists($pkiCssPath)) {
                 }
                 ?>
             </select>
-            <div class="pki-field-helper" id="helper_profession">Pilih industri atau sektor yang paling sesuai dengan kegiatan utama usaha.</div>
+            <div class="pki-field-helper" id="helper_profession">Pilih jenis usaha individu yang paling sesuai dengan kegiatan utama Anda.</div>
         </div>
         <div class="pki-field">
             <label class="pki-field-label" id="label_npwp" for="pki_npwp">
@@ -157,6 +189,18 @@ if (file_exists($pkiCssPath)) {
 <!-- 2. TEMPAT USAHA / KEGIATAN PEMBERI KERJA -->
 <div class="modal-section" style="margin-bottom:20px;">
     <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:14px;">2. TEMPAT USAHA / KEGIATAN PEMBERI KERJA</div>
+
+    <div class="pki-field">
+        <label class="pki-field-label" id="label_description" for="pki_description">
+            Deskripsi Singkat Usaha / Rekrutmen
+            <span class="pki-tooltip" tabindex="0" role="tooltip">
+                <?php echo $infoIconSvg; ?>
+                <span class="tooltip-popover">Jelaskan secara singkat usaha atau kegiatan yang dijalankan serta gambaran kebutuhan rekrutmen yang dilakukan.</span>
+            </span>
+        </label>
+        <textarea name="description" id="pki_description" placeholder="Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen..." style="min-height:90px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5; resize:vertical;"><?php echo $vDescription; ?></textarea>
+        <div class="pki-field-helper" id="helper_description">Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen.</div>
+    </div>
 
     <div style="margin-bottom:16px;">
         <label style="font-size:13px; font-weight:600; color:#334155; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
@@ -282,9 +326,14 @@ if (file_exists($pkiCssPath)) {
                     <button type="button" class="pki-upload-btn" id="pki_btn_permit_document"><?php echo !empty($vPermitDoc) ? 'Ganti' : 'Upload'; ?></button>
                 </div>
             </div>
-            <input type="file" name="permit_document" id="pki_input_permit_document" accept=".pdf" style="display:none;" onchange="pkiHandleFileChange(this, 'permit_document')">
+            <input type="file" name="permit_document" id="pki_input_permit_document" accept=".pdf,.docx" style="display:none;" onchange="pkiHandleFileChange(this, 'permit_document')">
             <input type="hidden" name="existing_permit_document" id="pki_existing_permit_document" value="<?php echo e($vPermitDoc); ?>">
-            <div class="pki-field-helper" id="helper_permit_document">Format pdf • ukuran maks 15MB</div>
+            <div class="pki-field-helper" id="helper_permit_document">Format PDF, Docx. Ukuran Maksimal 2MB</div>
+            <div class="pki-field-helper" id="helper_permit_document_size" style="<?php echo $vPermitDocSizeText !== '' ? '' : 'display:none;'; ?>">
+                <?php if ($vPermitDocSizeText !== ''): ?>
+                    Ukuran file yang di upload: <?php echo e($vPermitDocSizeText); ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Foto Bukti Tempat Usaha / Lokasi -->
@@ -313,9 +362,14 @@ if (file_exists($pkiCssPath)) {
                     <button type="button" class="pki-upload-btn" id="pki_btn_workplace_photo"><?php echo !empty($vPhoto) ? 'Ganti' : 'Upload'; ?></button>
                 </div>
             </div>
-            <input type="file" name="workplace_photo" id="pki_input_workplace_photo" accept=".jpg,.jpeg,.png,.webp" style="display:none;" onchange="pkiHandleFileChange(this, 'workplace_photo')">
+            <input type="file" name="workplace_photo" id="pki_input_workplace_photo" accept=".png,.jpg,.jpeg" style="display:none;" onchange="pkiHandleFileChange(this, 'workplace_photo')">
             <input type="hidden" name="existing_workplace_photo" id="pki_existing_workplace_photo" value="<?php echo e($vPhoto); ?>">
-            <div class="pki-field-helper" id="helper_workplace_photo">Unggah minimal 1 foto tempat usaha/kegiatan sesuai alamat pada profil.</div>
+            <div class="pki-field-helper" id="helper_workplace_photo">Format PNG, JPG. Ukuran Maksimal 2MB</div>
+            <div class="pki-field-helper" id="helper_workplace_photo_size" style="<?php echo $vPhotoSizeText !== '' ? '' : 'display:none;'; ?>">
+                <?php if ($vPhotoSizeText !== ''): ?>
+                    Ukuran file yang di upload: <?php echo e($vPhotoSizeText); ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -325,7 +379,7 @@ if (file_exists($pkiCssPath)) {
 <!-- 4. MEDIA SOSIAL & DESKRIPSI -->
 <div class="modal-section" style="margin-bottom:20px;">
     <div class="section-title" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-        <span>4. MEDIA SOSIAL & DESKRIPSI</span>
+        <span>4. MEDIA SOSIAL</span>
         <span class="req" style="color:#ef4444 !important; font-weight:700;">*</span>
     </div>
     <div style="font-size:12.5px; color:#64748b; margin-bottom:16px;">Wajib mengisi minimal salah satu akun media sosial (LinkedIn, Facebook, atau Instagram).</div>
@@ -347,18 +401,6 @@ if (file_exists($pkiCssPath)) {
         <label class="pki-field-label" id="label_instagram" for="pki_instagram">Instagram</label>
         <input type="text" name="instagram" id="pki_instagram" value="<?php echo $vInstagram; ?>" placeholder="@username atau https://instagram.com/...">
         <div class="pki-field-helper" id="helper_instagram">Isi minimal salah satu media sosial.</div>
-    </div>
-
-    <div class="pki-field">
-        <label class="pki-field-label" id="label_description" for="pki_description">
-            Deskripsi Singkat Usaha / Rekrutmen
-            <span class="pki-tooltip" tabindex="0" role="tooltip">
-                <?php echo $infoIconSvg; ?>
-                <span class="tooltip-popover">Jelaskan secara singkat usaha atau kegiatan yang dijalankan serta gambaran kebutuhan rekrutmen yang dilakukan.</span>
-            </span>
-        </label>
-        <textarea name="description" id="pki_description" placeholder="Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen..." style="min-height:90px; padding:10px 14px; font-size:13.5px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-family:inherit; line-height:1.5; resize:vertical;"><?php echo $vDescription; ?></textarea>
-        <div class="pki-field-helper" id="helper_description">Deskripsikan secara singkat profil usaha, produk/layanan, atau kebutuhan rekrutmen.</div>
     </div>
 </div>
 

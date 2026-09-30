@@ -1009,84 +1009,131 @@ if ($view === 'verifikasi_employer') {
                ep.verification_checklist, ep.assigned_to, ep.assigned_at, ep.assignment_reason, ep.rejection_count,
                ep.manual_review_status, ep.consent_data_hash, ep.consent_given_at, ep.officer_statement, ep.officer_name, ep.entity_type,
                ep.doc_permission, ep.permit_document, ep.doc_location_photo, ep.workplace_photo, ep.social_media, ep.instagram, ep.linkedin, ep.facebook, ep.domicile_city_id
+    SQL;
+    $baseFilter = <<<SQL
         FROM users u
         LEFT JOIN employer_profiles ep ON ep.user_id = u.id
         WHERE u.role = 'employer'
     SQL;
-    $params = [];
+    $paramsCommon = [];
 
-    if ($entity === 'Individu') {
-        $query .= ' AND (ep.entity_type = "Individu" OR ep.entity_type = "Individual" OR ep.entity_type IS NULL)';
+    $entityFilter = '';
+    $entityParams = [];
+    if ($entity === 'Individu' || $entity === 'Individual') {
+        $entityFilter = ' AND (ep.entity_type = "Individu" OR ep.entity_type = "Individual" OR ep.entity_type IS NULL)';
     } elseif ($entity === 'Perusahaan') {
-        $query .= ' AND ep.entity_type = "Perusahaan"';
+        $entityFilter = ' AND ep.entity_type = "Perusahaan"';
     }
 
     if ($search !== '') {
-        $query .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.owner_name LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
+        $baseFilter .= ' AND (u.name LIKE ? OR u.email LIKE ? OR ep.owner_name LIKE ? OR ep.phone LIKE ? OR ep.city LIKE ? OR ep.address LIKE ? OR ep.npwp LIKE ?)';
         $like = '%' . $search . '%';
-        $params = array_merge($params, [$like, $like, $like, $like, $like, $like, $like]);
+        $paramsCommon = array_merge($paramsCommon, [$like, $like, $like, $like, $like, $like, $like]);
     }
 
     if ($startDate !== '') {
-        $query .= ' AND DATE(u.created_at) >= ?';
-        $params[] = $startDate;
+        $baseFilter .= ' AND DATE(u.created_at) >= ?';
+        $paramsCommon[] = $startDate;
     }
     if ($endDate !== '') {
-        $query .= ' AND DATE(u.created_at) <= ?';
-        $params[] = $endDate;
+        $baseFilter .= ' AND DATE(u.created_at) <= ?';
+        $paramsCommon[] = $endDate;
     }
     if ($cityFilter !== '') {
-        $query .= ' AND (ep.city LIKE ? OR ep.province LIKE ? OR ep.district LIKE ? OR ep.address LIKE ?)';
+        $baseFilter .= ' AND (ep.city LIKE ? OR ep.province LIKE ? OR ep.district LIKE ? OR ep.address LIKE ?)';
         $cityLike = '%' . $cityFilter . '%';
-        $params = array_merge($params, [$cityLike, $cityLike, $cityLike, $cityLike]);
+        $paramsCommon = array_merge($paramsCommon, [$cityLike, $cityLike, $cityLike, $cityLike]);
     }
     if ($verifierFilter !== '') {
-        $query .= ' AND (ep.assigned_to LIKE ? OR ep.verifier_notes LIKE ?)';
+        $baseFilter .= ' AND (ep.assigned_to LIKE ? OR ep.verifier_notes LIKE ?)';
         $vLike = '%' . $verifierFilter . '%';
-        $params = array_merge($params, [$vLike, $vLike]);
+        $paramsCommon = array_merge($paramsCommon, [$vLike, $vLike]);
     }
     if ($officerFilter !== '') {
-        $query .= ' AND ep.officer_name LIKE ?';
-        $params[] = '%' . $officerFilter . '%';
+        $baseFilter .= ' AND ep.officer_name LIKE ?';
+        $paramsCommon[] = '%' . $officerFilter . '%';
     }
     if ($unassignedFilter === 1) {
-        $query .= ' AND (ep.assigned_to IS NULL OR ep.assigned_to = "")';
+        $baseFilter .= ' AND (ep.assigned_to IS NULL OR ep.assigned_to = "")';
     }
 
+    $tabFilter = '';
+    $tabParams = [];
     if ($tab === 'process') {
-        $query .= ' AND (ep.verification_status = "PENDING" OR ep.verification_status = "NOT_SUBMITTED" OR ep.verification_status IS NULL)';
+        $tabFilter = ' AND (ep.verification_status = "PENDING" OR ep.verification_status = "NOT_SUBMITTED" OR ep.verification_status IS NULL)';
     } elseif ($tab === 'approved') {
-        $query .= ' AND (ep.verification_status = "APPROVED" OR ep.verification_status = "ACTIVE_VERIFIED")';
+        $tabFilter = ' AND (ep.verification_status = "APPROVED" OR ep.verification_status = "ACTIVE_VERIFIED")';
     } elseif ($tab === 'revision') {
-        $query .= ' AND ep.verification_status = "NEEDS_REVISION"';
+        $tabFilter = ' AND ep.verification_status = "NEEDS_REVISION"';
     } elseif ($tab === 'rejected') {
-        $query .= ' AND (ep.verification_status = "REJECTED" OR ep.verification_status = "FULL_DISABLED")';
+        $tabFilter = ' AND (ep.verification_status = "REJECTED" OR ep.verification_status = "FULL_DISABLED")';
     }
 
     // Scope Admin Dinas Filter (exact domicile_city_id match)
     if ($user['role'] === 'admin_dinas' || (!empty($user['domicile_city_id']) && $user['role'] !== 'admin' && $user['role'] !== 'admin_pusat')) {
         $adminDomicileCity = (string)($user['domicile_city_id'] ?? '');
         if ($adminDomicileCity !== '') {
-            $query .= ' AND (ep.city LIKE ? OR ep.domicile_city_id = ? OR ep.domicile_city_id IS NULL OR ep.city IS NULL OR ep.city = "")';
-            $params[] = '%' . $adminDomicileCity . '%';
-            $params[] = $adminDomicileCity;
+            $baseFilter .= ' AND (ep.city LIKE ? OR ep.domicile_city_id = ? OR ep.domicile_city_id IS NULL OR ep.city IS NULL OR ep.city = "")';
+            $paramsCommon[] = '%' . $adminDomicileCity . '%';
+            $paramsCommon[] = $adminDomicileCity;
         }
     }
 
     $sort = $_GET['sort'] ?? 'date_desc';
+    $orderBy = ' ORDER BY u.created_at DESC';
     if ($sort === 'name_asc') {
-        $query .= ' ORDER BY ep.owner_name ASC, u.name ASC';
+        $orderBy = ' ORDER BY ep.owner_name ASC, u.name ASC';
     } elseif ($sort === 'name_desc') {
-        $query .= ' ORDER BY ep.owner_name DESC, u.name DESC';
+        $orderBy = ' ORDER BY ep.owner_name DESC, u.name DESC';
     } elseif ($sort === 'date_asc') {
-        $query .= ' ORDER BY u.created_at ASC';
-    } else {
-        $query .= ' ORDER BY u.created_at DESC';
+        $orderBy = ' ORDER BY u.created_at ASC';
     }
 
+    $query .= $baseFilter . $entityFilter . $tabFilter . $orderBy;
+    $params = array_merge($paramsCommon, $entityParams, $tabParams);
     $stmt = db()->prepare($query);
     $stmt->execute($params);
     $verificationEmployers = $stmt->fetchAll() ?: [];
+
+    // Counts for status tabs, preserving entity and active filter/search scope.
+    $statusCountSql = <<<SQL
+        SELECT
+            COUNT(*) AS all_count,
+            SUM(CASE WHEN (ep.verification_status = "PENDING" OR ep.verification_status = "NOT_SUBMITTED" OR ep.verification_status IS NULL) THEN 1 ELSE 0 END) AS process_count,
+            SUM(CASE WHEN ep.verification_status = "NEEDS_REVISION" THEN 1 ELSE 0 END) AS revision_count,
+            SUM(CASE WHEN (ep.verification_status = "APPROVED" OR ep.verification_status = "ACTIVE_VERIFIED") THEN 1 ELSE 0 END) AS approved_count,
+            SUM(CASE WHEN (ep.verification_status = "REJECTED" OR ep.verification_status = "FULL_DISABLED") THEN 1 ELSE 0 END) AS rejected_count
+        {$baseFilter}
+        {$entityFilter}
+    SQL;
+    $stmtStatusCounts = db()->prepare($statusCountSql);
+    $stmtStatusCounts->execute(array_merge($paramsCommon, $entityParams));
+    $statusCountsRow = $stmtStatusCounts->fetch() ?: [];
+    $verificationStatusCounts = [
+        'all' => (int)($statusCountsRow['all_count'] ?? 0),
+        'process' => (int)($statusCountsRow['process_count'] ?? 0),
+        'revision' => (int)($statusCountsRow['revision_count'] ?? 0),
+        'approved' => (int)($statusCountsRow['approved_count'] ?? 0),
+        'rejected' => (int)($statusCountsRow['rejected_count'] ?? 0),
+    ];
+
+    // Counts for entity pills, preserving active tab and active filter/search scope.
+    $entityCountSql = <<<SQL
+        SELECT
+            COUNT(*) AS all_entities_count,
+            SUM(CASE WHEN ep.entity_type = "Perusahaan" THEN 1 ELSE 0 END) AS perusahaan_count,
+            SUM(CASE WHEN (ep.entity_type = "Individu" OR ep.entity_type = "Individual" OR ep.entity_type IS NULL) THEN 1 ELSE 0 END) AS individual_count
+        {$baseFilter}
+        {$tabFilter}
+    SQL;
+    $stmtEntityCounts = db()->prepare($entityCountSql);
+    $stmtEntityCounts->execute(array_merge($paramsCommon, $tabParams));
+    $entityCountsRow = $stmtEntityCounts->fetch() ?: [];
+    $verificationEntityCounts = [
+        'Semua' => (int)($entityCountsRow['all_entities_count'] ?? 0),
+        'Perusahaan' => (int)($entityCountsRow['perusahaan_count'] ?? 0),
+        'Individu' => (int)($entityCountsRow['individual_count'] ?? 0),
+    ];
 
     $perPage = 20;
     $totalData = count($verificationEmployers);
@@ -4538,11 +4585,11 @@ document.addEventListener('click', function(e) {
                         <!-- STATUS TAB LIST -->
                         <div style="border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
                             <div class="status-tab-list" style="gap:24px;">
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>">Semua</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>">Menunggu Verifikasi</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=revision&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>">Revisi</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=approved&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>">Terverifikasi</a>
-                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>">Ditolak</a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=all&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'all' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Semua<?php if ((int)($verificationStatusCounts['all'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($verificationStatusCounts['all'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=process&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'process' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Menunggu Verifikasi<?php if ((int)($verificationStatusCounts['process'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($verificationStatusCounts['process'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=revision&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'revision' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Revisi<?php if ((int)($verificationStatusCounts['revision'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($verificationStatusCounts['revision'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=approved&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'approved' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Terverifikasi<?php if ((int)($verificationStatusCounts['approved'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($verificationStatusCounts['approved'] ?? 0); ?></span><?php endif; ?></a>
+                                <a href="admin.php?view=verifikasi_employer&entity=<?php echo e($entity); ?>&tab=rejected&q=<?php echo urlencode($search); ?>&sort=<?php echo e($sort); ?><?php echo $filterParamsEmp; ?>" class="status-tab-item <?php echo $tab === 'rejected' ? 'active' : ''; ?>" style="display:inline-flex; align-items:center; gap:8px;">Ditolak<?php if ((int)($verificationStatusCounts['rejected'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 8px; border-radius:999px; border:1px solid #fecdd3; background:#fff1f2; color:#e11d48; font-size:12px; font-weight:700;"><?php echo (int)($verificationStatusCounts['rejected'] ?? 0); ?></span><?php endif; ?></a>
                             </div>
                         </div>
 
@@ -4569,9 +4616,9 @@ document.addEventListener('click', function(e) {
 
                                 <!-- SEGMENTED PILL FILTER: Semua | Perusahaan | Individual -->
                                 <div style="display:inline-flex; background:#f1f5f9; border-radius:999px; padding:3px; gap:2px;">
-                                    <a href="admin.php?view=verifikasi_employer&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua</a>
-                                    <a href="admin.php?view=verifikasi_employer&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan</a>
-                                    <a href="admin.php?view=verifikasi_employer&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual</a>
+                                    <a href="admin.php?view=verifikasi_employer&entity=Semua&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:7px; <?php echo ($entity === 'Semua' || !$entity) ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Semua<?php if ((int)($verificationEntityCounts['Semua'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 7px; border-radius:999px; background:#e2e8f0; color:#334155; font-size:11px; font-weight:700;"><?php echo (int)($verificationEntityCounts['Semua'] ?? 0); ?></span><?php endif; ?></a>
+                                    <a href="admin.php?view=verifikasi_employer&entity=Perusahaan&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:7px; <?php echo $entity === 'Perusahaan' ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Perusahaan<?php if ((int)($verificationEntityCounts['Perusahaan'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 7px; border-radius:999px; background:#e2e8f0; color:#334155; font-size:11px; font-weight:700;"><?php echo (int)($verificationEntityCounts['Perusahaan'] ?? 0); ?></span><?php endif; ?></a>
+                                    <a href="admin.php?view=verifikasi_employer&entity=Individu&tab=<?php echo e($tab); ?>&q=<?php echo urlencode($search); ?><?php echo $filterParamsEmp; ?>" style="padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:7px; <?php echo ($entity === 'Individu' || $entity === 'Individual') ? 'background:#ffffff; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#64748b;'; ?>">Individual<?php if ((int)($verificationEntityCounts['Individu'] ?? 0) > 0): ?> <span style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 7px; border-radius:999px; background:#e2e8f0; color:#334155; font-size:11px; font-weight:700;"><?php echo (int)($verificationEntityCounts['Individu'] ?? 0); ?></span><?php endif; ?></a>
                                 </div>
                             </div>
 
