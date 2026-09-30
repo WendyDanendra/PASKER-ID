@@ -1273,7 +1273,7 @@ if ($flashData && $flashData['type'] === 'pending_popup') {
     }
 }
 
-$selectedJobId = isset($_GET['job_detail']) ? (int)$_GET['job_detail'] : (isset($_GET['open_draft']) ? (int)$_GET['open_draft'] : 0);
+$selectedJobId = isset($_GET['job_detail']) ? (int)$_GET['job_detail'] : (isset($_GET['open_draft']) ? (int)$_GET['open_draft'] : (isset($_GET['draft_id']) ? (int)$_GET['draft_id'] : (isset($_GET['job_id']) ? (int)$_GET['job_id'] : 0)));
 $detailJob = null;
 $detailData = null;
 $monthlyQuotaTotal = 0;

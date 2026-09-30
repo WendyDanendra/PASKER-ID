@@ -174,6 +174,7 @@ function bindModalsAndDrawers() {
             const modalId = btn.dataset.openModal;
             const modal = document.querySelector(`[data-modal="${modalId}"]`);
             if (modal) {
+                modal.style.display = 'flex';
                 modal.classList.add('open');
                 modal.dispatchEvent(new CustomEvent('modal:open'));
                 if (modalId === 'modal-employer-profile' && typeof invalidatePkiMap === 'function') {
@@ -1582,6 +1583,7 @@ function initJobCreateWizard() {
             hidden.value = String(jobId);
         }
         modal.dataset.skipReset = 'true';
+        modal.style.display = 'flex';
         modal.classList.add('open');
         modal.dispatchEvent(new CustomEvent('modal:open'));
 
@@ -1605,6 +1607,7 @@ function initJobCreateWizard() {
                 }
                 fillJobCreateForm(payload.data);
                 setJobCreateMode(formMode, payload.data.admin_notes);
+                modal.style.display = 'flex';
                 modal.classList.add('open');
                 modal.dispatchEvent(new CustomEvent('modal:open'));
             })

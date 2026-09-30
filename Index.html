@@ -3113,7 +3113,7 @@
                                 <button type="button" onclick="closeLayer3WarningModal()" style="padding:9px 20px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;">
                                     Tutup
                                 </button>
-                                <button type="button" data-edit-draft="<?php echo $detailJob['id']; ?>" onclick="closeLayer3WarningModal()" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25);">
+                                <button type="button" data-edit-draft="<?php echo !empty($detailJob['id']) ? $detailJob['id'] : e($_GET['job_detail'] ?? $_GET['draft_id'] ?? ''); ?>" onclick="closeLayer3WarningModal()" style="padding:9px 22px; border:none; background:#0284c7; color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(2,132,199,0.25);">
                                     <i class="fa-solid fa-pen-to-square"></i> Sesuaikan Kuota
                                 </button>
                             </div>
